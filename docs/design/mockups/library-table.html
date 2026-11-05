@@ -28,10 +28,10 @@
   .tbl td .row-more { opacity: 0; }
   .tbl tr:hover .row-more, .tbl tr.is-context .row-more, .tbl tr[aria-selected="true"] .row-more { opacity: 1; }
   .tbl td.unmon .name { color: var(--text-secondary); }
-  .ctx { position: absolute; left: 470px; top: 318px; width: 264px; --origin: top left; }
+  .ctx { position: absolute; left: 640px; top: 140px; width: 264px; --origin: top left; }
   .ctx .sub-wrap { position: relative; }
   .submenu { position: absolute; left: calc(100% + 4px); top: -6px; width: 220px; }
-  .cursor { position: absolute; left: 462px; top: 308px; width: 16px; height: 22px; z-index: calc(var(--z-popover) + 1); pointer-events: none; filter: drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
+  .cursor { position: absolute; left: 632px; top: 120px; width: 16px; height: 22px; z-index: calc(var(--z-popover) + 1); pointer-events: none; filter: drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
   .foot-note { display: flex; justify-content: space-between; margin-top: var(--space-3); font: var(--type-caption); color: var(--text-muted); font-variant-numeric: tabular-nums; }
 </style>
 </head>
@@ -98,7 +98,7 @@
               <th class="r" aria-sort="none"><button type="button">Score <svg class="i" aria-hidden="true"><use href="#i-arrow-up"/></svg></button></th>
               <th aria-sort="none"><button type="button">Status <svg class="i" aria-hidden="true"><use href="#i-arrow-up"/></svg></button></th>
               <th aria-sort="descending"><button type="button">Added <svg class="i" aria-hidden="true"><use href="#i-arrow-down"/></svg></button></th>
-              <th aria-sort="none"><button type="button">Path <svg class="i" aria-hidden="true"><use href="#i-arrow-up"/></svg></button></th>
+              <th aria-sort="none"><button type="button">Path <span class="t-muted" style="font-weight:400">/data/movies</span> <svg class="i" aria-hidden="true"><use href="#i-arrow-up"/></svg></button></th>
               <th><span class="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -157,7 +157,7 @@
   const ic = GN.ic;
   document.getElementById('rows').innerHTML = R.map(([id, q, size, score, st, added, o = {}], i) => {
     const f = GN.films[id];
-    const folder = '/data/movies/' + f.title.replace(/[:']/g, '') + ' (' + f.year + ')/';
+    const folder = f.title.replace(/[:']/g, '') + ' (' + f.year + ')/';
     const meta = GN.STATUS[st];
     const status = '<span class="status" data-status="' + st + '">' + ic(meta.icon) + (o.label || meta.label) + '</span>';
     const sc = score === null ? '<span class="t-muted">—</span>' : '<span class="score ' + (score > 0 ? 'pos' : score < 0 ? 'neg' : '') + '">' + (score > 0 ? '+' : score < 0 ? '−' : '') + Math.abs(score) + '</span>';
@@ -169,7 +169,7 @@
       '<td class="r">' + sc + '</td>' +
       '<td>' + status + '</td>' +
       '<td class="muted">' + added + '</td>' +
-      '<td class="mono"><span class="path" title="' + folder + '">' + (q ? folder : '<span class="t-muted">' + folder + '</span>') + '</span></td>' +
+      '<td class="mono"><span class="path" title="/data/movies/' + folder + '"><span class="t-muted">…/</span>' + (q ? folder : '<span class="t-muted">' + folder + '</span>') + '</span></td>' +
       '<td><button class="icon-btn sm row-more" type="button" aria-label="Actions for ' + f.title + '" aria-haspopup="menu"' + (o.ctx ? ' aria-expanded="true"' : '') + '>' + ic('ellipsis', 'i-sm') + '</button></td></tr>';
   }).join('');
   GN.renderPosters();
