@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Command palette · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: command palette over the library. ?state=recent (default) | query | empty
+     No open/close animation: it is opened many times a day (motion.md §7). */
+  .behind { pointer-events: none; }
+  .scrim { animation: none; }
+  .palette { position: fixed; z-index: var(--z-dialog); left: 50%; top: 104px; transform: translateX(-50%); width: 680px; max-width: calc(100vw - 32px); border-radius: var(--radius-xl); background: var(--glass-3); backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); -webkit-backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); border: 1px solid var(--border-strong); box-shadow: inset 0 1px 0 var(--glass-edge), var(--elev-4); overflow: hidden; }
+  .p-in { display: flex; align-items: center; gap: 12px; height: 60px; padding: 0 18px; border-bottom: 1px solid var(--border); }
+  .p-in .i { width: 20px; height: 20px; color: var(--text-muted); }
+  .p-in input { all: unset; flex: 1; font: 400 18px/24px var(--font-ui); color: var(--text-primary); }
+  .p-in input::placeholder { color: var(--text-muted); }
+  .scopes { display: flex; gap: 6px; padding: 10px 14px 0; }
+  .scopes .chip { height: 26px; font-size: 12.5px; }
+  .p-body { max-height: 470px; overflow: hidden; padding: 6px 8px 8px; }
+  .p-grp { padding: 10px 10px 4px; font: var(--type-overline); letter-spacing: var(--type-overline-tracking); font-stretch: 125%; text-transform: uppercase; color: var(--text-muted); }
+  .opt { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 44px; padding: 6px 10px; border-radius: 10px; color: var(--text-primary); }
+  .opt[aria-selected="true"] { background: var(--bg-active); box-shadow: inset 2px 0 0 var(--accent); }
+  .opt .lead { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; background: var(--bg-active); color: var(--text-secondary); overflow: hidden; }
+  .opt .lead .i { width: 16px; height: 16px; }
+  .opt .lead.poster { width: 24px; height: 36px; margin: 0 4px; border-radius: 4px; }
+  .opt .lead.poster svg { width: 100%; height: 100%; }
+  .opt .lead.person { border-radius: 50%; background: linear-gradient(140deg, #5a6b7a, #1a2028); color: #F7F0E6; font: 600 11px/1 var(--font-ui); }
+  .opt .tx { min-width: 0; }
+  .opt .tx b { font: 500 14px/18px var(--font-ui); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .opt .tx b mark { background: none; color: var(--accent); }
+  .opt .tx span { font: var(--type-caption); color: var(--text-muted); display: flex; gap: 6px; align-items: center; overflow: hidden; white-space: nowrap; }
+  .opt .tx .mono { font: var(--type-mono-sm); color: var(--text-secondary); }
+  .opt .side { display: flex; gap: 6px; align-items: center; }
+  .opt .side .kbd { height: 22px; }
+  .p-foot { display: flex; align-items: center; gap: 16px; height: 42px; padding: 0 16px; border-top: 1px solid var(--border); font: var(--type-caption); color: var(--text-muted); }
+  .p-foot span { display: inline-flex; align-items: center; gap: 6px; }
+  .p-foot .grow { flex: 1; }
+  .none { display: grid; justify-items: center; gap: 8px; text-align: center; padding: 28px 24px 18px; }
+  .none .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--bg-active); color: var(--text-secondary); }
+  .none b { font: 600 16px/22px var(--font-ui); }
+  .none p { font: var(--type-body-sm); color: var(--text-secondary); max-width: 46ch; }
+  [data-state] .st { display: none; }
+  [data-state="recent"] .st-recent, [data-state="query"] .st-query, [data-state="empty"] .st-empty { display: block; }
+</style>
+</head>
+<body>
+<div class="behind" aria-hidden="true" inert>
+  <div class="app">
+    <nav class="sidebar" data-shell-sidebar="films"></nav>
+    <div class="main">
+      <header class="topbar"><label class="input search"><svg class="i"><use href="#i-search"/></svg><input type="search" placeholder="Search films, people, releases…" tabindex="-1"><span class="kbd">⌘K</span></label><div class="spacer"></div><button class="btn btn-primary" type="button" tabindex="-1">Add film</button></header>
+      <div class="page"><div class="page-head"><div><h1>Films</h1><p class="sub">1,284 films · 1,198 on disk · 9.7 TB</p></div></div><div class="poster-grid" id="grid"></div></div>
+    </div>
+  </div>
+</div>
+<div class="scrim"></div>
+
+<div class="palette" id="pal" role="dialog" aria-modal="true" aria-label="Command palette" data-state="recent">
+  <div class="p-in">
+    <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+    <input id="q" role="combobox" aria-expanded="true" aria-controls="lb" aria-label="Search films, people, releases, or type > for actions" placeholder="Search films, people, releases… or type > for actions" autocomplete="off">
+    <span class="kbd">Esc</span>
+  </div>
+  <div class="scopes" role="group" aria-label="Scope"><button class="chip is-on" type="button" aria-pressed="true">All</button><button class="chip" type="button" aria-pressed="false">Films</button><button class="chip" type="button" aria-pressed="false">People <span class="k">@</span></button><button class="chip" type="button" aria-pressed="false">Releases <span class="k">#</span></button><button class="chip" type="button" aria-pressed="false">Actions <span class="k">&gt;</span></button></div>
+  <div class="p-body" id="lb" role="listbox" aria-label="Results">
+    <!-- recent -->
+    <div class="st st-recent">
+      <div class="p-grp" role="presentation">Recent</div>
+      <div class="opt" role="option" aria-selected="true"><span class="lead poster poster-art" data-film="halcyon-drift"></span><span class="tx"><b>Halcyon Drift</b><span>Film · 2024 · upgraded yesterday</span></span><span class="side"><span class="kbd">↵</span></span></div>
+      <div class="opt" role="option" aria-selected="false"><span class="lead"><svg class="i" aria-hidden="true"><use href="#i-scan-search"/></svg></span><span class="tx"><b>Interactive search: Halcyon Drift</b><span>Opened 2 days ago</span></span><span class="side"></span></div>
+      <div class="opt" role="option" aria-selected="false"><span class="lead person" aria-hidden="true">IC</span><span class="tx"><b>Ines Calloway</b><span>Person · director · 3 films in your library</span></span><span class="side"></span></div>
+      <div class="p-grp" role="presentation">Actions</div>
+      <div class="opt" role="option" aria-selected="false"><span class="lead"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg></span><span class="tx"><b>Search all missing films</b><span>12 released and monitored</span></span><span class="side"><span class="kbd">⇧</span><span class="kbd">S</span></span></div>
+      <div class="opt" role="option" aria-selected="false"><span class="lead"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></span><span class="tx"><b>Add film…</b><span>Search TMDB</span></span><span class="side"><span class="kbd">A</span></span></div>
+      <div class="opt" role="option" aria-selected="false"><span class="lead"><svg class="i" aria-hidden="true"><use href="#i-arrow-down-to-line"/></svg></span><span class="tx"><b>Go to Queue</b><span>3 downloading</span></span><span class="side"><span class="kbd">G</span><span class="kbd">Q</span></span></div>
+      <div class="opt" role="option" aria-selected="false"><span class="lead"><svg class="i" aria-hidden="true"><use href="#i-moon"/></svg></span><span class="tx"><b>Switch to light theme</b><span>Appearance</span></span><span class="side"><span class="kbd">⌘</span><span class="kbd">⇧</span><span class="kbd">L</span></span></div>
+    </div>
+    <!-- query -->
+    <div class="st st-query">
+      <div class="p-grp" role="presentation">Films</div>
+      <div class="opt" role="option" aria-selected="true"><span class="lead poster poster-art" data-film="halcyon-drift"></span><span class="tx"><b><mark>Hal</mark>cyon Drift</b><span>2024 · <span class="status" data-status="upgraded" style="font-size:12px"><svg class="i" aria-hidden="true"><use href="#i-circle-arrow-up"/></svg>2160p WEB-DL</span></span></span><span class="side"><span class="kbd">↵</span></span></div>
+      <div class="opt" role="option" aria-selected="false"><span class="lead poster poster-art" data-film="drift-signal"></span><span class="tx"><b>Drift: Signal</b><span>2019 · prequel to Halcyon Drift</span></span><span class="side"></span></div>
+      <div class="p-grp" role="presentation">People</div>
+      <div class="opt" role="option" aria-selected="false"><span class="lead person" aria-hidden="true">TH</span><span class="tx"><b>Tomasz <mark>Hal</mark>e</b><span>Actor · Rook in Halcyon Drift · 2 films</span></span><span class="side"></span></div>
+      <div class="p-grp" role="presentation">Releases <span style="text-transform:none;letter-spacing:0;font:var(--type-caption)">from the last search</span></div>
+      <div class="opt" role="option" aria-selected="false"><span class="lead"><svg class="i" aria-hidden="true"><use href="#i-newspaper"/></svg></span><span class="tx"><b class="mono" style="font:var(--type-mono-sm);color:var(--text-primary)"><mark>Hal</mark>cyon.Drift.2024.2160p.UHD.BluRay.REMUX.DV.HDR10.TrueHD.Atmos-BOBiNE</b><span>58.4 GB · Nebula NZB · accepted</span></span><span class="side"><span class="score pos">+110</span></span></div>
+      <div class="p-grp" role="presentation">Actions</div>
+      <div class="opt" role="option" aria-selected="false"><span class="lead"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg></span><span class="tx"><b>Search Halcyon Drift now</b><span>Looks for an upgrade to Remux-2160p</span></span><span class="side"><span class="kbd">⌘</span><span class="kbd">↵</span></span></div>
+      <div class="opt" role="option" aria-selected="false"><span class="lead"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></span><span class="tx"><b>Add “hal” from TMDB…</b><span>Find films not in your library yet</span></span><span class="side"></span></div>
+    </div>
+    <!-- empty -->
+    <div class="st st-empty">
+      <div class="none">
+        <span class="ic"><svg class="i" aria-hidden="true"><use href="#i-scan-search"/></svg></span>
+        <b>Nothing called “zebra crossing” in the booth.</b>
+        <p>No film, person or release in your library matches. It may still exist on TMDB.</p>
+      </div>
+      <div class="opt" role="option" aria-selected="true"><span class="lead"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></span><span class="tx"><b>Search TMDB for “zebra crossing”</b><span>Add it to your library</span></span><span class="side"><span class="kbd">↵</span></span></div>
+      <div class="opt" role="option" aria-selected="false"><span class="lead"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></span><span class="tx"><b>Clear the search</b><span>Back to recent items</span></span><span class="side"><span class="kbd">⌘</span><span class="kbd">⌫</span></span></div>
+    </div>
+  </div>
+  <div class="p-foot"><span><span class="kbd">↑</span><span class="kbd">↓</span>move</span><span><span class="kbd">↵</span>open</span><span><span class="kbd">Tab</span>scope</span><span class="grow"></span><span>Type <span class="kbd">&gt;</span> for actions, <span class="kbd">@</span> for people</span></div>
+</div>
+
+<script src="../system/icons.js"></script>
+<script src="../system/posters.js"></script>
+<script src="../system/mock.js"></script>
+<script>
+  const st = ['recent', 'query', 'empty'].includes(new URLSearchParams(location.search).get('state')) ? new URLSearchParams(location.search).get('state') : 'recent';
+  document.getElementById('pal').dataset.state = st;
+  document.getElementById('q').value = st === 'query' ? 'hal' : st === 'empty' ? 'zebra crossing' : '';
+  document.getElementById('grid').innerHTML = ['quiet-meridian', 'saltwater-hymn', 'neon-orchard', 'ninefold', 'room-without-weather', 'coldharbour', 'velvet-static', 'glass-cartographer', 'sundial', 'ember-ash', 'orbit-small-things', 'tidewater'].map(f => GN.card({ film: f, quality: '1080p Bluray' })).join('');
+  document.querySelectorAll('.behind a, .behind button, .behind input').forEach(e => e.tabIndex = -1);
+  document.querySelectorAll('.st:not(.st-' + st + ')').forEach(e => e.remove());
+  const act = document.querySelector('.opt[aria-selected="true"]'); act.id = 'active'; document.getElementById('q').setAttribute('aria-activedescendant', 'active');
+  GN.renderPosters();
+</script>
+</body>
+</html>

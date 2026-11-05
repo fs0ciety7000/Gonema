@@ -32,6 +32,14 @@
     "incomplete": 2
   },
   {
+    "page": "movie-detail-tablet",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 44,
+    "incomplete": 2
+  },
+  {
     "page": "interactive-search",
     "theme": "dark",
     "errors": [],
@@ -40,7 +48,183 @@
     "incomplete": 2
   },
   {
-    "page": "design-system-full",
+    "page": "onboarding-welcome",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 38,
+    "incomplete": 1
+  },
+  {
+    "page": "onboarding-tmdb",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 39,
+    "incomplete": 2
+  },
+  {
+    "page": "onboarding-folder",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 38,
+    "incomplete": 2
+  },
+  {
+    "page": "onboarding-client-error",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 38,
+    "incomplete": 2
+  },
+  {
+    "page": "onboarding-quality",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 39,
+    "incomplete": 1
+  },
+  {
+    "page": "onboarding-grabbed",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 38,
+    "incomplete": 1
+  },
+  {
+    "page": "dashboard",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 42,
+    "incomplete": 2
+  },
+  {
+    "page": "add-film",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 41,
+    "incomplete": 2
+  },
+  {
+    "page": "add-film-discover",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 38,
+    "incomplete": 2
+  },
+  {
+    "page": "queue",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 40,
+    "incomplete": 2
+  },
+  {
+    "page": "queue-history",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 43,
+    "incomplete": 2
+  },
+  {
+    "page": "calendar",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 37,
+    "incomplete": 2
+  },
+  {
+    "page": "calendar-agenda",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 39,
+    "incomplete": 2
+  },
+  {
+    "page": "settings-quality",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 39,
+    "incomplete": 3
+  },
+  {
+    "page": "settings-index",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 43,
+    "incomplete": 3
+  },
+  {
+    "page": "command-palette",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 33,
+    "incomplete": 2
+  },
+  {
+    "page": "command-palette-query",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 33,
+    "incomplete": 2
+  },
+  {
+    "page": "command-palette-empty",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 32,
+    "incomplete": 2
+  },
+  {
+    "page": "empty-states",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 36,
+    "incomplete": 2
+  },
+  {
+    "page": "404",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 34,
+    "incomplete": 2
+  },
+  {
+    "page": "error-offline",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 33,
+    "incomplete": 1
+  },
+  {
+    "page": "failed-download",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 41,
+    "incomplete": 2
+  },
+  {
+    "page": "design-system",
     "theme": "dark",
     "errors": [],
     "violations": [],
@@ -48,12 +232,20 @@
     "incomplete": 2
   },
   {
-    "page": "motion-full",
+    "page": "motion",
     "theme": "dark",
     "errors": [],
     "violations": [],
     "passes": 36,
     "incomplete": 2
+  },
+  {
+    "page": "gallery",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 35,
+    "incomplete": 0
   },
   {
     "page": "library-grid",
@@ -88,6 +280,14 @@
     "incomplete": 2
   },
   {
+    "page": "movie-detail-tablet",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 44,
+    "incomplete": 2
+  },
+  {
     "page": "interactive-search",
     "theme": "light",
     "errors": [],
@@ -96,7 +296,183 @@
     "incomplete": 2
   },
   {
-    "page": "design-system-full",
+    "page": "onboarding-welcome",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 38,
+    "incomplete": 1
+  },
+  {
+    "page": "onboarding-tmdb",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 39,
+    "incomplete": 2
+  },
+  {
+    "page": "onboarding-folder",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 38,
+    "incomplete": 2
+  },
+  {
+    "page": "onboarding-client-error",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 38,
+    "incomplete": 2
+  },
+  {
+    "page": "onboarding-quality",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 39,
+    "incomplete": 1
+  },
+  {
+    "page": "onboarding-grabbed",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 38,
+    "incomplete": 1
+  },
+  {
+    "page": "dashboard",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 42,
+    "incomplete": 2
+  },
+  {
+    "page": "add-film",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 41,
+    "incomplete": 2
+  },
+  {
+    "page": "add-film-discover",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 38,
+    "incomplete": 2
+  },
+  {
+    "page": "queue",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 40,
+    "incomplete": 2
+  },
+  {
+    "page": "queue-history",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 43,
+    "incomplete": 2
+  },
+  {
+    "page": "calendar",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 37,
+    "incomplete": 2
+  },
+  {
+    "page": "calendar-agenda",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 39,
+    "incomplete": 2
+  },
+  {
+    "page": "settings-quality",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 39,
+    "incomplete": 3
+  },
+  {
+    "page": "settings-index",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 43,
+    "incomplete": 3
+  },
+  {
+    "page": "command-palette",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 33,
+    "incomplete": 2
+  },
+  {
+    "page": "command-palette-query",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 33,
+    "incomplete": 2
+  },
+  {
+    "page": "command-palette-empty",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 32,
+    "incomplete": 2
+  },
+  {
+    "page": "empty-states",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 36,
+    "incomplete": 2
+  },
+  {
+    "page": "404",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 34,
+    "incomplete": 2
+  },
+  {
+    "page": "error-offline",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 33,
+    "incomplete": 1
+  },
+  {
+    "page": "failed-download",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 41,
+    "incomplete": 2
+  },
+  {
+    "page": "design-system",
     "theme": "light",
     "errors": [],
     "violations": [],
@@ -104,11 +480,19 @@
     "incomplete": 2
   },
   {
-    "page": "motion-full",
+    "page": "motion",
     "theme": "light",
     "errors": [],
     "violations": [],
     "passes": 36,
     "incomplete": 2
+  },
+  {
+    "page": "gallery",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 35,
+    "incomplete": 0
   }
 ]

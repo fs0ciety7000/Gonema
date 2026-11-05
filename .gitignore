@@ -38,4 +38,4 @@ bin/
 .claude/skills/logo-design/
 
 # Full-page design renders: regenerate with docs/design/tools/render.js
-docs/design/renders/*-full-*.png
+docs/design/renders/*-full-*.jpg

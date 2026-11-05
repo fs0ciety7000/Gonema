@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Not found · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  .stage { position: relative; min-height: calc(100vh - var(--topbar-h)); display: grid; place-items: center; overflow: hidden; isolation: isolate; }
+  /* Curtain: folds drawn with gradients, warm and deep; light theme keeps it as a soft linen drape */
+  .curtain { position: absolute; inset: 0; z-index: -1; background:
+      radial-gradient(60% 50% at 50% 38%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
+      repeating-linear-gradient(90deg, rgba(0,0,0,.0) 0 26px, rgba(0,0,0,.22) 40px, rgba(0,0,0,0) 56px),
+      linear-gradient(180deg, #2a1416, #170c0d 70%, var(--bg-base)); }
+  [data-theme="light"] .curtain { background:
+      radial-gradient(60% 50% at 50% 38%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%),
+      repeating-linear-gradient(90deg, rgba(42,32,24,0) 0 26px, rgba(42,32,24,.07) 40px, rgba(42,32,24,0) 56px),
+      linear-gradient(180deg, #EADFD0, var(--bg-base)); }
+  .curtain::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 64px; background: repeating-linear-gradient(90deg, rgba(0,0,0,.25) 0 10px, transparent 10px 40px); opacity: .5; }
+  .card { display: grid; justify-items: center; text-align: center; gap: var(--space-3); max-width: 560px; padding: var(--space-8); }
+  .card img { height: 220px; width: auto; }
+  .code { font: 600 12px/1 var(--font-mono); letter-spacing: .2em; color: var(--text-muted); }
+  .card h1 { font: var(--type-display-lg); letter-spacing: var(--type-display-lg-tracking); font-stretch: 125%; }
+  [data-theme="dark"] .card h1, :root:not([data-theme="light"]) .card h1 { color: #F7F0E6; }
+  .card p { color: var(--text-secondary); font: var(--type-body-lg); }
+  .card .path { font: var(--type-mono-sm); color: var(--text-secondary); padding: 4px 8px; border-radius: 6px; background: var(--bg-sunken); border: 1px solid var(--border); }
+  .card .actions { display: flex; gap: var(--space-2); margin-top: var(--space-3); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar=""></nav>
+  <div class="main">
+    <header class="topbar">
+      <label class="input search" aria-label="Search"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" placeholder="Search films, people, releases…" aria-label="Search films, people, releases"><span class="kbd" aria-hidden="true">⌘K</span></label>
+      <div class="spacer"></div>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    </header>
+    <main id="main" class="stage">
+      <div class="curtain" aria-hidden="true"></div>
+      <div class="card">
+        <img src="../../brand/kit/mascot/kernel-404.svg" alt="Kernel peeking out from behind the curtain">
+        <span class="code">ERROR 404</span>
+        <h1>This reel isn’t in the booth.</h1>
+        <p>Nothing lives at <span class="path">/films/halcyon-drift-3</span>. It may have been renamed, or removed from the library.</p>
+        <div class="actions"><a class="btn btn-primary" href="library-grid.html"><svg class="i" aria-hidden="true"><use href="#i-film"/></svg>Back to the programme</a><a class="btn btn-secondary" href="command-palette.html?state=query"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg>Search <span class="kbd">⌘K</span></a></div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="../system/icons.js"></script>
+</body>
+</html>

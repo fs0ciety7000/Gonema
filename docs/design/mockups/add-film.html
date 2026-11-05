@@ -21,11 +21,11 @@
   .results { display: grid; gap: 8px; }
   .res { display: grid; grid-template-columns: 64px 1fr auto; gap: var(--space-4); padding: 10px; border-radius: var(--radius-lg); border: 1px solid transparent; align-items: center; cursor: pointer; transition: background-color var(--dur-fast), border-color var(--dur-fast); }
   .res:hover { background: var(--bg-hover); }
-  .res[aria-selected="true"] { background: var(--bg-selected); border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+  .res[aria-current="true"] { background: var(--bg-selected); border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
   .res .poster-art { aspect-ratio: 2/3; border-radius: 8px; overflow: hidden; box-shadow: var(--elev-poster); }
-  .res svg { width: 100%; height: 100%; }
-  .res h3 { font: 600 15px/20px var(--font-ui); display: flex; gap: 8px; align-items: baseline; }
-  .res h3 span { font: 400 14px/20px var(--font-ui); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .res .poster-art svg { width: 100%; height: 100%; }
+  .res .rt { font: 600 15px/20px var(--font-ui); display: flex; gap: 8px; align-items: baseline; }
+  .res .rt span { font: 400 14px/20px var(--font-ui); color: var(--text-muted); font-variant-numeric: tabular-nums; }
   .res p { font: var(--type-body-sm); color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 2px; max-width: 70ch; }
   .res .meta { font: var(--type-caption); color: var(--text-muted); margin-top: 4px; }
   .res.in-lib .poster-art { opacity: .7; }
@@ -91,7 +91,7 @@
         <div class="split">
           <div>
             <p class="count-line">6 films on TMDB · ↑↓ to move, ↵ to add with these options</p>
-            <div class="results" role="listbox" aria-label="Search results" id="results"></div>
+            <div class="results" role="list" aria-label="Search results" id="results"></div>
           </div>
           <aside class="panel opt" aria-labelledby="opt-h">
             <div class="hero"><div class="backdrop-art" data-film="continental-drift"></div></div>
@@ -156,7 +156,7 @@
   document.getElementById('results').innerHTML = R.map(([id, ov, meta, st, sel]) => {
     const f = GN.films[id];
     const right = st ? (st === 'missing' ? '<span class="badge" data-status="missing">' + ic('circle-dashed') + 'In library · wanted</span>' : '<span class="badge" data-status="available">' + ic('check') + 'In library</span>') : '<button class="icon-btn outlined" type="button" aria-label="Quick add ' + f.title + ' with default options" title="Quick add  ⇧↵">' + ic('plus') + '</button>';
-    return '<div class="res' + (st ? ' in-lib' : '') + '" role="option" aria-selected="' + !!sel + '" tabindex="' + (sel ? 0 : -1) + '"><div class="poster-art" data-film="' + id + '"></div><div><h3>' + f.title + ' <span>' + f.year + '</span></h3><p>' + ov + '</p><div class="meta">' + meta + '</div></div>' + right + '</div>';
+    return '<div class="res' + (st ? ' in-lib' : '') + '" role="listitem"' + (sel ? ' aria-current="true"' : '') + '><div class="poster-art" data-film="' + id + '"></div><div><div class="rt"><a href="#" style="color:inherit">' + f.title + '</a> <span>' + f.year + '</span></div><p>' + ov + '</p><div class="meta">' + meta + '</div></div>' + right + '</div>';
   }).join('');
   const lib = { 'quiet-meridian': 1, 'halcyon-drift': 1, 'sundial': 1, 'drift-signal': 1, 'room-without-weather': 1, 'parallax': 1 };
   const shelf = ids => ids.map(([id, extra]) => {

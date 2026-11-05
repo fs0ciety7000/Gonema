@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendar · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: calendar. ?view=month (default) | agenda */
+  .page { padding-top: var(--space-6); }
+  .head { display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4); }
+  .head h1 { font: var(--type-display-lg); letter-spacing: var(--type-display-lg-tracking); font-stretch: 125%; min-width: 360px; }
+  .head .spacer { flex: 1; }
+  .legend { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4); flex-wrap: wrap; }
+  .legend .t-caption { color: var(--text-muted); margin-left: auto; }
+  .month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-raised); box-shadow: var(--elev-2); }
+  .month .dow { padding: 10px 12px; font: 500 12px/1 var(--font-ui); color: var(--text-muted); border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--bg-sunken) 60%, var(--bg-raised)); }
+  .day { min-height: 116px; padding: 8px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); display: grid; align-content: start; gap: 4px; min-width: 0; }
+  .day:nth-child(7n) { border-right: 0; }
+  .day .n { font: 500 13px/22px var(--font-ui); color: var(--text-secondary); font-variant-numeric: tabular-nums; width: 24px; height: 24px; text-align: center; border-radius: 50%; margin-bottom: 2px; }
+  .day.out { background: color-mix(in srgb, var(--bg-sunken) 40%, transparent); }
+  .day.out .n { color: var(--text-muted); }
+  .day.today .n { background: var(--text-primary); color: var(--bg-base); font-weight: 600; }
+  .day.past .ev { opacity: 1; }
+  .ev { display: grid; grid-template-columns: 14px minmax(0, 1fr) 14px; gap: 6px; align-items: center; padding: 4px 6px; border-radius: 6px; background: var(--bg-active); font: 500 12px/16px var(--font-ui); color: var(--text-primary); text-decoration: none; }
+  .ev:hover { background: var(--bg-selected); text-decoration: none; }
+  .ev .i { width: 14px; height: 14px; color: var(--text-secondary); }
+  .ev .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ev .s { color: var(--c); }
+  .ev[data-status="available"] { --c: var(--status-available); }
+  .ev[data-status="missing"] { --c: var(--status-missing); }
+  .ev[data-status="downloading"] { --c: var(--status-downloading); }
+  .ev[data-status="upgraded"] { --c: var(--status-upgraded); }
+  .ev[data-status="unmonitored"] { --c: var(--text-muted); }
+  .ev[data-status="available"] .nm { color: var(--text-secondary); }
+  .ev.with-poster { grid-template-columns: 26px minmax(0, 1fr) 14px; padding: 4px; }
+  .ev .pp { width: 26px; aspect-ratio: 2/3; border-radius: 3px; overflow: hidden; } .ev .pp svg { width: 100%; height: 100%; }
+  .ev .sub { display: block; font: 400 11px/14px var(--font-ui); color: var(--text-muted); }
+  .agenda { display: grid; gap: var(--space-6); max-width: 960px; }
+  .wk h2 { font: var(--type-overline); letter-spacing: var(--type-overline-tracking); font-stretch: 125%; text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-2); }
+  .wk ul { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-raised); box-shadow: var(--elev-1); }
+  .wk li { display: grid; grid-template-columns: 64px 40px 1fr 180px 170px; gap: var(--space-4); align-items: center; padding: 10px 16px; }
+  .wk li + li { border-top: 1px solid var(--border); }
+  .wk .date { font: 600 14px/18px var(--font-ui); font-variant-numeric: tabular-nums; } .wk .date small { display: block; font: var(--type-caption); color: var(--text-muted); }
+  .wk .pp { aspect-ratio: 2/3; border-radius: 5px; overflow: hidden; box-shadow: var(--elev-1); } .wk .pp svg { width: 100%; height: 100%; }
+  .wk b { font: 500 14px/18px var(--font-ui); display: block; } .wk .note { font: var(--type-caption); color: var(--text-muted); }
+  .wk .type { display: flex; align-items: center; gap: 8px; font: var(--type-body-sm); color: var(--text-secondary); }
+  .wk .type .i { width: 16px; height: 16px; }
+  .wk li.today { background: var(--bg-selected); }
+  [data-view="agenda"] .only-month, [data-view="month"] .only-agenda { display: none !important; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app" id="app" data-view="month">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar="calendar"></nav>
+  <div class="main">
+    <header class="topbar">
+      <label class="input search" aria-label="Search"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" placeholder="Search films, people, releases…" aria-label="Search films, people, releases"><span class="kbd" aria-hidden="true">⌘K</span></label>
+      <div class="spacer"></div>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    </header>
+    <main id="main" class="page">
+      <div class="head">
+        <h1>November 2026</h1>
+        <div class="row"><button class="icon-btn outlined" type="button" aria-label="Previous month"><svg class="i" aria-hidden="true"><use href="#i-chevron-left"/></svg></button><button class="btn btn-secondary btn-sm" type="button">Today</button><button class="icon-btn outlined" type="button" aria-label="Next month"><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></div>
+        <div class="spacer"></div>
+        <div class="segmented" role="radiogroup" aria-label="View"><a role="radio" id="vm" href="?view=month" aria-checked="true" style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:7px;font:500 13px/1 var(--font-ui);text-decoration:none">Month</a><a role="radio" id="va" href="?view=agenda" aria-checked="false" style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:7px;font:500 13px/1 var(--font-ui);text-decoration:none">Agenda</a></div>
+        <button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-calendar"/></svg>iCal feed</button>
+      </div>
+      <div class="legend" role="group" aria-label="Release types">
+        <button class="chip" aria-pressed="true" type="button"><svg class="i" aria-hidden="true"><use href="#i-ticket"/></svg>In cinemas</button>
+        <button class="chip" aria-pressed="true" type="button"><svg class="i" aria-hidden="true"><use href="#i-monitor-play"/></svg>Digital</button>
+        <button class="chip" aria-pressed="true" type="button"><svg class="i" aria-hidden="true"><use href="#i-disc-3"/></svg>Physical</button>
+        <button class="chip" aria-pressed="true" type="button"><svg class="i" aria-hidden="true"><use href="#i-eye-off"/></svg>Announced &amp; unmonitored</button>
+        <span class="t-caption">Status icon: <span class="status" data-status="available" style="font-size:12px"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>on disk</span> · <span class="status" data-status="missing" style="font-size:12px"><svg class="i" aria-hidden="true"><use href="#i-circle-dashed"/></svg>wanted</span> · <span class="status" data-status="downloading" style="font-size:12px"><svg class="i" aria-hidden="true"><use href="#i-arrow-down-to-line"/></svg>downloading</span> · <span class="status" data-status="upgraded" style="font-size:12px"><svg class="i" aria-hidden="true"><use href="#i-circle-arrow-up"/></svg>upgrade due</span></span>
+      </div>
+      <div class="only-month month" role="region" aria-label="November 2026" id="month"></div>
+      <div class="only-agenda agenda" id="agenda"></div>
+    </main>
+  </div>
+</div>
+<script src="../system/icons.js"></script>
+<script src="../system/posters.js"></script>
+<script src="../system/mock.js"></script>
+<script>
+  const view = new URLSearchParams(location.search).get('view') === 'agenda' ? 'agenda' : 'month';
+  document.getElementById('app').dataset.view = view;
+  document.getElementById('vm').setAttribute('aria-checked', view === 'month'); document.getElementById('va').setAttribute('aria-checked', view === 'agenda');
+  const ic = GN.ic;
+  const TYPE = { c: ['ticket', 'In cinemas'], d: ['monitor-play', 'Digital'], p: ['disc-3', 'Physical'] };
+  const SI = { available: ['circle-check', 'on disk'], missing: ['circle-dashed', 'wanted'], downloading: ['arrow-down-to-line', 'downloading'], upgraded: ['circle-arrow-up', 'upgrade due'], unmonitored: ['eye-off', 'announced'] };
+  // [y, m, d, film, type, status, note]
+  const E = [
+    [10, 30, 'velvet-static', 'c', 'missing', 'Gonema waits for the digital release'],
+    [11, 3, 'orbit-small-things', 'p', 'available', 'Already have 2160p WEB-DL'],
+    [11, 5, 'neon-orchard', 'd', 'downloading', 'Out today · grabbed 2 h ago'],
+    [11, 5, 'paper-lanterns-kessel', 'c', 'unmonitored', 'Re-release'],
+    [11, 7, 'quiet-hours', 'd', 'missing', 'Will search on release day'],
+    [11, 12, 'paper-lanterns-kessel', 'p', 'upgraded', 'Blu-ray may upgrade your WEB-DL'],
+    [11, 14, 'low-tide-high-noon', 'p', 'missing', 'Will search on release day'],
+    [11, 20, 'iron-meadow', 'c', 'unmonitored', 'Monitored from digital release'],
+    [11, 20, 'ghost-frequency', 'd', 'available', 'Already have it'],
+    [11, 24, 'marrow', 'd', 'missing', 'Will search on release day'],
+    [11, 27, 'small-hours-cairo', 'c', 'unmonitored', 'Announced'],
+    [12, 4, 'second-sunrise', 'c', 'unmonitored', 'Announced'],
+  ];
+  const ev = (e, rich) => { const [m, d, f, t, s, note] = e; const T = TYPE[t]; return '<a class="ev' + (rich ? ' with-poster' : '') + '" href="movie-detail.html" data-status="' + s + '" aria-label="' + GN.films[f].title + ', ' + T[1] + ', ' + SI[s][1] + '">' + (rich ? '<span class="pp poster-art" data-film="' + f + '"></span>' : ic(T[0])) + '<span class="nm">' + GN.films[f].title + (rich ? '<span class="sub">' + T[1] + '</span>' : '') + '</span><span class="s">' + ic(SI[s][0]) + '</span></a>'; };
+  let html = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => '<div class="dow" aria-hidden="true">' + d + '</div>').join('');
+  // Grid starts Mon 26 Oct 2026
+  for (let i = 0; i < 42; i++) {
+    const date = new Date(2026, 9, 26 + i); const m = date.getMonth() + 1, d = date.getDate();
+    const out = m !== 11, today = m === 11 && d === 5, past = m === 10 || (m === 11 && d < 5);
+    const evs = E.filter(e => e[0] === m && e[1] === d);
+    html += '<div class="day' + (out ? ' out' : '') + (today ? ' today' : '') + '" aria-label="' + d + (m === 11 ? ' November' : m === 10 ? ' October' : ' December') + (evs.length ? ', ' + evs.length + ' release' + (evs.length > 1 ? 's' : '') : '') + '" role="group"' + (today ? ' aria-current="date"' : '') + '><span class="n">' + d + '</span>' + evs.map(e => ev(e, evs.length === 1 && !out)).join('') + '</div>';
+  }
+  document.getElementById('month').innerHTML = html;
+  const weeks = [['This week · 2–8 Nov', E.filter(e => e[0] === 11 && e[1] >= 2 && e[1] <= 8)], ['Next week · 9–15 Nov', E.filter(e => e[0] === 11 && e[1] >= 9 && e[1] <= 15)], ['16–22 Nov', E.filter(e => e[0] === 11 && e[1] >= 16 && e[1] <= 22)], ['23–29 Nov', E.filter(e => e[0] === 11 && e[1] >= 23)]];
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  document.getElementById('agenda').innerHTML = weeks.map(([h, es]) => '<section class="wk" aria-label="' + h + '"><h2>' + h + '</h2><ul>' + es.map(([m, d, f, t, s, note]) => { const T = TYPE[t]; const st = s === 'unmonitored' ? '<span class="status" data-status="unmonitored">' + ic('eye-off') + 'Announced</span>' : '<span class="status" data-status="' + s + '">' + ic(SI[s][0]) + SI[s][1][0].toUpperCase() + SI[s][1].slice(1) + '</span>'; return '<li' + (m === 11 && d === 5 ? ' class="today"' : '') + '><span class="date">' + d + ' Nov<small>' + (m === 11 && d === 5 ? 'Today' : days[new Date(2026, m - 1, d).getDay()]) + '</small></span><span class="pp poster-art" data-film="' + f + '"></span><span><b>' + GN.films[f].title + '</b><span class="note">' + note + '</span></span><span class="type">' + ic(T[0]) + T[1] + '</span>' + st + '</li>'; }).join('') + '</ul></section>').join('');
+  GN.renderPosters();
+</script>
+</body>
+</html>

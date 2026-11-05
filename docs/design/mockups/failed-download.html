@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Failed download · Ninefold · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  .page { padding-top: var(--space-8); }
+  .fd { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: var(--space-8); }
+  .hero { display: grid; grid-template-columns: 200px 1fr; gap: var(--space-6); align-items: center; margin-bottom: var(--space-8); }
+  .hero img { width: 200px; height: auto; }
+  .hero h1 { font: var(--type-display-lg); letter-spacing: var(--type-display-lg-tracking); font-stretch: 125%; }
+  .hero p { color: var(--text-secondary); font: var(--type-body-lg); margin-top: 8px; max-width: 56ch; }
+  .hero .row { margin-top: var(--space-4); }
+  .sec-h { font: var(--type-title-lg); margin-bottom: var(--space-3); }
+  .attempts { list-style: none; margin: 0 0 var(--space-8); padding: 0; display: grid; gap: 8px; }
+  .att { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto auto; gap: var(--space-4); align-items: center; padding: 12px 14px; border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--bg-raised); }
+  .att .n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 600 12px/1 var(--font-ui); background: var(--bg-active); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .att.x { border-color: color-mix(in srgb, var(--status-failed) 35%, transparent); } .att.x .n { background: var(--status-failed-bg); color: var(--status-failed); }
+  .att.now { border-color: color-mix(in srgb, var(--status-downloading) 40%, transparent); } .att.now .n { background: var(--status-downloading-bg); color: var(--status-downloading); }
+  .att .rel { font: var(--type-mono-sm); color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .att .sub { font: var(--type-caption); color: var(--text-muted); margin-top: 3px; }
+  .att.later .rel { color: var(--text-secondary); }
+  .log { font: 400 12px/19px var(--font-mono); color: var(--text-secondary); background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; white-space: pre-wrap; }
+  .log .e { color: var(--status-failed); }
+  aside .panel { margin-bottom: var(--space-5); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar="queue"></nav>
+  <div class="main">
+    <header class="topbar">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="queue.html">Activity</a><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg><a href="queue.html">Queue</a><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg><span aria-current="page">Ninefold · failed download</span></nav>
+      <div class="spacer"></div>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    </header>
+    <main id="main" class="page">
+      <div class="fd">
+        <div>
+          <div class="hero">
+            <img src="../../brand/kit/mascot/kernel-failed-download.svg" alt="Kernel holding a torn strip of film">
+            <div>
+              <span class="badge lg" data-status="failed"><svg class="i" aria-hidden="true"><use href="#i-triangle-alert"/></svg>Failed · 3 Nov 17:48</span>
+              <h1 style="margin-top:12px">The print arrived damaged.</h1>
+              <p>Blocklisted it and moved on to the next release. Ninefold is downloading again (release 2 of 6). Nothing for you to do unless you want to choose yourself.</p>
+              <div class="row"><a class="btn btn-secondary" href="interactive-search.html"><svg class="i" aria-hidden="true"><use href="#i-scan-search"/></svg>Choose another release</a><button class="btn btn-ghost" type="button">Stop retrying</button></div>
+            </div>
+          </div>
+
+          <h2 class="sec-h">Releases tried, in order</h2>
+          <ol class="attempts">
+            <li class="att x"><span class="n">1</span><div style="min-width:0"><div class="rel">Ninefold.2020.1080p.WEB-DL.DDP5.1.H.264-ZEPHYR</div><div class="sub">Usenet · Nebula NZB · 6.4 GB · blocklisted: archive is password-protected</div></div><span class="score pos">+30</span><span class="status" data-status="failed"><svg class="i" aria-hidden="true"><use href="#i-circle-x"/></svg>Failed</span></li>
+            <li class="att now"><span class="n">2</span><div style="min-width:0"><div class="rel">Ninefold.2020.1080p.WEB-DL.DDP5.1.H.264-LUMEN</div><div class="sub">Usenet · AltReel · 6.2 GB · 8% · 12.0 MB/s</div></div><span class="score pos">+25</span><span class="status" data-status="downloading"><svg class="i" aria-hidden="true"><use href="#i-arrow-down-to-line"/></svg>Now</span></li>
+            <li class="att later"><span class="n">3</span><div style="min-width:0"><div class="rel">Ninefold.2020.1080p.BluRay.x264-MARQUEE</div><div class="sub">Torrent · Sprocket Tracker · 9.1 GB · ▲ 48</div></div><span class="score pos">+20</span><span class="t-caption t-muted">Next</span></li>
+            <li class="att later"><span class="n">4</span><div style="min-width:0"><div class="rel">Ninefold.2020.1080p.AMZN.WEB-DL.DDP2.0.H.264-NIMBUS</div><div class="sub">Usenet · Nebula NZB · 5.1 GB</div></div><span class="score pos">+10</span><span class="t-caption t-muted">+2 more</span></li>
+          </ol>
+
+          <h2 class="sec-h">What the client said</h2>
+<div class="log" role="log" aria-label="SABnzbd messages">17:46:12  SABnzbd  Download finished: Ninefold.2020.1080p.WEB-DL…-ZEPHYR (6.4 GB)
+17:46:15  SABnzbd  Verifying… OK (112/112 articles)
+<span class="e">17:47:51  SABnzbd  Unpacking failed: archive is encrypted, password required</span>
+17:48:02  Gonema   Blocklisted release (reason: encrypted archive), removed it from SABnzbd
+17:48:03  Gonema   Grabbed next best: …-LUMEN (score +25)</div>
+        </div>
+
+        <aside aria-label="Details">
+          <section class="panel" aria-labelledby="f-h">
+            <div class="panel-hd"><h2 id="f-h">Film</h2><a class="btn btn-ghost btn-sm" href="movie-detail.html">Open</a></div>
+            <div class="panel-bd"><dl class="dl">
+              <dt>Title</dt><dd>Ninefold (2020)</dd>
+              <dt>Profile</dt><dd>Cinema HD</dd>
+              <dt>Wanted</dt><dd>WEBDL-1080p or better</dd>
+              <dt>Cutoff</dt><dd>Bluray-1080p</dd>
+            </dl></div>
+          </section>
+          <section class="panel" aria-labelledby="b-h">
+            <div class="panel-hd"><h2 id="b-h">Blocklist entry</h2></div>
+            <div class="panel-bd"><dl class="dl">
+              <dt>Scope</dt><dd>This release only</dd>
+              <dt>Reason</dt><dd>Encrypted archive</dd>
+              <dt>Added</dt><dd>3 Nov · 17:48</dd>
+            </dl>
+            <div class="row" style="margin-top:14px"><button class="btn btn-secondary btn-sm" type="button">Block the whole group</button><button class="btn btn-ghost btn-sm" type="button">Remove from blocklist…</button></div></div>
+          </section>
+          <div class="notice" data-tone="info"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><div class="grow"><div class="ntitle">Why the next one?</div><div class="nbody">Releases are tried best first: quality in your profile, then score, then protocol priority and size. Gonema stops after 6 attempts and tells you.</div></div></div>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="../system/icons.js"></script>
+</body>
+</html>

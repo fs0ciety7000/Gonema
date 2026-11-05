@@ -163,6 +163,10 @@
   --skeleton-shine: rgba(255, 255, 255, 0.55);
 }
 
+/* On highlighted surfaces (active, selected, current) muted text steps up to secondary,
+   so metadata keeps 4.5:1 on bg-active / bg-selected. */
+[aria-current="page"], [aria-current="step"], [aria-selected="true"], [aria-current="true"], .is-on, .ev, tr.is-context, .chip.is-on { --text-muted: var(--text-secondary); }
+
 /* Derived from theme values. Declared on every theme scope so nested
    [data-theme] containers (e.g. the system sheet) resolve their own colours. */
 :root,
@@ -220,7 +224,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 a { color: var(--accent); text-decoration: none; text-underline-offset: 3px; }
 a:hover { text-decoration: underline; }
-p a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); }
+p a, .t-caption a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); }
 ::selection { background: color-mix(in srgb, var(--accent) 34%, transparent); }
 h1, h2, h3, h4, p { margin: 0; }
 
@@ -402,9 +406,10 @@ h1, h2, h3, h4, p { margin: 0; }
 .segmented { display: inline-flex; padding: 3px; gap: 2px; border-radius: var(--radius-md); background: var(--bg-sunken); border: 1px solid var(--border); }
 .segmented button { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 var(--space-3); border: 0; border-radius: 7px; background: transparent; color: var(--text-secondary); font: 500 13px/1 var(--font-ui); transition: background-color var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast); }
 .segmented button .i { width: 16px; height: 16px; }
-.segmented button:hover { color: var(--text-primary); }
-.segmented button[aria-checked="true"], .segmented button[aria-pressed="true"], .segmented button[aria-selected="true"] { background: var(--bg-raised); color: var(--text-primary); box-shadow: var(--elev-1), inset 0 0 0 1px var(--border); }
-[data-theme="light"] .segmented button[aria-checked="true"], [data-theme="light"] .segmented button[aria-pressed="true"] { background: #FFFFFF; }
+.segmented button:hover, .segmented a:hover { color: var(--text-primary); text-decoration: none; }
+.segmented a { color: var(--text-secondary); }
+.segmented [aria-checked="true"], .segmented [aria-pressed="true"], .segmented [aria-selected="true"] { background: var(--bg-raised); color: var(--text-primary); box-shadow: var(--elev-1), inset 0 0 0 1px var(--border); }
+[data-theme="light"] .segmented [aria-checked="true"], [data-theme="light"] .segmented [aria-pressed="true"] { background: #FFFFFF; }
 .segmented.icon-only button { padding: 0 8px; }
 .segmented button:disabled { color: var(--text-disabled); cursor: not-allowed; }
 
@@ -625,7 +630,7 @@ button.score:hover { box-shadow: inset 0 0 0 1px currentColor; }
 /* 3.20 Empty state ----------------------------------------------------------------------- */
 .empty { display: grid; justify-items: center; text-align: center; gap: var(--space-3); padding: var(--space-10) var(--space-6); border-radius: var(--radius-xl); border: 1px dashed var(--border-strong); background: radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 60%); }
 .empty img, .empty .mascot { width: auto; height: 132px; margin-bottom: var(--space-2); }
-.empty h3 { font: var(--type-display-md); letter-spacing: var(--type-display-md-tracking); font-stretch: 125%; font-size: 22px; line-height: 28px; }
+.empty :is(h2, h3) { font: var(--type-display-md); letter-spacing: var(--type-display-md-tracking); font-stretch: 125%; font-size: 22px; line-height: 28px; }
 .empty p { max-width: 42ch; color: var(--text-secondary); }
 .empty .actions { display: flex; gap: var(--space-2); margin-top: var(--space-3); }
 

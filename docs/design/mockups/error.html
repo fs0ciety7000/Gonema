@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reconnecting · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Server unreachable: the shell stays (last known layout as skeleton), a calm card explains and retries.
+     No mascot and no joke: this message asks for action (brand voice §7). */
+  .ghost { pointer-events: none; }
+  .ghost .poster-grid .skeleton { aspect-ratio: 2/3; border-radius: var(--radius-poster); }
+  .banner { position: sticky; top: 0; z-index: var(--z-topbar); display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 var(--gutter); background: var(--status-missing-bg); border-bottom: 1px solid color-mix(in srgb, var(--status-missing) 35%, transparent); font: 500 13px/1 var(--font-ui); color: var(--text-primary); }
+  .banner .i { color: var(--status-missing); width: 16px; height: 16px; }
+  .banner .t-muted { font-weight: 400; }
+  .overlay { position: fixed; inset: 0; z-index: var(--z-scrim); display: grid; place-items: center; background: color-mix(in srgb, var(--bg-base) 55%, transparent); backdrop-filter: blur(2px); }
+  .card { width: 520px; max-width: calc(100vw - 32px); padding: var(--space-8); border-radius: var(--radius-xl); display: grid; gap: var(--space-4); }
+  .card .ic { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; background: var(--status-missing-bg); color: var(--status-missing); }
+  .card h1 { font: var(--type-display-md); letter-spacing: var(--type-display-md-tracking); font-stretch: 125%; }
+  .card p { color: var(--text-secondary); }
+  .retry { display: grid; gap: 8px; }
+  .retry .row { justify-content: space-between; font: var(--type-body-sm); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .checks { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; font: var(--type-body-sm); color: var(--text-secondary); border-top: 1px solid var(--border); padding-top: var(--space-4); }
+  .checks li { display: grid; grid-template-columns: 20px 1fr; gap: 8px; }
+  .checks .i { width: 16px; height: 16px; margin-top: 2px; color: var(--text-muted); }
+  .checks code { font: var(--type-mono-sm); color: var(--text-primary); }
+</style>
+</head>
+<body>
+<div class="ghost" aria-hidden="true" inert>
+  <div class="app">
+    <nav class="sidebar" data-shell-sidebar="films"></nav>
+    <div class="main">
+      <div class="banner"><svg class="i"><use href="#i-cloud-off"/></svg>Offline · showing the last known layout</div>
+      <div class="page"><div class="page-head"><div><h1>Films</h1><div class="skeleton sk-line" style="width:220px;margin-top:10px"></div></div></div>
+        <div class="poster-grid" id="g"></div></div>
+    </div>
+  </div>
+</div>
+<main class="overlay" id="main">
+  <section class="card glass-3" role="alert" aria-labelledby="eh">
+    <span class="ic"><svg class="i i-lg" aria-hidden="true"><use href="#i-cloud-off"/></svg></span>
+    <h1 id="eh">Can’t reach Gonema</h1>
+    <p>The server at <span class="t-mono-sm" style="color:var(--text-primary)">http://nas.local:7878</span> stopped answering at 21:42. Your downloads keep running in their clients; nothing is lost.</p>
+    <div class="retry" role="status" aria-live="polite">
+      <div class="row"><span>Reconnecting… attempt 3</span><span>next try in 4 s</span></div>
+      <div class="progress" style="--p:.6;--c:var(--text-secondary);height:4px"><div class="fill"></div></div>
+    </div>
+    <div class="row"><button class="btn btn-primary" type="button"><svg class="i" aria-hidden="true"><use href="#i-refresh-cw"/></svg>Retry now</button><a class="btn btn-ghost" href="#">Troubleshooting guide</a></div>
+    <ul class="checks">
+      <li><svg class="i" aria-hidden="true"><use href="#i-server"/></svg><span>Is the container running? <code>docker ps --filter name=gonema</code></span></li>
+      <li><svg class="i" aria-hidden="true"><use href="#i-file-video"/></svg><span>The last lines of <code>/config/logs/gonema.log</code> usually say why it stopped.</span></li>
+      <li><svg class="i" aria-hidden="true"><use href="#i-globe"/></svg><span>Behind a reverse proxy? Check it still forwards to port 7878.</span></li>
+    </ul>
+  </section>
+</main>
+<script src="../system/icons.js"></script>
+<script>document.getElementById('g').innerHTML = Array.from({ length: 12 }, (_, i) => '<div><div class="skeleton" style="--shimmer-delay:' + i * 60 + 'ms"></div><div class="skeleton sk-line" style="width:70%;margin-top:10px"></div></div>').join('');</script>
+</body>
+</html>

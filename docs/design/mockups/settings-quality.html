@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings · Quality · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: settings. ?section=quality (default) | index */
+  .page { padding-top: var(--space-6); max-width: none; }
+  .set { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: var(--space-8); }
+  .snav { position: sticky; top: calc(var(--topbar-h) + 24px); align-self: start; display: grid; gap: 2px; }
+  .snav h2 { font: var(--type-overline); letter-spacing: var(--type-overline-tracking); font-stretch: 125%; text-transform: uppercase; color: var(--text-muted); padding: 0 10px 6px; margin-top: var(--space-4); }
+  .snav h2:first-child { margin-top: 0; }
+  .snav a { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: var(--radius-sm); color: var(--text-secondary); font: 500 13.5px/1 var(--font-ui); }
+  .snav a:hover { background: var(--bg-hover); color: var(--text-primary); text-decoration: none; }
+  .snav a[aria-current="page"] { background: var(--bg-active); color: var(--text-primary); }
+  .snav a .i { width: 16px; height: 16px; color: var(--text-muted); }
+  .shead { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-5); }
+  .shead h1 { font: var(--type-display-md); letter-spacing: var(--type-display-md-tracking); font-stretch: 125%; }
+  .shead p { color: var(--text-secondary); margin-top: 6px; max-width: 70ch; }
+  .qgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: var(--space-5); align-items: start; }
+  .profile-tabs { display: flex; gap: 6px; margin-bottom: var(--space-4); flex-wrap: wrap; }
+
+  .ql { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .qr { display: grid; grid-template-columns: 20px 22px minmax(0, 1fr) auto; gap: 10px; align-items: center; height: 40px; padding: 0 10px 0 6px; border-radius: var(--radius-md); background: var(--bg-sunken); border: 1px solid var(--border); font: var(--type-body-sm); }
+  .qr .qbadge { justify-self: start; }
+  .qr .grip { color: var(--text-muted); cursor: grab; display: grid; place-items: center; }
+  .qr .grip svg { width: 14px; height: 14px; fill: currentColor; }
+  .qr .sz { font: var(--type-mono-sm); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .qr.off { background: transparent; }
+  .qr.off .qbadge { border-style: dashed; }
+  .qr.drag { background: var(--bg-raised); border-color: var(--accent); box-shadow: var(--elev-4); transform: translateX(6px) rotate(-.4deg); position: relative; z-index: 2; }
+  .qr.drop { height: 6px; padding: 0; background: transparent; border: 0; border-top: 2px solid var(--accent); border-radius: 0; }
+  .qgroup { border: 1px solid var(--border-strong); border-radius: var(--radius-md); padding: 4px; display: grid; gap: 4px; }
+  .qgroup .gh { display: flex; align-items: center; gap: 8px; padding: 4px 8px 2px; font: 500 12px/16px var(--font-ui); color: var(--text-secondary); }
+  .qgroup .gh .t-muted { font-weight: 400; }
+  .qgroup .qr { background: color-mix(in srgb, var(--bg-sunken) 60%, transparent); }
+  .marker { display: flex; align-items: center; gap: 8px; margin: 4px 0; font: 600 11px/1 var(--font-ui); letter-spacing: .04em; text-transform: uppercase; }
+  .marker::before, .marker::after { content: ""; height: 1px; flex: 1; background: currentColor; opacity: .5; }
+  .marker.cut { color: var(--accent); }
+  .marker.floor { color: var(--text-muted); }
+  .marker span { display: inline-flex; align-items: center; gap: 6px; }
+  .marker .i { width: 14px; height: 14px; }
+  .scores3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+  .plain { padding: 12px 14px; border-radius: var(--radius-md); background: var(--bg-selected); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); font: var(--type-body-sm); color: var(--text-secondary); }
+  .plain b { color: var(--text-primary); font-weight: 500; }
+
+  .rules { list-style: none; margin: 0; padding: 0; display: grid; }
+  .rules > li { display: grid; grid-template-columns: 1fr auto auto; gap: var(--space-3); align-items: center; padding: 8px 0; }
+  .rules > li + li { border-top: 1px solid var(--border); }
+  .rules .nm { font: 500 14px/18px var(--font-ui); }
+  .rules .nm small { display: block; font: var(--type-caption); color: var(--text-muted); font-weight: 400; }
+  .rules .num { width: 84px; height: 30px; }
+  .rules .num input { text-align: right; font: 600 13px/1 var(--font-mono); }
+  .rules > li.open { display: block; padding: 0; margin: 6px 0; }
+  .editor { border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: var(--radius-lg); background: var(--bg-sunken); padding: var(--space-4); display: grid; gap: var(--space-3); }
+  .editor .eh { display: flex; align-items: center; gap: var(--space-3); }
+  .cond { display: grid; grid-template-columns: 140px minmax(0, 1fr) 28px; gap: 8px; align-items: center; }
+  .cond .flags { grid-column: 2; display: flex; gap: 16px; }
+  .idx .panel-hd h2 { white-space: nowrap; }
+  .cond .input { height: 32px; background: var(--bg-raised); }
+  .cond .switch { font: 500 12px/1 var(--font-ui); color: var(--text-secondary); gap: 6px; }
+  .cond .switch .track { width: 30px; height: 18px; } .cond .switch .track::after { width: 12px; height: 12px; }
+  .cond .switch[aria-checked="true"] .track::after { transform: translateX(12px); }
+  .valchips { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+  .per-profile { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .per-profile .field-label { font-size: 12px; }
+
+  .tester { display: grid; gap: var(--space-3); }
+  .parsed { display: flex; flex-wrap: wrap; gap: 5px; }
+  .parsed .tag { font-family: var(--font-mono); font-size: 11.5px; }
+  .parsed .tag b { color: var(--text-muted); font-weight: 400; margin-right: 4px; }
+  .bd { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font: var(--type-body-sm); }
+  .bd li { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+  .bd li b { font: 600 12.5px/1 var(--font-mono); }
+  .bd .pos { color: var(--status-available); } .bd .neg { color: var(--status-failed); } .bd .zero { color: var(--text-muted); }
+  .bd .total { border-top: 1px solid var(--border); padding-top: 6px; font-weight: 600; }
+  .verdict { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: var(--radius-md); background: var(--status-available-bg); color: var(--text-primary); font: var(--type-body-sm); }
+  .verdict .i { color: var(--status-available); width: 16px; height: 16px; margin-top: 1px; }
+
+  /* Index */
+  .idx { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+  .idx .span2 { grid-column: span 2; }
+  .idx .panel-bd { display: grid; gap: 10px; }
+  .mini-rows { list-style: none; margin: 0; padding: 0; display: grid; }
+  .mini-rows li { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 7px 0; font: var(--type-body-sm); }
+  .mini-rows li + li { border-top: 1px solid var(--border); }
+  .mini-rows small { display: block; font: var(--type-caption); color: var(--text-muted); }
+  .matrix { width: 100%; border-collapse: collapse; font: var(--type-body-sm); }
+  .matrix th, .matrix td { padding: 6px 4px; text-align: center; border-bottom: 1px solid var(--border); }
+  .matrix th { font: 500 12px/1 var(--font-ui); color: var(--text-muted); }
+  .matrix td:first-child, .matrix th:first-child { text-align: left; }
+  .matrix .i { width: 16px; height: 16px; color: var(--status-available); }
+  .matrix .off { color: var(--text-muted); }
+  .tmpl { display: grid; gap: 8px; }
+  .tmpl .preview { font: var(--type-mono-sm); color: var(--text-primary); padding: 10px 12px; border-radius: var(--radius-md); background: var(--bg-sunken); border: 1px dashed var(--border-strong); word-break: break-all; }
+  .tmpl .preview span { color: var(--text-muted); }
+  .tok { display: inline-flex; padding: 0 4px; border-radius: 4px; background: var(--bg-selected); color: var(--text-primary); }
+  .logs { font: 400 11.5px/18px var(--font-mono); color: var(--text-secondary); background: var(--bg-sunken); border-radius: var(--radius-md); padding: 8px 10px; border: 1px solid var(--border); white-space: pre; overflow: hidden; }
+  .logs .w { color: var(--status-missing); }
+  [data-section="index"] .only-quality, [data-section="quality"] .only-index { display: none !important; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app" id="app" data-section="quality">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar="settings"></nav>
+  <div class="main">
+    <header class="topbar">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="?section=index">Settings</a><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg><span aria-current="page" id="crumb">Quality</span></nav>
+      <div class="spacer"></div>
+      <label class="input search" aria-label="Search settings" style="width:260px"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" placeholder="Find a setting…" aria-label="Find a setting"></label>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    </header>
+    <main id="main" class="page">
+      <div class="set">
+        <nav class="snav" aria-label="Settings sections" id="snav"></nav>
+        <div>
+          <!-- QUALITY -->
+          <div class="only-quality">
+            <div class="shead"><div><h1>Quality profiles &amp; scoring</h1><p>A profile says which copies are acceptable and when to stop upgrading. Scoring rules add or remove points for what you care about.</p></div><span class="saved t-caption t-muted"><svg class="i i-xs" aria-hidden="true" style="display:inline"><use href="#i-check"/></svg> Saved · applies to 312 films</span></div>
+            <div class="profile-tabs" role="group" aria-label="Profiles">
+              <button class="chip" aria-pressed="false" type="button">Space saver <span class="k">96</span></button>
+              <button class="chip" aria-pressed="false" type="button">Cinema HD <span class="k">876</span></button>
+              <button class="chip is-on" aria-pressed="true" type="button">Cinema UHD <span class="k">312</span></button>
+              <button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>New profile</button>
+            </div>
+            <div class="qgrid">
+              <section class="panel" aria-labelledby="ph">
+                <div class="panel-hd"><h2 id="ph">Cinema UHD</h2><button class="switch" role="switch" aria-checked="true" type="button"><span class="track" aria-hidden="true"></span>Upgrades</button></div>
+                <div class="panel-bd" style="display:grid;gap:var(--space-4)">
+                  <div>
+                    <div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="field-label">Allowed qualities <span class="t-muted" style="font-weight:400">best first · drag to reorder</span></span><button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-layers"/></svg>Group</button></div>
+                    <ul class="ql" aria-label="Qualities, best first">
+                      <li class="qr"><span class="grip"><svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="5" cy="3" r="1.2"/><circle cx="9" cy="3" r="1.2"/><circle cx="5" cy="7" r="1.2"/><circle cx="9" cy="7" r="1.2"/><circle cx="5" cy="11" r="1.2"/><circle cx="9" cy="11" r="1.2"/></svg></span><label class="check"><input type="checkbox" checked aria-label="Allow Remux-2160p"></label><span class="qbadge uhd"><b>2160p</b><span>Remux</span></span><span class="sz">20–90 GB</span></li>
+                      <li class="marker cut"><span><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>Cutoff · stop upgrading here</span></li>
+                      <li class="qr drag"><span class="grip"><svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="5" cy="3" r="1.2"/><circle cx="9" cy="3" r="1.2"/><circle cx="5" cy="7" r="1.2"/><circle cx="9" cy="7" r="1.2"/><circle cx="5" cy="11" r="1.2"/><circle cx="9" cy="11" r="1.2"/></svg></span><label class="check"><input type="checkbox" checked aria-label="Allow Bluray-2160p"></label><span class="qbadge uhd"><b>2160p</b><span>Bluray</span></span><span class="sz">15–60 GB</span></li>
+                      <li class="qr drop" aria-hidden="true"></li>
+                      <li class="qgroup"><div class="gh"><svg class="i i-xs" aria-hidden="true"><use href="#i-layers"/></svg>WEB 2160p <span class="t-muted">· equal, best score wins</span></div>
+                        <div class="qr"><span class="grip"><svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="5" cy="3" r="1.2"/><circle cx="9" cy="3" r="1.2"/><circle cx="5" cy="7" r="1.2"/><circle cx="9" cy="7" r="1.2"/><circle cx="5" cy="11" r="1.2"/><circle cx="9" cy="11" r="1.2"/></svg></span><label class="check"><input type="checkbox" checked aria-label="Allow WEBDL-2160p"></label><span class="qbadge uhd"><b>2160p</b><span>WEB-DL</span></span><span class="sz">8–40 GB</span></div>
+                        <div class="qr"><span class="grip"><svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="5" cy="3" r="1.2"/><circle cx="9" cy="3" r="1.2"/><circle cx="5" cy="7" r="1.2"/><circle cx="9" cy="7" r="1.2"/><circle cx="5" cy="11" r="1.2"/><circle cx="9" cy="11" r="1.2"/></svg></span><label class="check"><input type="checkbox" checked aria-label="Allow WEBRip-2160p"></label><span class="qbadge uhd"><b>2160p</b><span>WEBRip</span></span><span class="sz">8–35 GB</span></div>
+                      </li>
+                      <li class="qr"><span class="grip"><svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="5" cy="3" r="1.2"/><circle cx="9" cy="3" r="1.2"/><circle cx="5" cy="7" r="1.2"/><circle cx="9" cy="7" r="1.2"/><circle cx="5" cy="11" r="1.2"/><circle cx="9" cy="11" r="1.2"/></svg></span><label class="check"><input type="checkbox" checked aria-label="Allow Remux-1080p"></label><span class="qbadge"><b>1080p</b><span>Remux</span></span><span class="sz">15–45 GB</span></li>
+                      <li class="qr"><span class="grip"><svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="5" cy="3" r="1.2"/><circle cx="9" cy="3" r="1.2"/><circle cx="5" cy="7" r="1.2"/><circle cx="9" cy="7" r="1.2"/><circle cx="5" cy="11" r="1.2"/><circle cx="9" cy="11" r="1.2"/></svg></span><label class="check"><input type="checkbox" checked aria-label="Allow Bluray-1080p"></label><span class="qbadge"><b>1080p</b><span>Bluray</span></span><span class="sz">6–25 GB</span></li>
+                      <li class="qr"><span class="grip"><svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="5" cy="3" r="1.2"/><circle cx="9" cy="3" r="1.2"/><circle cx="5" cy="7" r="1.2"/><circle cx="9" cy="7" r="1.2"/><circle cx="5" cy="11" r="1.2"/><circle cx="9" cy="11" r="1.2"/></svg></span><label class="check"><input type="checkbox" checked aria-label="Allow WEBDL-1080p"></label><span class="qbadge"><b>1080p</b><span>WEB-DL</span></span><span class="sz">3–15 GB</span></li>
+                      <li class="marker floor"><span><svg class="i" aria-hidden="true"><use href="#i-minus"/></svg>Floor · nothing below is grabbed</span></li>
+                      <li class="qr off"><span class="grip"><svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="5" cy="3" r="1.2"/><circle cx="9" cy="3" r="1.2"/><circle cx="5" cy="7" r="1.2"/><circle cx="9" cy="7" r="1.2"/><circle cx="5" cy="11" r="1.2"/><circle cx="9" cy="11" r="1.2"/></svg></span><label class="check"><input type="checkbox" aria-label="Allow HDTV-1080p"></label><span class="qbadge"><b>1080p</b><span>HDTV</span></span><span class="sz">—</span></li>
+                      <li class="qr off"><span class="grip"><svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="5" cy="3" r="1.2"/><circle cx="9" cy="3" r="1.2"/><circle cx="5" cy="7" r="1.2"/><circle cx="9" cy="7" r="1.2"/><circle cx="5" cy="11" r="1.2"/><circle cx="9" cy="11" r="1.2"/></svg></span><label class="check"><input type="checkbox" aria-label="Allow Bluray-720p"></label><span class="qbadge"><b>720p</b><span>Bluray</span></span><span class="sz">—</span></li>
+                    </ul>
+                  </div>
+                  <div class="scores3">
+                    <div class="field"><label class="field-label" for="s1">Minimum score</label><label class="input mono"><input id="s1" value="0"></label></div>
+                    <div class="field"><label class="field-label" for="s2">Cutoff score</label><label class="input mono"><input id="s2" value="120"></label></div>
+                    <div class="field"><label class="field-label" for="s3">Min. upgrade step</label><label class="input mono"><input id="s3" value="10"></label></div>
+                  </div>
+                  <p class="plain">In plain words: grab any allowed <b>1080p or 2160p</b> copy scoring <b>0 or more</b>. Keep upgrading when a copy is better by at least <b>10 points</b> or a higher quality, until the file is <b>Remux-2160p scoring 120</b>.</p>
+                </div>
+              </section>
+
+              <div style="display:grid;gap:var(--space-5)">
+                <section class="panel" aria-labelledby="rh">
+                  <div class="panel-hd"><h2 id="rh">Scoring rules <span class="t-muted t-caption" style="font-weight:400">scores for Cinema UHD</span></h2><button class="btn btn-secondary btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>New rule</button></div>
+                  <div class="panel-bd" style="padding-top:8px">
+                    <ul class="rules">
+                      <li class="open">
+                        <div class="editor" role="group" aria-labelledby="dv-h">
+                          <div class="eh"><b id="dv-h" style="font:600 14px/20px var(--font-ui)">Dolby Vision</b><span class="t-caption t-muted">matched 41 films in your library</span><button class="icon-btn sm" type="button" aria-label="Collapse rule" style="margin-left:auto"><svg class="i i-sm" aria-hidden="true"><use href="#i-chevron-up"/></svg></button></div>
+                          <div class="cond"><button class="input select" type="button" aria-label="Condition kind: HDR format"><span class="value">HDR format</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button><div class="input valchips"><span class="tag plain">DV</span><span class="tag plain">DV HDR10</span><span class="tag plain">DV HDR10+</span></div><button class="icon-btn sm" type="button" aria-label="Remove condition"><svg class="i i-sm" aria-hidden="true"><use href="#i-x"/></svg></button><div class="flags"><button class="switch" role="switch" aria-checked="true" type="button"><span class="track" aria-hidden="true"></span>Required</button><button class="switch" role="switch" aria-checked="false" type="button"><span class="track" aria-hidden="true"></span>Not</button></div></div>
+                          <div class="cond"><button class="input select" type="button" aria-label="Condition kind: Release group"><span class="value">Release group</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button><div class="input valchips"><span class="tag plain">MiNiPiX</span></div><button class="icon-btn sm" type="button" aria-label="Remove condition"><svg class="i i-sm" aria-hidden="true"><use href="#i-x"/></svg></button><div class="flags"><button class="switch" role="switch" aria-checked="false" type="button"><span class="track" aria-hidden="true"></span>Required</button><button class="switch" role="switch" aria-checked="true" type="button"><span class="track" aria-hidden="true"></span>Not</button></div></div>
+                          <span class="t-caption t-muted">Reads as: the release <b style="color:var(--text-secondary)">is DV, DV HDR10 or DV HDR10+</b> and <b style="color:var(--text-secondary)">is not from MiNiPiX</b>.</span>
+                          <div class="per-profile">
+                            <div class="field"><label class="field-label" for="pp1">Space saver</label><label class="input mono"><input id="pp1" value="0"></label></div>
+                            <div class="field"><label class="field-label" for="pp2">Cinema HD</label><label class="input mono"><input id="pp2" value="+10"></label></div>
+                            <div class="field"><label class="field-label" for="pp3">Cinema UHD</label><label class="input mono is-focus"><input id="pp3" value="+40"></label></div>
+                          </div>
+                          <div class="row"><button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Condition</button><label class="check" style="margin-left:auto;font:var(--type-body-sm)"><input type="checkbox" checked>Use in file names</label></div>
+                        </div>
+                      </li>
+                      <li><span class="nm">Lossless Atmos<small>Audio · TrueHD Atmos, DTS:X</small></span><label class="input mono num"><input value="+30" aria-label="Score for Lossless Atmos"></label><button class="icon-btn sm" type="button" aria-label="Edit Lossless Atmos"><svg class="i i-sm" aria-hidden="true"><use href="#i-chevron-down"/></svg></button></li>
+                      <li><span class="nm">Trusted groups<small>Release group · 8 groups</small></span><label class="input mono num"><input value="+20" aria-label="Score for Trusted groups"></label><button class="icon-btn sm" type="button" aria-label="Edit Trusted groups"><svg class="i i-sm" aria-hidden="true"><use href="#i-chevron-down"/></svg></button></li>
+                      <li><span class="nm">x265 at 1080p<small>Codec + resolution, both required</small></span><label class="input mono num"><input value="−20" aria-label="Score for x265 at 1080p"></label><button class="icon-btn sm" type="button" aria-label="Edit x265 at 1080p"><svg class="i i-sm" aria-hidden="true"><use href="#i-chevron-down"/></svg></button></li>
+                      <li><span class="nm">Low-bitrate encoder<small>Release group · 3 groups</small></span><label class="input mono num" style="border-color:var(--status-failed)"><input value="−1000" aria-label="Score for Low-bitrate encoder"></label><button class="icon-btn sm" type="button" aria-label="Edit Low-bitrate encoder"><svg class="i i-sm" aria-hidden="true"><use href="#i-chevron-down"/></svg></button></li>
+                    </ul>
+                  </div>
+                </section>
+                <section class="panel" aria-labelledby="th">
+                  <div class="panel-hd"><h2 id="th"><svg class="i" aria-hidden="true"><use href="#i-wand-sparkles"/></svg>Test a release name</h2><span class="t-caption t-muted">against Cinema UHD, for Halcyon Drift</span></div>
+                  <div class="panel-bd tester">
+                    <label class="input mono"><input value="Halcyon.Drift.2024.2160p.UHD.BluRay.REMUX.DV.HDR10.TrueHD.Atmos.7.1.HEVC-BOBiNE" aria-label="Release name to test"></label>
+                    <div class="parsed"><span class="tag plain"><b>title</b>Halcyon Drift</span><span class="tag plain"><b>year</b>2024</span><span class="tag plain"><b>quality</b>Remux-2160p</span><span class="tag plain"><b>hdr</b>DV, HDR10</span><span class="tag plain"><b>audio</b>TrueHD Atmos 7.1</span><span class="tag plain"><b>codec</b>HEVC</span><span class="tag plain"><b>group</b>BOBiNE</span><span class="tag plain"><b>parsed in</b>11 µs</span></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-5)">
+                      <ul class="bd"><li><span>Dolby Vision</span><b class="pos">+40</b></li><li><span>Lossless Atmos</span><b class="pos">+30</b></li><li><span>Trusted groups</span><b class="pos">+20</b></li><li><span>Remux</span><b class="pos">+20</b></li><li><span>x265 at 1080p</span><b class="zero">0</b></li><li class="total"><span>Total</span><b class="pos">+110</b></li></ul>
+                      <div class="verdict"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg><span><b style="font-weight:600">Accepted, as an upgrade.</b> Higher than the file on disk (WEBDL-2160p, +70). Meets the cutoff quality; still 10 points below the cutoff score, so upgrades continue.</span></div>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
+
+          <!-- INDEX -->
+          <div class="only-index">
+            <div class="shead"><div><h1>Settings</h1><p>Everything that connects Gonema to the outside world. Changes save as you go; anything risky asks first.</p></div></div>
+            <div class="idx">
+              <section class="panel" aria-labelledby="i1"><div class="panel-hd"><h2 id="i1"><svg class="i" aria-hidden="true"><use href="#i-globe"/></svg>Indexers</h2><a class="btn btn-ghost btn-sm" href="#">Manage</a></div><div class="panel-bd"><ul class="mini-rows">
+                <li><span>Nebula NZB<small>Newznab · priority 1 · RSS, auto, interactive</small></span><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>OK</span><span></span></li>
+                <li><span>AltReel<small>Newznab · priority 2</small></span><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>OK</span><span></span></li>
+                <li><span>Sprocket Tracker<small>Torznab · min 3 seeders · ratio 1.0</small></span><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>OK</span><span></span></li>
+                <li><span>Cinémathèque<small>Torznab · paused until 21:30</small></span><span class="status" data-status="missing"><svg class="i" aria-hidden="true"><use href="#i-cloud-off"/></svg>No answer</span><span></span></li></ul></div></section>
+              <section class="panel" aria-labelledby="i2"><div class="panel-hd"><h2 id="i2"><svg class="i" aria-hidden="true"><use href="#i-arrow-down-to-line"/></svg>Download clients</h2><a class="btn btn-ghost btn-sm" href="#">Manage</a></div><div class="panel-bd"><ul class="mini-rows">
+                <li><span>SABnzbd<small>Usenet · category <span class="t-mono-sm">movies</span> · priority 1</small></span><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>OK</span><span></span></li>
+                <li><span>qBittorrent<small>Torrent · category <span class="t-mono-sm">movies</span> · priority 1</small></span><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>OK</span><span></span></li>
+                <li><span>Transmission<small>Torrent · priority 2 · disabled</small></span><span class="status" data-status="unmonitored"><svg class="i" aria-hidden="true"><use href="#i-eye-off"/></svg>Off</span><span></span></li></ul>
+                <span class="t-caption t-muted">Same priority: Gonema alternates. Failed downloads are removed from the client after blocklisting.</span></div></section>
+              <section class="panel" aria-labelledby="i3"><div class="panel-hd"><h2 id="i3"><svg class="i" aria-hidden="true"><use href="#i-monitor-play"/></svg>Media servers</h2><a class="btn btn-ghost btn-sm" href="#">Manage</a></div><div class="panel-bd"><ul class="mini-rows">
+                <li><span>Jellyfin<small>Refresh library on import, upgrade, rename</small></span><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>OK</span><span></span></li>
+                <li><span>Kodi (living room)<small>Clean &amp; scan on delete</small></span><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>OK</span><span></span></li></ul></div></section>
+
+              <section class="panel span2" aria-labelledby="i4"><div class="panel-hd"><h2 id="i4"><svg class="i" aria-hidden="true"><use href="#i-pencil"/></svg>Naming</h2><span class="t-caption t-muted">Live preview with a film from your library</span></div><div class="panel-bd tmpl">
+                <div class="field"><label class="field-label" for="nt">Film file</label><label class="input mono"><input id="nt" value="{Title} ({Year}) [{Quality}][{HDR}][{Audio}]-{Group}"></label><span class="field-hint">Tokens: <span class="tok">{Title}</span> <span class="tok">{Year}</span> <span class="tok">{Quality}</span> <span class="tok">{Edition}</span> <span class="tok">{HDR}</span> <span class="tok">{Audio}</span> <span class="tok">{Group}</span> <span class="tok">{TMDB}</span> <span class="tok">{Score:rules}</span></span></div>
+                <div class="preview"><span>/data/movies/</span>Halcyon Drift (2024)/Halcyon Drift (2024) [WEBDL-2160p][DV HDR10][EAC3 Atmos 5.1]-PELLiCULE.mkv</div>
+                <div class="row"><label class="check" style="font:var(--type-body-sm)"><input type="checkbox" checked>Replace illegal characters</label><label class="check" style="font:var(--type-body-sm)"><input type="checkbox" checked>Import with hardlinks</label><button class="btn btn-secondary btn-sm" type="button" style="margin-left:auto">Preview rename of 1,198 films…</button></div></div></section>
+              <section class="panel" aria-labelledby="i5"><div class="panel-hd"><h2 id="i5"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg>Paths</h2></div><div class="panel-bd"><ul class="mini-rows">
+                <li><span class="t-mono-sm">/data/movies<small>6.3 TB free · default</small></span><span></span><span></span></li>
+                <li><span class="t-mono-sm">/data/kids<small style="color:var(--status-missing)">180 GB free · 91% used</small></span><span></span><span></span></li></ul>
+                <span class="field-label" style="margin-top:4px">Remote path mappings</span>
+                <div class="t-mono-sm t-secondary" style="display:grid;grid-template-columns:auto 1fr;gap:4px 10px"><span class="t-muted">qbittorrent</span><span>/downloads → /data/downloads</span></div></div></section>
+
+              <section class="panel span2" aria-labelledby="i6"><div class="panel-hd"><h2 id="i6"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg>Notifications</h2><a class="btn btn-ghost btn-sm" href="#">Add channel</a></div><div class="panel-bd">
+                <table class="matrix" aria-label="Notification events per channel"><thead><tr><th>Channel</th><th>Grab</th><th>Import</th><th>Upgrade</th><th>Failure</th><th>Health</th><th>Rename</th><th>Delete</th></tr></thead><tbody id="mx"></tbody></table></div></section>
+              <section class="panel" aria-labelledby="i7"><div class="panel-hd"><h2 id="i7"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>Security</h2></div><div class="panel-bd"><ul class="mini-rows">
+                <li><span>Sign-in<small>Login page · 2 users</small></span><span></span><span></span></li>
+                <li><span>API key<small class="t-mono-sm">gnm_••••••••3f9a · used 2 min ago</small></span><button class="btn btn-ghost btn-sm" type="button">Rotate…</button><span></span></li>
+                <li><span>Active sessions<small>3 devices</small></span><button class="btn btn-ghost btn-sm" type="button">Review</button><span></span></li></ul></div></section>
+              <section class="panel" aria-labelledby="i8"><div class="panel-hd"><h2 id="i8"><svg class="i" aria-hidden="true"><use href="#i-hard-drive"/></svg>Backups</h2></div><div class="panel-bd"><ul class="mini-rows">
+                <li><span>Every night at 03:40<small>Keep 14 · /config/backups</small></span><span></span><span></span></li>
+                <li><span>Last backup<small>Today 03:40 · 18.2 MB · database + settings</small></span><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>OK</span><span></span></li></ul>
+                <div class="row"><button class="btn btn-secondary btn-sm" type="button">Back up now</button><button class="btn btn-ghost btn-sm" type="button">Restore…</button></div>
+                <span class="t-caption t-muted">The master key is not in backups. Keep <span class="t-mono-sm">gonema.key</span> somewhere safe.</span></div></section>
+              <section class="panel span2" aria-labelledby="i9"><div class="panel-hd"><h2 id="i9"><svg class="i" aria-hidden="true"><use href="#i-file-video"/></svg>Logs</h2><div class="row"><span class="t-caption t-muted">Level</span><div class="segmented" role="radiogroup" aria-label="Log level"><button role="radio" aria-checked="false" type="button">Debug</button><button role="radio" aria-checked="true" type="button">Info</button><button role="radio" aria-checked="false" type="button">Warn</button></div></div></div><div class="panel-bd">
+<div class="logs" role="log" aria-label="Recent log lines">21:14:02 INF import   film="Halcyon Drift (2024)" quality=WEBDL-2160p mode=hardlink size=21.7GB
+21:13:58 INF grab     release=Halcyon.Drift.2024.2160p…PELLiCULE indexer="Nebula NZB" score=70
+<span class="w">20:52:11 WRN indexer  name=Cinémathèque err="timeout after 15s" failures=3 paused_until=21:30</span>
+20:41:07 INF rss      indexers=3 new=46 accepted=2 took=1.8s</div></div></section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="../system/icons.js"></script>
+<script>
+  const sec = new URLSearchParams(location.search).get('section') === 'index' ? 'index' : 'quality';
+  document.getElementById('app').dataset.section = sec;
+  document.getElementById('crumb').textContent = sec === 'index' ? 'Overview' : 'Quality';
+  const ic = (n) => '<svg class="i" aria-hidden="true"><use href="#i-' + n + '"/></svg>';
+  const S = [['General', [['index', 'gauge', 'Overview'], ['', 'film', 'Library &amp; naming'], ['quality', 'sliders-horizontal', 'Quality &amp; scoring'], ['', 'list-checks', 'Import lists']]], ['Connections', [['', 'globe', 'Indexers'], ['', 'arrow-down-to-line', 'Download clients'], ['', 'monitor-play', 'Media servers'], ['', 'bell', 'Notifications']]], ['System', [['', 'lock', 'Security'], ['', 'hard-drive', 'Backups'], ['', 'file-video', 'Logs'], ['', 'info', 'About']]]];
+  document.getElementById('snav').innerHTML = S.map(([h, items]) => '<h2>' + h + '</h2>' + items.map(([id, i, l]) => '<a href="' + (id ? '?section=' + id : '#') + '"' + (id === sec ? ' aria-current="page"' : '') + '>' + ic(i) + l + '</a>').join('')).join('');
+  const ev = ['grab', 'import', 'upgrade', 'failure', 'health', 'rename', 'delete'];
+  const M = [['ntfy · phone', [0, 1, 1, 1, 1, 0, 1]], ['Discord · #cinema', [1, 1, 1, 0, 0, 0, 0]], ['Webhook · home automation', [0, 1, 0, 0, 0, 0, 0]]];
+  document.getElementById('mx').innerHTML = M.map(([n, v]) => '<tr><td>' + n + '</td>' + v.map((x, i) => '<td>' + (x ? '<span class="sr-only">' + ev[i] + ' on</span>' + ic('check') : '<span class="off" aria-hidden="true">·</span><span class="sr-only">' + ev[i] + ' off</span>') + '</td>').join('') + '</tr>').join('');
+</script>
+</body>
+</html>
