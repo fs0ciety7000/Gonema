@@ -5,6 +5,7 @@ go 1.27
 toolchain go1.27.3
 
 require (
+	github.com/danielgtaylor/huma/v2 v2.40.0
 	github.com/google/go-cmp v0.7.0
 	github.com/pressly/goose/v3 v3.29.0
 	golang.org/x/sys v0.49.0
@@ -13,7 +14,6 @@ require (
 )
 
 require (
-	github.com/danielgtaylor/huma/v2 v2.40.0 // indirect
 	github.com/dustin/go-humanize v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
