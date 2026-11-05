@@ -22,10 +22,11 @@ type shared struct {
 	sizes    quality.Sizes
 	indexers []db.Indexer
 	profiles map[int64]quality.Profile
+	opts     decision.Options // automatic search options from the settings
 }
 
 func (s *Service) loadShared(ctx context.Context) (*shared, error) {
-	sh := &shared{profiles: make(map[int64]quality.Profile)}
+	sh := &shared{profiles: make(map[int64]quality.Profile), opts: s.searchOptions(ctx, false)}
 	err := s.st.ReadTx(ctx, func(q *db.Queries) error {
 		var err error
 		if sh.rules, err = library.LoadScoringRules(ctx, q); err != nil {

@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fs0ciety7000/gonema/internal/flight"
@@ -77,6 +78,38 @@ type Client struct {
 	// Replaced in tests.
 	now   func() time.Time
 	sleep func(ctx context.Context, d time.Duration) error
+
+	clockMu sync.Mutex
+	clock   ServerClock // last Date header seen
+}
+
+// ServerClock is the Date header of the last TMDB answer and the local time
+// it was received, to detect a wrong system clock. The header has a one
+// second resolution.
+type ServerClock struct {
+	Server time.Time
+	Local  time.Time
+}
+
+// LastServerClock returns the clock of the last answer; ok is false before any
+// answer with a valid Date header.
+func (c *Client) LastServerClock() (clock ServerClock, ok bool) {
+	c.clockMu.Lock()
+	defer c.clockMu.Unlock()
+	return c.clock, !c.clock.Server.IsZero()
+}
+
+func (c *Client) observeDate(h string) {
+	if h == "" {
+		return
+	}
+	t, err := http.ParseTime(h)
+	if err != nil {
+		return
+	}
+	c.clockMu.Lock()
+	c.clock = ServerClock{Server: t.UTC(), Local: c.now().UTC()}
+	c.clockMu.Unlock()
 }
 
 var _ metadata.Provider = (*Client)(nil)
@@ -292,6 +325,7 @@ func (c *Client) once(ctx context.Context, path string, q url.Values) ([]byte, *
 		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, maxErrBodyBytes))
 		_ = resp.Body.Close()
 	}()
+	c.observeDate(resp.Header.Get("Date"))
 
 	if resp.StatusCode == http.StatusOK {
 		body, err := io.ReadAll(io.LimitReader(resp.Body, maxBodyBytes+1))

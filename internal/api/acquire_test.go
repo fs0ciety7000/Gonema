@@ -267,3 +267,34 @@ func TestAcquisitionAPI(t *testing.T) {
 	noLeak(t, "API responses", all.String(), tr)
 	noLeak(t, "logs", e.logs.String(), tr)
 }
+
+func TestAcquisitionSettingsAPI(t *testing.T) {
+	e := newAcquireEnv(t)
+	r := e.do(t, "GET", "/api/v1/settings/acquisition", "")
+	if got := decode[acquire.AcquisitionSettings](t, r); r.status != 200 || got != acquire.DefaultAcquisitionSettings() {
+		t.Fatalf("get = %d %s", r.status, r.body)
+	}
+	body := `{"usenetRetentionDays":3500,"usenetMinimumAgeMin":20,"preferredProtocol":"usenet","maxAttemptsPerDay":4,` +
+		`"blocklistGroupOnFailure":true,"rssIntervalMin":30,"searchMissingIntervalHours":12}`
+	r = e.do(t, "PUT", "/api/v1/settings/acquisition", body)
+	if got := decode[acquire.AcquisitionSettings](t, r); r.status != 200 || got.UsenetRetentionDays != 3500 || got.PreferredProtocol != "usenet" {
+		t.Fatalf("put = %d %s", r.status, r.body)
+	}
+	if got := decode[acquire.AcquisitionSettings](t, e.do(t, "GET", "/api/v1/settings/acquisition", "")); got.RSSIntervalMin != 30 || !got.BlocklistGroupOnFailure {
+		t.Errorf("read back = %+v", got)
+	}
+	bad := strings.Replace(body, `"rssIntervalMin":30`, `"rssIntervalMin":2`, 1)
+	if detail := problemOK(t, e.do(t, "PUT", "/api/v1/settings/acquisition", bad), 422); !strings.Contains(detail, "RSS interval must be between 10 and 120 minutes") {
+		t.Errorf("refusal detail = %q", detail)
+	}
+	problemOK(t, e.do(t, "PUT", "/api/v1/settings/acquisition", strings.Replace(body, `"usenet"`, `"ftp"`, 1)), 422)
+}
+
+func TestRetryImportAPI(t *testing.T) {
+	e := newAcquireEnv(t)
+	problemOK(t, e.do(t, "POST", "/api/v1/queue/999/import", ""), 404)
+	problemOK(t, e.do(t, "POST", "/api/v1/queue/999/import?movieId=-1", ""), 422)
+	if r := e.do(t, "GET", "/api/v1/openapi.json", ""); !strings.Contains(r.body, `"/queue/{id}/import"`) || !strings.Contains(r.body, `"/settings/acquisition"`) {
+		t.Error("openapi lacks the new routes")
+	}
+}

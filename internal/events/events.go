@@ -27,6 +27,13 @@ const (
 	MovieUpdated Type = "movie.updated"
 	MovieDeleted Type = "movie.deleted"
 
+	// MovieFileRenamed and MovieFileDeleted are published by the operations that
+	// rename or recycle movie files; Data is a map with "path" (the movie
+	// folder as Gonema sees it, optional). Media servers and notifications
+	// follow them.
+	MovieFileRenamed Type = "moviefile.renamed"
+	MovieFileDeleted Type = "moviefile.deleted"
+
 	CollectionUpdated Type = "collection.updated"
 	RootFolderAdded   Type = "rootfolder.added"
 	RootFolderDeleted Type = "rootfolder.deleted"

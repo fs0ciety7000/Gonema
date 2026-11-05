@@ -199,3 +199,38 @@ func TestEvaluate_upgrades(t *testing.T) {
 		})
 	}
 }
+
+// TestCutoffMemberOfGroup: a cutoff naming a member of a group behaves exactly
+// like the group name (the database stores either), for CutoffMet, IsUpgrade
+// and the evaluator, which accepts the profile.
+func TestCutoffMemberOfGroup(t *testing.T) {
+	t.Parallel()
+	byGroup := upgradeProfile(t)
+	byGroup.Cutoff = "WEB 1080p"
+	ids := []quality.ID{quality.HDTV1080p, quality.WebDL1080p, quality.WebRip1080p, quality.Bluray1080p, quality.Remux1080p}
+	for _, member := range []quality.ID{quality.WebDL1080p, quality.WebRip1080p} {
+		p := upgradeProfile(t)
+		p.Cutoff = string(member)
+		for _, cur := range ids {
+			for _, score := range []int{0, 50, 60} {
+				c := fq(cur, 1, score)
+				if got, want := decision.CutoffMet(c, &p), decision.CutoffMet(c, &byGroup); got != want {
+					t.Errorf("cutoff %s: CutoffMet(%s, %d) = %v, group gives %v", member, cur, score, got, want)
+				}
+				for _, cand := range ids {
+					n := fq(cand, 1, score+10)
+					gr, gok := decision.IsUpgrade(c, n, &p)
+					wr, wok := decision.IsUpgrade(c, n, &byGroup)
+					if gr != wr || gok != wok {
+						t.Errorf("cutoff %s: IsUpgrade(%s→%s) = %v %v, group gives %v %v", member, cur, cand, gr, gok, wr, wok)
+					}
+				}
+			}
+		}
+		cfg := baseConfig(t)
+		cfg.Profile = p
+		if _, err := decision.NewEvaluator(cfg); err != nil {
+			t.Errorf("cutoff %s: NewEvaluator = %v", member, err)
+		}
+	}
+}

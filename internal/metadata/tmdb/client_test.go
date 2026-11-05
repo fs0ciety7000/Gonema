@@ -843,3 +843,44 @@ func TestRedaction(t *testing.T) {
 		}
 	})
 }
+
+// TestLastServerClock: the Date header of every answer (errors included) is
+// kept with the local receive time, for the clock skew health check.
+func TestLastServerClock(t *testing.T) {
+	t.Parallel()
+	fs := newFixtureServer(t)
+	c, _ := newTestClient(t, fs, testToken, Options{})
+	local := time.Date(2026, 11, 5, 20, 0, 0, 0, time.UTC)
+	c.now = func() time.Time { return local }
+	if _, ok := c.LastServerClock(); ok {
+		t.Fatal("clock known before any answer")
+	}
+	server := time.Date(2026, 11, 5, 20, 7, 30, 0, time.UTC)
+	fs.setHandler(func(w http.ResponseWriter, _ *http.Request, n int) bool {
+		w.Header().Set("Date", server.Add(time.Duration(n)*time.Second).Format(http.TimeFormat))
+		if n == 2 {
+			writeFixture(t, w, http.StatusUnauthorized, "error_401.json")
+			return true
+		}
+		return false
+	})
+	if err := c.ValidateKey(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	got, ok := c.LastServerClock()
+	if !ok || !got.Server.Equal(server.Add(time.Second)) || !got.Local.Equal(local) {
+		t.Errorf("clock = %+v, %v", got, ok)
+	}
+	_ = c.ValidateKey(t.Context())
+	if got, _ := c.LastServerClock(); !got.Server.Equal(server.Add(2 * time.Second)) {
+		t.Errorf("clock after an error answer = %+v", got)
+	}
+	fs.setHandler(func(w http.ResponseWriter, _ *http.Request, _ int) bool {
+		w.Header().Set("Date", "not a date")
+		return false
+	})
+	_ = c.ValidateKey(t.Context())
+	if got, _ := c.LastServerClock(); !got.Server.Equal(server.Add(2 * time.Second)) {
+		t.Errorf("an invalid Date replaced the clock: %+v", got)
+	}
+}

@@ -54,26 +54,38 @@ type DownloadPayload struct {
 	DownloadID int64 `json:"downloadId"`
 }
 
-// RegisterJobs registers the job handlers and the recurring schedules: the
-// missing search daily, the RSS sync every SettingRSSInterval minutes.
-func (s *Service) RegisterJobs(ctx context.Context, r interface {
+// JobRunner is the part of the job runner RegisterJobs uses. When it also
+// implements Rescheduler, changed intervals apply at once.
+type JobRunner interface {
 	Handle(kind string, fn jobs.Handler, opts jobs.HandlerOptions)
-	Every(kind string, interval, jitter time.Duration, payload any)
-}) {
+	EveryFunc(kind string, interval func() time.Duration, jitter time.Duration, payload any)
+}
+
+// Rescheduler applies a changed interval of a recurring job (jobs.Runner).
+type Rescheduler interface {
+	Reschedule(kind string) bool
+}
+
+// RegisterJobs registers the job handlers and the recurring schedules: the
+// missing search every SettingSearchMissingInterval hours (default daily), the
+// RSS sync every SettingRSSInterval minutes. Intervals are read from the
+// settings at each run.
+func (s *Service) RegisterJobs(_ context.Context, r JobRunner) {
 	r.Handle(JobMovieSearch, s.handleMovieSearch, jobs.HandlerOptions{Timeout: 5 * time.Minute})
 	r.Handle(JobSearchMissing, func(ctx context.Context, _ db.Job) error { return s.SearchMissing(ctx) },
 		jobs.HandlerOptions{Timeout: 10 * time.Minute})
 	r.Handle(JobRSSSync, func(ctx context.Context, _ db.Job) error { return s.SyncRSS(ctx) },
 		jobs.HandlerOptions{Timeout: 10 * time.Minute})
 	r.Handle(JobDownloadRetry, s.handleRetry, jobs.HandlerOptions{Timeout: 5 * time.Minute})
-	r.Every(JobSearchMissing, SearchMissingTick, time.Hour, nil)
-	r.Every(JobRSSSync, s.rssInterval(ctx), time.Minute, nil)
-}
-
-// rssInterval reads SettingRSSInterval (minutes, 10 to 120).
-func (s *Service) rssInterval(ctx context.Context) time.Duration {
-	m := s.settingInt(ctx, SettingRSSInterval, int(DefaultRSSInterval/time.Minute))
-	return time.Duration(min(max(m, 10), 120)) * time.Minute
+	r.EveryFunc(JobSearchMissing, s.intervalReader(func(a *AcquisitionSettings) time.Duration {
+		return time.Duration(a.SearchMissingIntervalHours) * time.Hour
+	}), time.Hour, nil)
+	r.EveryFunc(JobRSSSync, s.intervalReader(func(a *AcquisitionSettings) time.Duration {
+		return time.Duration(a.RSSIntervalMin) * time.Minute
+	}), time.Minute, nil)
+	if rs, ok := r.(Rescheduler); ok {
+		s.resched = rs
+	}
 }
 
 func (s *Service) handleMovieSearch(ctx context.Context, job db.Job) error {
@@ -123,7 +135,7 @@ func (s *Service) SearchMovie(ctx context.Context, movieID int64) (SearchOutcome
 
 func (s *Service) autoSearch(ctx context.Context, movieID, retryOf int64, reason string) (SearchOutcome, error) {
 	var out SearchOutcome
-	mc, err := s.loadMovie(ctx, movieID, nil, decision.Options{})
+	mc, err := s.loadMovie(ctx, movieID, nil, s.searchOptions(ctx, false))
 	if err != nil {
 		return out, err
 	}
@@ -449,7 +461,7 @@ func (s *Service) matchMovie(rel *indexer.Release) (int64, bool) {
 
 // rssDecide evaluates the RSS releases of one movie and grabs the best.
 func (s *Service) rssDecide(ctx context.Context, sh *shared, movieID int64, rels []indexer.Release) (bool, error) {
-	mc, err := s.loadMovie(ctx, movieID, sh, decision.Options{})
+	mc, err := s.loadMovie(ctx, movieID, sh, sh.opts)
 	if err != nil {
 		return false, err
 	}
@@ -553,7 +565,7 @@ func (s *Service) Retry(ctx context.Context, downloadID int64) error {
 		return nil
 	}
 	attempt := int(used) + 1
-	mc, err := s.loadMovie(ctx, dl.MovieID, nil, decision.Options{})
+	mc, err := s.loadMovie(ctx, dl.MovieID, nil, s.searchOptions(ctx, false))
 	if err != nil {
 		return err
 	}

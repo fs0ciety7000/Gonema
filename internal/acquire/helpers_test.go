@@ -130,6 +130,7 @@ type env struct {
 	lib     *library.Service
 	svc     *Service
 	imp     *fakeImporter
+	prov    *provider
 	imports chan int64
 	rootID  int64
 	hdID    int64
@@ -149,6 +150,7 @@ func newEnv(t *testing.T) *env {
 	}
 	log := slog.New(slog.NewTextHandler(e.logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	prov := &provider{movies: map[int]*metadata.Movie{550: fightClub()}}
+	e.prov = prov
 	e.lib, err = library.New(library.Options{
 		Store: e.st, Box: e.box, Bus: e.bus, Logger: log, Now: e.clk.Now,
 		NewProvider: func(string) (library.KeyedProvider, error) { return prov, nil },

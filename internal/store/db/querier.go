@@ -19,6 +19,9 @@ type Querier interface {
 	ClearMovieBlocklist(ctx context.Context, movieID *int64) (int64, error)
 	ClearMovieTags(ctx context.Context, movieID int64) error
 	CompleteJob(ctx context.Context, arg CompleteJobParams) (int64, error)
+	// CountGrabsBetween counts the grabs of a movie in [since, until]: the attempt
+	// number of a failed download in the daily retry budget.
+	CountGrabsBetween(ctx context.Context, arg CountGrabsBetweenParams) (int64, error)
 	// CountGrabsSince counts the grabs of a movie since a time: the daily budget of
 	// attempts (automatic retries stop once it is spent).
 	CountGrabsSince(ctx context.Context, arg CountGrabsSinceParams) (int64, error)
@@ -32,6 +35,10 @@ type Querier interface {
 	CreateDownloadClient(ctx context.Context, arg CreateDownloadClientParams) (DownloadClient, error)
 	// ----------------------------------------------------------------- indexers
 	CreateIndexer(ctx context.Context, arg CreateIndexerParams) (Indexer, error)
+	// ----------------------------------------------------------------- media servers
+	CreateMediaServer(ctx context.Context, arg CreateMediaServerParams) (MediaServer, error)
+	// ----------------------------------------------------------------- notifications
+	CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error)
 	CreateQualityProfile(ctx context.Context, arg CreateQualityProfileParams) (QualityProfile, error)
 	// ----------------------------------------------------------------- remote path mappings
 	CreateRemotePathMapping(ctx context.Context, arg CreateRemotePathMappingParams) (RemotePathMapping, error)
@@ -45,7 +52,9 @@ type Querier interface {
 	DeleteFinishedJobsBefore(ctx context.Context, before int64) (int64, error)
 	DeleteImportListExclusion(ctx context.Context, tmdbID int64) (int64, error)
 	DeleteIndexer(ctx context.Context, id int64) (int64, error)
+	DeleteMediaServer(ctx context.Context, id int64) (int64, error)
 	DeleteMovie(ctx context.Context, id int64) (int64, error)
+	DeleteNotification(ctx context.Context, id int64) (int64, error)
 	DeleteQualityProfile(ctx context.Context, id int64) (int64, error)
 	DeleteQualityProfileItems(ctx context.Context, profileID int64) error
 	DeleteRemotePathMapping(ctx context.Context, id int64) (int64, error)
@@ -66,10 +75,12 @@ type Querier interface {
 	GetDownloadClient(ctx context.Context, id int64) (DownloadClient, error)
 	GetIndexer(ctx context.Context, id int64) (Indexer, error)
 	GetJob(ctx context.Context, id int64) (Job, error)
+	GetMediaServer(ctx context.Context, id int64) (MediaServer, error)
 	GetMovie(ctx context.Context, id int64) (Movie, error)
 	GetMovieByImdbID(ctx context.Context, imdbID string) (Movie, error)
 	GetMovieByTmdbID(ctx context.Context, tmdbID int64) (Movie, error)
 	GetMovieState(ctx context.Context, movieID int64) (MovieState, error)
+	GetNotification(ctx context.Context, id int64) (Notification, error)
 	GetQualityProfile(ctx context.Context, id int64) (QualityProfile, error)
 	GetQualityProfileByName(ctx context.Context, name string) (QualityProfile, error)
 	GetRSSState(ctx context.Context, indexerID int64) (RssState, error)
@@ -86,6 +97,10 @@ type Querier interface {
 	InsertQualityProfileItem(ctx context.Context, arg InsertQualityProfileItemParams) error
 	InsertScoringCondition(ctx context.Context, arg InsertScoringConditionParams) error
 	IsImportListExcluded(ctx context.Context, tmdbID int64) (bool, error)
+	// ----------------------------------------------------------------- event context
+	// LatestMovieHistory returns the last history row of an event for a movie (the
+	// previous quality of an upgrade, for notifications).
+	LatestMovieHistory(ctx context.Context, arg LatestMovieHistoryParams) (History, error)
 	// ListActiveDownloads returns the downloads the queue tracker follows.
 	ListActiveDownloads(ctx context.Context) ([]Download, error)
 	ListAlternateTitles(ctx context.Context, movieID int64) ([]AlternateTitle, error)
@@ -98,6 +113,16 @@ type Querier interface {
 	ListCollectionMovies(ctx context.Context, collectionID int64) ([]Movie, error)
 	ListCollections(ctx context.Context) ([]Collection, error)
 	ListDownloadClients(ctx context.Context) ([]DownloadClient, error)
+	ListEnabledMediaServers(ctx context.Context) ([]MediaServer, error)
+	ListEnabledNotifications(ctx context.Context) ([]Notification, error)
+	// ListFailedImports returns the downloads waiting in warning after a failed
+	// import, with the time of the last failure (import_failed history row, else
+	// the completion time).
+	ListFailedImports(ctx context.Context) ([]ListFailedImportsRow, error)
+	// Health checks (internal/health) and queue repair (manual import retry).
+	// ListFileSizesInRootFolder returns the size of every movie file of a root
+	// folder, smallest first (the health check takes the median).
+	ListFileSizesInRootFolder(ctx context.Context, rootFolderID int64) ([]int64, error)
 	ListImportListExclusions(ctx context.Context) ([]ImportListExclusion, error)
 	ListIndexers(ctx context.Context) ([]Indexer, error)
 	ListJobsByStatus(ctx context.Context, arg ListJobsByStatusParams) ([]Job, error)
@@ -106,6 +131,7 @@ type Querier interface {
 	// ListMatcherMovies feeds the in-memory release matcher (internal/match).
 	ListMatcherMovies(ctx context.Context) ([]ListMatcherMoviesRow, error)
 	ListMatcherTitles(ctx context.Context) ([]ListMatcherTitlesRow, error)
+	ListMediaServers(ctx context.Context) ([]MediaServer, error)
 	ListMovieDownloads(ctx context.Context, movieID int64) ([]Download, error)
 	// ListMovieHistory is keyset-paginated, newest first: pass the last id of the
 	// previous page, or math.MaxInt64 first.
@@ -133,6 +159,7 @@ type Querier interface {
 	// ListMoviesForRefresh is read by the daily metadata refresh to pick the movies
 	// whose metadata is due (see library.RefreshDue).
 	ListMoviesForRefresh(ctx context.Context) ([]ListMoviesForRefreshRow, error)
+	ListNotifications(ctx context.Context) ([]Notification, error)
 	ListProfileScores(ctx context.Context, profileID int64) ([]ListProfileScoresRow, error)
 	ListQualityProfileItems(ctx context.Context, profileID int64) ([]QualityProfileItem, error)
 	ListQualityProfiles(ctx context.Context) ([]QualityProfile, error)
@@ -157,16 +184,29 @@ type Querier interface {
 	// trigger aborts unless every such row is also older than the
 	// 'history.retention_days' setting.
 	PurgeHistory(ctx context.Context, cutoff int64) (int64, error)
+	// ReassignDownloadMovie points a completed (or failed import) download at
+	// another movie, before a manual import for that movie.
+	ReassignDownloadMovie(ctx context.Context, arg ReassignDownloadMovieParams) (Download, error)
+	// RecordMediaServerFailure increments the failure count and returns it.
+	RecordMediaServerFailure(ctx context.Context, arg RecordMediaServerFailureParams) (int64, error)
+	RecordMediaServerOK(ctx context.Context, arg RecordMediaServerOKParams) (int64, error)
+	// RecordNotificationFailure increments the failure count and returns it.
+	RecordNotificationFailure(ctx context.Context, arg RecordNotificationFailureParams) (int64, error)
+	RecordNotificationOK(ctx context.Context, arg RecordNotificationOKParams) (int64, error)
 	RemoveMovieTag(ctx context.Context, arg RemoveMovieTagParams) (int64, error)
+	ResetMediaServerHealth(ctx context.Context, id int64) (int64, error)
+	ResetNotificationHealth(ctx context.Context, id int64) (int64, error)
 	// ResetRunningJobs requeues jobs left running by a previous process (startup only).
 	ResetRunningJobs(ctx context.Context) (int64, error)
 	SetDownloadClientSecrets(ctx context.Context, arg SetDownloadClientSecretsParams) (int64, error)
 	SetIndexerSecrets(ctx context.Context, arg SetIndexerSecretsParams) (int64, error)
+	SetMediaServerSecrets(ctx context.Context, arg SetMediaServerSecretsParams) (int64, error)
 	SetMovieLastSearched(ctx context.Context, arg SetMovieLastSearchedParams) (int64, error)
 	SetMovieMonitored(ctx context.Context, arg SetMovieMonitoredParams) (int64, error)
 	// SetMoviePath points a movie at an existing folder of its root folder (existing
 	// library import: the folder keeps its name).
 	SetMoviePath(ctx context.Context, arg SetMoviePathParams) (Movie, error)
+	SetNotificationSecrets(ctx context.Context, arg SetNotificationSecretsParams) (int64, error)
 	SetProfileScore(ctx context.Context, arg SetProfileScoreParams) error
 	SetSetting(ctx context.Context, arg SetSettingParams) error
 	UpdateCollectionSettings(ctx context.Context, arg UpdateCollectionSettingsParams) (Collection, error)
@@ -178,8 +218,10 @@ type Querier interface {
 	UpdateDownloadState(ctx context.Context, arg UpdateDownloadStateParams) (Download, error)
 	UpdateIndexer(ctx context.Context, arg UpdateIndexerParams) (Indexer, error)
 	UpdateIndexerHealth(ctx context.Context, arg UpdateIndexerHealthParams) (int64, error)
+	UpdateMediaServer(ctx context.Context, arg UpdateMediaServerParams) (MediaServer, error)
 	UpdateMovieMetadata(ctx context.Context, arg UpdateMovieMetadataParams) (Movie, error)
 	UpdateMovieSettings(ctx context.Context, arg UpdateMovieSettingsParams) (Movie, error)
+	UpdateNotification(ctx context.Context, arg UpdateNotificationParams) (Notification, error)
 	UpdateQualityProfile(ctx context.Context, arg UpdateQualityProfileParams) (QualityProfile, error)
 	UpdateRemotePathMapping(ctx context.Context, arg UpdateRemotePathMappingParams) (RemotePathMapping, error)
 	UpdateRootFolderPath(ctx context.Context, arg UpdateRootFolderPathParams) (RootFolder, error)

@@ -69,10 +69,15 @@ type handler struct {
 
 type schedule struct {
 	kind     string
-	interval time.Duration
+	interval func() time.Duration // read before each due time is computed
 	jitter   time.Duration
 	payload  any
+	resched  chan struct{} // Reschedule signal, buffered 1
 }
+
+// every returns the current interval, at least a second (a zero or negative
+// interval from a misconfigured source must not spin).
+func (s *schedule) every() time.Duration { return max(s.interval(), time.Second) }
 
 // Runner executes jobs. Register handlers and schedules before Start.
 type Runner struct {
@@ -153,12 +158,41 @@ func (r *Runner) Has(kind string) bool {
 // Every schedules kind to be enqueued every interval, plus a random delay up to
 // jitter (spreads load, avoids synchronized bursts). Call before Start.
 func (r *Runner) Every(kind string, interval, jitter time.Duration, payload any) {
+	r.EveryFunc(kind, func() time.Duration { return interval }, jitter, payload)
+}
+
+// EveryFunc is Every with an interval read from a setting: interval is called
+// each time the next due time is computed, and again by Reschedule. It must be
+// fast and safe for concurrent use. Call before Start.
+func (r *Runner) EveryFunc(kind string, interval func() time.Duration, jitter time.Duration, payload any) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.started {
 		panic("jobs: Every after Start")
 	}
-	r.schedules = append(r.schedules, schedule{kind: kind, interval: interval, jitter: jitter, payload: payload})
+	r.schedules = append(r.schedules, schedule{
+		kind: kind, interval: interval, jitter: jitter, payload: payload, resched: make(chan struct{}, 1),
+	})
+}
+
+// Reschedule applies a changed interval of a recurring job at once: the next
+// run becomes the last run of this process plus the new interval (or, before
+// any run, the earlier of the stored due time and now plus the interval). It
+// reports whether kind has a schedule. Safe to call before Start (no effect
+// then: the interval is read when the scheduler starts).
+func (r *Runner) Reschedule(kind string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for i := range r.schedules {
+		if s := &r.schedules[i]; s.kind == kind {
+			select {
+			case s.resched <- struct{}{}:
+			default:
+			}
+			return true
+		}
+	}
+	return false
 }
 
 // Enqueue adds a job. created is false when an active job already holds the
@@ -382,13 +416,15 @@ func (r *Runner) scheduler(ctx context.Context, s schedule) {
 		next = store.Millis(r.now().Add(r.jitter(min(s.jitter, time.Minute)) + 30*time.Second))
 	default:
 		r.log.Error("jobs: read schedule", slog.String("kind", s.kind), slog.Any("error", err))
-		next = store.Millis(r.now().Add(s.interval))
+		next = store.Millis(r.now().Add(s.every()))
 	}
 	timer := time.NewTimer(0)
 	defer timer.Stop()
+	var last time.Time // last enqueue by this process
 	for {
 		wait := store.FromMillis(next).Sub(r.now())
 		if wait <= 0 {
+			last = r.now()
 			_, created, err := r.Enqueue(ctx, s.kind, s.payload, EnqueueOptions{DedupeKey: "recurring:" + s.kind})
 			if err != nil {
 				if ctx.Err() != nil {
@@ -398,10 +434,8 @@ func (r *Runner) scheduler(ctx context.Context, s schedule) {
 			} else if !created {
 				r.log.Debug("recurring job still pending, not enqueued again", slog.String("kind", s.kind))
 			}
-			next = store.Millis(r.now().Add(s.interval + r.jitter(s.jitter)))
-			if err := store.SetSetting(ctx, r.st, scheduleKey(s.kind), next); err != nil && ctx.Err() == nil {
-				r.log.Error("jobs: save schedule", slog.String("kind", s.kind), slog.Any("error", err))
-			}
+			next = store.Millis(r.now().Add(s.every() + r.jitter(s.jitter)))
+			r.saveNext(ctx, s.kind, next)
 			continue
 		}
 		timer.Reset(wait)
@@ -409,7 +443,23 @@ func (r *Runner) scheduler(ctx context.Context, s schedule) {
 		case <-ctx.Done():
 			return
 		case <-timer.C:
+		case <-s.resched:
+			iv := s.every()
+			if !last.IsZero() {
+				next = store.Millis(last.Add(iv))
+			} else {
+				next = min(next, store.Millis(r.now().Add(iv)))
+			}
+			r.log.Info("recurring job rescheduled", slog.String("kind", s.kind), slog.Duration("interval", iv),
+				slog.Time("next_run", store.FromMillis(next)))
+			r.saveNext(ctx, s.kind, next)
 		}
+	}
+}
+
+func (r *Runner) saveNext(ctx context.Context, kind string, next int64) {
+	if err := store.SetSetting(ctx, r.st, scheduleKey(kind), next); err != nil && ctx.Err() == nil {
+		r.log.Error("jobs: save schedule", slog.String("kind", kind), slog.Any("error", err))
 	}
 }
 

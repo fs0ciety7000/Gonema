@@ -208,16 +208,22 @@ func TestTrackerDoesNotResurrect(t *testing.T) {
 }
 
 type recordingRunner struct {
-	handled   []string
-	recurring map[string]time.Duration
+	handled     []string
+	recurring   map[string]func() time.Duration
+	rescheduled []string
 }
 
 func (r *recordingRunner) Handle(kind string, _ jobs.Handler, _ jobs.HandlerOptions) {
 	r.handled = append(r.handled, kind)
 }
 
-func (r *recordingRunner) Every(kind string, interval, _ time.Duration, _ any) {
+func (r *recordingRunner) EveryFunc(kind string, interval func() time.Duration, _ time.Duration, _ any) {
 	r.recurring[kind] = interval
+}
+
+func (r *recordingRunner) Reschedule(kind string) bool {
+	r.rescheduled = append(r.rescheduled, kind)
+	return true
 }
 
 func TestRegisterJobs(t *testing.T) {
@@ -228,13 +234,26 @@ func TestRegisterJobs(t *testing.T) {
 	if err := setSetting(e, SettingRSSInterval, 5); err != nil {
 		t.Fatal(err)
 	}
-	r := &recordingRunner{recurring: map[string]time.Duration{}}
+	r := &recordingRunner{recurring: map[string]func() time.Duration{}}
 	e.svc.RegisterJobs(e.ctx, r)
 	slices.Sort(r.handled)
 	if !slices.Equal(r.handled, []string{JobDownloadRetry, JobMovieSearch, JobSearchMissing, JobRSSSync}) {
 		t.Errorf("handled = %v", r.handled)
 	}
-	if r.recurring[JobRSSSync] != 10*time.Minute || r.recurring[JobSearchMissing] != 24*time.Hour {
-		t.Errorf("recurring = %v (RSS interval clamped to 10 min)", r.recurring)
+	if rss, missing := r.recurring[JobRSSSync](), r.recurring[JobSearchMissing](); rss != 10*time.Minute || missing != 24*time.Hour {
+		t.Errorf("recurring = %v, %v (RSS interval clamped to 10 min)", rss, missing)
+	}
+	// Intervals are read at each run: a change applies without a restart.
+	set := DefaultAcquisitionSettings()
+	set.RSSIntervalMin, set.SearchMissingIntervalHours = 30, 12
+	if _, err := e.svc.SetAcquisitionSettings(e.ctx, set); err != nil {
+		t.Fatal(err)
+	}
+	if rss, missing := r.recurring[JobRSSSync](), r.recurring[JobSearchMissing](); rss != 30*time.Minute || missing != 12*time.Hour {
+		t.Errorf("after the change: %v, %v", rss, missing)
+	}
+	slices.Sort(r.rescheduled)
+	if !slices.Equal(r.rescheduled, []string{JobSearchMissing, JobRSSSync}) {
+		t.Errorf("rescheduled = %v", r.rescheduled)
 	}
 }

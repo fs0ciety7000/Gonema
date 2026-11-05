@@ -171,17 +171,26 @@ func TestMatcherCoalescesBulkAdds(t *testing.T) {
 }
 
 // TestLoadQualityProfileCutoffInGroup: a cutoff stored as a member of a group
-// (accepted by movie_state) is loaded as the group, which the engine requires.
+// (accepted by movie_state) is loaded as stored; the engine resolves it to the
+// group, with the same rank and label as before the stored value was kept.
 func TestLoadQualityProfileCutoffInGroup(t *testing.T) {
 	e := newEnv(t)
 	p, err := LoadQualityProfile(context.Background(), e.st.Read(), e.lib.ProfileID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.Cutoff != "HD-1080p" || len(p.Items) != 3 || !slices.Equal(p.Items[0].Qualities, []quality.ID{quality.Bluray1080p, quality.WebDL1080p}) {
+	if p.Cutoff != "webdl-1080p" || len(p.Items) != 3 || !slices.Equal(p.Items[0].Qualities, []quality.ID{quality.Bluray1080p, quality.WebDL1080p}) {
 		t.Errorf("profile = %+v", p)
 	}
 	if err := p.Validate(nil); err != nil {
 		t.Errorf("validate: %v", err)
+	}
+	if p.CutoffRank() != 3 || p.CutoffLabel() != "HD-1080p" {
+		t.Errorf("cutoff rank %d label %q, want the group's (3, HD-1080p)", p.CutoffRank(), p.CutoffLabel())
+	}
+	byGroup := p
+	byGroup.Cutoff = "HD-1080p"
+	if byGroup.CutoffRank() != p.CutoffRank() {
+		t.Errorf("member cutoff rank %d differs from the group's %d", p.CutoffRank(), byGroup.CutoffRank())
 	}
 }

@@ -172,14 +172,19 @@ type Job struct {
 }
 
 type MediaServer struct {
-	ID           int64  `json:"id"`
-	Name         string `json:"name"`
-	Kind         string `json:"kind"`
-	BaseUrl      string `json:"baseUrl"`
-	Secrets      []byte `json:"secrets"`
-	PathMappings string `json:"pathMappings"`
-	RefreshOn    string `json:"refreshOn"`
-	Enabled      bool   `json:"enabled"`
+	ID           int64   `json:"id"`
+	Name         string  `json:"name"`
+	Kind         string  `json:"kind"`
+	BaseUrl      string  `json:"baseUrl"`
+	Secrets      []byte  `json:"secrets"`
+	PathMappings string  `json:"pathMappings"`
+	RefreshOn    string  `json:"refreshOn"`
+	Enabled      bool    `json:"enabled"`
+	Options      string  `json:"options"`
+	FailureCount int64   `json:"failureCount"`
+	LastError    *string `json:"lastError"`
+	LastOkAt     *int64  `json:"lastOkAt"`
+	LastFailedAt *int64  `json:"lastFailedAt"`
 }
 
 type Movie struct {
@@ -245,14 +250,18 @@ type MovieTag struct {
 }
 
 type Notification struct {
-	ID       int64  `json:"id"`
-	Name     string `json:"name"`
-	Kind     string `json:"kind"`
-	Settings string `json:"settings"`
-	Secrets  []byte `json:"secrets"`
-	Events   string `json:"events"`
-	Tags     string `json:"tags"`
-	Enabled  bool   `json:"enabled"`
+	ID           int64   `json:"id"`
+	Name         string  `json:"name"`
+	Kind         string  `json:"kind"`
+	Settings     string  `json:"settings"`
+	Secrets      []byte  `json:"secrets"`
+	Events       string  `json:"events"`
+	Tags         string  `json:"tags"`
+	Enabled      bool    `json:"enabled"`
+	FailureCount int64   `json:"failureCount"`
+	LastError    *string `json:"lastError"`
+	LastOkAt     *int64  `json:"lastOkAt"`
+	LastFailedAt *int64  `json:"lastFailedAt"`
 }
 
 type ProfileScore struct {

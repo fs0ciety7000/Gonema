@@ -19,6 +19,7 @@ import (
 	"github.com/fs0ciety7000/gonema/internal/library"
 	"github.com/fs0ciety7000/gonema/internal/metadata"
 	"github.com/fs0ciety7000/gonema/internal/secretbox"
+	"github.com/fs0ciety7000/gonema/internal/store"
 	"github.com/fs0ciety7000/gonema/internal/store/storetest"
 )
 
@@ -58,6 +59,7 @@ type testEnv struct {
 	ts     *httptest.Server
 	lib    *library.Service
 	bus    *events.Bus
+	st     *store.Store
 	rootID int64
 	profID int64
 }
@@ -110,7 +112,7 @@ func newTestEnv(t *testing.T, baseURL string) *testEnv {
 		srv.Shutdown()
 		ts.Close()
 	})
-	return &testEnv{srv: srv, ts: ts, lib: lib, bus: bus, rootID: lib2.RootFolderID, profID: lib2.ProfileID}
+	return &testEnv{srv: srv, ts: ts, lib: lib, bus: bus, st: st, rootID: lib2.RootFolderID, profID: lib2.ProfileID}
 }
 
 type response struct {

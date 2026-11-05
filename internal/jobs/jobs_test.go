@@ -281,3 +281,64 @@ func TestListRecent(t *testing.T) {
 		t.Errorf("recent = %+v", jobs)
 	}
 }
+
+// waitNextRun polls the stored due time of kind until it equals want.
+func waitNextRun(t *testing.T, st *store.Store, kind string, want time.Time) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		next, err := store.GetSetting[int64](context.Background(), st, scheduleKey(kind))
+		if err == nil && next == store.Millis(want) {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("next run of %s = %v (err %v), want %v", kind, store.FromMillis(next), err, want)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
+// TestReschedule: a changed interval applies at once, from the last run, or
+// from now when the job has not run in this process.
+func TestReschedule(t *testing.T) {
+	st := storetest.New(t)
+	c := newClock()
+	ctx := context.Background()
+	// "idle" is due in 10 h; "busy" is due now.
+	if err := store.SetSetting(ctx, st, scheduleKey("idle"), store.Millis(c.Now().Add(10*time.Hour))); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SetSetting(ctx, st, scheduleKey("busy"), store.Millis(c.Now().Add(-time.Minute))); err != nil {
+		t.Fatal(err)
+	}
+	var idleEvery, busyEvery atomic.Int64
+	idleEvery.Store(int64(10 * time.Hour))
+	busyEvery.Store(int64(24 * time.Hour))
+	r := newRunner(t, st, c, nil)
+	ran := make(chan struct{}, 4)
+	r.Handle("busy", func(context.Context, db.Job) error { ran <- struct{}{}; return nil }, HandlerOptions{})
+	r.Handle("idle", func(context.Context, db.Job) error { return nil }, HandlerOptions{})
+	r.EveryFunc("idle", func() time.Duration { return time.Duration(idleEvery.Load()) }, 0, nil)
+	r.EveryFunc("busy", func() time.Duration { return time.Duration(busyEvery.Load()) }, 0, nil)
+	if r.Reschedule("unknown") {
+		t.Error("Reschedule of an unknown kind reported a schedule")
+	}
+	start(t, r)
+	select {
+	case <-ran:
+	case <-time.After(5 * time.Second):
+		t.Fatal("busy never ran")
+	}
+	start0 := c.Now()
+	waitNextRun(t, st, "busy", start0.Add(24*time.Hour))
+
+	idleEvery.Store(int64(time.Hour))
+	if !r.Reschedule("idle") {
+		t.Fatal("Reschedule(idle) = false")
+	}
+	waitNextRun(t, st, "idle", start0.Add(time.Hour))
+
+	busyEvery.Store(int64(48 * time.Hour))
+	r.Reschedule("busy")
+	waitNextRun(t, st, "busy", start0.Add(48*time.Hour))
+}

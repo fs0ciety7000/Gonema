@@ -1,0 +1,38 @@
+{
+  "MediaContainer": {
+    "size": 3,
+    "allowSync": false,
+    "title1": "Plex Library",
+    "Directory": [
+      {
+        "allowSync": true,
+        "key": "1",
+        "type": "movie",
+        "title": "Movies",
+        "agent": "tv.plex.agents.movie",
+        "scanner": "Plex Movie",
+        "language": "en-US",
+        "refreshing": false,
+        "Location": [{"id": 1, "path": "/media/movies"}]
+      },
+      {
+        "allowSync": true,
+        "key": "2",
+        "type": "show",
+        "title": "TV Shows",
+        "agent": "tv.plex.agents.series",
+        "scanner": "Plex TV Series",
+        "Location": [{"id": 2, "path": "/media/shows"}]
+      },
+      {
+        "allowSync": true,
+        "key": "7",
+        "type": "movie",
+        "title": "4K Movies",
+        "agent": "tv.plex.agents.movie",
+        "scanner": "Plex Movie",
+        "Location": [{"id": 5, "path": "/media/movies/4k"}, {"id": 6, "path": "/mnt/uhd"}]
+      }
+    ]
+  }
+}

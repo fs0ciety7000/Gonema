@@ -186,6 +186,8 @@ type Service struct {
 	healthMu sync.Mutex
 	health   map[int64]search.Health // last persisted breaker state
 
+	resched Rescheduler // set by RegisterJobs; nil: intervals apply at the next run
+
 	searches *searchCache
 	recent   *recentSearches
 

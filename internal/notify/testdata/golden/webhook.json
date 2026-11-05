@@ -1,0 +1,45 @@
+{
+  "schema": "gonema.v1",
+  "event": "grab",
+  "time": "2026-11-05T20:15:00Z",
+  "title": "Grabbed — Halcyon Drift (2024)",
+  "body": "Remux-2160p · 58.4 GB from Nebula NZB. Sent to SABnzbd.",
+  "summary": "Grabbed — Halcyon Drift (2024) · Remux-2160p · 58.4 GB from Nebula NZB",
+  "problem": false,
+  "movie": {
+    "id": 7,
+    "tmdbId": 900001,
+    "title": "Halcyon Drift",
+    "year": 2024,
+    "posterUrl": "https://image.tmdb.org/t/p/w342/poster.jpg",
+    "link": "https://gonema.example.lan/movies/7"
+  },
+  "fields": [
+    {
+      "key": "quality",
+      "label": "Quality",
+      "value": "Remux-2160p"
+    },
+    {
+      "key": "size",
+      "label": "Size",
+      "value": "58.4 GB"
+    },
+    {
+      "key": "indexer",
+      "label": "Indexer",
+      "value": "Nebula NZB"
+    },
+    {
+      "key": "release",
+      "label": "Release",
+      "value": "Halcyon.Drift.2024.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-GRP \u003c@everyone\u003e \u0026 co"
+    }
+  ],
+  "data": {
+    "indexer": "Nebula NZB",
+    "quality": "Remux-2160p",
+    "release": "Halcyon.Drift.2024.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-GRP \u003c@everyone\u003e \u0026 co",
+    "size": "58.4 GB"
+  }
+}

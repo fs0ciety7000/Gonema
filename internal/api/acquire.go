@@ -357,6 +357,43 @@ func (s *Server) acquireRoutes() {
 		return nil, nil
 	})
 
+	huma.Register(s.api, huma.Operation{
+		OperationID: "retry-download-import", Method: http.MethodPost, Path: "/queue/{id}/import", Summary: "Import a completed download again",
+		Description: "For a download in warning (failed import) or completed: runs the import again, e.g. after fixing a remote path mapping. " +
+			"The output path is asked again from the client with the current mappings. movieId imports it for another movie. " +
+			"The import runs in the background (202); its outcome streams as download.* events and is written to history.",
+		Tags: qTags, DefaultStatus: http.StatusAccepted,
+	}, func(ctx context.Context, in *struct {
+		IDParam
+		MovieID int64 `query:"movieId" minimum:"0" doc:"Import for this movie instead of the one the release was grabbed for"`
+	}) (*struct{ Body acquire.QueueItem }, error) {
+		item, err := a.RetryImport(ctx, in.ID, in.MovieID)
+		if err != nil {
+			return nil, s.problem(ctx, err, false)
+		}
+		return &struct{ Body acquire.QueueItem }{item}, nil
+	})
+
+	// ------------------------------------------------------------- settings
+	huma.Register(s.api, huma.Operation{
+		OperationID: "get-acquisition-settings", Method: http.MethodGet, Path: "/settings/acquisition", Summary: "Search and download settings",
+		Description: "Usenet retention and minimum age, preferred protocol, automatic retries, RSS and missing search intervals.",
+		Tags:        []string{"Settings"},
+	}, func(ctx context.Context, _ *struct{}) (*struct{ Body acquire.AcquisitionSettings }, error) {
+		return &struct{ Body acquire.AcquisitionSettings }{a.AcquisitionSettings(ctx)}, nil
+	})
+	huma.Register(s.api, huma.Operation{
+		OperationID: "set-acquisition-settings", Method: http.MethodPut, Path: "/settings/acquisition", Summary: "Change search and download settings",
+		Description: "Every field is required. Out-of-range values are refused with a message per field (422). New intervals apply at once.",
+		Tags:        []string{"Settings"},
+	}, func(ctx context.Context, in *struct{ Body acquire.AcquisitionSettings }) (*struct{ Body acquire.AcquisitionSettings }, error) {
+		out, err := a.SetAcquisitionSettings(ctx, in.Body)
+		if err != nil {
+			return nil, s.problem(ctx, err, false)
+		}
+		return &struct{ Body acquire.AcquisitionSettings }{out}, nil
+	})
+
 	// ------------------------------------------------------------- blocklist
 	blTags := []string{"Blocklist"}
 	huma.Register(s.api, huma.Operation{

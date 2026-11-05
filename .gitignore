@@ -40,3 +40,4 @@ bin/
 
 # Full-page design renders: regenerate with docs/design/tools/render.js
 docs/design/renders/*-full-*.jpg
+/gonema

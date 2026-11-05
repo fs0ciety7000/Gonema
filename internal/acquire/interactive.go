@@ -193,7 +193,7 @@ func releaseKey(searchID, candKey string) string {
 // StartInteractive starts an interactive search of a movie and returns at
 // once. Results stream as search.* events and are kept for GetSearch.
 func (s *Service) StartInteractive(ctx context.Context, movieID int64) (SearchSnapshot, error) {
-	mc, err := s.loadMovie(ctx, movieID, nil, decision.Options{Interactive: true})
+	mc, err := s.loadMovie(ctx, movieID, nil, s.searchOptions(ctx, true))
 	if err != nil {
 		return SearchSnapshot{}, err
 	}

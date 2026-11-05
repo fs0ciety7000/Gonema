@@ -71,6 +71,10 @@ func TestProfile_cutoffAndItems(t *testing.T) {
 	if got := p.CutoffLabel(); got != "Bluray-1080p" {
 		t.Errorf("CutoffLabel = %q", got)
 	}
+	p.Cutoff = ""
+	if p.CutoffRank() != 0 || p.CutoffLabel() != "" {
+		t.Error("empty cutoff should have rank 0")
+	}
 	p.Cutoff = "nowhere"
 	if p.CutoffRank() != 0 || p.CutoffLabel() != "nowhere" {
 		t.Error("missing cutoff should have rank 0 and keep its name")
@@ -81,6 +85,27 @@ func TestProfile_cutoffAndItems(t *testing.T) {
 	p.MinUpgradeStep = 25
 	if p.UpgradeStep() != 25 {
 		t.Errorf("UpgradeStep = %d, want 25", p.UpgradeStep())
+	}
+}
+
+// TestProfile_cutoffMemberOfGroup: a cutoff naming a member quality of a
+// group stands for the group (same rank and label as the group name), as the
+// database and the movie_state view accept it.
+func TestProfile_cutoffMemberOfGroup(t *testing.T) {
+	t.Parallel()
+	byGroup := hdProfile()
+	for _, member := range []quality.ID{quality.WebDL1080p, quality.WebRip1080p} {
+		p := hdProfile()
+		p.Cutoff = string(member)
+		if got, want := p.CutoffRank(), byGroup.CutoffRank(); got != want {
+			t.Errorf("CutoffRank(%s) = %d, want the group's %d", member, got, want)
+		}
+		if got := p.CutoffLabel(); got != "WEB 1080p" {
+			t.Errorf("CutoffLabel(%s) = %q, want the group name", member, got)
+		}
+		if err := p.Validate(nil); err != nil {
+			t.Errorf("Validate(%s) = %v", member, err)
+		}
 	}
 }
 
@@ -120,6 +145,12 @@ func TestProfile_Validate(t *testing.T) {
 		}, "allows no quality"},
 		{"cutoff absent", func(p *quality.Profile) { p.Cutoff = string(quality.Cam) }, `cutoff "cam" is not a quality or group of the profile`},
 		{"cutoff not allowed", func(p *quality.Profile) { p.Cutoff = string(quality.Remux1080p) }, "cutoff Remux-1080p is not an allowed quality"},
+		{"cutoff member of a group", func(p *quality.Profile) { p.Cutoff = string(quality.WebRip1080p) }, ""},
+		{"cutoff member of a refused group", func(p *quality.Profile) {
+			p.Items[2].Allowed = false
+			p.Cutoff = string(quality.WebDL1080p)
+		}, "cutoff WEB 1080p is not an allowed quality"},
+		{"cutoff is a group-less quality name", func(p *quality.Profile) { p.Cutoff = "Bluray-1080p" }, `cutoff "Bluray-1080p" is not a quality or group of the profile`},
 		{"duplicate quality", func(p *quality.Profile) {
 			p.Items = append(p.Items, quality.Item{Qualities: []quality.ID{quality.WebDL1080p}})
 		}, "quality WEBDL-1080p appears twice (in WEB 1080p and WEBDL-1080p)"},

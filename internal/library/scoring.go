@@ -167,12 +167,9 @@ func LoadQualityProfile(ctx context.Context, q *db.Queries, id int64) (quality.P
 	}
 	for i := range p.Items {
 		slices.SortStableFunc(p.Items[i].Qualities, func(a, b quality.ID) int { return catalogIndex(b) - catalogIndex(a) })
-		// The cutoff column may name a member of a group (movie_state accepts
-		// it); the engine names the group itself.
-		if it := &p.Items[i]; it.IsGroup() && slices.Contains(it.Qualities, quality.ID(p.Cutoff)) {
-			p.Cutoff = it.Name
-		}
 	}
+	// The cutoff column may name a member of a group (movie_state accepts it):
+	// quality.Profile resolves it to the group itself, so it is kept as stored.
 	if len(scores) > 0 {
 		p.Scores = make(map[string]int, len(scores))
 		for _, sc := range scores {

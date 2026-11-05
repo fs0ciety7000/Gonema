@@ -35,6 +35,7 @@ const busyTimeoutMS = 5000
 
 // Store holds the writer and reader pools of one SQLite database.
 type Store struct {
+	path   string
 	writer *sql.DB
 	reader *sql.DB
 	w      *db.Queries
@@ -85,7 +86,7 @@ func Open(ctx context.Context, path string) (*Store, error) {
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("store: prepare reader queries: %w", err), w.Close(), reader.Close(), writer.Close())
 	}
-	return &Store{writer: writer, reader: reader, w: w, r: r}, nil
+	return &Store{path: path, writer: writer, reader: reader, w: w, r: r}, nil
 }
 
 // checkWriter verifies that the pragmas took effect: WAL can silently fail (e.g.

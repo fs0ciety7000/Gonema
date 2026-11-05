@@ -43,8 +43,10 @@ func (it *Item) Label() string {
 type Profile struct {
 	Name  string `json:"name"`
 	Items []Item `json:"items"`
-	// Cutoff names the item (a quality ID or a group name) at or above which
-	// quality upgrades stop.
+	// Cutoff names the item at or above which quality upgrades stop: a group
+	// name, a single quality, or a member quality of a group (which stands for
+	// its group: members of a group share one rank). The database stores it the
+	// same way (quality_profiles.cutoff_quality, see the movie_state view).
 	Cutoff         string `json:"cutoff"`
 	UpgradeAllowed bool   `json:"upgradeAllowed"`
 	// MinScore rejects releases whose custom score is lower.
@@ -98,19 +100,20 @@ func (p *Profile) ItemOf(id ID) (Item, bool) {
 	return Item{}, false
 }
 
-// cutoffIndex returns the index of the cutoff item, or -1.
+// cutoffIndex returns the index of the cutoff item, or -1: the group named
+// Cutoff, else the item holding the quality Cutoff (a single quality or a
+// member of a group). Group names are never quality IDs (see Validate), so
+// the two cannot be confused.
 func (p *Profile) cutoffIndex() int {
+	if p.Cutoff == "" {
+		return -1
+	}
 	for i := range p.Items {
-		it := &p.Items[i]
-		if it.IsGroup() {
-			if it.Name == p.Cutoff {
-				return i
-			}
-		} else if len(it.Qualities) == 1 && string(it.Qualities[0]) == p.Cutoff {
+		if it := &p.Items[i]; it.IsGroup() && it.Name == p.Cutoff {
 			return i
 		}
 	}
-	return -1
+	return p.find(ID(p.Cutoff))
 }
 
 // CutoffRank returns the rank of the cutoff item, or 0 if the cutoff is not in the profile.

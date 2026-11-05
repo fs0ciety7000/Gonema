@@ -243,6 +243,15 @@ func (s *Service) reconcile(ctx context.Context, c *db.DownloadClient, cl downlo
 	s.track.mu.Lock()
 	l.clientDown = ""
 	s.track.mu.Unlock()
+	if importFailed(d) {
+		// The import failed (disk, permissions, path mapping): it runs again on
+		// request only (RetryImport). Retrying at each poll would repeat the
+		// failure and its history row every few seconds.
+		s.track.mu.Lock()
+		l.misses = 0
+		s.track.mu.Unlock()
+		return
+	}
 	if d.Status == string(download.StatusImporting) || (d.Status == string(download.StatusCompleted) && d.OutputPath != nil) {
 		// Waiting for (or resuming) the import; the client state no longer matters.
 		if d.OutputPath != nil {
@@ -300,6 +309,13 @@ func (s *Service) reconcile(ctx context.Context, c *db.DownloadClient, cl downlo
 		s.persistState(ctx, d, string(it.Status), l, it.Message, string(it.Status) != d.Status)
 	}
 	s.publish(events.Event{Type: events.DownloadProgress, MovieID: d.MovieID, Data: s.queueItemLive(d, c.Name, l)})
+}
+
+// importFailed reports whether a download waits in warning after a failed
+// import (completed in its client), as opposed to a warning reported by the
+// client while downloading (stalled, unknown state).
+func importFailed(d *db.Download) bool {
+	return d.Status == string(download.StatusWarning) && d.CompletedAt != nil
 }
 
 // persistState writes the status and progress of a download. changed publishes

@@ -91,9 +91,9 @@ func inContainer() bool {
 }
 
 // serve wires the services, serves HTTP until ctx is canceled, then shuts down
-// in order: stop accepting and end event streams, stop the queue tracker, the
-// jobs and the background searches and imports, drain the history writer,
-// close the database.
+// in order: stop accepting and end event streams, stop the queue tracker and
+// the health checks, the jobs and the background searches and imports, drain
+// the history writer, close the database.
 func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, getenv func(string) string) (err error) {
 	start := time.Now()
 	log.Info("starting gonema", append([]any{slog.String("version", version)}, cfg.LogAttrs()...)...)
@@ -171,12 +171,20 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, getenv fun
 		return err
 	}
 	acq.RegisterJobs(ctx, runner)
+	notes, media, err := startIntegrations(st, box, bus, lib, log)
+	if err != nil {
+		return err
+	}
 
 	srv := api.New(api.Deps{
 		Library: lib, Acquire: acq, Jobs: runner, Bus: bus, Store: st, Logger: log, Version: version,
 		StartedAt: start, DataDir: cfg.DataDir, BaseURL: cfg.BaseURL,
 	})
 	srv.RegisterImportRoutes(imp)
+	srv.RegisterIntegrationRoutes(notes, media)
+	checks, healthSettings := newHealth(st, bus, log, lib, acq, imp)
+	registerIntegrationChecks(checks, notes, media)
+	srv.RegisterHealthRoutes(checks, healthSettings)
 	httpSrv := &http.Server{
 		Handler:           srv.Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
@@ -202,6 +210,12 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, getenv fun
 		defer close(trackerDone)
 		acq.RunTracker(trackCtx)
 	}()
+	healthCtx, stopHealth := context.WithCancel(context.WithoutCancel(ctx))
+	healthDone := make(chan struct{})
+	go func() {
+		defer close(healthDone)
+		checks.Run(healthCtx)
+	}()
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- httpSrv.Serve(ln) }()
 	log.Info("gonema is ready", slog.String("address", "http://"+ln.Addr().String()+cfg.BaseURL+"/"),
@@ -222,10 +236,14 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, getenv fun
 	}
 	stopTracker()
 	<-trackerDone
+	stopHealth()
+	<-healthDone
 	if jerr := runner.Stop(sctx); jerr != nil {
 		errs = append(errs, jerr)
 	}
 	acq.Close()
+	notes.Close()
+	media.Close()
 	bus.Close()
 	if herr := history.Wait(sctx); herr != nil {
 		errs = append(errs, fmt.Errorf("history writer: %w", herr))
