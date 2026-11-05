@@ -48,6 +48,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.countMoviesStmt, err = db.PrepareContext(ctx, countMovies); err != nil {
 		return nil, fmt.Errorf("error preparing query CountMovies: %w", err)
 	}
+	if q.countMoviesInRootFolderStmt, err = db.PrepareContext(ctx, countMoviesInRootFolder); err != nil {
+		return nil, fmt.Errorf("error preparing query CountMoviesInRootFolder: %w", err)
+	}
 	if q.createQualityProfileStmt, err = db.PrepareContext(ctx, createQualityProfile); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateQualityProfile: %w", err)
 	}
@@ -156,8 +159,14 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listJobsByStatusStmt, err = db.PrepareContext(ctx, listJobsByStatus); err != nil {
 		return nil, fmt.Errorf("error preparing query ListJobsByStatus: %w", err)
 	}
+	if q.listMatcherAlternateTitleRowsStmt, err = db.PrepareContext(ctx, listMatcherAlternateTitleRows); err != nil {
+		return nil, fmt.Errorf("error preparing query ListMatcherAlternateTitleRows: %w", err)
+	}
 	if q.listMatcherAlternateTitlesStmt, err = db.PrepareContext(ctx, listMatcherAlternateTitles); err != nil {
 		return nil, fmt.Errorf("error preparing query ListMatcherAlternateTitles: %w", err)
+	}
+	if q.listMatcherMoviesStmt, err = db.PrepareContext(ctx, listMatcherMovies); err != nil {
+		return nil, fmt.Errorf("error preparing query ListMatcherMovies: %w", err)
 	}
 	if q.listMatcherTitlesStmt, err = db.PrepareContext(ctx, listMatcherTitles); err != nil {
 		return nil, fmt.Errorf("error preparing query ListMatcherTitles: %w", err)
@@ -177,6 +186,18 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listMoviesBySortTitleStmt, err = db.PrepareContext(ctx, listMoviesBySortTitle); err != nil {
 		return nil, fmt.Errorf("error preparing query ListMoviesBySortTitle: %w", err)
 	}
+	if q.listMoviesFilteredByAddedStmt, err = db.PrepareContext(ctx, listMoviesFilteredByAdded); err != nil {
+		return nil, fmt.Errorf("error preparing query ListMoviesFilteredByAdded: %w", err)
+	}
+	if q.listMoviesFilteredByTitleStmt, err = db.PrepareContext(ctx, listMoviesFilteredByTitle); err != nil {
+		return nil, fmt.Errorf("error preparing query ListMoviesFilteredByTitle: %w", err)
+	}
+	if q.listMoviesFilteredByYearStmt, err = db.PrepareContext(ctx, listMoviesFilteredByYear); err != nil {
+		return nil, fmt.Errorf("error preparing query ListMoviesFilteredByYear: %w", err)
+	}
+	if q.listMoviesForRefreshStmt, err = db.PrepareContext(ctx, listMoviesForRefresh); err != nil {
+		return nil, fmt.Errorf("error preparing query ListMoviesForRefresh: %w", err)
+	}
 	if q.listQualityProfileItemsStmt, err = db.PrepareContext(ctx, listQualityProfileItems); err != nil {
 		return nil, fmt.Errorf("error preparing query ListQualityProfileItems: %w", err)
 	}
@@ -185,6 +206,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.listRecentHistoryStmt, err = db.PrepareContext(ctx, listRecentHistory); err != nil {
 		return nil, fmt.Errorf("error preparing query ListRecentHistory: %w", err)
+	}
+	if q.listRecentJobsStmt, err = db.PrepareContext(ctx, listRecentJobs); err != nil {
+		return nil, fmt.Errorf("error preparing query ListRecentJobs: %w", err)
 	}
 	if q.listRootFoldersStmt, err = db.PrepareContext(ctx, listRootFolders); err != nil {
 		return nil, fmt.Errorf("error preparing query ListRootFolders: %w", err)
@@ -280,6 +304,11 @@ func (q *Queries) Close() error {
 	if q.countMoviesStmt != nil {
 		if cerr := q.countMoviesStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing countMoviesStmt: %w", cerr)
+		}
+	}
+	if q.countMoviesInRootFolderStmt != nil {
+		if cerr := q.countMoviesInRootFolderStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing countMoviesInRootFolderStmt: %w", cerr)
 		}
 	}
 	if q.createQualityProfileStmt != nil {
@@ -462,9 +491,19 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listJobsByStatusStmt: %w", cerr)
 		}
 	}
+	if q.listMatcherAlternateTitleRowsStmt != nil {
+		if cerr := q.listMatcherAlternateTitleRowsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listMatcherAlternateTitleRowsStmt: %w", cerr)
+		}
+	}
 	if q.listMatcherAlternateTitlesStmt != nil {
 		if cerr := q.listMatcherAlternateTitlesStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listMatcherAlternateTitlesStmt: %w", cerr)
+		}
+	}
+	if q.listMatcherMoviesStmt != nil {
+		if cerr := q.listMatcherMoviesStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listMatcherMoviesStmt: %w", cerr)
 		}
 	}
 	if q.listMatcherTitlesStmt != nil {
@@ -497,6 +536,26 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listMoviesBySortTitleStmt: %w", cerr)
 		}
 	}
+	if q.listMoviesFilteredByAddedStmt != nil {
+		if cerr := q.listMoviesFilteredByAddedStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listMoviesFilteredByAddedStmt: %w", cerr)
+		}
+	}
+	if q.listMoviesFilteredByTitleStmt != nil {
+		if cerr := q.listMoviesFilteredByTitleStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listMoviesFilteredByTitleStmt: %w", cerr)
+		}
+	}
+	if q.listMoviesFilteredByYearStmt != nil {
+		if cerr := q.listMoviesFilteredByYearStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listMoviesFilteredByYearStmt: %w", cerr)
+		}
+	}
+	if q.listMoviesForRefreshStmt != nil {
+		if cerr := q.listMoviesForRefreshStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listMoviesForRefreshStmt: %w", cerr)
+		}
+	}
 	if q.listQualityProfileItemsStmt != nil {
 		if cerr := q.listQualityProfileItemsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listQualityProfileItemsStmt: %w", cerr)
@@ -510,6 +569,11 @@ func (q *Queries) Close() error {
 	if q.listRecentHistoryStmt != nil {
 		if cerr := q.listRecentHistoryStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listRecentHistoryStmt: %w", cerr)
+		}
+	}
+	if q.listRecentJobsStmt != nil {
+		if cerr := q.listRecentJobsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listRecentJobsStmt: %w", cerr)
 		}
 	}
 	if q.listRootFoldersStmt != nil {
@@ -634,155 +698,171 @@ func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, ar
 }
 
 type Queries struct {
-	db                             DBTX
-	tx                             *sql.Tx
-	addImportListExclusionStmt     *sql.Stmt
-	addMovieTagStmt                *sql.Stmt
-	appendHistoryStmt              *sql.Stmt
-	cancelJobStmt                  *sql.Stmt
-	claimJobStmt                   *sql.Stmt
-	clearMovieTagsStmt             *sql.Stmt
-	completeJobStmt                *sql.Stmt
-	countMoviesStmt                *sql.Stmt
-	createQualityProfileStmt       *sql.Stmt
-	createRootFolderStmt           *sql.Stmt
-	createTagStmt                  *sql.Stmt
-	deleteAlternateTitlesStmt      *sql.Stmt
-	deleteCollectionStmt           *sql.Stmt
-	deleteFinishedJobsBeforeStmt   *sql.Stmt
-	deleteImportListExclusionStmt  *sql.Stmt
-	deleteMovieStmt                *sql.Stmt
-	deleteQualityProfileStmt       *sql.Stmt
-	deleteQualityProfileItemsStmt  *sql.Stmt
-	deleteRootFolderStmt           *sql.Stmt
-	deleteSettingStmt              *sql.Stmt
-	deleteTagStmt                  *sql.Stmt
-	enqueueJobStmt                 *sql.Stmt
-	failJobStmt                    *sql.Stmt
-	getCollectionStmt              *sql.Stmt
-	getCollectionByTmdbIDStmt      *sql.Stmt
-	getJobStmt                     *sql.Stmt
-	getMovieStmt                   *sql.Stmt
-	getMovieByImdbIDStmt           *sql.Stmt
-	getMovieByTmdbIDStmt           *sql.Stmt
-	getMovieStateStmt              *sql.Stmt
-	getQualityProfileStmt          *sql.Stmt
-	getQualityProfileByNameStmt    *sql.Stmt
-	getRootFolderStmt              *sql.Stmt
-	getSettingStmt                 *sql.Stmt
-	getTagByLabelStmt              *sql.Stmt
-	insertAlternateTitleStmt       *sql.Stmt
-	insertMovieStmt                *sql.Stmt
-	insertQualityProfileItemStmt   *sql.Stmt
-	isImportListExcludedStmt       *sql.Stmt
-	listAlternateTitlesStmt        *sql.Stmt
-	listCollectionMoviesStmt       *sql.Stmt
-	listCollectionsStmt            *sql.Stmt
-	listImportListExclusionsStmt   *sql.Stmt
-	listJobsByStatusStmt           *sql.Stmt
-	listMatcherAlternateTitlesStmt *sql.Stmt
-	listMatcherTitlesStmt          *sql.Stmt
-	listMovieHistoryStmt           *sql.Stmt
-	listMovieIDsByTagStmt          *sql.Stmt
-	listMovieTagsStmt              *sql.Stmt
-	listMoviesByAddedDescStmt      *sql.Stmt
-	listMoviesBySortTitleStmt      *sql.Stmt
-	listQualityProfileItemsStmt    *sql.Stmt
-	listQualityProfilesStmt        *sql.Stmt
-	listRecentHistoryStmt          *sql.Stmt
-	listRootFoldersStmt            *sql.Stmt
-	listSettingsStmt               *sql.Stmt
-	listTagsStmt                   *sql.Stmt
-	purgeHistoryStmt               *sql.Stmt
-	removeMovieTagStmt             *sql.Stmt
-	resetRunningJobsStmt           *sql.Stmt
-	setMovieLastSearchedStmt       *sql.Stmt
-	setMovieMonitoredStmt          *sql.Stmt
-	setSettingStmt                 *sql.Stmt
-	updateCollectionSettingsStmt   *sql.Stmt
-	updateMovieMetadataStmt        *sql.Stmt
-	updateMovieSettingsStmt        *sql.Stmt
-	updateQualityProfileStmt       *sql.Stmt
-	updateRootFolderPathStmt       *sql.Stmt
-	updateRootFolderSpaceStmt      *sql.Stmt
-	upsertCollectionStmt           *sql.Stmt
-	upsertMovieStmt                *sql.Stmt
+	db                                DBTX
+	tx                                *sql.Tx
+	addImportListExclusionStmt        *sql.Stmt
+	addMovieTagStmt                   *sql.Stmt
+	appendHistoryStmt                 *sql.Stmt
+	cancelJobStmt                     *sql.Stmt
+	claimJobStmt                      *sql.Stmt
+	clearMovieTagsStmt                *sql.Stmt
+	completeJobStmt                   *sql.Stmt
+	countMoviesStmt                   *sql.Stmt
+	countMoviesInRootFolderStmt       *sql.Stmt
+	createQualityProfileStmt          *sql.Stmt
+	createRootFolderStmt              *sql.Stmt
+	createTagStmt                     *sql.Stmt
+	deleteAlternateTitlesStmt         *sql.Stmt
+	deleteCollectionStmt              *sql.Stmt
+	deleteFinishedJobsBeforeStmt      *sql.Stmt
+	deleteImportListExclusionStmt     *sql.Stmt
+	deleteMovieStmt                   *sql.Stmt
+	deleteQualityProfileStmt          *sql.Stmt
+	deleteQualityProfileItemsStmt     *sql.Stmt
+	deleteRootFolderStmt              *sql.Stmt
+	deleteSettingStmt                 *sql.Stmt
+	deleteTagStmt                     *sql.Stmt
+	enqueueJobStmt                    *sql.Stmt
+	failJobStmt                       *sql.Stmt
+	getCollectionStmt                 *sql.Stmt
+	getCollectionByTmdbIDStmt         *sql.Stmt
+	getJobStmt                        *sql.Stmt
+	getMovieStmt                      *sql.Stmt
+	getMovieByImdbIDStmt              *sql.Stmt
+	getMovieByTmdbIDStmt              *sql.Stmt
+	getMovieStateStmt                 *sql.Stmt
+	getQualityProfileStmt             *sql.Stmt
+	getQualityProfileByNameStmt       *sql.Stmt
+	getRootFolderStmt                 *sql.Stmt
+	getSettingStmt                    *sql.Stmt
+	getTagByLabelStmt                 *sql.Stmt
+	insertAlternateTitleStmt          *sql.Stmt
+	insertMovieStmt                   *sql.Stmt
+	insertQualityProfileItemStmt      *sql.Stmt
+	isImportListExcludedStmt          *sql.Stmt
+	listAlternateTitlesStmt           *sql.Stmt
+	listCollectionMoviesStmt          *sql.Stmt
+	listCollectionsStmt               *sql.Stmt
+	listImportListExclusionsStmt      *sql.Stmt
+	listJobsByStatusStmt              *sql.Stmt
+	listMatcherAlternateTitleRowsStmt *sql.Stmt
+	listMatcherAlternateTitlesStmt    *sql.Stmt
+	listMatcherMoviesStmt             *sql.Stmt
+	listMatcherTitlesStmt             *sql.Stmt
+	listMovieHistoryStmt              *sql.Stmt
+	listMovieIDsByTagStmt             *sql.Stmt
+	listMovieTagsStmt                 *sql.Stmt
+	listMoviesByAddedDescStmt         *sql.Stmt
+	listMoviesBySortTitleStmt         *sql.Stmt
+	listMoviesFilteredByAddedStmt     *sql.Stmt
+	listMoviesFilteredByTitleStmt     *sql.Stmt
+	listMoviesFilteredByYearStmt      *sql.Stmt
+	listMoviesForRefreshStmt          *sql.Stmt
+	listQualityProfileItemsStmt       *sql.Stmt
+	listQualityProfilesStmt           *sql.Stmt
+	listRecentHistoryStmt             *sql.Stmt
+	listRecentJobsStmt                *sql.Stmt
+	listRootFoldersStmt               *sql.Stmt
+	listSettingsStmt                  *sql.Stmt
+	listTagsStmt                      *sql.Stmt
+	purgeHistoryStmt                  *sql.Stmt
+	removeMovieTagStmt                *sql.Stmt
+	resetRunningJobsStmt              *sql.Stmt
+	setMovieLastSearchedStmt          *sql.Stmt
+	setMovieMonitoredStmt             *sql.Stmt
+	setSettingStmt                    *sql.Stmt
+	updateCollectionSettingsStmt      *sql.Stmt
+	updateMovieMetadataStmt           *sql.Stmt
+	updateMovieSettingsStmt           *sql.Stmt
+	updateQualityProfileStmt          *sql.Stmt
+	updateRootFolderPathStmt          *sql.Stmt
+	updateRootFolderSpaceStmt         *sql.Stmt
+	upsertCollectionStmt              *sql.Stmt
+	upsertMovieStmt                   *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
-		db:                             tx,
-		tx:                             tx,
-		addImportListExclusionStmt:     q.addImportListExclusionStmt,
-		addMovieTagStmt:                q.addMovieTagStmt,
-		appendHistoryStmt:              q.appendHistoryStmt,
-		cancelJobStmt:                  q.cancelJobStmt,
-		claimJobStmt:                   q.claimJobStmt,
-		clearMovieTagsStmt:             q.clearMovieTagsStmt,
-		completeJobStmt:                q.completeJobStmt,
-		countMoviesStmt:                q.countMoviesStmt,
-		createQualityProfileStmt:       q.createQualityProfileStmt,
-		createRootFolderStmt:           q.createRootFolderStmt,
-		createTagStmt:                  q.createTagStmt,
-		deleteAlternateTitlesStmt:      q.deleteAlternateTitlesStmt,
-		deleteCollectionStmt:           q.deleteCollectionStmt,
-		deleteFinishedJobsBeforeStmt:   q.deleteFinishedJobsBeforeStmt,
-		deleteImportListExclusionStmt:  q.deleteImportListExclusionStmt,
-		deleteMovieStmt:                q.deleteMovieStmt,
-		deleteQualityProfileStmt:       q.deleteQualityProfileStmt,
-		deleteQualityProfileItemsStmt:  q.deleteQualityProfileItemsStmt,
-		deleteRootFolderStmt:           q.deleteRootFolderStmt,
-		deleteSettingStmt:              q.deleteSettingStmt,
-		deleteTagStmt:                  q.deleteTagStmt,
-		enqueueJobStmt:                 q.enqueueJobStmt,
-		failJobStmt:                    q.failJobStmt,
-		getCollectionStmt:              q.getCollectionStmt,
-		getCollectionByTmdbIDStmt:      q.getCollectionByTmdbIDStmt,
-		getJobStmt:                     q.getJobStmt,
-		getMovieStmt:                   q.getMovieStmt,
-		getMovieByImdbIDStmt:           q.getMovieByImdbIDStmt,
-		getMovieByTmdbIDStmt:           q.getMovieByTmdbIDStmt,
-		getMovieStateStmt:              q.getMovieStateStmt,
-		getQualityProfileStmt:          q.getQualityProfileStmt,
-		getQualityProfileByNameStmt:    q.getQualityProfileByNameStmt,
-		getRootFolderStmt:              q.getRootFolderStmt,
-		getSettingStmt:                 q.getSettingStmt,
-		getTagByLabelStmt:              q.getTagByLabelStmt,
-		insertAlternateTitleStmt:       q.insertAlternateTitleStmt,
-		insertMovieStmt:                q.insertMovieStmt,
-		insertQualityProfileItemStmt:   q.insertQualityProfileItemStmt,
-		isImportListExcludedStmt:       q.isImportListExcludedStmt,
-		listAlternateTitlesStmt:        q.listAlternateTitlesStmt,
-		listCollectionMoviesStmt:       q.listCollectionMoviesStmt,
-		listCollectionsStmt:            q.listCollectionsStmt,
-		listImportListExclusionsStmt:   q.listImportListExclusionsStmt,
-		listJobsByStatusStmt:           q.listJobsByStatusStmt,
-		listMatcherAlternateTitlesStmt: q.listMatcherAlternateTitlesStmt,
-		listMatcherTitlesStmt:          q.listMatcherTitlesStmt,
-		listMovieHistoryStmt:           q.listMovieHistoryStmt,
-		listMovieIDsByTagStmt:          q.listMovieIDsByTagStmt,
-		listMovieTagsStmt:              q.listMovieTagsStmt,
-		listMoviesByAddedDescStmt:      q.listMoviesByAddedDescStmt,
-		listMoviesBySortTitleStmt:      q.listMoviesBySortTitleStmt,
-		listQualityProfileItemsStmt:    q.listQualityProfileItemsStmt,
-		listQualityProfilesStmt:        q.listQualityProfilesStmt,
-		listRecentHistoryStmt:          q.listRecentHistoryStmt,
-		listRootFoldersStmt:            q.listRootFoldersStmt,
-		listSettingsStmt:               q.listSettingsStmt,
-		listTagsStmt:                   q.listTagsStmt,
-		purgeHistoryStmt:               q.purgeHistoryStmt,
-		removeMovieTagStmt:             q.removeMovieTagStmt,
-		resetRunningJobsStmt:           q.resetRunningJobsStmt,
-		setMovieLastSearchedStmt:       q.setMovieLastSearchedStmt,
-		setMovieMonitoredStmt:          q.setMovieMonitoredStmt,
-		setSettingStmt:                 q.setSettingStmt,
-		updateCollectionSettingsStmt:   q.updateCollectionSettingsStmt,
-		updateMovieMetadataStmt:        q.updateMovieMetadataStmt,
-		updateMovieSettingsStmt:        q.updateMovieSettingsStmt,
-		updateQualityProfileStmt:       q.updateQualityProfileStmt,
-		updateRootFolderPathStmt:       q.updateRootFolderPathStmt,
-		updateRootFolderSpaceStmt:      q.updateRootFolderSpaceStmt,
-		upsertCollectionStmt:           q.upsertCollectionStmt,
-		upsertMovieStmt:                q.upsertMovieStmt,
+		db:                                tx,
+		tx:                                tx,
+		addImportListExclusionStmt:        q.addImportListExclusionStmt,
+		addMovieTagStmt:                   q.addMovieTagStmt,
+		appendHistoryStmt:                 q.appendHistoryStmt,
+		cancelJobStmt:                     q.cancelJobStmt,
+		claimJobStmt:                      q.claimJobStmt,
+		clearMovieTagsStmt:                q.clearMovieTagsStmt,
+		completeJobStmt:                   q.completeJobStmt,
+		countMoviesStmt:                   q.countMoviesStmt,
+		countMoviesInRootFolderStmt:       q.countMoviesInRootFolderStmt,
+		createQualityProfileStmt:          q.createQualityProfileStmt,
+		createRootFolderStmt:              q.createRootFolderStmt,
+		createTagStmt:                     q.createTagStmt,
+		deleteAlternateTitlesStmt:         q.deleteAlternateTitlesStmt,
+		deleteCollectionStmt:              q.deleteCollectionStmt,
+		deleteFinishedJobsBeforeStmt:      q.deleteFinishedJobsBeforeStmt,
+		deleteImportListExclusionStmt:     q.deleteImportListExclusionStmt,
+		deleteMovieStmt:                   q.deleteMovieStmt,
+		deleteQualityProfileStmt:          q.deleteQualityProfileStmt,
+		deleteQualityProfileItemsStmt:     q.deleteQualityProfileItemsStmt,
+		deleteRootFolderStmt:              q.deleteRootFolderStmt,
+		deleteSettingStmt:                 q.deleteSettingStmt,
+		deleteTagStmt:                     q.deleteTagStmt,
+		enqueueJobStmt:                    q.enqueueJobStmt,
+		failJobStmt:                       q.failJobStmt,
+		getCollectionStmt:                 q.getCollectionStmt,
+		getCollectionByTmdbIDStmt:         q.getCollectionByTmdbIDStmt,
+		getJobStmt:                        q.getJobStmt,
+		getMovieStmt:                      q.getMovieStmt,
+		getMovieByImdbIDStmt:              q.getMovieByImdbIDStmt,
+		getMovieByTmdbIDStmt:              q.getMovieByTmdbIDStmt,
+		getMovieStateStmt:                 q.getMovieStateStmt,
+		getQualityProfileStmt:             q.getQualityProfileStmt,
+		getQualityProfileByNameStmt:       q.getQualityProfileByNameStmt,
+		getRootFolderStmt:                 q.getRootFolderStmt,
+		getSettingStmt:                    q.getSettingStmt,
+		getTagByLabelStmt:                 q.getTagByLabelStmt,
+		insertAlternateTitleStmt:          q.insertAlternateTitleStmt,
+		insertMovieStmt:                   q.insertMovieStmt,
+		insertQualityProfileItemStmt:      q.insertQualityProfileItemStmt,
+		isImportListExcludedStmt:          q.isImportListExcludedStmt,
+		listAlternateTitlesStmt:           q.listAlternateTitlesStmt,
+		listCollectionMoviesStmt:          q.listCollectionMoviesStmt,
+		listCollectionsStmt:               q.listCollectionsStmt,
+		listImportListExclusionsStmt:      q.listImportListExclusionsStmt,
+		listJobsByStatusStmt:              q.listJobsByStatusStmt,
+		listMatcherAlternateTitleRowsStmt: q.listMatcherAlternateTitleRowsStmt,
+		listMatcherAlternateTitlesStmt:    q.listMatcherAlternateTitlesStmt,
+		listMatcherMoviesStmt:             q.listMatcherMoviesStmt,
+		listMatcherTitlesStmt:             q.listMatcherTitlesStmt,
+		listMovieHistoryStmt:              q.listMovieHistoryStmt,
+		listMovieIDsByTagStmt:             q.listMovieIDsByTagStmt,
+		listMovieTagsStmt:                 q.listMovieTagsStmt,
+		listMoviesByAddedDescStmt:         q.listMoviesByAddedDescStmt,
+		listMoviesBySortTitleStmt:         q.listMoviesBySortTitleStmt,
+		listMoviesFilteredByAddedStmt:     q.listMoviesFilteredByAddedStmt,
+		listMoviesFilteredByTitleStmt:     q.listMoviesFilteredByTitleStmt,
+		listMoviesFilteredByYearStmt:      q.listMoviesFilteredByYearStmt,
+		listMoviesForRefreshStmt:          q.listMoviesForRefreshStmt,
+		listQualityProfileItemsStmt:       q.listQualityProfileItemsStmt,
+		listQualityProfilesStmt:           q.listQualityProfilesStmt,
+		listRecentHistoryStmt:             q.listRecentHistoryStmt,
+		listRecentJobsStmt:                q.listRecentJobsStmt,
+		listRootFoldersStmt:               q.listRootFoldersStmt,
+		listSettingsStmt:                  q.listSettingsStmt,
+		listTagsStmt:                      q.listTagsStmt,
+		purgeHistoryStmt:                  q.purgeHistoryStmt,
+		removeMovieTagStmt:                q.removeMovieTagStmt,
+		resetRunningJobsStmt:              q.resetRunningJobsStmt,
+		setMovieLastSearchedStmt:          q.setMovieLastSearchedStmt,
+		setMovieMonitoredStmt:             q.setMovieMonitoredStmt,
+		setSettingStmt:                    q.setSettingStmt,
+		updateCollectionSettingsStmt:      q.updateCollectionSettingsStmt,
+		updateMovieMetadataStmt:           q.updateMovieMetadataStmt,
+		updateMovieSettingsStmt:           q.updateMovieSettingsStmt,
+		updateQualityProfileStmt:          q.updateQualityProfileStmt,
+		updateRootFolderPathStmt:          q.updateRootFolderPathStmt,
+		updateRootFolderSpaceStmt:         q.updateRootFolderSpaceStmt,
+		upsertCollectionStmt:              q.upsertCollectionStmt,
+		upsertMovieStmt:                   q.upsertMovieStmt,
 	}
 }

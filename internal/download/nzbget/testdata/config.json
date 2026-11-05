@@ -1,0 +1,7 @@
+{"version": "1.1", "result": [
+ {"Name": "MainDir", "Value": "/downloads"},
+ {"Name": "Category1.Name", "Value": "movies"},
+ {"Name": "Category1.DestDir", "Value": ""},
+ {"Name": "Category2.Name", "Value": "tv"},
+ {"Name": "ControlPassword", "Value": "***"}
+]}

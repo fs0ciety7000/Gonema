@@ -19,6 +19,7 @@ type Querier interface {
 	ClearMovieTags(ctx context.Context, movieID int64) error
 	CompleteJob(ctx context.Context, arg CompleteJobParams) (int64, error)
 	CountMovies(ctx context.Context) (int64, error)
+	CountMoviesInRootFolder(ctx context.Context, rootFolderID int64) (int64, error)
 	CreateQualityProfile(ctx context.Context, arg CreateQualityProfileParams) (QualityProfile, error)
 	CreateRootFolder(ctx context.Context, path string) (RootFolder, error)
 	CreateTag(ctx context.Context, label string) (Tag, error)
@@ -59,7 +60,10 @@ type Querier interface {
 	ListCollections(ctx context.Context) ([]Collection, error)
 	ListImportListExclusions(ctx context.Context) ([]ImportListExclusion, error)
 	ListJobsByStatus(ctx context.Context, arg ListJobsByStatusParams) ([]Job, error)
+	ListMatcherAlternateTitleRows(ctx context.Context) ([]ListMatcherAlternateTitleRowsRow, error)
 	ListMatcherAlternateTitles(ctx context.Context) ([]ListMatcherAlternateTitlesRow, error)
+	// ListMatcherMovies feeds the in-memory release matcher (internal/match).
+	ListMatcherMovies(ctx context.Context) ([]ListMatcherMoviesRow, error)
 	ListMatcherTitles(ctx context.Context) ([]ListMatcherTitlesRow, error)
 	// ListMovieHistory is keyset-paginated, newest first: pass the last id of the
 	// previous page, or math.MaxInt64 first.
@@ -72,9 +76,25 @@ type Querier interface {
 	// ListMoviesBySortTitle is keyset-paginated: pass the last (sort_title, id) of the
 	// previous page, or ('', 0) for the first page.
 	ListMoviesBySortTitle(ctx context.Context, arg ListMoviesBySortTitleParams) ([]ListMoviesBySortTitleRow, error)
+	// ListMoviesFilteredByAdded is keyset-paginated by (added_at, id) descending
+	// (newest first): pass the last (added_at, id), or (MaxInt64, MaxInt64) first.
+	ListMoviesFilteredByAdded(ctx context.Context, arg ListMoviesFilteredByAddedParams) ([]ListMoviesFilteredByAddedRow, error)
+	// Queries of the library service (internal/library) and the API.
+	// ListMoviesFilteredByTitle is keyset-paginated by (sort_title, id) ascending: pass
+	// the last (sort_title, id) of the previous page, or ('', 0) first. Every filter is
+	// optional: NULL disables it. year_min / year_max are always applied (0 / 9999 to
+	// disable).
+	ListMoviesFilteredByTitle(ctx context.Context, arg ListMoviesFilteredByTitleParams) ([]ListMoviesFilteredByTitleRow, error)
+	// ListMoviesFilteredByYear is keyset-paginated by (year, id) descending (newest
+	// first): pass the last (year, id) of the previous page, or (9999, MaxInt64) first.
+	ListMoviesFilteredByYear(ctx context.Context, arg ListMoviesFilteredByYearParams) ([]ListMoviesFilteredByYearRow, error)
+	// ListMoviesForRefresh is read by the daily metadata refresh to pick the movies
+	// whose metadata is due (see library.RefreshDue).
+	ListMoviesForRefresh(ctx context.Context) ([]ListMoviesForRefreshRow, error)
 	ListQualityProfileItems(ctx context.Context, profileID int64) ([]QualityProfileItem, error)
 	ListQualityProfiles(ctx context.Context) ([]QualityProfile, error)
 	ListRecentHistory(ctx context.Context, arg ListRecentHistoryParams) ([]History, error)
+	ListRecentJobs(ctx context.Context, arg ListRecentJobsParams) ([]Job, error)
 	ListRootFolders(ctx context.Context) ([]RootFolder, error)
 	ListSettings(ctx context.Context) ([]Setting, error)
 	ListTags(ctx context.Context) ([]Tag, error)
