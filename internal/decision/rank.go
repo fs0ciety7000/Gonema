@@ -84,6 +84,10 @@ func compareEvaluated(a, b *Evaluated, prefer Protocol) int {
 		strings.Compare(ca.DownloadURL, cb.DownloadURL),
 		strings.Compare(ca.InfoHash, cb.InfoHash),
 		cmp.Compare(ca.Size, cb.Size),
+		// Fields that the criteria above may not separate (protocol when no
+		// preference is set, seeders of Usenet releases): keep the order total.
+		strings.Compare(string(ca.Protocol), string(cb.Protocol)),
+		cmp.Compare(cb.Seeders, ca.Seeders),
 	)
 }
 
