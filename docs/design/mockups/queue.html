@@ -41,12 +41,13 @@
 
   /* History */
   .hist { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-raised); box-shadow: var(--elev-2); overflow: hidden; }
+  .hist .tbl { table-layout: fixed; }
   .hist .tbl td { vertical-align: top; padding-top: 12px; padding-bottom: 12px; height: auto; white-space: normal; }
   .hist .tbl thead th { background: color-mix(in srgb, var(--bg-sunken) 60%, var(--bg-raised)); }
   .hist .film { display: flex; gap: 10px; align-items: center; font-weight: 500; }
   .hist .film .thumb { width: 26px; aspect-ratio: 2/3; border-radius: 4px; overflow: hidden; flex: none; } .hist .film .poster-art svg { width: 100%; height: 100%; }
   .hist .reason { font: var(--type-body-sm); color: var(--text-secondary); }
-  .hist .reason .rel { display: block; font: var(--type-mono-sm); color: var(--text-muted); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 520px; }
+  .hist .reason .rel { display: block; font: var(--type-mono-sm); color: var(--text-muted); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
   .hist tr.chain td:first-child { box-shadow: inset 2px 0 0 var(--border-strong); }
   .hist .tbl td.when { color: var(--text-muted); font: var(--type-caption); font-variant-numeric: tabular-nums; white-space: nowrap; }
   [data-tab="history"] .only-queue, [data-tab="queue"] .only-history { display: none !important; }
@@ -83,7 +84,7 @@
 
       <div class="only-history hist">
         <table class="tbl" aria-label="History">
-          <colgroup><col style="width:120px"><col style="width:220px"><col style="width:150px"><col><col style="width:150px"><col style="width:80px"></colgroup>
+          <colgroup><col style="width:112px"><col style="width:200px"><col style="width:156px"><col><col style="width:148px"><col style="width:76px"></colgroup>
           <thead><tr><th>When</th><th>Film</th><th>Event</th><th>What happened and why</th><th>Quality</th><th class="r">Score</th></tr></thead>
           <tbody id="h"></tbody>
         </table>
