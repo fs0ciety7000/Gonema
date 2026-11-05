@@ -22,18 +22,19 @@
 
   const NAV = [
     { h: 'Library', items: [
+      ['home', 'gauge', 'Home', '', 'dashboard.html'],
       ['films', 'film', 'Films', '1,284', 'library-grid.html'],
       ['collections', 'layers', 'Collections', '86'],
-      ['calendar', 'calendar', 'Calendar'],
-      ['discover', 'compass', 'Discover'] ] },
+      ['calendar', 'calendar', 'Calendar', '', 'calendar.html'],
+      ['discover', 'compass', 'Add &amp; discover', '', 'add-film.html'] ] },
     { h: 'Activity', items: [
-      ['queue', 'arrow-down-to-line', 'Queue', '<span class="count live" title="3 downloading">3</span>'],
-      ['history', 'history', 'History'],
+      ['queue', 'arrow-down-to-line', 'Queue', '<span class="count live" title="3 downloading">3</span>', 'queue.html'],
+      ['history', 'history', 'History', '', 'queue.html?tab=history'],
       ['wanted', 'circle-dashed', 'Wanted', '<span class="count warn" title="47 missing">47</span>'],
       ['blocklist', 'ban', 'Blocklist'] ] },
     { h: 'System', items: [
       ['health', 'activity', 'Health', '<span class="count warn" title="1 issue">1</span>'],
-      ['settings', 'settings', 'Settings'] ] },
+      ['settings', 'settings', 'Settings', '', 'settings-quality.html'] ] },
   ];
 
   function sidebar(active) {
@@ -43,7 +44,7 @@
       sec.items.forEach(([id, ic, label, count, href]) => {
         const cur = id === active ? ' aria-current="page"' : '';
         const c = count ? (count.startsWith('<') ? count : '<span class="count">' + count + '</span>') : '';
-        s += '<a class="nav-item" href="' + (href || '#') + '"' + cur + ' aria-label="' + label + '">' + icon(ic) + '<span class="label">' + label + '</span>' + c + '</a>';
+        s += '<a class="nav-item" href="' + (href || '#') + '"' + cur + ' aria-label="' + label.replace('&amp;', 'and') + '">' + icon(ic) + '<span class="label">' + label + '</span>' + c + '</a>';
       });
       s += '</div>';
     });

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Add film · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: add film. ?tab=search (default) | discover */
+  .page { padding-top: var(--space-6); }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-5); }
+  .head h1 { font: var(--type-display-lg); letter-spacing: var(--type-display-lg-tracking); font-stretch: 125%; }
+  .big-search { height: 52px; border-radius: var(--radius-lg); font-size: 16px; margin-bottom: var(--space-5); }
+  .big-search input { font: var(--type-body-lg) !important; }
+  .big-search .i { width: 20px; height: 20px; }
+  .split { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: var(--space-6); align-items: start; }
+  .results { display: grid; gap: 8px; }
+  .res { display: grid; grid-template-columns: 64px 1fr auto; gap: var(--space-4); padding: 10px; border-radius: var(--radius-lg); border: 1px solid transparent; align-items: center; cursor: pointer; transition: background-color var(--dur-fast), border-color var(--dur-fast); }
+  .res:hover { background: var(--bg-hover); }
+  .res[aria-selected="true"] { background: var(--bg-selected); border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+  .res .poster-art { aspect-ratio: 2/3; border-radius: 8px; overflow: hidden; box-shadow: var(--elev-poster); }
+  .res svg { width: 100%; height: 100%; }
+  .res h3 { font: 600 15px/20px var(--font-ui); display: flex; gap: 8px; align-items: baseline; }
+  .res h3 span { font: 400 14px/20px var(--font-ui); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .res p { font: var(--type-body-sm); color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 2px; max-width: 70ch; }
+  .res .meta { font: var(--type-caption); color: var(--text-muted); margin-top: 4px; }
+  .res.in-lib .poster-art { opacity: .7; }
+  .count-line { font: var(--type-caption); color: var(--text-muted); margin: 0 0 6px 10px; }
+  .opt { position: sticky; top: calc(var(--topbar-h) + 16px); overflow: hidden; }
+  .opt .hero { position: relative; height: 150px; overflow: hidden; }
+  .opt .hero .backdrop-art { position: absolute; inset: 0; } .opt .hero svg { width: 100%; height: 100%; }
+  .opt .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent, var(--bg-raised)); }
+  .opt .id { display: grid; grid-template-columns: 76px 1fr; gap: var(--space-4); padding: 0 var(--space-5); margin-top: -64px; position: relative; z-index: 1; align-items: end; }
+  .opt .id .poster-art { aspect-ratio: 2/3; border-radius: 10px; overflow: hidden; box-shadow: var(--elev-poster-hover); } .opt .id svg { width: 100%; height: 100%; }
+  .opt .id h2 { font: 600 20px/24px var(--font-display); font-stretch: 125%; }
+  .opt .id .t-caption { color: var(--text-muted); }
+  .opt form { padding: var(--space-5); display: grid; gap: var(--space-4); }
+  .opt .two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+  .opt .monitor { display: grid; gap: 6px; }
+  .opt .actions { display: flex; gap: var(--space-2); justify-content: flex-end; padding-top: var(--space-4); border-top: 1px solid var(--border); align-items: center; }
+  .opt .actions .check { margin-right: auto; font: var(--type-body-sm); }
+  .tags-edit { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: var(--control-h); padding: 4px 6px; border-radius: var(--radius-md); border: 1px solid var(--border-control); background: var(--bg-sunken); }
+  .tags-edit input { all: unset; flex: 1; min-width: 60px; font: var(--type-body-sm); padding: 0 4px; }
+  .tags-edit input::placeholder { color: var(--text-muted); }
+
+  /* Discover */
+  .shelf { margin-bottom: var(--space-8); }
+  .shelf-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3); }
+  .shelf-hd h2 { font: var(--type-title-lg); display: flex; align-items: center; gap: 10px; }
+  .shelf-hd .t-caption { color: var(--text-muted); font-weight: 400; }
+  .rowp { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--space-5); }
+  .lib-badge { position: absolute; z-index: 2; bottom: 8px; left: 8px; }
+  .coll { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); }
+  .coll .panel { display: grid; grid-template-columns: auto 1fr; gap: var(--space-4); padding: var(--space-4); align-items: center; }
+  .coll .stackp { position: relative; width: 112px; height: 104px; }
+  .coll .stackp .poster-art { position: absolute; width: 64px; aspect-ratio: 2/3; border-radius: 7px; overflow: hidden; box-shadow: var(--elev-poster); }
+  .coll .stackp svg { width: 100%; height: 100%; }
+  .coll h3 { font: 600 15px/20px var(--font-ui); }
+  .coll p { font: var(--type-caption); color: var(--text-muted); margin: 2px 0 8px; }
+  .person-head { display: flex; align-items: center; gap: var(--space-3); }
+  .person-head .avatar { width: 36px; height: 36px; background: linear-gradient(140deg, #b8643c, #3a1d14); }
+  [data-tab="discover"] .only-search, [data-tab="search"] .only-discover { display: none !important; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app" id="app" data-tab="search">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar="discover"></nav>
+  <div class="main">
+    <header class="topbar">
+      <nav class="crumbs" aria-label="Breadcrumb"><span aria-current="page">Add &amp; discover</span></nav>
+      <div class="spacer"></div>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    </header>
+    <main id="main" class="page">
+      <div class="head">
+        <h1>Add a film</h1>
+        <div class="tabs" role="tablist" aria-label="Add or discover" style="border:0">
+          <a role="tab" href="?tab=search" id="tab-s" aria-selected="true" style="text-decoration:none">Search</a>
+          <a role="tab" href="?tab=discover" id="tab-d" aria-selected="false" style="text-decoration:none">Discover</a>
+        </div>
+      </div>
+
+      <!-- SEARCH -->
+      <div class="only-search">
+        <label class="input big-search"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" value="drift" aria-label="Search TMDB by title, or paste an IMDb or TMDB link"><span class="t-caption t-muted">Title, imdb:tt…, or a TMDB link</span></label>
+        <div class="split">
+          <div>
+            <p class="count-line">6 films on TMDB · ↑↓ to move, ↵ to add with these options</p>
+            <div class="results" role="listbox" aria-label="Search results" id="results"></div>
+          </div>
+          <aside class="panel opt" aria-labelledby="opt-h">
+            <div class="hero"><div class="backdrop-art" data-film="continental-drift"></div></div>
+            <div class="id"><div class="poster-art" data-film="continental-drift"></div><div><h2 id="opt-h">Continental Drift</h2><span class="t-caption">1998 · Drama · 1 h 48 min · Walter Brisk</span></div></div>
+            <form onsubmit="return false">
+              <div class="field"><span class="field-label" id="rf-l">Root folder <span class="t-muted" style="font-weight:400">6.3 TB free</span></span><button class="input select" type="button" aria-haspopup="listbox" aria-labelledby="rf-l rf-v"><span class="value t-mono" id="rf-v">/data/movies</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button><span class="field-hint t-mono-sm">→ /data/movies/Continental Drift (1998)/</span></div>
+              <div class="two">
+                <div class="field"><span class="field-label" id="qp-l">Quality profile</span><button class="input select" type="button" aria-haspopup="listbox" aria-labelledby="qp-l qp-v"><span class="value" id="qp-v">Cinema HD</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button></div>
+                <div class="field"><span class="field-label" id="ma-l">Minimum availability</span><button class="input select" type="button" aria-haspopup="listbox" aria-labelledby="ma-l ma-v"><span class="value" id="ma-v">Released</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button></div>
+              </div>
+              <div class="field monitor"><span class="field-label" id="mon-l">Monitor</span>
+                <div class="segmented" role="radiogroup" aria-labelledby="mon-l"><button role="radio" aria-checked="true" type="button">This film</button><button role="radio" aria-checked="false" type="button">Whole collection</button><button role="radio" aria-checked="false" type="button">Don’t monitor</button></div>
+                <span class="field-hint">Not part of a collection on TMDB.</span>
+              </div>
+              <div class="field"><label class="field-label" for="tg">Tags</label><div class="tags-edit"><span class="tag">drama</span><input id="tg" placeholder="Add tag…"></div></div>
+              <div class="actions">
+                <label class="check"><input type="checkbox" checked>Start searching now</label>
+                <button class="btn btn-primary" type="button"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Add film <span class="kbd" style="background:transparent;color:inherit;border-color:color-mix(in srgb,currentColor 35%,transparent)">↵</span></button>
+              </div>
+            </form>
+          </aside>
+        </div>
+      </div>
+
+      <!-- DISCOVER -->
+      <div class="only-discover">
+        <div class="row" style="margin-bottom:var(--space-6);gap:8px;flex-wrap:wrap">
+          <button class="chip" aria-pressed="true" type="button">All lists</button>
+          <button class="chip" type="button">Popular</button><button class="chip" type="button">Trending this week</button><button class="chip" type="button">Upcoming</button><button class="chip" type="button">Collections</button><button class="chip" type="button">People</button>
+          <span class="t-caption t-muted" style="margin-left:auto">Films already in your library are marked · <a href="#">hide them</a></span>
+        </div>
+        <section class="shelf" aria-labelledby="sh1"><div class="shelf-hd"><h2 id="sh1">Trending this week <span class="t-caption">TMDB</span></h2><a class="btn btn-ghost btn-sm" href="#">See all<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></a></div><div class="rowp" id="r1"></div></section>
+        <section class="shelf" aria-labelledby="sh2"><div class="shelf-hd"><h2 id="sh2">Upcoming <span class="t-caption">next 60 days</span></h2><div class="row"><button class="btn btn-secondary btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-list-checks"/></svg>Make this an import list</button></div></div><div class="rowp" id="r2"></div></section>
+        <div class="split" style="grid-template-columns:1fr 1fr">
+          <section class="shelf" aria-labelledby="sh3"><div class="shelf-hd"><h2 id="sh3">Collections you’ve started</h2></div>
+            <div class="coll" style="grid-template-columns:1fr">
+              <div class="panel"><div class="stackp"><div class="poster-art" data-film="drift-signal" style="left:0;top:8px"></div><div class="poster-art" data-film="drift-terminus" style="left:48px;top:8px;transform:rotate(4deg)"></div></div><div><h3>The Drift Saga</h3><p>3 films · 2 in library · 1 announced</p><button class="btn btn-secondary btn-sm" type="button">Monitor collection</button></div></div>
+              <div class="panel"><div class="stackp"><div class="poster-art" data-film="lighthouse-daughter" style="left:0;top:8px"></div><div class="poster-art" data-film="drifters-calder" style="left:48px;top:8px;transform:rotate(4deg)"></div></div><div><h3>Gull Island Stories</h3><p>2 films · 1 in library</p><button class="btn btn-secondary btn-sm" type="button">Add the missing one</button></div></div>
+            </div></section>
+          <section class="shelf" aria-labelledby="sh4"><div class="shelf-hd"><div class="person-head"><span class="avatar" aria-hidden="true">IC</span><h2 id="sh4">Ines Calloway <span class="t-caption">director · 5 films</span></h2></div><a class="btn btn-ghost btn-sm" href="#">Filmography<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></a></div><div class="rowp" id="r3" style="grid-template-columns:repeat(4,1fr)"></div></section>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="../system/icons.js"></script>
+<script src="../system/posters.js"></script>
+<script src="../system/mock.js"></script>
+<script>
+  const tab = new URLSearchParams(location.search).get('tab') === 'discover' ? 'discover' : 'search';
+  document.getElementById('app').dataset.tab = tab;
+  document.getElementById('tab-s').setAttribute('aria-selected', tab === 'search'); document.getElementById('tab-d').setAttribute('aria-selected', tab === 'discover');
+  const ic = GN.ic;
+  const R = [
+    ['continental-drift', 'A seismologist returns to the island town her father mapped, just as the ground starts keeping its own counsel.', 'Drama · Walter Brisk', null, true],
+    ['halcyon-drift', 'An engineer discovers the colony has been drifting toward the terminator line.', 'Science fiction · Ines Calloway', 'upgraded'],
+    ['drift-signal', 'Before the ship landed, a faint signal from the surface changed every plan on board.', 'Science fiction · Ines Calloway', 'available'],
+    ['snowdrift', 'Snowed in at a mountain station, two strangers swap the stories they never told anyone.', 'Romance · Astrid Holm', null],
+    ['drifters-calder', 'A fishing crew, a missing logbook and one very long winter on the north coast.', 'Adventure · Morgan Feist', null],
+    ['drift-terminus', 'The final chapter of the Drift Saga. Announced for 2027.', 'Science fiction · Ines Calloway', 'missing'],
+  ];
+  document.getElementById('results').innerHTML = R.map(([id, ov, meta, st, sel]) => {
+    const f = GN.films[id];
+    const right = st ? (st === 'missing' ? '<span class="badge" data-status="missing">' + ic('circle-dashed') + 'In library · wanted</span>' : '<span class="badge" data-status="available">' + ic('check') + 'In library</span>') : '<button class="icon-btn outlined" type="button" aria-label="Quick add ' + f.title + ' with default options" title="Quick add  ⇧↵">' + ic('plus') + '</button>';
+    return '<div class="res' + (st ? ' in-lib' : '') + '" role="option" aria-selected="' + !!sel + '" tabindex="' + (sel ? 0 : -1) + '"><div class="poster-art" data-film="' + id + '"></div><div><h3>' + f.title + ' <span>' + f.year + '</span></h3><p>' + ov + '</p><div class="meta">' + meta + '</div></div>' + right + '</div>';
+  }).join('');
+  const lib = { 'quiet-meridian': 1, 'halcyon-drift': 1, 'sundial': 1, 'drift-signal': 1, 'room-without-weather': 1, 'parallax': 1 };
+  const shelf = ids => ids.map(([id, extra]) => {
+    const inLib = lib[id];
+    return '<div class="pc"><div class="pc-frame"><a class="pc-link" href="#" aria-label="' + GN.films[id].title + ' (' + GN.films[id].year + ')' + (inLib ? ', in library' : '') + '"><div class="poster-art" data-film="' + id + '"></div></a>' + (inLib ? '<span class="lib-badge badge on-media" data-status="available">' + ic('check') + 'In library</span>' : '') + '<div class="pc-shade"></div><div class="pc-bottom"><div class="pc-actions"><button class="icon-btn on-media" type="button" aria-label="Add ' + GN.films[id].title + '">' + ic('plus', 'i-sm') + '</button></div></div></div><div class="pc-meta"><div class="pc-title">' + GN.films[id].title + '</div><div class="pc-sub">' + (extra || GN.films[id].year) + '</div></div></div>';
+  }).join('');
+  document.getElementById('r1').innerHTML = shelf([['velvet-static'], ['ghost-frequency'], ['parallax'], ['quiet-meridian'], ['neon-orchard'], ['marrow'], ['atlas-undone']]);
+  document.getElementById('r2').innerHTML = shelf([['quiet-hours', '7 Nov · digital'], ['iron-meadow', '20 Nov · cinemas'], ['small-hours-cairo', '27 Nov · cinemas'], ['second-sunrise', '4 Dec · cinemas'], ['atlas-undone', '11 Dec · cinemas'], ['low-tide-high-noon', '14 Nov · physical'], ['drift-terminus', '2027']]);
+  document.getElementById('r3').innerHTML = shelf([['drift-signal', '2019'], ['halcyon-drift', '2024'], ['drift-terminus', '2027'], ['room-without-weather', '2018 · writer']]);
+  GN.renderPosters();
+</script>
+</body>
+</html>

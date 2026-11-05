@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: dashboard. Calm by default; only health speaks up. */
+  .hello { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); margin-bottom: var(--space-6); }
+  .hello h1 { font: var(--type-display-lg); letter-spacing: var(--type-display-lg-tracking); font-stretch: 125%; }
+  .hello p { color: var(--text-secondary); font: var(--type-body-lg); margin-top: 6px; }
+  .dash { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-5); }
+  .c4 { grid-column: span 4; } .c5 { grid-column: span 5; } .c7 { grid-column: span 7; } .c8 { grid-column: span 8; } .c12 { grid-column: span 12; } .c3 { grid-column: span 3; }
+  .tile { padding: var(--space-5); display: grid; gap: 6px; align-content: start; }
+  .tile .k { font: var(--type-caption); color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+  .tile .k .i { width: 15px; height: 15px; }
+  .tile .v { font: 600 28px/34px var(--font-display); font-stretch: 125%; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .tile .s { font: var(--type-body-sm); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .tile a.s { color: var(--accent); }
+  .alert { display: grid; grid-template-columns: 36px 1fr auto; gap: var(--space-4); align-items: center; padding: 14px 16px 14px 14px; border-radius: var(--radius-lg); border: 1px solid color-mix(in srgb, var(--status-missing) 40%, transparent); background: linear-gradient(90deg, color-mix(in srgb, var(--status-missing) 10%, var(--bg-raised)), var(--bg-raised) 60%); box-shadow: var(--elev-2); }
+  .alert .ic { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--status-missing-bg); color: var(--status-missing); }
+  .alert b { font: 500 14px/20px var(--font-ui); }
+  .alert p { font: var(--type-body-sm); color: var(--text-secondary); }
+  .alert .acts { display: flex; gap: 6px; }
+  .q-list { display: grid; gap: 14px; }
+  .q-item { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center; }
+  .q-item .poster-art { aspect-ratio: 2/3; border-radius: 5px; overflow: hidden; box-shadow: var(--elev-1); } .q-item svg { width: 100%; height: 100%; }
+  .q-item .t { font: 500 14px/18px var(--font-ui); display: flex; justify-content: space-between; gap: 8px; }
+  .q-item .t span { font: var(--type-caption); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .q-item .progress { margin-top: 6px; height: 4px; }
+  .disk-row { display: grid; gap: 6px; padding: 10px 0; }
+  .disk-row + .disk-row { border-top: 1px solid var(--border); }
+  .disk-row .top { display: flex; justify-content: space-between; font: var(--type-body-sm); font-variant-numeric: tabular-nums; }
+  .disk-row .top code { font: var(--type-mono-sm); }
+  .disk-row .progress { --c: var(--text-secondary); }
+  .disk-row.tight .progress { --c: var(--status-missing); }
+  .up-list { list-style: none; margin: 0; padding: 0; display: grid; }
+  .up-list li { display: grid; grid-template-columns: 54px 34px 1fr auto; gap: 12px; align-items: center; padding: 8px 0; }
+  .up-list li + li { border-top: 1px solid var(--border); }
+  .up-list .date { display: grid; text-align: center; font: 600 18px/20px var(--font-display); font-stretch: 125%; font-variant-numeric: tabular-nums; }
+  .up-list .date small { font: 500 11px/14px var(--font-ui); color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+  .up-list .poster-art { aspect-ratio: 2/3; border-radius: 5px; overflow: hidden; } .up-list svg { width: 100%; height: 100%; }
+  .up-list b { font: 500 14px/18px var(--font-ui); display: block; }
+  .up-list .meta { font: var(--type-caption); color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+  .up-list .meta .i { width: 13px; height: 13px; }
+  .act { list-style: none; margin: 0; padding: 0; display: grid; }
+  .act li { display: grid; grid-template-columns: 28px 1fr auto; gap: 12px; align-items: start; padding: 9px 0; }
+  .act li + li { border-top: 1px solid var(--border); }
+  .act .d { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 15%, var(--bg-raised)); color: var(--c); }
+  .act .d .i { width: 14px; height: 14px; }
+  .act .w { font: var(--type-body-sm); color: var(--text-secondary); min-width: 0; }
+  .act .w b { color: var(--text-primary); font-weight: 500; }
+  .act .w .why { display: block; font: var(--type-caption); color: var(--text-muted); margin-top: 2px; }
+  .act time { font: var(--type-caption); color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .shelf { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .shelf .pc-title { font-size: 13px; }
+  .panel-hd .t-caption { color: var(--text-muted); }
+  .panel-hd a { font: 500 13px/1 var(--font-ui); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar="home"></nav>
+  <div class="main">
+    <header class="topbar">
+      <label class="input search" aria-label="Search"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" placeholder="Search films, people, releases…" aria-label="Search films, people, releases"><span class="kbd" aria-hidden="true">⌘K</span></label>
+      <div class="spacer"></div>
+      <button class="icon-btn" type="button" aria-label="Notifications, 2 unread"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg><span class="dot" aria-hidden="true"></span></button>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+      <a class="btn btn-primary" href="add-film.html"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Add film</a>
+    </header>
+    <main id="main" class="page">
+      <div class="hello">
+        <div><h1>Good evening, Margaux</h1><p>Three prints on their way, two premieres this week. One indexer needs a look.</p></div>
+        <span class="t-caption t-muted tnum">Thursday 5 November · last RSS sync 4 min ago</span>
+      </div>
+
+      <div class="dash">
+        <div class="c12 alert" role="status">
+          <span class="ic"><svg class="i" aria-hidden="true"><use href="#i-cloud-off"/></svg></span>
+          <div><b>Cinémathèque hasn’t answered for 40 minutes.</b><p>The other 3 indexers keep searching, so nothing is blocked. Gonema paused it until 21:30 and will try again then.</p></div>
+          <div class="acts"><button class="btn btn-secondary btn-sm" type="button">Test now</button><a class="btn btn-ghost btn-sm" href="#">Health</a></div>
+        </div>
+
+        <section class="panel tile c3" aria-labelledby="t1"><span class="k" id="t1"><svg class="i" aria-hidden="true"><use href="#i-film"/></svg>Library</span><span class="v">1,284</span><span class="s">1,198 on disk · 9.7 TB</span></section>
+        <section class="panel tile c3" aria-labelledby="t2"><span class="k" id="t2"><svg class="i" aria-hidden="true"><use href="#i-circle-dashed"/></svg>Wanted</span><span class="v">47</span><span class="s">12 released, 35 not out yet</span><a class="s" href="#">Search the 12 released</a></section>
+        <section class="panel tile c3" aria-labelledby="t3"><span class="k" id="t3"><svg class="i" aria-hidden="true"><use href="#i-circle-arrow-up"/></svg>Upgradable</span><span class="v">112</span><span class="s">below their profile’s cutoff</span><a class="s" href="#">See which</a></section>
+        <section class="panel tile c3" aria-labelledby="t4"><span class="k" id="t4"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>This month</span><span class="v">+31</span><span class="s">18 new films, 13 upgrades</span></section>
+
+        <section class="panel c5" aria-labelledby="q-h">
+          <div class="panel-hd"><h2 id="q-h"><svg class="i" aria-hidden="true" style="color:var(--status-downloading)"><use href="#i-arrow-down-to-line"/></svg>Queue</h2><span class="t-caption tnum">18.4 MB/s · 2 GB left</span></div>
+          <div class="panel-bd q-list">
+            <div class="q-item"><div class="poster-art" data-film="last-projectionist"></div><div><div class="t">The Last Projectionist<span>42% · 12 min</span></div><div class="progress live" style="--p:.42" role="progressbar" aria-label="The Last Projectionist" aria-valuemin="0" aria-valuemax="100" aria-valuenow="42"><div class="fill"></div></div></div><span class="t-caption t-muted">qBit</span></div>
+            <div class="q-item"><div class="poster-art" data-film="ember-ash"></div><div><div class="t">Ember &amp; Ash Street<span>71% · 4 min</span></div><div class="progress live" style="--p:.71" role="progressbar" aria-label="Ember and Ash Street" aria-valuemin="0" aria-valuemax="100" aria-valuenow="71"><div class="fill"></div></div></div><span class="t-caption t-muted">SAB</span></div>
+            <div class="q-item"><div class="poster-art" data-film="tidewater"></div><div><div class="t">Tidewater<span>Importing</span></div><div class="skeleton" style="height:4px;border-radius:9px;margin-top:6px"></div></div><span class="t-caption t-muted">SAB</span></div>
+            <a class="btn btn-ghost btn-sm" href="queue.html" style="justify-self:start">Open queue<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></a>
+          </div>
+        </section>
+
+        <section class="panel c4" aria-labelledby="up-h">
+          <div class="panel-hd"><h2 id="up-h">Coming up</h2><a href="calendar.html">Calendar</a></div>
+          <div class="panel-bd">
+            <ul class="up-list">
+              <li><span class="date"><small>Nov</small>7</span><div class="poster-art" data-film="quiet-hours"></div><div><b>The Quiet Hours</b><span class="meta"><svg class="i" aria-hidden="true"><use href="#i-monitor-play"/></svg>Digital release</span></div><span class="status" data-status="missing"><svg class="i" aria-hidden="true"><use href="#i-circle-dashed"/></svg>Wanted</span></li>
+              <li><span class="date"><small>Nov</small>14</span><div class="poster-art" data-film="low-tide-high-noon"></div><div><b>Low Tide, High Noon</b><span class="meta"><svg class="i" aria-hidden="true"><use href="#i-disc-3"/></svg>Physical</span></div><span class="status" data-status="missing"><svg class="i" aria-hidden="true"><use href="#i-circle-dashed"/></svg>Wanted</span></li>
+              <li><span class="date"><small>Nov</small>20</span><div class="poster-art" data-film="iron-meadow"></div><div><b>Iron Meadow</b><span class="meta"><svg class="i" aria-hidden="true"><use href="#i-ticket"/></svg>In cinemas</span></div><span class="status" data-status="unmonitored">Announced</span></li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="panel c3" aria-labelledby="disk-h">
+          <div class="panel-hd"><h2 id="disk-h">Disk space</h2></div>
+          <div class="panel-bd" style="padding-top:6px">
+            <div class="disk-row"><div class="top"><code>/data/movies</code><span>6.3 TB free</span></div><div class="progress" style="--p:.61" role="meter" aria-label="/data/movies used" aria-valuenow="61" aria-valuemin="0" aria-valuemax="100"><div class="fill"></div></div><span class="t-caption t-muted tnum">9.7 of 16 TB</span></div>
+            <div class="disk-row tight"><div class="top"><code>/data/kids</code><span>180 GB free</span></div><div class="progress" style="--p:.91" role="meter" aria-label="/data/kids used" aria-valuenow="91" aria-valuemin="0" aria-valuemax="100"><div class="fill"></div></div><span class="t-caption tnum" style="color:var(--status-missing)">91% used · room for about 9 films</span></div>
+          </div>
+        </section>
+
+        <section class="panel c7" aria-labelledby="act-h">
+          <div class="panel-hd"><h2 id="act-h">Recent activity</h2><a href="queue.html?tab=history">History</a></div>
+          <div class="panel-bd" style="padding-top:6px">
+            <ul class="act">
+              <li style="--c:var(--status-upgraded)"><span class="d"><svg class="i" aria-hidden="true"><use href="#i-circle-arrow-up"/></svg></span><span class="w"><b>Halcyon Drift</b> upgraded to WEBDL-2160p<span class="why">Higher quality and score +35 → +70 (Dolby Vision, trusted group)</span></span><time>21:14</time></li>
+              <li style="--c:var(--status-available)"><span class="d"><svg class="i" aria-hidden="true"><use href="#i-folder-open"/></svg></span><span class="w"><b>Sundial</b> imported, 10.2 GB<span class="why">Bluray-1080p reached the cutoff; no more searching for it</span></span><time>19:02</time></li>
+              <li style="--c:var(--status-failed)"><span class="d"><svg class="i" aria-hidden="true"><use href="#i-triangle-alert"/></svg></span><span class="w"><b>Ninefold</b> import failed, trying the next release<span class="why">Archive was password-protected; blocklisted it (release 2 of 6 now downloading)</span></span><time>17:48</time></li>
+              <li style="--c:var(--status-downloading)"><span class="d"><svg class="i" aria-hidden="true"><use href="#i-arrow-down-to-line"/></svg></span><span class="w"><b>The Last Projectionist</b> grabbed from Sprocket Tracker<span class="why">Best of 22 releases: Bluray-1080p, score +40</span></span><time>17:31</time></li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="panel c5" aria-labelledby="new-h">
+          <div class="panel-hd"><h2 id="new-h">Recently added</h2><a href="library-grid.html">All films</a></div>
+          <div class="panel-bd"><div class="shelf" id="shelf"></div></div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="../system/icons.js"></script>
+<script src="../system/posters.js"></script>
+<script src="../system/mock.js"></script>
+<script>
+  document.getElementById('shelf').innerHTML = [['halcyon-drift', 'upgraded', '2160p WEB-DL'], ['sundial', 'available', '1080p Bluray'], ['orbit-small-things', 'available', '2160p WEB-DL'], ['quiet-meridian', 'available', '2160p Remux'], ['saltwater-hymn', 'available', '1080p Bluray']].map(([f, s, q]) => GN.card({ film: f, state: s, quality: q })).join('');
+  GN.renderPosters();
+</script>
+</body>
+</html>

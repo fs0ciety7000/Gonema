@@ -43,6 +43,12 @@
     'drift-signal':         { title: 'Drift: Signal', year: 2019, lines: ['DRIFT', 'SIGNAL'], font: 'x', pos: 'top', motif: 'signal', pal: ['#1a1020', '#7a3a2a', '#f7e6d0', '#f2a65a'], dom: '#7A3A2A', credit: 'KESTREL PICTURES · INES CALLOWAY' },
     'drift-terminus':       { title: 'Drift: Terminus', year: 2027, lines: ['DRIFT', 'TERMINUS'], font: 'x', pos: 'bottom', motif: 'monolith', pal: ['#160f14', '#8a4a2c', '#f7e6d0', '#f2a65a'], dom: '#8A4A2C', credit: 'KESTREL PICTURES · INES CALLOWAY' },
     'paper-lanterns-kessel':{ title: 'Paper Lanterns Over Kessel', year: 2017, lines: ['PAPER LANTERNS', 'OVER KESSEL'], font: 'c', pos: 'top', motif: 'city', pal: ['#1d0f1a', '#5a2440', '#ffeede', '#ffb066'], dom: '#5A2440', credit: 'NIGHT MARKET · LIU WENSHAN' },
+    'continental-drift':    { title: 'Continental Drift', year: 1998, lines: ['CONTINENTAL', 'DRIFT'], font: 'c', pos: 'top', motif: 'waves', pal: ['#e8dcc4', '#9b7b52', '#1c140c', '#6b4a2a'], dom: '#9B7B52', credit: 'TERRA FIRMA · WALTER BRISK' },
+    'snowdrift':            { title: 'Snowdrift', year: 2011, lines: ['Snowdrift'], font: 's', pos: 'bottom', motif: 'moon', pal: ['#dfe7ee', '#8aa1b4', '#101820', '#ffffff'], dom: '#8AA1B4', credit: 'NORDLYS · ASTRID HOLM' },
+    'drifters-calder':      { title: 'The Drifters of Calder Bay', year: 2005, lines: ['THE DRIFTERS', 'OF CALDER BAY'], font: 'x', pos: 'bottom', motif: 'lighthouse', pal: ['#14202a', '#3f5d6e', '#f1ece2', '#f2c46d'], dom: '#3F5D6E', credit: 'SALT ROAD · MORGAN FEIST' },
+    'quiet-hours':          { title: 'The Quiet Hours', year: 2026, lines: ['The Quiet', 'Hours'], font: 's', pos: 'top', motif: 'arch', pal: ['#1d1a26', '#0d0c12', '#efe9f7', '#b9a6e8'], dom: '#3A3150', credit: 'NOCTURNE · ELODIE RANCE' },
+    'iron-meadow':          { title: 'Iron Meadow', year: 2026, lines: ['IRON', 'MEADOW'], font: 'c', pos: 'bottom', motif: 'stripes', pal: ['#203024', '#121a14', '#e8f0e0', '#9cc27a'], dom: '#2E4A30', credit: 'FIELDWORK · BRANKO ILIC' },
+    'small-hours-cairo':    { title: 'Small Hours in Cairo', year: 2026, lines: ['small hours', 'in cairo'], font: 'g', pos: 'top', motif: 'city', pal: ['#2a1608', '#6b3a14', '#fff0dc', '#ffc070'], dom: '#6B3A14', credit: 'NILE NIGHT · YASMIN FAROUK' },
   };
 
   function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }

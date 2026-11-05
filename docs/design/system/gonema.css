@@ -220,7 +220,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 a { color: var(--accent); text-decoration: none; text-underline-offset: 3px; }
 a:hover { text-decoration: underline; }
-p a, li a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); }
+p a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); }
 ::selection { background: color-mix(in srgb, var(--accent) 34%, transparent); }
 h1, h2, h3, h4, p { margin: 0; }
 
