@@ -1,6 +1,6 @@
 # Gonema — Plan, stack et architecture (phase 1)
 
-> Statut : **proposition, en attente de validation**. Le modèle de données sera écrit après validation de la stack.
+> Statut : **option A validée** le 2026-11-05 (clé TMDB par utilisateur, licence GPL-3.0). Modèle de données : `docs/data-model.md`.
 > Versions vérifiées le 2026-11-05 sur go.dev, proxy.golang.org et registry.npmjs.org.
 
 ## 1. Plan par phases
@@ -124,6 +124,3 @@ testdata/releases/     corpus de noms de releases
 - Défilement : trace Playwright sur une base de démo de 10 000 films (mode démo signalé), FPS mesurés.
 - Streaming : test d'intégration avec indexeurs simulés lents et en panne.
 
-## 4. Points ouverts
-- **Clé TMDB** : chaque utilisateur fournit la sienne (gratuite) pendant l'onboarding. Alternative : un relais de métadonnées hébergé, hors périmètre v1.
-- **Licence du projet** : à choisir (GPL-3.0 ou MIT par exemple).
