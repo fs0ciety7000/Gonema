@@ -314,7 +314,11 @@ func (s *Service) persistState(ctx context.Context, d *db.Download, status strin
 	s.track.mu.Unlock()
 	row, err := s.st.Write().UpdateDownloadState(context.WithoutCancel(ctx), p)
 	if err != nil {
-		s.log.Error("persist download state", slog.Int64("download_id", d.ID), slog.Any("error", store.MapError(err)))
+		if err = store.MapError(err); errors.Is(err, store.ErrNotFound) {
+			s.log.Debug("download left the queue meanwhile", slog.Int64("download_id", d.ID))
+			return
+		}
+		s.log.Error("persist download state", slog.Int64("download_id", d.ID), slog.Any("error", err))
 		return
 	}
 	*d = row
@@ -341,6 +345,9 @@ func (s *Service) setStatus(ctx context.Context, q *db.Queries, d *db.Download, 
 	}
 	row, err := q.UpdateDownloadState(ctx, p)
 	if err != nil {
+		if errors.Is(store.MapError(err), store.ErrNotFound) {
+			return notFound("Download %d left the queue meanwhile.", d.ID)
+		}
 		return fmt.Errorf("update download %d: %w", d.ID, err)
 	}
 	*d = row
@@ -528,6 +535,9 @@ func (s *Service) runImport(ctx context.Context, c *db.DownloadClient, d *db.Dow
 		werr := s.st.WithTx(context.WithoutCancel(ctx), func(q *db.Queries) error {
 			if err := s.setStatus(ctx, q, d, string(download.StatusImported), ""); err != nil {
 				return err
+			}
+			if s.impHist {
+				return nil // the importer wrote the imported or upgraded row with the file
 			}
 			score := d.CustomScore
 			return s.appendHistory(ctx, q, historyEntry{

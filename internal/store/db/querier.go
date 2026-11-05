@@ -172,7 +172,9 @@ type Querier interface {
 	UpdateCollectionSettings(ctx context.Context, arg UpdateCollectionSettingsParams) (Collection, error)
 	UpdateDownloadClient(ctx context.Context, arg UpdateDownloadClientParams) (DownloadClient, error)
 	UpdateDownloadClientHealth(ctx context.Context, arg UpdateDownloadClientHealthParams) (int64, error)
-	// UpdateDownloadState writes the tracked state of a download.
+	// UpdateDownloadState writes the tracked state of a download that is still in
+	// the queue: a download that reached a final status (imported, failed,
+	// removed) concurrently is left alone and sql.ErrNoRows is returned.
 	UpdateDownloadState(ctx context.Context, arg UpdateDownloadStateParams) (Download, error)
 	UpdateIndexer(ctx context.Context, arg UpdateIndexerParams) (Indexer, error)
 	UpdateIndexerHealth(ctx context.Context, arg UpdateIndexerHealthParams) (int64, error)

@@ -200,7 +200,9 @@ ORDER BY grabbed_at, id;
 -- name: ListMovieDownloads :many
 SELECT * FROM downloads WHERE movie_id = ? ORDER BY grabbed_at DESC, id DESC;
 
--- UpdateDownloadState writes the tracked state of a download.
+-- UpdateDownloadState writes the tracked state of a download that is still in
+-- the queue: a download that reached a final status (imported, failed,
+-- removed) concurrently is left alone and sql.ErrNoRows is returned.
 -- name: UpdateDownloadState :one
 UPDATE downloads SET
     status          = sqlc.arg(status),
@@ -212,6 +214,7 @@ UPDATE downloads SET
     completed_at    = sqlc.narg(completed_at),
     imported_at     = sqlc.narg(imported_at)
 WHERE id = sqlc.arg(id)
+  AND status IN ('queued', 'downloading', 'paused', 'completed', 'importing', 'warning')
 RETURNING *;
 
 -- CountGrabsSince counts the grabs of a movie since a time: the daily budget of

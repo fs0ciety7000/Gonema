@@ -271,3 +271,30 @@ func assertNoSecrets(t *testing.T, s string, trackers ...*acquiretest.Tracker) {
 		}
 	}
 }
+
+// TestImporterWritesHistory: with an importer that records its own outcome,
+// the tracker does not duplicate the imported row.
+func TestImporterWritesHistory(t *testing.T) {
+	e := newEnv(t)
+	e.svc.impHist = true
+	movie := e.addMovie()
+	slow, _ := standardTrackers(t)
+	e.addTracker("Slow", slow)
+	qb := acquiretest.NewQBittorrent(t, qbUser, qbPass)
+	e.addQB(qb)
+	if _, err := e.svc.SearchMovie(e.ctx, movie.ID); err != nil {
+		t.Fatal(err)
+	}
+	d := e.downloads(movie.ID)[0]
+	qb.Set(deref(d.ClientRef), "uploading", 1, "/data/x")
+	if _, err := e.svc.TrackOnce(e.ctx); err != nil {
+		t.Fatal(err)
+	}
+	e.waitImport(d.ID)
+	if got, _ := e.st.Read().GetDownload(e.ctx, d.ID); got.Status != "imported" {
+		t.Errorf("status = %s", got.Status)
+	}
+	if ev := historyEvents(e.history(movie.ID)); !slices.Equal(ev, []string{"grabbed"}) {
+		t.Errorf("history = %v, want the importer's row only (none from the fake)", ev)
+	}
+}

@@ -140,8 +140,13 @@ type Options struct {
 	Jobs     JobQueue             // optional: without it, follow-up work runs inline
 	Bus      *events.Bus          // optional
 	Importer ImportFunc           // optional: without it, completed downloads wait
-	Logger   *slog.Logger         // default discards
-	Now      func() time.Time     // default time.Now
+	// ImporterWritesHistory tells that the importer records its own outcome in
+	// history (imported or upgraded with the file, import_failed for a
+	// refusal): the tracker then only records what the importer does not
+	// (import errors, and the failure handling of refused downloads).
+	ImporterWritesHistory bool
+	Logger                *slog.Logger     // default discards
+	Now                   func() time.Time // default time.Now
 	// HTTPClient fetches .nzb and .torrent files from indexers; default a client
 	// with TLS verification and no global timeout (each fetch has its own).
 	HTTPClient *http.Client
@@ -161,6 +166,7 @@ type Service struct {
 	jobs     JobQueue
 	bus      *events.Bus
 	importer ImportFunc
+	impHist  bool
 	log      *slog.Logger
 	now      func() time.Time
 	http     *http.Client
@@ -195,7 +201,7 @@ func New(opts Options) (*Service, error) {
 	}
 	s := &Service{
 		st: opts.Store, box: opts.Box, matcher: opts.Matcher, orch: opts.Search, jobs: opts.Jobs,
-		bus: opts.Bus, importer: opts.Importer, log: opts.Logger, now: opts.Now, http: opts.HTTPClient,
+		bus: opts.Bus, importer: opts.Importer, impHist: opts.ImporterWritesHistory, log: opts.Logger, now: opts.Now, http: opts.HTTPClient,
 		newIx: opts.NewIndexer, newCl: opts.NewClient, version: opts.Version,
 		ixCache: make(map[int64]cachedIndexer), clCache: make(map[int64]cachedClient),
 		health: make(map[int64]search.Health),

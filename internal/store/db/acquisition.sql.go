@@ -1297,6 +1297,7 @@ UPDATE downloads SET
     completed_at    = ?7,
     imported_at     = ?8
 WHERE id = ?9
+  AND status IN ('queued', 'downloading', 'paused', 'completed', 'importing', 'warning')
 RETURNING id, movie_id, client_id, client_ref, indexer_id, release_title, release_guid, info_url, protocol, size, quality, revision, custom_score, decision, status, progress, speed_bps, eta_s, output_path, status_messages, retry_of, grabbed_at, completed_at, imported_at, manual
 `
 
@@ -1312,7 +1313,9 @@ type UpdateDownloadStateParams struct {
 	ID             int64   `json:"id"`
 }
 
-// UpdateDownloadState writes the tracked state of a download.
+// UpdateDownloadState writes the tracked state of a download that is still in
+// the queue: a download that reached a final status (imported, failed,
+// removed) concurrently is left alone and sql.ErrNoRows is returned.
 func (q *Queries) UpdateDownloadState(ctx context.Context, arg UpdateDownloadStateParams) (Download, error) {
 	row := q.queryRow(ctx, q.updateDownloadStateStmt, updateDownloadState,
 		arg.Status,

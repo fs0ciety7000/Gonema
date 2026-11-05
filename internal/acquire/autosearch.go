@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -81,8 +82,14 @@ func (s *Service) handleMovieSearch(ctx context.Context, job db.Job) error {
 		return fmt.Errorf("acquire: invalid %s payload", job.Kind)
 	}
 	_, err := s.SearchMovie(ctx, p.MovieID)
-	if errors.Is(err, store.ErrNotFound) {
+	switch {
+	case errors.Is(err, store.ErrNotFound):
 		return nil // movie removed since: nothing to do
+	case errors.Is(err, ErrUnavailable), errors.Is(err, ErrInvalid):
+		// Settings problem (no indexer, no client, invalid profile): retrying
+		// the job cannot help; the reason is in the log and the history.
+		s.log.Warn("automatic search not possible", slog.Int64("movie_id", p.MovieID), slog.String("reason", err.Error()))
+		return nil
 	}
 	return err
 }
@@ -275,6 +282,14 @@ func (s *Service) evaluate(mc *movieContext, rels []indexer.Release) (ranked []d
 // so the indexers are not hammered. Without a job queue the searches run
 // inline, one after the other.
 func (s *Service) SearchMissing(ctx context.Context) error {
+	ixRows, err := s.st.Read().ListIndexers(ctx)
+	if err != nil {
+		return store.MapError(fmt.Errorf("acquire: list indexers: %w", err))
+	}
+	if !slices.ContainsFunc(ixRows, func(r db.Indexer) bool { return r.EnableAutoSearch }) {
+		s.log.Info("missing search skipped: no indexer is enabled for automatic search")
+		return nil
+	}
 	rows, err := s.st.Read().ListSearchableMovies(ctx)
 	if err != nil {
 		return store.MapError(fmt.Errorf("acquire: list searchable movies: %w", err))
@@ -362,6 +377,10 @@ func (s *Service) SyncRSS(ctx context.Context) error {
 		return err
 	}
 	ixs, used := s.indexersFor(sh.indexers, forRSS, nil, true)
+	if len(ixs) == 0 {
+		s.log.Debug("RSS sync skipped: no RSS-enabled indexer")
+		return nil
+	}
 	type feedState struct {
 		id    int64
 		state search.RSSState

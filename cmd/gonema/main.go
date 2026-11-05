@@ -162,7 +162,7 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, getenv fun
 	}
 	acq, err := acquire.New(acquire.Options{
 		Store: st, Box: box, Matcher: lib, Jobs: runner, Bus: bus, Logger: log, Version: version,
-		Importer: importAdapter{imp},
+		Importer: importAdapter{imp}, ImporterWritesHistory: true,
 	})
 	if err != nil {
 		return err

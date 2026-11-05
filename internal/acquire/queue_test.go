@@ -9,6 +9,8 @@ import (
 
 	"github.com/fs0ciety7000/gonema/internal/acquire/acquiretest"
 	"github.com/fs0ciety7000/gonema/internal/decision"
+	"github.com/fs0ciety7000/gonema/internal/jobs"
+	"github.com/fs0ciety7000/gonema/internal/library"
 	"github.com/fs0ciety7000/gonema/internal/store"
 	"github.com/fs0ciety7000/gonema/internal/store/db"
 )
@@ -190,3 +192,49 @@ func TestBlocklistService(t *testing.T) {
 }
 
 func decisionOptions() decision.Options { return decision.Options{} }
+
+// TestTrackerDoesNotResurrect: a tracker update computed before the user
+// removed the download must not bring it back.
+func TestTrackerDoesNotResurrect(t *testing.T) {
+	e, _, _, d := grabbedEnv(t)
+	stale := d
+	if err := e.svc.RemoveFromQueue(e.ctx, d.ID, RemoveOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	e.svc.persistState(e.ctx, &stale, "downloading", e.svc.track.get(d.ID), "", true)
+	if got, _ := e.st.Read().GetDownload(e.ctx, d.ID); got.Status != "removed" {
+		t.Errorf("status = %s, want removed", got.Status)
+	}
+}
+
+type recordingRunner struct {
+	handled   []string
+	recurring map[string]time.Duration
+}
+
+func (r *recordingRunner) Handle(kind string, _ jobs.Handler, _ jobs.HandlerOptions) {
+	r.handled = append(r.handled, kind)
+}
+
+func (r *recordingRunner) Every(kind string, interval, _ time.Duration, _ any) {
+	r.recurring[kind] = interval
+}
+
+func TestRegisterJobs(t *testing.T) {
+	e := newEnv(t)
+	if JobMovieSearch != library.JobMovieSearch {
+		t.Fatalf("search-on-add job kind %q is not handled (%q)", library.JobMovieSearch, JobMovieSearch)
+	}
+	if err := setSetting(e, SettingRSSInterval, 5); err != nil {
+		t.Fatal(err)
+	}
+	r := &recordingRunner{recurring: map[string]time.Duration{}}
+	e.svc.RegisterJobs(e.ctx, r)
+	slices.Sort(r.handled)
+	if !slices.Equal(r.handled, []string{JobDownloadRetry, JobMovieSearch, JobSearchMissing, JobRSSSync}) {
+		t.Errorf("handled = %v", r.handled)
+	}
+	if r.recurring[JobRSSSync] != 10*time.Minute || r.recurring[JobSearchMissing] != 24*time.Hour {
+		t.Errorf("recurring = %v (RSS interval clamped to 10 min)", r.recurring)
+	}
+}
