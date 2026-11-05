@@ -1,0 +1,87 @@
+{
+ "dates": {
+  "maximum": "2023-05-23",
+  "minimum": "2023-05-04"
+ },
+ "page": 1,
+ "results": [
+  {
+   "adult": false,
+   "backdrop_path": "/7bWxAsNPv9CXHOhZbJVlj2KxgfP.jpg",
+   "genre_ids": [
+    27,
+    53
+   ],
+   "id": 713704,
+   "original_language": "en",
+   "original_title": "Evil Dead Rise",
+   "overview": "Two sisters find an ancient vinyl that gives birth to bloodthirsty demons that run amok in a Los Angeles apartment building and thrusts them into a primal battle for survival as they face the most nightmarish version of family imaginable.",
+   "popularity": 1696.367,
+   "poster_path": "/mIBCtPvKZQlxubxKMeViO2UrP3q.jpg",
+   "release_date": "2023-04-12",
+   "title": "Evil Dead Rise",
+   "video": false,
+   "vote_average": 7,
+   "vote_count": 207
+  },
+  {
+   "adult": false,
+   "backdrop_path": "/5Y5pz0NX7SZS9036I733F7uNcwK.jpg",
+   "genre_ids": [
+    27,
+    53
+   ],
+   "id": 758323,
+   "original_language": "en",
+   "original_title": "The Pope's Exorcist",
+   "overview": "Father Gabriele Amorth, Chief Exorcist of the Vatican, investigates a young boy's terrifying possession and ends up uncovering a centuries-old conspiracy the Vatican has desperately tried to keep hidden.",
+   "popularity": 1073.229,
+   "poster_path": "/9JBEPLTPSm0d1mbEcLxULjJq9Eh.jpg",
+   "release_date": "2023-04-05",
+   "title": "The Pope's Exorcist",
+   "video": false,
+   "vote_average": 6.5,
+   "vote_count": 143
+  },
+  {
+   "adult": false,
+   "backdrop_path": "/wD2kUCX1Bb6oeIb2uz7kbdfLP6k.jpg",
+   "genre_ids": [
+    27,
+    53
+   ],
+   "id": 980078,
+   "original_language": "en",
+   "original_title": "Winnie the Pooh: Blood and Honey",
+   "overview": "Christopher Robin is headed off to college and he has abandoned his old friends, Pooh and Piglet, which then leads to the duo embracing their inner monsters.",
+   "popularity": 690.338,
+   "poster_path": "/ewF3IlGscc7FjgGEPcQvZsAsgAW.jpg",
+   "release_date": "2023-01-27",
+   "title": "Winnie the Pooh: Blood and Honey",
+   "video": false,
+   "vote_average": 5.8,
+   "vote_count": 517
+  },
+  {
+   "adult": false,
+   "backdrop_path": "/sp7MPK2K60LLd7A6zjHKsfgjFil.jpg",
+   "genre_ids": [
+    27,
+    53
+   ],
+   "id": 296271,
+   "original_language": "en",
+   "original_title": "The Devil Conspiracy",
+   "overview": "The hottest biotech company in the world has discovered they can clone history’s most influential people from the dead. Now, they are auctioning clones of Michelangelo, Galileo, Vivaldi, and others for tens of millions of dollars to the world’s ultra-rich. But when they steal the Shroud of Turin and clone the DNA of Jesus Christ, all hell breaks loose.",
+   "popularity": 615.365,
+   "poster_path": "/2lUYbD2C3XSuwqMUbDVDQuz9mqz.jpg",
+   "release_date": "2023-01-13",
+   "title": "The Devil Conspiracy",
+   "video": false,
+   "vote_average": 6.3,
+   "vote_count": 129
+  }
+ ],
+ "total_pages": 19,
+ "total_results": 369
+}

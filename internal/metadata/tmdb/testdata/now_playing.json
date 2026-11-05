@@ -1,0 +1,95 @@
+{
+ "dates": {
+  "maximum": "2023-05-03",
+  "minimum": "2023-03-16"
+ },
+ "page": 1,
+ "results": [
+  {
+   "adult": false,
+   "backdrop_path": "/iJQIbOPm81fPEGKt5BPuZmfnA54.jpg",
+   "genre_ids": [
+    16,
+    12,
+    10751,
+    14,
+    35
+   ],
+   "id": 502356,
+   "original_language": "en",
+   "original_title": "The Super Mario Bros. Movie",
+   "overview": "While working underground to fix a water main, Brooklyn plumbers—and brothers—Mario and Luigi are transported down a mysterious pipe and wander into a magical new world. But when the brothers are separated, Mario embarks on an epic quest to find Luigi.",
+   "popularity": 6572.614,
+   "poster_path": "/qNBAXBIQlnOThrVvA6mA2B5ggV6.jpg",
+   "release_date": "2023-04-05",
+   "title": "The Super Mario Bros. Movie",
+   "video": false,
+   "vote_average": 7.5,
+   "vote_count": 1456
+  },
+  {
+   "adult": false,
+   "backdrop_path": "/nDxJJyA5giRhXx96q1sWbOUjMBI.jpg",
+   "genre_ids": [
+    28,
+    35,
+    14
+   ],
+   "id": 594767,
+   "original_language": "en",
+   "original_title": "Shazam! Fury of the Gods",
+   "overview": "Billy Batson and his foster siblings, who transform into superheroes by saying \"Shazam!\", are forced to get back into action and fight the Daughters of Atlas, who they must stop from using a weapon that could destroy the world.",
+   "popularity": 4274.232,
+   "poster_path": "/2VK4d3mqqTc7LVZLnLPeRiPaJ71.jpg",
+   "release_date": "2023-03-15",
+   "title": "Shazam! Fury of the Gods",
+   "video": false,
+   "vote_average": 6.9,
+   "vote_count": 1231
+  },
+  {
+   "adult": false,
+   "backdrop_path": "/7bWxAsNPv9CXHOhZbJVlj2KxgfP.jpg",
+   "genre_ids": [
+    27,
+    53
+   ],
+   "id": 713704,
+   "original_language": "en",
+   "original_title": "Evil Dead Rise",
+   "overview": "Two sisters find an ancient vinyl that gives birth to bloodthirsty demons that run amok in a Los Angeles apartment building and thrusts them into a primal battle for survival as they face the most nightmarish version of family imaginable.",
+   "popularity": 1696.367,
+   "poster_path": "/mIBCtPvKZQlxubxKMeViO2UrP3q.jpg",
+   "release_date": "2023-04-12",
+   "title": "Evil Dead Rise",
+   "video": false,
+   "vote_average": 7,
+   "vote_count": 207
+  },
+  {
+   "adult": false,
+   "backdrop_path": "/ouB7hwclG7QI3INoYJHaZL4vOaa.jpg",
+   "genre_ids": [
+    16,
+    10751,
+    14,
+    12,
+    35,
+    18
+   ],
+   "id": 315162,
+   "original_language": "en",
+   "original_title": "Puss in Boots: The Last Wish",
+   "overview": "Puss in Boots discovers that his passion for adventure has taken its toll: He has burned through eight of his nine lives, leaving him with only one life left. Puss sets out on an epic journey to find the mythical Last Wish and restore his nine lives.",
+   "popularity": 1347.259,
+   "poster_path": "/kuf6dutpsT0vSVehic3EZIqkOBt.jpg",
+   "release_date": "2022-12-07",
+   "title": "Puss in Boots: The Last Wish",
+   "video": false,
+   "vote_average": 8.3,
+   "vote_count": 5331
+  }
+ ],
+ "total_pages": 87,
+ "total_results": 1734
+}
