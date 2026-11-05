@@ -29,3 +29,6 @@ target/
 
 # Claude Code : réglages locaux personnels
 .claude/settings.local.json
+
+# Go
+bin/
