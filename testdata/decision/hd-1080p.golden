@@ -1,0 +1,147 @@
+# Interactive search: Alien: Romulus (2024), 119 min, original language en
+# Profile HD-1080p, cutoff Bluray-1080p, now 2026-11-05, 38 releases
+
+01 ACCEPT Alien.Romulus.2024.German.DL.1080p.BluRay.AVC-GMA
+   Remux-1080p (rank 29) score 0 | usenet DrunkenSlug p10 | 33.2 GB | guid-02
+02 ACCEPT Alien.Romulus.2024.1080p.BluRay.REMUX.AVC.DTS-HD.MA.5.1-GROUP
+   Remux-1080p (rank 29) score 0 | usenet NZBGeek p25 | 33.2 GB | guid-27
+03 ACCEPT Alien.Romulus.2024.PROPER.SPANiSH.MULTi.1080p.BluRay.x264-CEBRAY
+   Bluray-1080p (rank 28) score 0 | usenet DrunkenSlug p10 | 8.1 GB | guid-35
+04 ACCEPT Alien.Romulus.2024.German.DL.1080p.BluRay.x264.SAMPLEFiX-GMA
+   Bluray-1080p (rank 28) score 0 | usenet NZBGeek p25 | 3.3 GB | guid-03
+05 ACCEPT Alien.Romulus.2024.1080p.NF.WEB-DL.DDP5.1.Atmos.H.264-GROUP
+   WEBDL-1080p (rank 27) score 0 | usenet DrunkenSlug p10 | 10.2 GB | guid-29
+06 ACCEPT Alien.Romulus.2024.1080p.AMZN.WEBRip.DDP5.1.x264-GROUP
+   WEBRip-1080p (rank 27) score 0 | usenet NZBGeek p25 | 4.6 GB | guid-30
+07 REJECT Aliens.1986.Directors.Cut.1080p.BluRay.x264-GROUP
+   Bluray-1080p (rank 28) score 5 | torrent TorrentLeech p25 38 seeders | 8.1 GB | guid-25
+   score +5 Freeleech
+   - title_mismatch (permanent): Title "Aliens" does not match "Alien: Romulus"
+   - year_mismatch (permanent): Year 1986 does not match 2024 (±1 tolerated)
+08 REJECT Alien.Romulus.2024.MULTi.TRUEFRENCH.1080p.BluRay.x264-Ulysse
+   Bluray-1080p (rank 28) score 0 | usenet DrunkenSlug p10 | 8.1 GB | guid-05
+   - already_grabbed (temporary): Release is already in the download queue or was already grabbed
+09 REJECT Aliens.1986.SE.1080p.BluRay.H264-TAPPAD
+   Bluray-1080p (rank 28) score 0 | usenet DrunkenSlug p10 | 10.6 GB | guid-17
+   - title_mismatch (permanent): Title "Aliens" does not match "Alien: Romulus"
+   - year_mismatch (permanent): Year 1986 does not match 2024 (±1 tolerated)
+10 REJECT Aliens.1986.THEATRiCAL.1080p.BluRay.H264-TAPPAD
+   Bluray-1080p (rank 28) score 0 | usenet NZBGeek p25 | 3.3 GB | guid-18
+   - title_mismatch (permanent): Title "Aliens" does not match "Alien: Romulus"
+   - year_mismatch (permanent): Year 1986 does not match 2024 (±1 tolerated)
+11 REJECT Aliens.Living.Among.Us.2025.1080p.WEB.H264-CBFM
+   WEBDL-1080p (rank 27) score 0 | usenet DrunkenSlug p10 | 4.6 GB | guid-20
+   - title_mismatch (permanent): Title "Aliens Living Among Us" does not match "Alien: Romulus"
+12 REJECT Aliens.Stole.My.Body.2020.1080p.WEB.h264-Ginnungagap
+   WEBDL-1080p (rank 27) score 0 | usenet NZBGeek p25 | 3.3 GB | guid-21
+   - title_mismatch (permanent): Title "Aliens Stole My Body" does not match "Alien: Romulus"
+   - year_mismatch (permanent): Year 2020 does not match 2024 (±1 tolerated)
+13 REJECT Aliens.The.Big.Think.2016.1080p.WEB.h264-Ginnungagap
+   WEBDL-1080p (rank 27) score 0 | torrent TorrentLeech p25 40 seeders | 6.0 GB | guid-22
+   - title_mismatch (permanent): Title "Aliens The Big Think" does not match "Alien: Romulus"
+   - year_mismatch (permanent): Year 2016 does not match 2024 (±1 tolerated)
+14 REJECT Alien.Romulus.2024.POLISH.1080p.WEB.H264-FLAME
+   WEBDL-1080p (rank 27) score 0 | torrent TorrentLeech p25 9 seeders | 6.0 GB | guid-07
+   - wrong_language (permanent): Language Polish is not wanted by profile HD-1080p (wanted: original (English))
+15 REJECT Aliens.In.America.The.Pascagoula.Case.2025.1080P.WEB.H264-GRASHOPR
+   WEBDL-1080p (rank 27) score 0 | torrent TorrentLeech p25 1 seeders | 10.2 GB | guid-19
+   - title_mismatch (permanent): Title "Aliens In America The Pascagoula Case" does not match "Alien: Romulus"
+   - not_enough_seeders (temporary): 1 seeder, indexer TorrentLeech requires at least 3
+16 REJECT Alien.Romulus.2024.CZECH.1080p.HDTV.x265-iCZi
+   HDTV-1080p (rank 26) score -10 | usenet NZBGeek p25 | 2.9 GB | guid-00
+   score -10 x265 (HD)
+   - wrong_language (permanent): Language Czech is not wanted by profile HD-1080p (wanted: original (English))
+17 REJECT Alien.Romulus.2024.2160p.UHD.BluRay.REMUX.DV.HDR.HEVC.TrueHD.Atmos.7.1-GROUP
+   Remux-2160p (rank 24) score 0 | usenet DrunkenSlug p10 | 36.6 GB | guid-26
+   score +0 Dolby Vision
+   - quality_not_allowed (permanent): Remux-2160p is not allowed by profile HD-1080p
+18 REJECT Alien.Romulus.2024.PROPER.2160p.UHD.BluRay.H265-GAZPROM
+   Bluray-2160p (rank 23) score 0 | torrent TorrentLeech p25 32 seeders | 38.3 GB | guid-34
+   - quality_not_allowed (permanent): Bluray-2160p is not allowed by profile HD-1080p
+19 REJECT Alien.Romulus.2024.MULTi.TRUEFRENCH.2160p.UHD.BluRay.x265-SESKAPiLE
+   Bluray-2160p (rank 23) score 0 | usenet NZBGeek p25 | 12.2 GB | guid-06
+   - quality_not_allowed (permanent): Bluray-2160p is not allowed by profile HD-1080p
+20 REJECT Alien.Romulus.2024.POLISH.HDR.2160p.WEB.H265-FLAME
+   WEBDL-2160p (rank 22) score 0 | usenet DrunkenSlug p10 | 8.1 GB | guid-11
+   - quality_not_allowed (permanent): WEBDL-2160p is not allowed by profile HD-1080p
+   - wrong_language (permanent): Language Polish is not wanted by profile HD-1080p (wanted: original (English))
+21 REJECT Alien.Romulus.2024.POLISH.2160p.WEB.H265-FLAME
+   WEBDL-2160p (rank 22) score 0 | usenet DrunkenSlug p10 | 4.6 GB | guid-08
+   - quality_not_allowed (permanent): WEBDL-2160p is not allowed by profile HD-1080p
+   - wrong_language (permanent): Language Polish is not wanted by profile HD-1080p (wanted: original (English))
+22 REJECT Alien.Romulus.2024.DV.2160p.WEB.H265-HEATHEN
+   WEBDL-2160p (rank 22) score 0 | usenet NZBGeek p25 | 8.1 GB | guid-36
+   score +0 Dolby Vision
+   - quality_not_allowed (permanent): WEBDL-2160p is not allowed by profile HD-1080p
+23 REJECT Alien.Romulus.2024.2160p.HMAX.WEB-DL.DDP5.1.Atmos.DV.HDR10.HEVC-GROUP
+   WEBDL-2160p (rank 22) score 0 | torrent TorrentLeech p25 36 seeders | 4.6 GB | guid-28
+   score +0 Dolby Vision
+   - quality_not_allowed (permanent): WEBDL-2160p is not allowed by profile HD-1080p
+24 REJECT Alien.Romulus.2024.2160p.WEB-DL.DDP5.1.HDR10+.HEVC-GROUP
+   WEBDL-2160p (rank 22) score 0 | torrent TorrentLeech p25 34 seeders | 8.1 GB | guid-31
+   score +0 HDR10+
+   - quality_not_allowed (permanent): WEBDL-2160p is not allowed by profile HD-1080p
+25 REJECT Alien.Romulus.2024.POLISH.DV.2160p.WEB.H265-FLAME
+   WEBDL-2160p (rank 22) score 0 | torrent TorrentLeech p25 7 seeders | 11.6 GB | guid-10
+   score +0 Dolby Vision
+   - quality_not_allowed (permanent): WEBDL-2160p is not allowed by profile HD-1080p
+   - wrong_language (permanent): Language Polish is not wanted by profile HD-1080p (wanted: original (English))
+26 REJECT Alien.Romulus.2024.iNTERNAL.COMPLETE.BLURAY-FaiLED
+   BR-DISK-1080p (rank 18) score 0 | usenet NZBGeek p25 | 34.9 GB | guid-15
+   - quality_not_allowed (permanent): BR-DISK-1080p is not allowed by profile HD-1080p
+   - blocklisted (permanent): Release group FaiLED is blocklisted
+27 REJECT Alien.Romulus.2024.MULTi.COMPLETE.BLURAY-GMA
+   BR-DISK-1080p (rank 18) score 0 | torrent TorrentLeech p25 11 seeders | 76.7 GB | guid-04
+   - quality_not_allowed (permanent): BR-DISK-1080p is not allowed by profile HD-1080p
+   - size_too_large (permanent): Size 76.7 GB is above the 58.1 GB maximum for BR-DISK-1080p at 119 min
+28 REJECT Alien.Romulus.2024.TRUEFRENCH.720p.BluRay.x264-Ulysse
+   Bluray-720p (rank 17) score 5 | torrent TorrentLeech p25 5 seeders | 1.4 GB | guid-13
+   score +5 Freeleech
+   - quality_not_allowed (permanent): Bluray-720p is not allowed by profile HD-1080p
+   - wrong_language (permanent): Language French is not wanted by profile HD-1080p (wanted: original (English))
+29 REJECT Alien.Romulus.2024.POLISH.720p.WEB.H264-FLAME
+   WEBDL-720p (rank 16) score 0 | usenet NZBGeek p25 | 5.1 GB | guid-09
+   - quality_not_allowed (permanent): WEBDL-720p is not allowed by profile HD-1080p
+   - wrong_language (permanent): Language Polish is not wanted by profile HD-1080p (wanted: original (English))
+30 REJECT Alien.Romulus.2024.KORSUB.720p.HDRip.x264-GROUP
+   WEBRip-720p (rank 15) score -20 | usenet DrunkenSlug p10 | 3.0 GB | guid-32
+   score -20 Hardcoded subs
+   - quality_not_allowed (permanent): WEBRip-720p is not allowed by profile HD-1080p
+   - hardcoded_subs (permanent): Release has hardcoded subtitles (KORSUB)
+31 REJECT Alien.Romulus.2024.CZECH.720p.HDTV.x264-iCZi
+   HDTV-720p (rank 14) score 5 | torrent TorrentLeech p25 13 seeders | 1.2 GB | guid-01
+   score +5 Freeleech
+   - quality_not_allowed (permanent): HDTV-720p is not allowed by profile HD-1080p
+   - wrong_language (permanent): Language Czech is not wanted by profile HD-1080p (wanted: original (English))
+32 REJECT Alien.Romulus.2024.TRUEFRENCH.BDRip.x264-Ulysse
+   Bluray-480p (rank 12) score 0 | usenet DrunkenSlug p10 | 2.6 GB | guid-14
+   - quality_not_allowed (permanent): Bluray-480p is not allowed by profile HD-1080p
+   - wrong_language (permanent): Language French is not wanted by profile HD-1080p (wanted: original (English))
+33 REJECT Aliens.vs.Avatars.2011.German.WEB.H264-CLASSiCAL
+   WEBDL-480p (rank 11) score 0 | usenet DrunkenSlug p10 | 0.4 GB | guid-23
+   - title_mismatch (permanent): Title "Aliens vs Avatars" does not match "Alien: Romulus"
+   - year_mismatch (permanent): Year 2011 does not match 2024 (±1 tolerated)
+   - quality_not_allowed (permanent): WEBDL-480p is not allowed by profile HD-1080p
+   - wrong_language (permanent): Language German is not wanted by profile HD-1080p (wanted: original (English))
+34 REJECT Alien.Romulus.2024.POLISH.WEB.H264-FLAME
+   WEBDL-480p (rank 11) score 0 | usenet NZBGeek p25 | 1.2 GB | guid-12
+   - quality_not_allowed (permanent): WEBDL-480p is not allowed by profile HD-1080p
+   - wrong_language (permanent): Language Polish is not wanted by profile HD-1080p (wanted: original (English))
+35 REJECT Alien.Romulus.2024.HC.HDRip.XviD.AC3-GROUP
+   WEBRip-480p (rank 10) score -15 | torrent TorrentLeech p25 30 seeders | 1.2 GB | guid-37
+   score -20 Hardcoded subs
+   score +5 Freeleech
+   - quality_not_allowed (permanent): WEBRip-480p is not allowed by profile HD-1080p
+   - hardcoded_subs (permanent): Release has hardcoded subtitles (HC)
+36 REJECT Aliens.vs.Predator.2.2007.GERMAN.ML.COMPLETE.PAL.DVD9-iNRi
+   DVD-R (rank 9) score 0 | usenet NZBGeek p25 | 12.8 GB | guid-24
+   - title_mismatch (permanent): Title "Aliens vs Predator 2" does not match "Alien: Romulus"
+   - year_mismatch (permanent): Year 2007 does not match 2024 (±1 tolerated)
+   - quality_not_allowed (permanent): DVD-R is not allowed by profile HD-1080p
+   - size_too_large (permanent): Size 12.8 GB is above the 9.3 GB maximum for DVD-R at 119 min
+37 REJECT Alien.Romulus.GERMAN.2024.DL.PAL.DVDR.DIRFIX-Goodboy
+   DVD-R (rank 9) score 0 | torrent TorrentLeech p25 3 seeders | 4.1 GB | guid-16
+   - quality_not_allowed (permanent): DVD-R is not allowed by profile HD-1080p
+38 REJECT Alien.Romulus.2024.HDCAM.x264-GROUP
+   CAM (rank 2) score 0 | usenet NZBGeek p25 | 0.5 GB | guid-33
+   - quality_not_allowed (permanent): CAM is not allowed by profile HD-1080p
