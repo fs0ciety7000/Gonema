@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="t">
   <title id="t">Gonema mark, one colour (currentColor)</title>
-  <path fill="currentColor" d="M126 86 A80 80 0 1 0 206 166 H206 V150 H132 V170 H170 A44 64 0 1 1 126 102 Z"/>
-  <path fill="currentColor" fill-rule="evenodd" d="M38.26 46.95 L181.86 11.15 L189.6 42.2 L46 78 Z M69.53 64.92 L87 60.56 L96.23 39.71 L78.76 44.07 Z M108.35 55.24 L125.81 50.89 L135.04 30.03 L117.58 34.39 Z M147.16 45.56 L164.62 41.21 L173.85 20.36 L156.39 24.71 Z"/>
+  <path fill="currentColor" d="M132 86 A80 80 0 1 0 212 166 H212 V150 H138 V170 H176 A44 64 0 1 1 132 102 Z"/>
+  <path fill="currentColor" fill-rule="evenodd" d="M43.72 47.09 L186.67 8.79 L194.96 39.69 L52 78 Z M75.3 64.51 L92.69 59.85 L101.55 38.84 L84.17 43.5 Z M113.94 54.16 L131.33 49.5 L140.19 28.49 L122.8 33.15 Z M152.58 43.8 L169.96 39.14 L178.83 18.13 L161.44 22.79 Z"/>
 </svg>
