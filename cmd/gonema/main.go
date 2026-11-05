@@ -24,10 +24,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/fs0ciety7000/gonema/internal/acquire"
 	"github.com/fs0ciety7000/gonema/internal/api"
 	"github.com/fs0ciety7000/gonema/internal/config"
 	"github.com/fs0ciety7000/gonema/internal/events"
 	"github.com/fs0ciety7000/gonema/internal/imagecache"
+	"github.com/fs0ciety7000/gonema/internal/importer"
 	"github.com/fs0ciety7000/gonema/internal/jobs"
 	"github.com/fs0ciety7000/gonema/internal/library"
 	"github.com/fs0ciety7000/gonema/internal/metadata/tmdb"
@@ -89,8 +91,9 @@ func inContainer() bool {
 }
 
 // serve wires the services, serves HTTP until ctx is canceled, then shuts down
-// in order: stop accepting and end event streams, stop the jobs, drain the
-// history writer, close the database.
+// in order: stop accepting and end event streams, stop the queue tracker, the
+// jobs and the background searches and imports, drain the history writer,
+// close the database.
 func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, getenv func(string) string) (err error) {
 	start := time.Now()
 	log.Info("starting gonema", append([]any{slog.String("version", version)}, cfg.LogAttrs()...)...)
@@ -153,10 +156,27 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, getenv fun
 	}
 	lib.RegisterJobs(runner)
 
+	imp, err := importer.New(importer.Options{Store: st, Matcher: lib, Library: lib, Bus: bus, Logger: log})
+	if err != nil {
+		return err
+	}
+	acq, err := acquire.New(acquire.Options{
+		Store: st, Box: box, Matcher: lib, Jobs: runner, Bus: bus, Logger: log, Version: version,
+		Importer: importAdapter{imp},
+	})
+	if err != nil {
+		return err
+	}
+	if err := acq.Init(ctx); err != nil {
+		return err
+	}
+	acq.RegisterJobs(ctx, runner)
+
 	srv := api.New(api.Deps{
-		Library: lib, Jobs: runner, Bus: bus, Store: st, Logger: log, Version: version,
+		Library: lib, Acquire: acq, Jobs: runner, Bus: bus, Store: st, Logger: log, Version: version,
 		StartedAt: start, DataDir: cfg.DataDir, BaseURL: cfg.BaseURL,
 	})
+	srv.RegisterImportRoutes(imp)
 	httpSrv := &http.Server{
 		Handler:           srv.Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
@@ -176,6 +196,12 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, getenv fun
 		_ = ln.Close()
 		return err
 	}
+	trackCtx, stopTracker := context.WithCancel(context.WithoutCancel(ctx))
+	trackerDone := make(chan struct{})
+	go func() {
+		defer close(trackerDone)
+		acq.RunTracker(trackCtx)
+	}()
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- httpSrv.Serve(ln) }()
 	log.Info("gonema is ready", slog.String("address", "http://"+ln.Addr().String()+cfg.BaseURL+"/"),
@@ -194,9 +220,12 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, getenv fun
 	if serr := httpSrv.Shutdown(sctx); serr != nil {
 		errs = append(errs, fmt.Errorf("http shutdown: %w", serr))
 	}
+	stopTracker()
+	<-trackerDone
 	if jerr := runner.Stop(sctx); jerr != nil {
 		errs = append(errs, jerr)
 	}
+	acq.Close()
 	bus.Close()
 	if herr := history.Wait(sctx); herr != nil {
 		errs = append(errs, fmt.Errorf("history writer: %w", herr))

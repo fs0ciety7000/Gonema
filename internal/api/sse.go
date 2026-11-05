@@ -35,7 +35,9 @@ func (s *Server) registerEvents() {
 		OperationID: "stream-events", Method: http.MethodGet, Path: "/events", Tags: []string{"Events"},
 		Summary: "Event stream (Server-Sent Events)",
 		Description: "Each message has an id, an event name (movie.added, movie.updated, movie.deleted, job.started, " +
-			"job.completed, job.failed, health.changed, ...) and JSON data {id, type, time, movieId, data}. " +
+			"job.completed, job.failed, health.changed, download.progress, download.grabbed, download.updated, " +
+			"download.imported, download.failed, download.removed, search.batch, search.indexer_done, " +
+			"search.indexer_failed, search.finished, ...) and JSON data {id, type, time, movieId, data}. " +
 			"A comment is sent every 15 s as a heartbeat. An event named \"resync\" means events were missed: refetch.",
 		Responses: map[string]*huma.Response{
 			"200": {Description: "An endless text/event-stream", Content: map[string]*huma.MediaType{

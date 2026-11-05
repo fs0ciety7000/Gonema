@@ -17,6 +17,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
 
+	"github.com/fs0ciety7000/gonema/internal/acquire"
 	"github.com/fs0ciety7000/gonema/internal/events"
 	"github.com/fs0ciety7000/gonema/internal/jobs"
 	"github.com/fs0ciety7000/gonema/internal/library"
@@ -30,6 +31,7 @@ const Prefix = "/api/v1"
 // Deps are the services the API serves.
 type Deps struct {
 	Library   *library.Service
+	Acquire   *acquire.Service // optional: without it, the acquisition endpoints are absent
 	Jobs      *jobs.Runner
 	Bus       *events.Bus
 	Store     *store.Store
@@ -130,6 +132,14 @@ func (s *Server) problem(ctx context.Context, err error, upstream bool) error {
 	var apiErr *metadata.APIError
 	var rl *metadata.RateLimitError
 	switch {
+	case errors.Is(err, acquire.ErrRefused) && hasMsg:
+		return huma.Error422UnprocessableEntity(um.UserMessage())
+	case errors.Is(err, acquire.ErrInvalid) && errors.Is(err, store.ErrConflict) && hasMsg:
+		return huma.Error409Conflict(um.UserMessage())
+	case (errors.Is(err, acquire.ErrInvalid) || errors.Is(err, acquire.ErrUnavailable)) && hasMsg:
+		return huma.Error422UnprocessableEntity(um.UserMessage())
+	case errors.Is(err, acquire.ErrUpstream) && hasMsg:
+		return huma.Error502BadGateway(um.UserMessage())
 	case errors.Is(err, library.ErrInvalid) && errors.Is(err, store.ErrConflict) && hasMsg:
 		return huma.Error409Conflict(um.UserMessage())
 	case errors.Is(err, library.ErrInvalid) && hasMsg:

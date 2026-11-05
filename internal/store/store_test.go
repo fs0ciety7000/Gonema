@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -93,9 +94,13 @@ func TestReopenKeepsDataAndSchema(t *testing.T) {
 func TestMigrationsUpDownUp(t *testing.T) {
 	ctx := context.Background()
 	s := storetest.New(t)
+	files, err := os.ReadDir("migrations")
+	if err != nil {
+		t.Fatal(err)
+	}
 	v, err := s.SchemaVersion(ctx)
-	if err != nil || v != 1 {
-		t.Fatalf("SchemaVersion = %d, %v; want 1", v, err)
+	if err != nil || v != int64(len(files)) {
+		t.Fatalf("SchemaVersion = %d, %v; want %d", v, err, len(files))
 	}
 	if err := s.MigrateDownTo(ctx, 0); err != nil {
 		t.Fatal(err)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/fs0ciety7000/gonema/internal/match"
 	"github.com/fs0ciety7000/gonema/internal/parser"
@@ -12,20 +13,45 @@ import (
 	"github.com/fs0ciety7000/gonema/internal/store/db"
 )
 
+// matcherDebounce is how long the matcher waits after a change before
+// rebuilding its index in the background: a bulk add (collection, import list)
+// rebuilds once instead of once per movie.
+const matcherDebounce = 250 * time.Millisecond
+
 // matcher keeps a match.Index in sync with the library. Readers load the
-// current immutable index without locking; writers update the entry set under
-// a mutex and publish a rebuilt index (a few milliseconds for 10 000 movies).
+// current immutable index without locking. Writers update the entry set under
+// a mutex and mark the index stale; the index is rebuilt (a few milliseconds
+// for 10 000 movies) once the changes settle (debounce), or at the first read
+// that finds it stale, so a read always sees every change made before it.
 type matcher struct {
-	mu      sync.Mutex
-	entries map[int64]match.Entry
-	idx     atomic.Pointer[match.Index]
+	mu       sync.Mutex
+	entries  map[int64]match.Entry
+	timer    *time.Timer   // pending debounced rebuild; guarded by mu
+	debounce time.Duration // 0 selects matcherDebounce
+
+	idx      atomic.Pointer[match.Index]
+	stale    atomic.Bool
+	rebuilds atomic.Int64 // for tests and diagnostics
 }
 
 func (m *matcher) index() *match.Index {
+	if m.stale.Load() {
+		m.flush()
+	}
 	if idx := m.idx.Load(); idx != nil {
 		return idx
 	}
 	return match.NewIndex(nil)
+}
+
+// flush rebuilds the index if it is stale. Concurrent callers wait for one
+// rebuild instead of each doing their own.
+func (m *matcher) flush() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.stale.Load() {
+		m.rebuildLocked()
+	}
 }
 
 // rebuildLocked publishes a new index from the entries. m.mu must be held.
@@ -35,6 +61,33 @@ func (m *matcher) rebuildLocked() {
 		list = append(list, e)
 	}
 	m.idx.Store(match.NewIndex(list))
+	m.stale.Store(false)
+	m.rebuilds.Add(1)
+	if m.timer != nil {
+		m.timer.Stop()
+		m.timer = nil
+	}
+}
+
+// changedLocked marks the index stale and schedules a debounced rebuild.
+// m.mu must be held.
+func (m *matcher) changedLocked() {
+	m.stale.Store(true)
+	if m.timer != nil {
+		return
+	}
+	d := m.debounce
+	if d <= 0 {
+		d = matcherDebounce
+	}
+	m.timer = time.AfterFunc(d, func() {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		m.timer = nil
+		if m.stale.Load() {
+			m.rebuildLocked()
+		}
+	})
 }
 
 func (m *matcher) replaceAll(entries map[int64]match.Entry) {
@@ -51,14 +104,14 @@ func (m *matcher) put(e match.Entry) {
 		m.entries = make(map[int64]match.Entry)
 	}
 	m.entries[e.MovieID] = e
-	m.rebuildLocked()
+	m.changedLocked()
 }
 
 func (m *matcher) remove(movieID int64) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	delete(m.entries, movieID)
-	m.rebuildLocked()
+	m.changedLocked()
 }
 
 // RebuildMatcher reloads the release matcher from the database.

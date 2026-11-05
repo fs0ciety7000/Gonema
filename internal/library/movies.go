@@ -351,7 +351,14 @@ func (s *Service) AddMovie(ctx context.Context, tmdbID int, opts AddOptions) (mo
 		slog.String("title", movie.Title), slog.String("path", movie.Path), slog.String("status", movie.Status))
 	ev := movieEvent(&movie)
 	ev.Path = movie.Path
-	s.publish(events.Event{Type: events.MovieAdded, MovieID: movie.ID, Data: ev})
+	s.publish(events.Event{Type: events.MovieAdded, MovieID: movie.ID, Data: ev, History: &events.HistoryRecord{
+		Event: "movie_added", SourceTitle: movie.Title,
+		Data: map[string]any{
+			"tmdbId": movie.TmdbID, "year": movie.Year, "path": movie.Path, "monitored": movie.Monitored,
+			"qualityProfileId": movie.QualityProfileID, "minimumAvailability": movie.MinimumAvailability,
+			"searchOnAdd": opts.SearchOnAdd && opts.Monitored,
+		},
+	}})
 	s.enqueue(ctx, JobMovieImages, MoviePayload{MovieID: movie.ID}, jobs.EnqueueOptions{
 		DedupeKey: fmt.Sprintf("%s:%d", JobMovieImages, movie.ID), Priority: 5,
 	})
@@ -539,7 +546,13 @@ func (s *Service) DeleteMovie(ctx context.Context, id int64, opts DeleteOptions)
 	ev := movieEvent(&m)
 	ev.Path = m.Path
 	ev.Note = "removed from the library; the folder and its files were kept on disk"
-	s.publish(events.Event{Type: events.MovieDeleted, MovieID: id, Data: ev})
+	s.publish(events.Event{Type: events.MovieDeleted, MovieID: id, Data: ev, History: &events.HistoryRecord{
+		Event: "movie_deleted", SourceTitle: m.Title,
+		Data: map[string]any{
+			"tmdbId": m.TmdbID, "year": m.Year, "path": m.Path, "addExclusion": opts.AddExclusion,
+			"reason": ev.Note,
+		},
+	}})
 	return m, nil
 }
 

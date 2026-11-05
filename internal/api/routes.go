@@ -41,6 +41,9 @@ func (s *Server) routes() {
 	s.systemRoutes()
 	s.movieRoutes()
 	s.libraryRoutes()
+	if s.d.Acquire != nil {
+		s.acquireRoutes()
+	}
 	s.registerEvents()
 }
 

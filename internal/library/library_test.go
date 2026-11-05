@@ -248,7 +248,9 @@ func TestRefreshMovieChangesStatus(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(rows) != 2 || rows[0].Event != "metadata_changed" || !strings.Contains(rows[0].Data, "TMDB no longer knows") {
+	// Newest first: two metadata changes, then the addition.
+	if len(rows) != 3 || rows[0].Event != "metadata_changed" || !strings.Contains(rows[0].Data, "TMDB no longer knows") ||
+		rows[2].Event != "movie_added" {
 		t.Errorf("history = %+v", rows)
 	}
 }

@@ -140,8 +140,8 @@ func New(opts Options) (*Service, error) {
 	return s, nil
 }
 
-// Init prepares the service at startup: seeds the starter quality profiles on
-// an empty database, loads the stored TMDB key (without network access) and
+// Init prepares the service at startup: seeds the starter quality profiles and
+// scoring rules on an empty database, loads the stored TMDB key (without network access) and
 // builds the release matcher.
 func (s *Service) Init(ctx context.Context) error {
 	n, err := s.SeedQualityProfiles(ctx)
@@ -150,6 +150,12 @@ func (s *Service) Init(ctx context.Context) error {
 	}
 	if n > 0 {
 		s.log.Info("seeded starter quality profiles", slog.Int("count", n))
+	}
+	if n, err = s.SeedScoringRules(ctx); err != nil {
+		return err
+	}
+	if n > 0 {
+		s.log.Info("seeded starter scoring rules", slog.Int("count", n))
 	}
 	if err := s.loadTMDBKey(ctx); err != nil {
 		// A key that cannot be decrypted (master key changed) must not prevent the

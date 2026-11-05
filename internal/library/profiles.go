@@ -25,10 +25,8 @@ func profileItems(p *quality.Profile) []store.ProfileItem {
 }
 
 // SeedQualityProfiles inserts the starter quality profiles when the database
-// has none (first run). It returns how many were created.
-//
-// Only the profiles and their qualities are seeded: the starter scoring rules
-// and per-profile scores need scoring queries that the store does not have yet.
+// has none (first run). It returns how many were created. Their scores are
+// seeded with the scoring rules (SeedScoringRules).
 func (s *Service) SeedQualityProfiles(ctx context.Context) (int, error) {
 	created := 0
 	err := s.st.WithTx(ctx, func(q *db.Queries) error {
