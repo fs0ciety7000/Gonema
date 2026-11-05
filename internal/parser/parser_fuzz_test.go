@@ -12,8 +12,9 @@ import (
 // FuzzParse checks the invariants that must hold for any input:
 // no panic, determinism, a plausible year, and no output string longer than the input.
 func FuzzParse(f *testing.F) {
-	for _, e := range loadCorpus(f) {
-		f.Add(e.Name)
+	entries := loadCorpus(f)
+	for i := range entries {
+		f.Add(entries[i].Name)
 	}
 	for _, s := range []string{"", "-", ".", "[", "]", "[]", "-[]-", "....", "(((", "a-", "-a", "AKA", "a.AKA", "\xff\xfe", "Ⱥ.2019", "ǅ & ß"} {
 		f.Add(s)

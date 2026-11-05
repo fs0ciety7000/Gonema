@@ -98,8 +98,13 @@ const (
 
 var resolutionNames = []string{"unknown", "480p", "576p", "720p", "1080p", "2160p"}
 
-func (r Resolution) String() string                 { return enumString(r, resolutionNames) }
-func (r Resolution) MarshalText() ([]byte, error)   { return marshal(enumText(r, resolutionNames)) }
+// String returns the text form of r.
+func (r Resolution) String() string { return enumString(r, resolutionNames) }
+
+// MarshalText implements encoding.TextMarshaler.
+func (r Resolution) MarshalText() ([]byte, error) { return marshal(enumText(r, resolutionNames)) }
+
+// UnmarshalText implements encoding.TextUnmarshaler.
 func (r *Resolution) UnmarshalText(b []byte) error { return enumParse(r, b, resolutionNames) }
 
 // Source is where the video comes from.
@@ -121,8 +126,13 @@ const (
 
 var sourceNames = []string{"unknown", "cam", "telesync", "telecine", "screener", "dvd", "hdtv", "webrip", "webdl", "bluray"}
 
-func (s Source) String() string                 { return enumString(s, sourceNames) }
-func (s Source) MarshalText() ([]byte, error)   { return marshal(enumText(s, sourceNames)) }
+// String returns the text form of s.
+func (s Source) String() string { return enumString(s, sourceNames) }
+
+// MarshalText implements encoding.TextMarshaler.
+func (s Source) MarshalText() ([]byte, error) { return marshal(enumText(s, sourceNames)) }
+
+// UnmarshalText implements encoding.TextUnmarshaler.
 func (s *Source) UnmarshalText(b []byte) error { return enumParse(s, b, sourceNames) }
 
 // Modifier refines a Source.
@@ -140,8 +150,13 @@ const (
 
 var modifierNames = []string{"none", "remux", "brdisk", "dvdr", "regional", "rawhd"}
 
-func (m Modifier) String() string                 { return enumString(m, modifierNames) }
-func (m Modifier) MarshalText() ([]byte, error)   { return marshal(enumText(m, modifierNames)) }
+// String returns the text form of m.
+func (m Modifier) String() string { return enumString(m, modifierNames) }
+
+// MarshalText implements encoding.TextMarshaler.
+func (m Modifier) MarshalText() ([]byte, error) { return marshal(enumText(m, modifierNames)) }
+
+// UnmarshalText implements encoding.TextUnmarshaler.
 func (m *Modifier) UnmarshalText(b []byte) error { return enumParse(m, b, modifierNames) }
 
 // Codec is the video codec. x264, H.264 and AVC are all CodecH264; x265, H.265 and HEVC are CodecH265.
@@ -162,8 +177,13 @@ const (
 
 var codecNames = []string{"unknown", "h264", "h265", "av1", "vc1", "xvid", "divx", "mpeg2", "vp9"}
 
-func (c Codec) String() string                 { return enumString(c, codecNames) }
-func (c Codec) MarshalText() ([]byte, error)   { return marshal(enumText(c, codecNames)) }
+// String returns the text form of c.
+func (c Codec) String() string { return enumString(c, codecNames) }
+
+// MarshalText implements encoding.TextMarshaler.
+func (c Codec) MarshalText() ([]byte, error) { return marshal(enumText(c, codecNames)) }
+
+// UnmarshalText implements encoding.TextUnmarshaler.
 func (c *Codec) UnmarshalText(b []byte) error { return enumParse(c, b, codecNames) }
 
 // HDRFormat is a dynamic range format. A bare "HDR" tag is reported as HDR10, the
@@ -181,8 +201,13 @@ const (
 
 var hdrNames = []string{"", "hdr10", "hdr10+", "dv", "hlg", "sdr"}
 
-func (h HDRFormat) String() string                 { return enumString(h, hdrNames) }
-func (h HDRFormat) MarshalText() ([]byte, error)   { return marshal(enumText(h, hdrNames)) }
+// String returns the text form of h.
+func (h HDRFormat) String() string { return enumString(h, hdrNames) }
+
+// MarshalText implements encoding.TextMarshaler.
+func (h HDRFormat) MarshalText() ([]byte, error) { return marshal(enumText(h, hdrNames)) }
+
+// UnmarshalText implements encoding.TextUnmarshaler.
 func (h *HDRFormat) UnmarshalText(b []byte) error { return enumParse(h, b, hdrNames) }
 
 // AudioFormat is an audio codec. Atmos is a separate flag (ParsedRelease.Atmos).
@@ -207,8 +232,13 @@ const (
 
 var audioNames = []string{"", "aac", "ac3", "eac3", "truehd", "dts", "dts-hd", "dts-hd-ma", "dts-hd-hra", "dts-x", "flac", "pcm", "opus", "mp3"}
 
-func (a AudioFormat) String() string                 { return enumString(a, audioNames) }
-func (a AudioFormat) MarshalText() ([]byte, error)   { return marshal(enumText(a, audioNames)) }
+// String returns the text form of a.
+func (a AudioFormat) String() string { return enumString(a, audioNames) }
+
+// MarshalText implements encoding.TextMarshaler.
+func (a AudioFormat) MarshalText() ([]byte, error) { return marshal(enumText(a, audioNames)) }
+
+// UnmarshalText implements encoding.TextUnmarshaler.
 func (a *AudioFormat) UnmarshalText(b []byte) error { return enumParse(a, b, audioNames) }
 
 // Language is a language tag found in a release name. Text values are BCP 47 codes,
@@ -267,8 +297,13 @@ var languageNames = []string{
 	"ta", "te", "th", "vi", "ar", "he", "fa", "ca",
 }
 
-func (l Language) String() string                 { return enumString(l, languageNames) }
-func (l Language) MarshalText() ([]byte, error)   { return marshal(enumText(l, languageNames)) }
+// String returns the text form of l.
+func (l Language) String() string { return enumString(l, languageNames) }
+
+// MarshalText implements encoding.TextMarshaler.
+func (l Language) MarshalText() ([]byte, error) { return marshal(enumText(l, languageNames)) }
+
+// UnmarshalText implements encoding.TextUnmarshaler.
 func (l *Language) UnmarshalText(b []byte) error { return enumParse(l, b, languageNames) }
 
 // Edition is a set of edition flags.

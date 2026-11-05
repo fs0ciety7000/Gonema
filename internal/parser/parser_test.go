@@ -63,6 +63,12 @@ func TestParse_TitleYear(t *testing.T) {
 		{"Mad.Max.Fury.Road.2015.MULTi.COMPLETE.BLURAY-FLAME", titleYear{Title: "Mad Max Fury Road", Year: 2015}},
 		{"[Judas] Your Name (2016) [BD 1080p HEVC x265 10bit][Dual-Audio][Multi-Subs]", titleYear{Title: "Your Name", Year: 2016}},
 		{"Movie.2019", titleYear{Title: "Movie", Year: 2019}},
+		{"Blade.Runner.Final.Cut.1982.GERMAN.DL.DV.HDR.2160p.WEB.H265-SunDry", titleYear{Title: "Blade Runner", Year: 1982}},
+		{"Terminator.2.Judgment.Day.The.Ultimate.Edition.1991.NTSC.2DISC.COMPLETE.DVDR-25LiGHTERS", titleYear{Title: "Terminator 2 Judgment Day", Year: 1991}},
+		{"The.Final.Cut.2004.1080p.BluRay.x264-GROUP", titleYear{Title: "The Final Cut", Year: 2004}},
+		{"Les.Miserables.in.Concert.The.25th.Anniversary.2010.1080p.BluRay.H264-MiSERABLE", titleYear{Title: "Les Miserables in Concert The 25th Anniversary", Year: 2010}},
+		{"Blade.Runner.2049.GERMAN.DL.2160p.UHD.BluRay.x265-ENDSTATiON", titleYear{Title: "Blade Runner", Year: 2049}}, // documented ambiguity
+		{"The.Good.German.2006.1080p.BluRay.x264-GROUP", titleYear{Title: "The Good", Year: 2006}},                     // documented limitation
 		{"", titleYear{}},
 	}, func(p parser.ParsedRelease) titleYear {
 		return titleYear{Title: p.Title, Year: p.Year, Alternate: p.AlternateTitles}
@@ -288,6 +294,8 @@ func TestParse_Edition(t *testing.T) {
 		{"Apocalypse.Now.1979.Redux.Remastered.German.1080p.BluRay.AVC-UNTAVC", edition{parser.EditionRedux | parser.EditionRemastered, "Redux.Remastered"}},
 		{"Mad.Max.Fury.Road.2015.iTALiAN.BLACK.N.CHROME.EDiTiON.720p.BluRay.x264-NTROPiC", edition{0, "BLACK.N.CHROME.EDiTiON"}},
 		{"The.Final.Cut.2004.1080p.BluRay.x264-GROUP", edition{}},
+		{"Unforgiven.1992.REMASTERED.25th.A.E.DTS-HD.DTS.MULTISUBS.1080p.BluRay.x264.HQ-TUSAHD", edition{parser.EditionRemastered | parser.EditionAnniversary, "REMASTERED.25th.A.E"}},
+		{"Terminator.2.Judgment.Day.The.Ultimate.Edition.1991.NTSC.2DISC.COMPLETE.DVDR-25LiGHTERS", edition{parser.EditionUltimate, "Ultimate.Edition"}},
 		{"Les.Miserables.in.Concert.The.25th.Anniversary.2010.1080p.BluRay.H264-MiSERABLE", edition{}},
 	}, func(p parser.ParsedRelease) edition { return edition{p.Edition, p.EditionText} })
 }
@@ -323,6 +331,8 @@ func TestParse_Languages(t *testing.T) {
 		{"Spirited.Away.2001.JAPANESE.NORDIC.DTS-HD.DTS.1080p.BluRay.x264.HQ-TUSAHD", langs{[]parser.Language{parser.LanguageJapanese, parser.LanguageNordic}, false}},
 		{"Crouching.Tiger.Hidden.Dragon.2000.REMASTERED.CHINESE.TrueHD.Atmos.AC3.MULTISUBS.1080p.BluRay.x264.HQ-TUSAHD", langs{[]parser.Language{parser.LanguageChinese}, false}},
 		{"Movie.2019.VOSTFR.1080p.WEB.x264-GROUP", langs{}},
+		{"La.haine.1995.BONUS.GERMAN.SUBBED.COMPLETE.BLURAY-iFPD", langs{}},
+		{"Intouchables.2011.CUSTOM.PT.SUBS.PAL.DVDR-HRAKi", langs{}},
 	}, func(p parser.ParsedRelease) langs { return langs{p.Languages, p.Multi} })
 }
 
@@ -343,7 +353,8 @@ func TestParse_Subs(t *testing.T) {
 		{"Movie.2019.Hardsub.720p.WEB.x264-GROUP", subs{true, "Hardsub", ""}},
 		{"Godzilla.Minus.One.2023.SUBFRENCH.1080p.BluRay.x264-UKDHD", subs{true, "SUBFRENCH", ""}},
 		{"Movie.2019.VOSTFR.1080p.WEB.x264-GROUP", subs{false, "", "VOSTFR"}},
-		{"Lagaan.Es.war.einmal.in.Indien.2001.German.SUBBED.DVDRip.x264-GMA", subs{false, "", "SUBBED"}},
+		{"Lagaan.Es.war.einmal.in.Indien.2001.German.SUBBED.DVDRip.x264-GMA", subs{false, "", "German.SUBBED"}},
+		{"Your.Name.Engraved.Herein.2020.FESTiVAL.SUBBED.1080p.BluRay.x264-NOELLE", subs{false, "", "SUBBED"}},
 		{"2001.A.Space.Odyssey.1968.SE.DTS-HRA.DTS.MULTISUBS.1080p.BluRay.x264.HQ-TUSAHD", subs{false, "", "MULTISUBS"}},
 	}, func(p parser.ParsedRelease) subs { return subs{p.HardcodedSubs, p.HardcodedSubsTag, p.Subs} })
 }
@@ -404,6 +415,12 @@ func TestParse_GroupContainerStreaming(t *testing.T) {
 		{"Movie.2019.1080p.BluRay.Half-SBS.x264-GROUP", misc{Group: "GROUP", ThreeD: true}},
 		{"The Matrix (1999) [1080p] [BluRay] [5.1] [YTS.MX]", misc{Group: "YTS.MX"}},
 		{"Shawshank_Redemption-DVDRip-PRiVCD", misc{Group: "PRiVCD"}},
+		{"Memoirs.Of.A.Geisha.2005.COMPLETE.BLURAY-UNTOUCHED", misc{Group: "UNTOUCHED"}},
+		{"Mulan.II.FRENCH.STV.DVDRip.XViD-UNRATED", misc{Group: "UNRATED"}},
+		{"Pulp.Fiction.1994.NORDIC.1080P.BLURAY.H264-HD_Leaks", misc{Group: "HD_Leaks"}},
+		{"Blade.Runner.2049.3D.2017.German.DL.1080p.BluRay.x264.RERIP-BluRay3D", misc{Group: "BluRay3D", ThreeD: true}},
+		{"Movie.2019.1080p.Blu-ray", misc{}},
+		{"Movie.2019.1080p.BluRay.DTS-X", misc{}},
 	}, func(p parser.ParsedRelease) misc {
 		return misc{p.ReleaseGroup, p.Container, p.Streaming, p.Hash, p.ThreeD}
 	})

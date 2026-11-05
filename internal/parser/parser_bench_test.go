@@ -21,8 +21,8 @@ var typicalNames = map[string]string{
 func BenchmarkParse(b *testing.B) {
 	entries := loadCorpus(b)
 	names := make([]string, len(entries))
-	for i, e := range entries {
-		names[i] = e.Name
+	for i := range entries {
+		names[i] = entries[i].Name
 	}
 	b.Run("corpus", func(b *testing.B) {
 		b.ReportAllocs()
@@ -55,8 +55,8 @@ func TestParseBudget(t *testing.T) {
 	entries := loadCorpus(t)
 	res := testing.Benchmark(func(b *testing.B) {
 		for b.Loop() {
-			for _, e := range entries {
-				parser.Parse(e.Name)
+			for i := range entries {
+				parser.Parse(entries[i].Name)
 			}
 		}
 	})
