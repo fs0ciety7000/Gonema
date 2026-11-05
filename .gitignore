@@ -1,0 +1,31 @@
+# Secrets en clair : jamais dans git (les fichiers chiffrés secrets/*.enc.json, eux, sont commitables)
+.env
+.env.*
+!.env.example
+!.env.tpl
+*.pem
+*.key
+secrets/*.dec.*
+secrets/*.plain.*
+
+# Données locales
+pb_data/
+*.sqlite
+*.db
+
+# Dépendances et builds
+node_modules/
+dist/
+build/
+.next/
+.wrangler/
+target/
+.godot/
+
+# Éditeurs et système
+.DS_Store
+.idea/
+.vscode/
+
+# Claude Code : réglages locaux personnels
+.claude/settings.local.json
