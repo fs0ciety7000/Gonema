@@ -1,6 +1,6 @@
 # DESIGN.md
 
-> Direction visuelle de Gonema, lue par les agents de design et de front. Statut : phase 2B, à valider par le product owner avant tout code front.
+> Direction visuelle de Gonema, lue par les agents de design et de front. Statut : **approuvé par le product owner le 2026-11-05** (identité, maquettes et écarts assumés). Le code front (phase 7) doit suivre ce document et les maquettes ; tout écart est signalé et justifié.
 >
 > **Sources de vérité** (dans cet ordre) :
 > 1. `docs/brand/kit/tokens.css` (généré depuis `tokens.json`) : couleurs, typographie, rayons, ombre, focus de la marque. Ne jamais redéfinir.
@@ -215,3 +215,14 @@ Paramètres communs : `?theme=light|dark`, `?density=compact`, `?motion=reduce`,
 | 7 | Compteur de la barre d'actions groupées en neutre (`text-primary`), pas en accent | Habitude de nombreuses applis | Règle de marque : un seul élément plein en accent par vue (« Add film » sur la bibliothèque). |
 | 8 | Mot « Home » et entrée « Add & discover » dans la navigation | Architecture : « Discover » | Regroupe ajout TMDB et listes de découverte dans un seul écran à onglets ; moins d'entrées de premier niveau. |
 | 9 | Densité compacte : body-sm 13 px dans les tableaux | Kit : body 14 | Lisibilité gardée (13 px ≥ seuil de graisse 400) ; nécessaire pour 36 px de hauteur de ligne. |
+
+## Décisions du product owner (2026-11-05)
+
+Validées telles que proposées en fin de phase 2B :
+
+1. **Titres** : Archivo Expanded reste la police display (écart 3 maintenu).
+2. **Teinte film** : le bouton principal de la fiche prend la teinte du poster (écart 4 maintenu) ; focus, liens et sélection restent outremer.
+3. **Navigation** : « Home » et « Add & discover » (ajout + listes de découverte en onglets) sont validés.
+4. **Échecs** : 6 tentatives automatiques par défaut sur les releases suivantes ; blocklist par release, « bloquer tout le groupe » en option.
+5. **Mascotte** : Kernel (pose neutral) autorisé sur l'écran « tout est à jour ».
+6. **Calendrier** : par défaut, uniquement les films surveillés ; un filtre affiche aussi les films annoncés non surveillés.
