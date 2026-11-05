@@ -172,7 +172,7 @@ type mediaServerIDBody struct {
 }
 
 type mediaServerTestOutput struct {
-	Body mediaserver.NotificationTest
+	Body mediaserver.MediaServerTest
 }
 
 func (r *integrationRoutes) mediaServers() {

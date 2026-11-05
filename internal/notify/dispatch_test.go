@@ -84,7 +84,7 @@ type env struct {
 	slept chan time.Duration
 }
 
-func newEnv(t *testing.T, workers int) *env {
+func newEnv(t *testing.T) *env {
 	t.Helper()
 	st := storetest.New(t)
 	key, err := secretbox.NewKey()
@@ -99,7 +99,7 @@ func newEnv(t *testing.T, workers int) *env {
 	f := &fakes{out: make(chan sent, 64)}
 	slept := make(chan time.Duration, 64)
 	svc, err := NewService(ServiceOptions{
-		Store: st, Box: box, Bus: bus, Images: images{}, Workers: workers, NewNotifier: f.build,
+		Store: st, Box: box, Bus: bus, Images: images{}, Workers: 1, NewNotifier: f.build,
 		Retry: outbound.Retry{Attempts: 2, Backoff: []time.Duration{time.Second}, Sleep: func(_ context.Context, d time.Duration) error {
 			slept <- d
 			return nil
@@ -199,7 +199,7 @@ func (e *env) download(t *testing.T, m db.Movie, grabbedAt time.Time) db.Downloa
 // TestMessagesCopy checks the copy examples of the brief, built from events
 // and the database.
 func TestMessagesCopy(t *testing.T) {
-	e := newEnv(t, 1)
+	e := newEnv(t)
 	ctx := context.Background()
 	if _, err := e.svc.SetAppURL(ctx, "https://gonema.example.lan/"); err != nil {
 		t.Fatal(err)
@@ -295,7 +295,7 @@ func TestMessagesCopy(t *testing.T) {
 // deliveries come out in the order they were queued, so a final message to
 // "all" proves the earlier ones were (or were not) sent.
 func TestDispatchSelection(t *testing.T) {
-	e := newEnv(t, 1)
+	e := newEnv(t)
 	kids := e.movie(t, 1, "Paddington", 2014, "kids")
 	adult := e.movie(t, 2, "Heat", 1995, "crime")
 	e.notification(t, "all", []EventKind{EventGrab, EventHealth})
@@ -341,7 +341,7 @@ func ptr[T any](v T) *T { return &v }
 // TestDispatchNeverBlocks: deliveries stuck on a slow service neither block
 // the bus nor the dispatcher's subscription; the overflow is dropped.
 func TestDispatchNeverBlocks(t *testing.T) {
-	e := newEnv(t, 1)
+	e := newEnv(t)
 	e.fakes.gate = make(chan struct{})
 	m := e.movie(t, 1, "Heat", 1995)
 	dl := e.download(t, m, time.Now())
@@ -380,7 +380,7 @@ func TestDispatchNeverBlocks(t *testing.T) {
 }
 
 func TestDispatchRetryAndHealth(t *testing.T) {
-	e := newEnv(t, 1)
+	e := newEnv(t)
 	m := e.movie(t, 1, "Heat", 1995)
 	dl := e.download(t, m, time.Now())
 	a := e.notification(t, "a", []EventKind{EventGrab, EventHealth})

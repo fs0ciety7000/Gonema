@@ -219,7 +219,7 @@ type NotificationSecretsInput struct {
 type NotificationInput struct {
 	Name     string                    `json:"name" minLength:"1" maxLength:"100"`
 	Kind     Kind                      `json:"kind" enum:"webhook,discord,telegram,pushover,ntfy,gotify,slack,email"`
-	Settings ServiceSettings           `json:"settings"`
+	Settings ServiceSettings           `json:"settings,omitempty" doc:"Omitted: none (kinds whose settings are all secrets)"`
 	Secrets  *NotificationSecretsInput `json:"secrets,omitempty"`
 	Events   []EventKind               `json:"events,omitempty" maxItems:"7" doc:"Omitted: grab, import, upgrade, failure, health"`
 	Tags     []string                  `json:"tags,omitempty" maxItems:"20"`

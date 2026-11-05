@@ -14,12 +14,12 @@ import (
 
 // startIntegrations starts the notification dispatcher and the media server
 // refresher, both following the bus. Close them before closing the bus.
-func startIntegrations(st *store.Store, box *secretbox.Box, bus *events.Bus, lib *library.Service, log *slog.Logger) (*notify.Service, *mediaserver.Service, error) {
-	notes, err := notify.NewService(notify.ServiceOptions{Store: st, Box: box, Bus: bus, Logger: log, Version: version, Images: lib})
+func startIntegrations(st *store.Store, box *secretbox.Box, bus *events.Bus, lib *library.Service, log *slog.Logger) (notes *notify.Service, media *mediaserver.Service, err error) {
+	notes, err = notify.NewService(notify.ServiceOptions{Store: st, Box: box, Bus: bus, Logger: log, Version: version, Images: lib})
 	if err != nil {
 		return nil, nil, err
 	}
-	media, err := mediaserver.NewService(mediaserver.ServiceOptions{Store: st, Box: box, Bus: bus, Logger: log, Version: version})
+	media, err = mediaserver.NewService(mediaserver.ServiceOptions{Store: st, Box: box, Bus: bus, Logger: log, Version: version})
 	if err != nil {
 		return nil, nil, err
 	}

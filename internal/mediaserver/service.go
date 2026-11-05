@@ -205,7 +205,7 @@ type MediaServer struct {
 
 // MediaServerInput creates or replaces a media server. Nil secrets keep the stored
 // values; "" removes them.
-type MediaServerInput struct {
+type MediaServerInput struct { //nolint:revive // distinct OpenAPI schema name (acquire.TestResult, notify inputs)
 	Name          string              `json:"name" minLength:"1" maxLength:"100"`
 	Kind          Kind                `json:"kind" enum:"plex,jellyfin,kodi"`
 	BaseURL       string              `json:"baseUrl" minLength:"1" maxLength:"2048" doc:"e.g. http://192.168.1.10:32400 (Plex), http://jellyfin:8096, http://kodi:8080"`
@@ -219,7 +219,7 @@ type MediaServerInput struct {
 }
 
 // MediaServerTest is the outcome of a connection test.
-type MediaServerTest struct {
+type MediaServerTest struct { //nolint:revive // distinct OpenAPI schema name
 	OK      bool   `json:"ok"`
 	Message string `json:"message" doc:"Plain-language result, safe to display"`
 }

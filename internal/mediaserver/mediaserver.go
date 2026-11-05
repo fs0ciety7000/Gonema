@@ -120,7 +120,7 @@ type Options struct {
 	Version   string // Gonema version, sent by the Jellyfin client header
 }
 
-// ErrNoLibrary: the server has no library folder containing the movie folder
+// ErrNoLibrary means the server has no library folder containing the movie folder
 // (path mappings missing or wrong).
 var ErrNoLibrary = errors.New("mediaserver: no library contains the folder")
 

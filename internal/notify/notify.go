@@ -254,7 +254,7 @@ type Options struct {
 	Dial func(ctx context.Context, network, addr string) (net.Conn, error)
 }
 
-// ErrConfig: the settings are incomplete or invalid; the message says why.
+// ErrConfig means the settings are incomplete or invalid; the message says why.
 var ErrConfig = errors.New("notify: invalid settings")
 
 func configErr(format string, args ...any) error {

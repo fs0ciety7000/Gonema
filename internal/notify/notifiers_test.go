@@ -95,7 +95,7 @@ type capture struct {
 	body [][]byte
 }
 
-func (c *capture) last(t *testing.T) (*http.Request, []byte) {
+func (c *capture) last(t *testing.T) (req *http.Request, body []byte) {
 	t.Helper()
 	c.mu.Lock()
 	defer c.mu.Unlock()

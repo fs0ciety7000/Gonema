@@ -97,7 +97,7 @@ func wants(r *db.Notification, sub *subject) bool {
 		return false
 	}
 	if m.Event == EventHealth {
-		return !(m.HealthSource == CheckID && m.HealthID == r.ID)
+		return m.HealthSource != CheckID || m.HealthID != r.ID
 	}
 	tags := decodeJSON[[]string](r.Tags)
 	if len(tags) == 0 {

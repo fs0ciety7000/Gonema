@@ -9,7 +9,7 @@ import (
 	"github.com/fs0ciety7000/gonema/internal/outbound"
 )
 
-// Status colours of DESIGN.md (dark theme), as RGB integers for embeds.
+// Status colors of DESIGN.md (dark theme), as RGB integers for embeds.
 const (
 	colorDownloading = 0x5EC4D6
 	colorMissing     = 0xE8AE55

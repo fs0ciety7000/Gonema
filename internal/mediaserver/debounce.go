@@ -83,10 +83,3 @@ func (d *debouncer) close() int {
 	clear(d.pending)
 	return n
 }
-
-// size returns the number of pending targets.
-func (d *debouncer) size() int {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	return len(d.pending)
-}

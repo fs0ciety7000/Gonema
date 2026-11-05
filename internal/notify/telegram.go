@@ -16,7 +16,7 @@ import (
 const DefaultTelegramAPI = "https://api.telegram.org"
 
 // botToken matches the shape of a bot token ("123456:ABC-DEF...").
-var botToken = regexp.MustCompile(`^[0-9]{1,20}:[A-Za-z0-9_-]{20,100}$`)
+var botToken = regexp.MustCompile(`^\d{1,20}:[A-Za-z0-9_-]{20,100}$`)
 
 type telegram struct {
 	c        *outbound.Client

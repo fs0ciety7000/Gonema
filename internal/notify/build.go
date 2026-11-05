@@ -53,7 +53,6 @@ type builder struct {
 	now    func() time.Time
 
 	mu     sync.Mutex
-	health map[string]bool  // "source/id" -> last ok state
 	warned map[int64]string // download id -> last import failure notified
 }
 
