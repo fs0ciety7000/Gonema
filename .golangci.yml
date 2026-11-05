@@ -39,6 +39,7 @@ linters:
         - normalises
         - recognised
         - behaviour
+        - cancelled # jobs.status enum value (docs/data-model.md)
     revive:
       rules:
         - name: exported

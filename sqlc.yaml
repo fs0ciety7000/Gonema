@@ -1,0 +1,15 @@
+version: "2"
+sql:
+  - engine: sqlite
+    schema: internal/store/migrations
+    queries: internal/store/queries
+    gen:
+      go:
+        package: db
+        out: internal/store/db
+        emit_json_tags: true
+        json_tags_case_style: camel
+        emit_interface: true
+        emit_prepared_queries: true
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true

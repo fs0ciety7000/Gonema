@@ -1,4 +1,4 @@
-.PHONY: test bench lint build
+.PHONY: test bench lint build generate
 
 test:
 	go test ./...
@@ -11,3 +11,6 @@ lint:
 
 build:
 	CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o bin/gonema ./cmd/gonema
+
+generate:
+	go tool -modfile=tools/go.mod sqlc generate
