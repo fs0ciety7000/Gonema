@@ -1,0 +1,105 @@
+/* Gonema brand tokens, generated from tokens.json (direction A "Salle" + B typography).
+   Dark is the default; [data-theme="light"] or the OS preference switches to light.
+   Fonts (SIL OFL 1.1, Google Fonts): Archivo (wdth 125), Geist, Geist Mono. */
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-base: #12100E;
+  --bg-raised: #1C1815;
+  --surface-glass: rgba(42, 35, 30, 0.72);
+  --border: rgba(242, 232, 220, 0.12);
+  --text-primary: #F2E9DD;
+  --text-secondary: #C9BBAB;
+  --text-muted: #9C8D7D;
+  --accent: #8F96FF;
+  --accent-contrast: #0E0C1F;
+  --status-downloading: #5EC4D6;
+  --status-missing: #E8AE55;
+  --status-upgraded: #D69AEA;
+  --status-failed: #F27268;
+  --status-available: #7FCC89;
+  --focus-ring: 0 0 0 2px #12100E, 0 0 0 4px #8F96FF;
+  --shadow-raised: 0 1px 0 rgba(242,233,221,0.04) inset, 0 12px 32px -12px rgba(0,0,0,0.6);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg-base: #F3EDE3;
+  --bg-raised: #FBF8F2;
+  --surface-glass: rgba(255, 253, 249, 0.7);
+  --border: rgba(42, 32, 24, 0.14);
+  --text-primary: #1C1713;
+  --text-secondary: #4E443B;
+  --text-muted: #6E6257;
+  --accent: #3B3FD6;
+  --accent-contrast: #FFFFFF;
+  --status-downloading: #0B6E80;
+  --status-missing: #8C5300;
+  --status-upgraded: #86389F;
+  --status-failed: #B42A22;
+  --status-available: #2B7236;
+  --focus-ring: 0 0 0 2px #F3EDE3, 0 0 0 4px #3B3FD6;
+  --shadow-raised: 0 1px 2px rgba(42,32,24,0.06), 0 12px 32px -16px rgba(42,32,24,0.18);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --bg-base: #F3EDE3;
+    --bg-raised: #FBF8F2;
+    --surface-glass: rgba(255, 253, 249, 0.7);
+    --border: rgba(42, 32, 24, 0.14);
+    --text-primary: #1C1713;
+    --text-secondary: #4E443B;
+    --text-muted: #6E6257;
+    --accent: #3B3FD6;
+    --accent-contrast: #FFFFFF;
+    --status-downloading: #0B6E80;
+    --status-missing: #8C5300;
+    --status-upgraded: #86389F;
+    --status-failed: #B42A22;
+    --status-available: #2B7236;
+    --focus-ring: 0 0 0 2px #F3EDE3, 0 0 0 4px #3B3FD6;
+    --shadow-raised: 0 1px 2px rgba(42,32,24,0.06), 0 12px 32px -16px rgba(42,32,24,0.18);
+  }
+}
+
+:root {
+  --font-display: 'Archivo', 'Archivo Expanded', system-ui, sans-serif;
+  --font-ui: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --display-stretch: 125%;
+  --type-display-2xl: 600 64px/68px var(--font-display);
+  --type-display-2xl-tracking: -0.02em;
+  --type-display-xl: 600 48px/52px var(--font-display);
+  --type-display-xl-tracking: -0.015em;
+  --type-display-lg: 600 36px/40px var(--font-display);
+  --type-display-lg-tracking: -0.01em;
+  --type-display-md: 600 28px/34px var(--font-display);
+  --type-display-md-tracking: -0.005em;
+  --type-overline: 600 11px/16px var(--font-display);
+  --type-overline-tracking: 0.12em;
+  --type-title-lg: 600 20px/28px var(--font-ui);
+  --type-title-lg-tracking: -0.01em;
+  --type-title-md: 600 16px/24px var(--font-ui);
+  --type-title-md-tracking: -0.005em;
+  --type-body-lg: 400 16px/24px var(--font-ui);
+  --type-body-lg-tracking: 0;
+  --type-body: 400 14px/20px var(--font-ui);
+  --type-body-tracking: 0;
+  --type-body-sm: 400 13px/18px var(--font-ui);
+  --type-body-sm-tracking: 0.003em;
+  --type-caption: 500 12px/16px var(--font-ui);
+  --type-caption-tracking: 0.01em;
+  --type-mono: 400 13px/20px var(--font-mono);
+  --type-mono-tracking: 0;
+  --type-mono-sm: 400 12px/16px var(--font-mono);
+  --type-mono-sm-tracking: 0;
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-xl: 24px; --radius-pill: 999px;
+  --glass-blur: 20px;
+}
+
+/* Usage helpers */
+.tnum { font-variant-numeric: tabular-nums; }
+.display { font-family: var(--font-display); font-stretch: var(--display-stretch); font-variation-settings: "wdth" 125; }

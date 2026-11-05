@@ -1,0 +1,36 @@
+# Palettes for the three directions. glass = (rgb hex, alpha) composited over bg-base for measurement.
+P = {
+ 'a': {
+  'dark': {'bg-base':'#12100E','bg-raised':'#1C1815','surface-glass':('#2A231E',0.72),'border':('#F2E8DC',0.12),
+           'text-primary':'#F2E9DD','text-secondary':'#C9BBAB','text-muted':'#9C8D7D',
+           'accent':'#8F96FF','accent-contrast':'#0E0C1F',
+           'status-downloading':'#5EC4D6','status-missing':'#E8AE55','status-upgraded':'#D69AEA',
+           'status-failed':'#F27268','status-available':'#7FCC89'},
+  'light': {'bg-base':'#F3EDE3','bg-raised':'#FBF8F2','surface-glass':('#FFFDF9',0.70),'border':('#2A2018',0.14),
+           'text-primary':'#1C1713','text-secondary':'#4E443B','text-muted':'#6E6257',
+           'accent':'#3B3FD6','accent-contrast':'#FFFFFF',
+           'status-downloading':'#0B6E80','status-missing':'#8C5300','status-upgraded':'#86389F',
+           'status-failed':'#B42A22','status-available':'#2B7236'}},
+ 'b': {
+  'dark': {'bg-base':'#0F0E0D','bg-raised':'#181614','surface-glass':('#23201D',0.70),'border':('#EDE6DE',0.10),
+           'text-primary':'#EEEAE4','text-secondary':'#BDB6AD','text-muted':'#8F877E',
+           'accent':'#3ED1BA','accent-contrast':'#04201B',
+           'status-downloading':'#71A9FF','status-missing':'#F0B04B','status-upgraded':'#B4A0FF',
+           'status-failed':'#FF7070','status-available':'#9DD56B'},
+  'light': {'bg-base':'#F2F1EE','bg-raised':'#FFFFFF','surface-glass':('#FFFFFF',0.72),'border':('#1A1714',0.12),
+           'text-primary':'#161412','text-secondary':'#47423C','text-muted':'#69625A',
+           'accent':'#00756A','accent-contrast':'#FFFFFF',
+           'status-downloading':'#1D5FC2','status-missing':'#8A5300','status-upgraded':'#6542D6',
+           'status-failed':'#BE2B2B','status-available':'#3B7012'}},
+ 'c': {
+  'dark': {'bg-base':'#18110F','bg-raised':'#231916','surface-glass':('#33241F',0.70),'border':('#FFE6D8',0.12),
+           'text-primary':'#FBEDE3','text-secondary':'#D4BCAE','text-muted':'#A68E80',
+           'accent':'#F59DC3','accent-contrast':'#2A0B19',
+           'status-downloading':'#7DB7F3','status-missing':'#F3B55F','status-upgraded':'#80DEC0',
+           'status-failed':'#FF8259','status-available':'#AAD678'},
+  'light': {'bg-base':'#FAF1E8','bg-raised':'#FFF9F3','surface-glass':('#FFFFFF',0.66),'border':('#3A2218',0.13),
+           'text-primary':'#24160F','text-secondary':'#56423A','text-muted':'#77625A',
+           'accent':'#AE2F6B','accent-contrast':'#FFFFFF',
+           'status-downloading':'#1C62AE','status-missing':'#8E5600','status-upgraded':'#0B7457',
+           'status-failed':'#B93A12','status-available':'#47731A'}},
+}
