@@ -50,7 +50,7 @@ func moviePayload(job db.Job) (int64, error) {
 }
 
 // handleImages caches the poster and backdrop of a movie and stores the
-// dominant colour of the poster.
+// dominant color of the poster.
 func (s *Service) handleImages(ctx context.Context, job db.Job) error {
 	id, err := moviePayload(job)
 	if err != nil {
@@ -105,7 +105,7 @@ func (s *Service) handleImages(ctx context.Context, job db.Job) error {
 		return errors.Join(errs...)
 	}
 	if err != nil {
-		return fmt.Errorf("library: save dominant colour of movie %d: %w", id, err)
+		return fmt.Errorf("library: save dominant color of movie %d: %w", id, err)
 	}
 	return errors.Join(errs...)
 }

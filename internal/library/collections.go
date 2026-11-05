@@ -113,7 +113,8 @@ func (s *Service) MonitorCollection(ctx context.Context, id int64, opts MonitorO
 	if err != nil {
 		return res, fmt.Errorf("library: collection %d parts: %w", id, err)
 	}
-	for _, part := range c.Parts {
+	for i := range c.Parts {
+		part := &c.Parts[i]
 		excluded, err := s.st.Read().IsImportListExcluded(ctx, int64(part.TMDBID))
 		if err != nil {
 			return res, store.MapError(fmt.Errorf("library: exclusion of %d: %w", part.TMDBID, err))

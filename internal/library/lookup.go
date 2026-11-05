@@ -72,8 +72,9 @@ func (s *Service) Lookup(ctx context.Context, query string, year int) ([]LookupR
 		found = page.Results
 	}
 	out := make([]LookupResult, 0, len(found))
-	for _, m := range found {
-		r := LookupResult{MovieSummary: m}
+	for i := range found {
+		m := &found[i]
+		r := LookupResult{MovieSummary: *m}
 		if row, err := s.st.Read().GetMovieByTmdbID(ctx, int64(m.TMDBID)); err == nil {
 			r.MovieID = row.ID
 		} else if !errors.Is(store.MapError(err), store.ErrNotFound) {

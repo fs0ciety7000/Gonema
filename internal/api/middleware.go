@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -35,7 +34,8 @@ func validRequestID(s string) bool {
 		return false
 	}
 	for _, c := range s {
-		if !(c == '-' || c == '_' || c == '.' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') {
+		ok := c == '-' || c == '_' || c == '.' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
+		if !ok {
 			return false
 		}
 	}
@@ -263,9 +263,6 @@ func writeProblem(w http.ResponseWriter, r *http.Request, status int, detail str
 	w.WriteHeader(status)
 	_, _ = w.Write(append(body, '\n'))
 }
-
-// errNotFlushable is returned when a streaming response cannot be flushed.
-var errNotFlushable = errors.New("api: response writer cannot flush")
 
 type problemBody struct {
 	Title    string `json:"title"`

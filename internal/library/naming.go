@@ -62,7 +62,7 @@ func ValidateFolderTemplate(tmpl string) error {
 	return nil
 }
 
-// FolderName renders the template with v and sanitises the result into a single
+// FolderName renders the template with v and sanitizes the result into a single
 // folder name valid on Windows, macOS and Linux. The template must be valid.
 func FolderName(tmpl string, v FolderVars) string {
 	year, tmdb := "", ""
@@ -93,7 +93,7 @@ func FolderName(tmpl string, v FolderVars) string {
 
 // CollisionName is the folder used when FolderName is already taken by another
 // movie of the same root folder: the TMDB id is appended in the form Plex and
-// Jellyfin recognise ("Dune (2021) {tmdb-438631}").
+// Jellyfin recognize ("Dune (2021) {tmdb-438631}").
 func CollisionName(name string, tmdbID int64) string {
 	suffix := fmt.Sprintf(" {tmdb-%d}", tmdbID)
 	return truncateBytes(name, maxFolderBytes) + suffix
@@ -111,7 +111,7 @@ var windowsReserved = map[string]bool{
 //
 //   - ": " becomes " - " and other ':' become '-' ("Mission: Impossible" ->
 //     "Mission - Impossible");
-//   - '/' and '\' become '-'; '"' becomes '\''; '<', '>', '|', '?', '*' and
+//   - '/' and '\' become '-'; '"' becomes '\”; '<', '>', '|', '?', '*' and
 //     control characters are removed;
 //   - runs of spaces collapse; leading spaces and dots, trailing spaces and dots
 //     are trimmed (Windows drops trailing dots, a leading dot hides the folder);

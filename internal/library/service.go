@@ -41,6 +41,9 @@ type InputError struct {
 
 func (e *InputError) Error() string { return e.Msg }
 
+// UserMessage returns the plain-language message (shown by the API as is).
+func (e *InputError) UserMessage() string { return e.Msg }
+
 // Is makes InputError match ErrInvalid.
 func (e *InputError) Is(target error) bool { return target == ErrInvalid }
 
@@ -53,6 +56,7 @@ type notFoundError struct{ msg string }
 
 func (e *notFoundError) Error() string        { return e.msg }
 func (e *notFoundError) Is(target error) bool { return target == store.ErrNotFound }
+func (e *notFoundError) UserMessage() string  { return e.msg }
 
 func notFound(format string, args ...any) error {
 	return &notFoundError{msg: fmt.Sprintf(format, args...)}

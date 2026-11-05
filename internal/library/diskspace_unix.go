@@ -10,6 +10,6 @@ func diskSpace(path string) (free, total uint64, err error) {
 		return 0, 0, err
 	}
 	// Field types differ across platforms (int64, uint32, uint64).
-	bsize := uint64(st.Bsize) //nolint:unconvert,gosec // portable across GOOS; block size is positive
-	return uint64(st.Bavail) * bsize, uint64(st.Blocks) * bsize, nil //nolint:unconvert,gosec // see above
+	bsize := uint64(st.Bsize)
+	return uint64(st.Bavail) * bsize, uint64(st.Blocks) * bsize, nil //nolint:unconvert // uint64 on linux only
 }
