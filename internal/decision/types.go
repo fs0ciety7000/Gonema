@@ -23,14 +23,14 @@ type Candidate struct {
 	Parsed parser.ParsedRelease `json:"parsed"` // parser.Parse(Title), done by the caller
 	Size   int64                `json:"size"`   // bytes; 0 if unknown
 
-	IndexerID       int64    `json:"indexerId"`
-	IndexerName     string   `json:"indexerName"`
-	IndexerPriority int      `json:"indexerPriority"` // lower is preferred (1..50, default 25)
-	Protocol        Protocol `json:"protocol"`
-	Seeders         int      `json:"seeders"` // torrents; negative if unknown
-	Leechers        int      `json:"leechers"`
+	IndexerID       int64     `json:"indexerId"`
+	IndexerName     string    `json:"indexerName"`
+	IndexerPriority int       `json:"indexerPriority"` // lower is preferred (1..50, default 25)
+	Protocol        Protocol  `json:"protocol"`
+	Seeders         int       `json:"seeders"` // torrents; negative if unknown
+	Leechers        int       `json:"leechers"`
 	PublishDate     time.Time `json:"publishDate"` // zero if unknown
-	IndexerFlags    []string `json:"indexerFlags,omitempty"`
+	IndexerFlags    []string  `json:"indexerFlags,omitempty"`
 
 	DownloadURL string `json:"downloadUrl"`
 	GUID        string `json:"guid"`
@@ -163,25 +163,25 @@ type Code string
 
 // Rejection codes, in evaluation order.
 const (
-	CodeTitleMismatch       Code = "title_mismatch"
-	CodeYearMismatch        Code = "year_mismatch"
-	CodeUnknownQuality      Code = "unknown_quality"
-	CodeQualityNotAllowed   Code = "quality_not_allowed"
-	CodeWrongLanguage       Code = "wrong_language"
-	CodeHardcodedSubs       Code = "hardcoded_subs"
-	CodeBelowMinScore       Code = "below_min_score"
-	CodeSizeTooSmall        Code = "size_too_small"
-	CodeSizeTooLarge        Code = "size_too_large"
-	CodeBlocklisted         Code = "blocklisted"
-	CodeNotMonitored        Code = "not_monitored"
-	CodeNotAvailable        Code = "not_available"
-	CodeNotEnoughSeeders    Code = "not_enough_seeders"
-	CodeMinimumAge          Code = "minimum_age"
-	CodeRetention           Code = "retention"
-	CodeAlreadyGrabbed      Code = "already_grabbed"
-	CodeUpgradesDisabled    Code = "upgrades_disabled"
-	CodeCutoffMet           Code = "cutoff_met"
-	CodeNotUpgrade          Code = "not_upgrade"
+	CodeTitleMismatch     Code = "title_mismatch"
+	CodeYearMismatch      Code = "year_mismatch"
+	CodeUnknownQuality    Code = "unknown_quality"
+	CodeQualityNotAllowed Code = "quality_not_allowed"
+	CodeWrongLanguage     Code = "wrong_language"
+	CodeHardcodedSubs     Code = "hardcoded_subs"
+	CodeBelowMinScore     Code = "below_min_score"
+	CodeSizeTooSmall      Code = "size_too_small"
+	CodeSizeTooLarge      Code = "size_too_large"
+	CodeBlocklisted       Code = "blocklisted"
+	CodeNotMonitored      Code = "not_monitored"
+	CodeNotAvailable      Code = "not_available"
+	CodeNotEnoughSeeders  Code = "not_enough_seeders"
+	CodeMinimumAge        Code = "minimum_age"
+	CodeRetention         Code = "retention"
+	CodeAlreadyGrabbed    Code = "already_grabbed"
+	CodeUpgradesDisabled  Code = "upgrades_disabled"
+	CodeCutoffMet         Code = "cutoff_met"
+	CodeNotUpgrade        Code = "not_upgrade"
 )
 
 // Rejection is one reason not to grab a release.

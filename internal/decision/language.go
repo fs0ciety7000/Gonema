@@ -36,14 +36,15 @@ func languageName(l parser.Language) string {
 
 // wantedLanguages is a profile language list resolved for one movie.
 type wantedLanguages struct {
-	isAny      bool
-	langs      []parser.Language // explicit codes, and the original language when known
-	isOriginal bool              // "original" is wanted
-	label      string            // for messages, e.g. "English, original"
+	isAny       bool
+	langs       []parser.Language // explicit codes, and the original language when known
+	isOriginal  bool              // "original" is wanted
+	isOrigKnown bool              // the original language of the movie is known
+	label       string            // for messages, e.g. "English, original"
 }
 
 func resolveWanted(p *quality.Profile, original parser.Language) wantedLanguages {
-	w := wantedLanguages{isAny: p.WantsAnyLanguage()}
+	w := wantedLanguages{isAny: p.WantsAnyLanguage(), isOrigKnown: original != 0}
 	if w.isAny {
 		return w
 	}
@@ -103,12 +104,7 @@ func (w *wantedLanguages) satisfied(langs []parser.Language, untaggedOrMulti boo
 			return true
 		}
 	}
-	return w.isOriginal && untaggedOrMulti && !w.hasOriginalLang()
-}
-
-func (w *wantedLanguages) hasOriginalLang() bool {
-	// When the original language is known it was appended to langs and labelled.
-	return strings.Contains(w.label, "original (")
+	return w.isOriginal && !w.isOrigKnown && untaggedOrMulti
 }
 
 func languageList(langs []parser.Language) string {
