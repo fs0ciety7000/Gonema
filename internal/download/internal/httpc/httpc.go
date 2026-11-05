@@ -191,14 +191,14 @@ func (r *Requester) transportErr(parent context.Context, op string, err error) e
 		// The caller gave up: report its context error, not the client.
 		return download.NewError(r.Kind, op, perr, "", nil)
 	}
-	kind, detail := classify(err)
+	detail, kind := classify(err)
 	if errors.Is(err, context.DeadlineExceeded) {
 		kind, detail = download.ErrUnreachable, fmt.Sprintf("no answer within %s", r.Timeout)
 	}
 	return r.Err(op, kind, detail, err)
 }
 
-func classify(err error) (kind error, detail string) {
+func classify(err error) (detail string, kind error) {
 	var (
 		unknownCA  x509.UnknownAuthorityError
 		hostErr    x509.HostnameError
@@ -209,21 +209,21 @@ func classify(err error) (kind error, detail string) {
 	)
 	switch {
 	case errors.As(err, &unknownCA), errors.As(err, &verifyErr):
-		return download.ErrTLS, "certificate not trusted (self-signed?)"
+		return "certificate not trusted (self-signed?)", download.ErrTLS
 	case errors.As(err, &hostErr):
-		return download.ErrTLS, "certificate issued for another host name"
+		return "certificate issued for another host name", download.ErrTLS
 	case errors.As(err, &invalidErr):
-		return download.ErrTLS, "certificate invalid or expired"
+		return "certificate invalid or expired", download.ErrTLS
 	case errors.As(err, &recordErr):
-		return download.ErrTLS, "the client does not speak HTTPS on this port: disable TLS"
+		return "the client does not speak HTTPS on this port: disable TLS", download.ErrTLS
 	case strings.Contains(err.Error(), "server gave HTTP response to HTTPS client"):
-		return download.ErrTLS, "the client does not speak HTTPS on this port: disable TLS"
+		return "the client does not speak HTTPS on this port: disable TLS", download.ErrTLS
 	case errors.As(err, &dnsErr):
-		return download.ErrUnreachable, "host name not found"
+		return "host name not found", download.ErrUnreachable
 	case errors.Is(err, syscall.ECONNREFUSED):
-		return download.ErrUnreachable, "connection refused"
+		return "connection refused", download.ErrUnreachable
 	}
-	return download.ErrUnreachable, ""
+	return "", download.ErrUnreachable
 }
 
 // redactedError carries a redacted message. Is matches the original error

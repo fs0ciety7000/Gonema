@@ -181,24 +181,24 @@ func (c *Client) get(ctx context.Context, op string, s *session, path string, q 
 
 // call runs an authenticated request, logging in again once on 401/403.
 // build is called for each attempt (bodies are single-use readers).
-func (c *Client) call(ctx context.Context, op string, build func(s *session) *httpc.Request) (*httpc.Response, *session, error) {
+func (c *Client) call(ctx context.Context, op string, build func(s *session) *httpc.Request) (*httpc.Response, error) {
 	s, err := c.current(ctx, op)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	for attempt := 0; ; attempt++ {
 		resp, err := c.send(ctx, op, s, build(s))
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		if resp.Status != http.StatusForbidden && resp.Status != http.StatusUnauthorized {
-			return resp, s, nil
+			return resp, nil
 		}
 		if attempt > 0 {
-			return nil, nil, c.r.Err(op, download.ErrAuth, "qBittorrent refused the session after a new login", nil)
+			return nil, c.r.Err(op, download.ErrAuth, "qBittorrent refused the session after a new login", nil)
 		}
 		if s, err = c.relogin(ctx, op, s); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	}
 }
@@ -248,7 +248,7 @@ func (c *Client) Add(ctx context.Context, req download.AddRequest) (string, erro
 	if err != nil {
 		return "", c.r.Err("add", download.ErrInvalidRequest, "", err)
 	}
-	resp, _, err := c.call(ctx, "add", func(*session) *httpc.Request {
+	resp, err := c.call(ctx, "add", func(*session) *httpc.Request {
 		return &httpc.Request{Method: http.MethodPost, Path: "api/v2/torrents/add", Body: body, ContentType: ct}
 	})
 	if err != nil {
@@ -279,7 +279,7 @@ func (c *Client) Add(ctx context.Context, req download.AddRequest) (string, erro
 		return "", c.r.Err("add", download.ErrUnknownRef, "add the .torrent file content instead of its link", nil)
 	}
 	if req.Priority == download.PriorityForce && !req.Paused {
-		resp, _, err := c.call(ctx, "add", form("api/v2/torrents/setForceStart", url.Values{"hashes": {ref}, "value": {"true"}}))
+		resp, err := c.call(ctx, "add", form("api/v2/torrents/setForceStart", url.Values{"hashes": {ref}, "value": {"true"}}))
 		if err != nil {
 			return ref, err
 		}
@@ -318,7 +318,7 @@ type torrent struct {
 }
 
 func (c *Client) torrents(ctx context.Context, op string, q url.Values) ([]torrent, error) {
-	resp, _, err := c.call(ctx, op, func(s *session) *httpc.Request {
+	resp, err := c.call(ctx, op, func(*session) *httpc.Request {
 		return &httpc.Request{Path: "api/v2/torrents/info", Query: q}
 	})
 	if err != nil {
@@ -370,7 +370,7 @@ func item(t *torrent) download.Item {
 }
 
 // mapState maps a torrent state (4.x and 5.x names).
-func mapState(raw string) (download.Status, string) {
+func mapState(raw string) (st download.Status, msg string) {
 	switch raw {
 	case "error":
 		return download.StatusFailed, "qBittorrent reported an error (see its log)"
@@ -418,7 +418,7 @@ func (c *Client) exists(ctx context.Context, op, ref string) error {
 }
 
 func (c *Client) post(ctx context.Context, op, path string, v url.Values) error {
-	resp, _, err := c.call(ctx, op, form(path, v))
+	resp, err := c.call(ctx, op, form(path, v))
 	if err != nil {
 		return err
 	}
@@ -447,7 +447,7 @@ func (c *Client) toggle(ctx context.Context, op, ref, v5, v4 string) error {
 	if err := c.exists(ctx, op, ref); err != nil {
 		return err
 	}
-	resp, _, err := c.call(ctx, op, func(s *session) *httpc.Request {
+	resp, err := c.call(ctx, op, func(s *session) *httpc.Request {
 		name := v4
 		if atLeast(s.api, 2, 11) {
 			name = v5
@@ -462,7 +462,7 @@ func (c *Client) toggle(ctx context.Context, op, ref, v5, v4 string) error {
 
 // Categories implements download.Client.
 func (c *Client) Categories(ctx context.Context) ([]string, error) {
-	resp, _, err := c.call(ctx, "categories", func(*session) *httpc.Request {
+	resp, err := c.call(ctx, "categories", func(*session) *httpc.Request {
 		return &httpc.Request{Path: "api/v2/torrents/categories"}
 	})
 	if err != nil {

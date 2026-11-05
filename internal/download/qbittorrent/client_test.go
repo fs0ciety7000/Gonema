@@ -1,6 +1,7 @@
 package qbittorrent
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -324,7 +325,7 @@ func TestAdd(t *testing.T) {
 			req: download.AddRequest{Protocol: decision.Torrent, Data: sampleTorrent, Filename: "m.torrent", Paused: true, SeedRatio: 1.5, SeedTime: 90 * time.Minute},
 			check: func(t *testing.T, r *request) {
 				t.Helper()
-				if string(r.file) != string(sampleTorrent) || r.form.Get("category") != "movies" || r.form.Get("paused") != "true" ||
+				if !bytes.Equal(r.file, sampleTorrent) || r.form.Get("category") != "movies" || r.form.Get("paused") != "true" ||
 					r.form.Get("stopped") != "true" || r.form.Get("ratioLimit") != "1.50" || r.form.Get("seedingTimeLimit") != "90" {
 					t.Fatalf("add form = %v", r.form)
 				}

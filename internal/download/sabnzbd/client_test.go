@@ -1,6 +1,7 @@
 package sabnzbd
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -296,7 +297,7 @@ func TestAddFile(t *testing.T) {
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if string(f.file) != string(nzb) || f.fileName != "evilname.nzb" {
+	if !bytes.Equal(f.file, nzb) || f.fileName != "evilname.nzb" {
 		t.Fatalf("file %q named %q", f.file, f.fileName)
 	}
 }

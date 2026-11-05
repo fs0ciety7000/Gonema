@@ -316,7 +316,7 @@ func historyItem(h *historyEntry) download.Item {
 }
 
 // mapGroupStatus maps a listgroups Status.
-func mapGroupStatus(raw string) (download.Status, string) {
+func mapGroupStatus(raw string) (st download.Status, msg string) {
 	switch raw {
 	case "QUEUED":
 		return download.StatusQueued, ""
@@ -356,8 +356,8 @@ var historyMessages = map[string]string{
 }
 
 // mapHistoryStatus maps a history Status ("SUCCESS/ALL", "FAILURE/UNPACK"...).
-func mapHistoryStatus(raw string) (download.Status, string) {
-	msg := historyMessages[raw]
+func mapHistoryStatus(raw string) (st download.Status, msg string) {
+	msg = historyMessages[raw]
 	prefix, _, _ := strings.Cut(raw, "/")
 	switch prefix {
 	case "SUCCESS":

@@ -95,7 +95,7 @@ type sabErr struct {
 	detail string
 }
 
-// apiError recognises SABnzbd error answers ("error: ..." as plain text or in
+// apiError recognizes SABnzbd error answers ("error: ..." as plain text or in
 // the JSON "error" field).
 func apiError(body string) *sabErr {
 	msg, ok := strings.CutPrefix(body, "error:")
@@ -327,13 +327,13 @@ func historyItem(s *historySlot) download.Item {
 }
 
 // mapQueueStatus maps a queue slot status (and its labels).
-func mapQueueStatus(raw string, labels []string) (download.Status, string) {
+func mapQueueStatus(raw string, labels []string) (st download.Status, msg string) {
 	for _, l := range labels {
 		if strings.Contains(strings.ToUpper(l), "ENCRYPTED") {
 			return download.StatusWarning, "encrypted archive: SABnzbd needs the password"
 		}
 	}
-	msg := strings.Join(labels, ", ")
+	msg = strings.Join(labels, ", ")
 	switch raw {
 	case "Downloading", "Fetching":
 		return download.StatusDownloading, msg
@@ -351,7 +351,7 @@ func mapQueueStatus(raw string, labels []string) (download.Status, string) {
 }
 
 // mapHistoryStatus maps a history slot status and its fail_message.
-func mapHistoryStatus(raw, failMessage string) (download.Status, string) {
+func mapHistoryStatus(raw, failMessage string) (st download.Status, msg string) {
 	switch raw {
 	case "Completed":
 		return download.StatusCompleted, failMessage
@@ -446,7 +446,9 @@ func (c *Client) Remove(ctx context.Context, ref string, deleteData bool) error 
 }
 
 // Pause implements download.Client.
-func (c *Client) Pause(ctx context.Context, ref string) error { return c.queueAction(ctx, "pause", ref) }
+func (c *Client) Pause(ctx context.Context, ref string) error {
+	return c.queueAction(ctx, "pause", ref)
+}
 
 // Resume implements download.Client.
 func (c *Client) Resume(ctx context.Context, ref string) error {

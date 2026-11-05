@@ -63,7 +63,7 @@ const (
 )
 
 // Client is a download client. Implementations are safe for concurrent use and
-// honour ctx on every call. Errors are *Error values matching one of the
+// honor ctx on every call. Errors are *Error values matching one of the
 // sentinels of this package; they never contain credentials.
 type Client interface {
 	// Kind returns the implementation kind.

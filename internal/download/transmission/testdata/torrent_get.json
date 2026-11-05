@@ -1,0 +1,240 @@
+{
+ "arguments": {
+  "torrents": [
+   {
+    "hashString": "00000000000000000000000000000000000000a0",
+    "name": "Movie.0.1080p-GRP",
+    "status": 0,
+    "percentDone": 0.5,
+    "sizeWhenDone": 1000,
+    "leftUntilDone": 500,
+    "rateDownload": 0,
+    "eta": -1,
+    "downloadDir": "/downloads/complete/movies",
+    "uploadRatio": -1,
+    "error": 0,
+    "errorString": "",
+    "labels": [
+     "movies"
+    ],
+    "isFinished": false
+   },
+   {
+    "hashString": "00000000000000000000000000000000000000a1",
+    "name": "Movie.1.1080p-GRP",
+    "status": 0,
+    "percentDone": 1.0,
+    "sizeWhenDone": 1000,
+    "leftUntilDone": 0,
+    "rateDownload": 0,
+    "eta": -1,
+    "downloadDir": "/downloads/complete/movies",
+    "uploadRatio": 1.25,
+    "error": 0,
+    "errorString": "",
+    "labels": [
+     "movies"
+    ],
+    "isFinished": false
+   },
+   {
+    "hashString": "00000000000000000000000000000000000000a2",
+    "name": "Movie.2.1080p-GRP",
+    "status": 1,
+    "percentDone": 0.0,
+    "sizeWhenDone": 1000,
+    "leftUntilDone": 1000,
+    "rateDownload": 0,
+    "eta": -1,
+    "downloadDir": "/downloads/complete/movies",
+    "uploadRatio": -1,
+    "error": 0,
+    "errorString": "",
+    "labels": [
+     "movies"
+    ],
+    "isFinished": false
+   },
+   {
+    "hashString": "00000000000000000000000000000000000000a3",
+    "name": "Movie.3.1080p-GRP",
+    "status": 2,
+    "percentDone": 0.3,
+    "sizeWhenDone": 1000,
+    "leftUntilDone": 700,
+    "rateDownload": 0,
+    "eta": -1,
+    "downloadDir": "/downloads/complete/movies",
+    "uploadRatio": -1,
+    "error": 0,
+    "errorString": "",
+    "labels": [
+     "movies"
+    ],
+    "isFinished": false
+   },
+   {
+    "hashString": "00000000000000000000000000000000000000a4",
+    "name": "Movie.4.1080p-GRP",
+    "status": 3,
+    "percentDone": 0.0,
+    "sizeWhenDone": 1000,
+    "leftUntilDone": 1000,
+    "rateDownload": 0,
+    "eta": -1,
+    "downloadDir": "/downloads/complete/movies",
+    "uploadRatio": -1,
+    "error": 0,
+    "errorString": "",
+    "labels": [
+     "movies"
+    ],
+    "isFinished": false
+   },
+   {
+    "hashString": "00000000000000000000000000000000000000a5",
+    "name": "Movie.5.1080p-GRP",
+    "status": 4,
+    "percentDone": 0.25,
+    "sizeWhenDone": 1000,
+    "leftUntilDone": 750,
+    "rateDownload": 3000,
+    "eta": 60,
+    "downloadDir": "/downloads/complete/movies",
+    "uploadRatio": -1,
+    "error": 0,
+    "errorString": "",
+    "labels": [
+     "movies"
+    ],
+    "isFinished": false
+   },
+   {
+    "hashString": "00000000000000000000000000000000000000a6",
+    "name": "Movie.6.1080p-GRP",
+    "status": 5,
+    "percentDone": 1.0,
+    "sizeWhenDone": 1000,
+    "leftUntilDone": 0,
+    "rateDownload": 0,
+    "eta": -1,
+    "downloadDir": "/downloads/complete/movies",
+    "uploadRatio": 1.25,
+    "error": 0,
+    "errorString": "",
+    "labels": [
+     "movies"
+    ],
+    "isFinished": false
+   },
+   {
+    "hashString": "00000000000000000000000000000000000000a7",
+    "name": "Movie.7.1080p-GRP",
+    "status": 6,
+    "percentDone": 1.0,
+    "sizeWhenDone": 1000,
+    "leftUntilDone": 0,
+    "rateDownload": 0,
+    "eta": -1,
+    "downloadDir": "/downloads/complete/movies",
+    "uploadRatio": 1.25,
+    "error": 0,
+    "errorString": "",
+    "labels": [
+     "movies"
+    ],
+    "isFinished": false
+   },
+   {
+    "hashString": "00000000000000000000000000000000000000a8",
+    "name": "Movie.8.1080p-GRP",
+    "status": 4,
+    "percentDone": 0.6,
+    "sizeWhenDone": 1000,
+    "leftUntilDone": 400,
+    "rateDownload": 3000,
+    "eta": 60,
+    "downloadDir": "/downloads/complete/movies",
+    "uploadRatio": -1,
+    "error": 2,
+    "errorString": "Tracker gave HTTP response code 404 (Not Found)",
+    "labels": [
+     "movies"
+    ],
+    "isFinished": false
+   },
+   {
+    "hashString": "00000000000000000000000000000000000000a9",
+    "name": "Movie.9.1080p-GRP",
+    "status": 6,
+    "percentDone": 1.0,
+    "sizeWhenDone": 1000,
+    "leftUntilDone": 0,
+    "rateDownload": 0,
+    "eta": -1,
+    "downloadDir": "/downloads/complete/movies",
+    "uploadRatio": 1.25,
+    "error": 1,
+    "errorString": "Tracker warning",
+    "labels": [
+     "movies"
+    ],
+    "isFinished": false
+   },
+   {
+    "hashString": "00000000000000000000000000000000000000aa",
+    "name": "Movie.10.1080p-GRP",
+    "status": 4,
+    "percentDone": 0.4,
+    "sizeWhenDone": 1000,
+    "leftUntilDone": 600,
+    "rateDownload": 3000,
+    "eta": 60,
+    "downloadDir": "/downloads/complete/movies",
+    "uploadRatio": -1,
+    "error": 3,
+    "errorString": "No data found! Ensure your drives are connected",
+    "labels": [
+     "movies"
+    ],
+    "isFinished": false
+   },
+   {
+    "hashString": "00000000000000000000000000000000000000ab",
+    "name": "Movie.11.1080p-GRP",
+    "status": 4,
+    "percentDone": 0.1,
+    "sizeWhenDone": 1000,
+    "leftUntilDone": 900,
+    "rateDownload": 3000,
+    "eta": 60,
+    "downloadDir": "/downloads/complete/tv",
+    "uploadRatio": -1,
+    "error": 0,
+    "errorString": "",
+    "labels": [
+     "tv"
+    ],
+    "isFinished": false
+   },
+   {
+    "hashString": "00000000000000000000000000000000000000ac",
+    "name": "Movie.12.1080p-GRP",
+    "status": 6,
+    "percentDone": 1.0,
+    "sizeWhenDone": 1000,
+    "leftUntilDone": 0,
+    "rateDownload": 0,
+    "eta": -1,
+    "downloadDir": "/downloads/complete/movies/",
+    "uploadRatio": 1.25,
+    "error": 0,
+    "errorString": "",
+    "labels": [],
+    "isFinished": false
+   }
+  ]
+ },
+ "result": "success",
+ "tag": 1
+}
