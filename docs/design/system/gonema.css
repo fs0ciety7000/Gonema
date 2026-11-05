@@ -406,7 +406,7 @@ h1, h2, h3, h4, p { margin: 0; }
 .segmented button:disabled { color: var(--text-disabled); cursor: not-allowed; }
 
 /* 3.8 Tabs ------------------------------------------------------------------------ */
-.tabs { display: flex; gap: var(--space-6); border-bottom: 1px solid var(--border); }
+.tabs { display: flex; align-items: center; gap: var(--space-6); border-bottom: 1px solid var(--border); }
 .tabs [role="tab"] { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 2px; border: 0; background: none; color: var(--text-secondary); font: 500 14px/1 var(--font-ui); transition: color var(--dur-fast); }
 .tabs [role="tab"]:hover { color: var(--text-primary); }
 .tabs [role="tab"][aria-selected="true"] { color: var(--text-primary); }

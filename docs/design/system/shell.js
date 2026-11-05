@@ -56,7 +56,7 @@
   function mount() {
     document.querySelectorAll('[data-shell-sidebar]').forEach(el => { el.innerHTML = sidebar(el.dataset.shellSidebar); });
     document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
-      const sync = () => { const light = html.dataset.theme === 'light'; btn.setAttribute('aria-pressed', String(light)); btn.setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme'); };
+      const sync = () => { const light = html.dataset.theme === 'light'; btn.setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme'); };
       sync();
       btn.addEventListener('click', () => { html.dataset.theme = html.dataset.theme === 'light' ? 'dark' : 'light'; try { localStorage.setItem('gn-theme', html.dataset.theme); } catch (e) {} sync(); });
     });
