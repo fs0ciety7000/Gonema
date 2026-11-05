@@ -32,3 +32,7 @@ target/
 
 # Go
 bin/
+
+# Heavy third-party skills (~54 MB of assets): reinstall with `kit project add design-ui brand`
+.claude/skills/design-taste-frontend/
+.claude/skills/logo-design/
