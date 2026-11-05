@@ -131,20 +131,30 @@ func NewIndex(entries []Entry) *Index {
 }
 
 func (idx *Index) add(n int32, kind TitleKind, title string) {
-	full, key := keys(title)
-	if key == "" {
+	full, short := keys(title)
+	if short == "" {
 		return
 	}
+	// Index both keys so that a release with or without the leading foreign
+	// article finds the movie ("Les Misérables" vs "Miserables", "L'Auberge"
+	// vs "LAuberge").
+	idx.addKey(short, posting{entry: n, kind: kind, full: full, title: title})
+	if full != short {
+		idx.addKey(full, posting{entry: n, kind: kind, full: full, title: title})
+	}
+}
+
+func (idx *Index) addKey(key string, p posting) {
 	ps := idx.byKey[key]
 	for i := range ps {
-		if ps[i].entry == n {
-			if kind < ps[i].kind || (kind == ps[i].kind && full == key && ps[i].full != key) {
-				ps[i] = posting{entry: n, kind: kind, full: full, title: title}
+		if ps[i].entry == p.entry {
+			if p.kind < ps[i].kind {
+				ps[i] = p
 			}
 			return
 		}
 	}
-	idx.byKey[key] = append(ps, posting{entry: n, kind: kind, full: full, title: title})
+	idx.byKey[key] = append(ps, p)
 }
 
 // Len returns the number of indexed movies.
@@ -275,10 +285,18 @@ func round2(f float64) float64 { return float64(int(f*100+0.5)) / 100 }
 
 // lookup appends the movies whose titles match title, keeping the best score per movie.
 func (idx *Index) lookup(found []scored, title string, year int, fromAKA bool) []scored {
-	full, key := keys(title)
-	if key == "" {
+	full, short := keys(title)
+	if short == "" {
 		return found
 	}
+	found = idx.lookupKey(found, short, full, year, fromAKA)
+	if full != short {
+		found = idx.lookupKey(found, full, full, year, fromAKA)
+	}
+	return found
+}
+
+func (idx *Index) lookupKey(found []scored, key, full string, year int, fromAKA bool) []scored {
 	for _, ps := range idx.byKey[key] {
 		m := idx.movies[ps.entry]
 		diff := -1

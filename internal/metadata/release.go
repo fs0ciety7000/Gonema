@@ -195,7 +195,7 @@ const AssumedHomeReleaseDays = 90
 //
 // primary (the provider's primary release date) stands in for the cinema date
 // when no regional cinema date is known. Dates are compared in UTC.
-func DeriveStatus(sel ReleaseSelection, primary Date, now time.Time) (Status, string) {
+func DeriveStatus(sel ReleaseSelection, primary Date, now time.Time) (status Status, reason string) {
 	today := DateOf(now.UTC())
 	reached := func(d Date) bool { return !d.IsZero() && d.Compare(today) <= 0 }
 

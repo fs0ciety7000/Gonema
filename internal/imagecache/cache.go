@@ -1,5 +1,5 @@
 // Package imagecache downloads TMDB images (posters, backdrops, profiles) into a
-// local cache and extracts the dominant colour of posters.
+// local cache and extracts the dominant color of posters.
 //
 // Files live in <cacheDir>/images/<kind>/<size>/<file>. TMDB image paths are
 // content-addressed (a new image gets a new path), so a file that exists is up to
@@ -153,7 +153,8 @@ func validFile(p string) bool {
 	}
 	for i := range dot {
 		ch := name[i]
-		if !('a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || '0' <= ch && ch <= '9' || ch == '-' || ch == '_') {
+		ok := 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || '0' <= ch && ch <= '9' || ch == '-' || ch == '_'
+		if !ok {
 			return false
 		}
 	}
@@ -289,7 +290,7 @@ func (c *Cache) store(r io.Reader, dst string) (err error) {
 	return nil
 }
 
-// PosterColor returns the dominant colour of a poster ("#rrggbb"), fetching its
+// PosterColor returns the dominant color of a poster ("#rrggbb"), fetching its
 // w342 version if needed.
 func (c *Cache) PosterColor(ctx context.Context, tmdbPath string) (string, error) {
 	p, err := c.Fetch(ctx, Poster, ColorSize, tmdbPath)
@@ -304,7 +305,7 @@ func (c *Cache) PosterColor(ctx context.Context, tmdbPath string) (string, error
 	return c.decodeColor(f)
 }
 
-// DominantColorOf decodes a JPEG or PNG image and returns its dominant colour.
+// DominantColorOf decodes a JPEG or PNG image and returns its dominant color.
 func DominantColorOf(r io.Reader) (string, error) {
 	return (&Cache{maxBytes: 10 << 20, maxPixels: 40_000_000}).decodeColor(r)
 }

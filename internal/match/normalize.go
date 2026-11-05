@@ -47,9 +47,10 @@ func keys(title string) (full, short string) {
 	out := outBuf[:0]
 	for i, w := range words {
 		prevMarker := i > 0 && sequelMarkers[words[i-1]]
+		if w == "vs" || w == "versus" {
+			w = "v" // then read as the numeral 5, like a lone "v": only equality matters
+		}
 		switch {
-		case w == "vs" || w == "versus":
-			w = "v"
 		case prevMarker && w == "i":
 			w = "1"
 		case prevMarker && numberWords[w] != "":

@@ -42,7 +42,7 @@ type Options struct {
 	MaxAttempts   int           // per request, default 4
 	BackoffBase   time.Duration // first retry delay before jitter, default 500 ms
 	BackoffMax    time.Duration // longest retry delay, default 8 s
-	MaxRetryAfter time.Duration // longest Retry-After honoured; longer fails with RateLimitError. Default 30 s
+	MaxRetryAfter time.Duration // longest Retry-After honored; longer fails with RateLimitError. Default 30 s
 
 	RateLimit float64            // requests per second, default 20
 	Burst     int                // default 10
@@ -325,7 +325,7 @@ func (c *Client) once(ctx context.Context, path string, q url.Values) ([]byte, *
 }
 
 // errorBody reads TMDB's {"status_code":N,"status_message":"..."} error body.
-func (c *Client) errorBody(r io.Reader) (int, string) {
+func (c *Client) errorBody(r io.Reader) (code int, msg string) {
 	b, err := io.ReadAll(io.LimitReader(r, maxErrBodyBytes))
 	if err != nil {
 		return 0, ""
@@ -337,9 +337,9 @@ func (c *Client) errorBody(r io.Reader) (int, string) {
 	if json.Unmarshal(b, &e) != nil {
 		return 0, ""
 	}
-	msg := c.redact(e.StatusMessage)
+	msg = c.redact(e.StatusMessage)
 	if len(msg) > 300 {
-		msg = msg[:300]
+		msg = strings.ToValidUTF8(msg[:300], "")
 	}
 	return e.StatusCode, msg
 }

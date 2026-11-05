@@ -43,7 +43,7 @@ func TestParseDate(t *testing.T) {
 func TestDateCompareAndJSON(t *testing.T) {
 	t.Parallel()
 	a, b := d("1999-10-15"), d("2000-01-01")
-	if a.Compare(b) != -1 || b.Compare(a) != 1 || a.Compare(a) != 0 {
+	if a2 := d("1999-10-15"); a.Compare(b) != -1 || b.Compare(a) != 1 || a.Compare(a2) != 0 {
 		t.Error("Compare order")
 	}
 	if (Date{}).Compare(a) != 1 || a.Compare(Date{}) != -1 || (Date{}).Before(a) || a.Before(Date{}) {

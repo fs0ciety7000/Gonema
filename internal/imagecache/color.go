@@ -19,7 +19,7 @@ const (
 	alphaCutoff  = 0x80 // pixels more transparent than this are ignored
 )
 
-// lab is a colour in OKLab (https://bottosson.github.io/posts/oklab/).
+// lab is a color in OKLab (https://bottosson.github.io/posts/oklab/).
 type lab struct{ L, A, B float64 }
 
 // srgbToLinear maps an 8-bit sRGB channel to linear light.
@@ -73,7 +73,7 @@ func encode8(c float64) uint8 {
 	return uint8(math.Round(c * 255))
 }
 
-// DominantColor returns the characteristic colour of img as "#rrggbb", or "" for
+// DominantColor returns the characteristic color of img as "#rrggbb", or "" for
 // an empty image. It is pure and deterministic.
 //
 // Algorithm:
@@ -84,14 +84,14 @@ func encode8(c float64) uint8 {
 //  4. Build a 36-bin hue histogram where each pixel weighs chroma²: vivid pixels
 //     count much more than dull ones, so a red title on a dark poster beats a
 //     larger, faintly tinted background.
-//  5. Smooth the histogram over neighbouring bins and pick the strongest window
+//  5. Smooth the histogram over neighboring bins and pick the strongest window
 //     among those covering at least 3 % of the sampled pixels (a few vivid pixels
 //     of noise cannot win). Ties go to the lowest hue.
 //  6. Return the chroma²-weighted OKLab mean of that window.
 //
 // Without such a window (greyscale or almost-black posters) it falls back to the
-// mean colour of all sampled pixels. The UI derives the movie tint from the hue
-// of this colour and caps chroma and lightness itself (DESIGN.md, "Teinte film").
+// mean color of all sampled pixels. The UI derives the movie tint from the hue
+// of this color and caps chroma and lightness itself (DESIGN.md, "Teinte film").
 func DominantColor(img image.Image) string {
 	b := img.Bounds()
 	w, h := b.Dx(), b.Dy()
@@ -99,7 +99,7 @@ func DominantColor(img image.Image) string {
 		return ""
 	}
 	step := (max(w, h) + sampleSide - 1) / sampleSide
-	// Sample the centre of each step×step cell.
+	// Sample the center of each step×step cell.
 	off := step / 2
 
 	var (
@@ -199,7 +199,7 @@ func pixelReader(img image.Image) func(x, y int) (r, g, b, a uint8) {
 	}
 }
 
-func unpremultiply(r, g, b, a uint8) (uint8, uint8, uint8, uint8) {
+func unpremultiply(r, g, b, a uint8) (ur, ug, ub, ua uint8) {
 	if a == 0xff || a == 0 {
 		return r, g, b, a
 	}

@@ -25,17 +25,18 @@ func TestDoShares(t *testing.T) {
 	var g Group[int]
 	var runs atomic.Int32
 	release := make(chan struct{})
+	boom := errors.New("not an error")
 	fn := func(context.Context) (int, error) {
 		runs.Add(1)
 		<-release
-		return 42, nil
+		return 42, boom // the error is shared too
 	}
 	var wg sync.WaitGroup
 	var shared atomic.Int32
 	for range 10 {
 		wg.Go(func() {
 			v, s, err := g.Do(t.Context(), "k", fn)
-			if err != nil || v != 42 {
+			if !errors.Is(err, boom) || v != 42 {
 				t.Errorf("Do = %d, %v", v, err)
 			}
 			if s {

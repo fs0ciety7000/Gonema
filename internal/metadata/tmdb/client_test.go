@@ -499,7 +499,7 @@ func TestStatusErrors(t *testing.T) {
 
 func TestRetryAfter(t *testing.T) {
 	t.Parallel()
-	t.Run("honoured then success", func(t *testing.T) {
+	t.Run("honored then success", func(t *testing.T) {
 		t.Parallel()
 		fs := newFixtureServer(t)
 		fs.setHandler(func(w http.ResponseWriter, _ *http.Request, n int) bool {

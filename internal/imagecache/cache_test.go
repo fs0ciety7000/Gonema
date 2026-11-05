@@ -72,9 +72,9 @@ func (is *imageServer) setHandler(h func(w http.ResponseWriter, r *http.Request)
 	is.handler = h
 }
 
-func newTestCache(t *testing.T, is *imageServer, opts Options) (*Cache, string) {
+func newTestCache(t *testing.T, is *imageServer, opts Options) (c *Cache, dir string) {
 	t.Helper()
-	dir := t.TempDir()
+	dir = t.TempDir()
 	opts.HTTPClient = is.srv.Client()
 	c, err := New(dir, staticBase(is.srv.URL+"/t/p/"), opts)
 	if err != nil {

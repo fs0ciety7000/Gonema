@@ -27,7 +27,7 @@ func rgb(hex uint32) color.NRGBA {
 	return color.NRGBA{R: uint8(hex >> 16), G: uint8(hex >> 8), B: uint8(hex), A: 0xff}
 }
 
-// hueDistance is the OKLab hue angle between two colours, in degrees.
+// hueDistance is the OKLab hue angle between two colors, in degrees.
 func hueDistance(t *testing.T, got string, want color.NRGBA) float64 {
 	t.Helper()
 	r, g, b := hexRGB(t, got)
