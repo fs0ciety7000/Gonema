@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interactive search · Halcyon Drift · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: interactive search. Results stream per indexer; decisions are explained inline. */
+  .page { padding-top: var(--space-6); max-width: none; }
+  .is-head { display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-5); }
+  .is-head .thumb { width: 48px; aspect-ratio: 2/3; border-radius: 8px; overflow: hidden; box-shadow: var(--elev-poster); flex: none; }
+  .is-head .thumb svg { width: 100%; height: 100%; }
+  .is-head h1 { font: var(--type-display-md); letter-spacing: var(--type-display-md-tracking); font-stretch: 125%; }
+  .is-head .ctx { color: var(--text-secondary); font: var(--type-body-sm); font-variant-numeric: tabular-nums; margin-top: 4px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .is-head .ctx .sep { width: 3px; height: 3px; border-radius: 50%; background: var(--text-muted); }
+  .is-head .right { margin-left: auto; display: flex; gap: var(--space-2); }
+
+  .indexers { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; margin-bottom: var(--space-3); }
+  .ix { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px 0 10px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: color-mix(in srgb, var(--bg-raised) 70%, transparent); font: 500 13px/1 var(--font-ui); color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ix .i { width: 15px; height: 15px; }
+  .ix .m { color: var(--text-muted); font-weight: 400; }
+  .ix.ok .i { color: var(--status-available); }
+  .ix.wait { position: relative; overflow: hidden; border-style: dashed; border-color: var(--border-strong); }
+  .ix.wait .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--status-downloading); animation: live-dot 1.6s var(--ease-in-out) infinite; }
+  .ix.err { border-color: color-mix(in srgb, var(--status-failed) 40%, transparent); }
+  .ix.err .i { color: var(--status-failed); }
+  .summary { margin-left: auto; font: var(--type-body-sm); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .notice { margin-bottom: var(--space-5); align-items: center; }
+  .notice .grow { min-width: 0; }
+
+  .filters { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); flex-wrap: wrap; }
+  .filters .input { width: 260px; height: 32px; }
+  .filters .switch { margin-left: auto; font: 500 13px/1 var(--font-ui); color: var(--text-secondary); }
+
+  .results { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-raised); box-shadow: var(--elev-2); position: relative; }
+  .rtbl { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font: var(--type-body-sm); font-variant-numeric: tabular-nums; }
+  .rtbl thead th { height: 36px; padding: 0 12px; text-align: left; font: 500 12px/1 var(--font-ui); letter-spacing: .02em; color: var(--text-muted); border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--bg-sunken) 60%, var(--bg-raised)); white-space: nowrap; }
+  .rtbl thead th:first-child { border-top-left-radius: var(--radius-lg); }
+  .rtbl thead th:last-child { border-top-right-radius: var(--radius-lg); }
+  .rtbl th.r, .rtbl td.r { text-align: right; }
+  .rtbl td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .rtbl tr.grp td { padding: 14px 12px 8px; border-bottom: 0; font: var(--type-overline); letter-spacing: var(--type-overline-tracking); font-stretch: 125%; text-transform: uppercase; color: var(--text-muted); background: transparent; }
+  .rtbl tr.grp td .n { color: var(--text-secondary); }
+  .rtbl tbody tr.rel:hover td { background: var(--bg-hover); }
+  .rel-name { font: 500 12.5px/18px var(--font-mono); color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rel-tags { display: flex; gap: 5px; margin-top: 5px; flex-wrap: nowrap; overflow: hidden; }
+  .rel-tags .hdr-flag { height: 18px; font-size: 10px; }
+  .best { display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 6px; border-radius: var(--radius-xs); font: 600 10.5px/1 var(--font-ui); letter-spacing: .02em; color: var(--text-primary); background: var(--bg-active); margin-right: 4px; }
+  .peers { display: inline-flex; gap: 8px; font: 500 12.5px/1 var(--font-mono); }
+  .peers .up { color: var(--status-available); }
+  .peers .dn { color: var(--text-muted); }
+  .proto { display: inline-flex; align-items: center; gap: 5px; color: var(--text-secondary); font: 500 12.5px/1 var(--font-ui); }
+  .proto .i { width: 14px; height: 14px; }
+  .muted-cell { color: var(--text-secondary); }
+
+  /* Accepted vs rejected. Rejected rows are dimmed by colour, not opacity: reasons stay AA. */
+  tr.rej .rel-name { color: var(--text-muted); }
+  tr.rej td .qbadge, tr.rej td .score { filter: saturate(.4); }
+  tr.rej .qbadge b { background: transparent; color: var(--text-secondary); }
+  tr.rej .muted-cell, tr.rej .peers, tr.rej .proto { color: var(--text-muted); }
+  .reasons { display: grid; gap: 3px; margin-top: 6px; }
+  .reason { display: flex; align-items: flex-start; gap: 6px; font: 400 13px/18px var(--font-ui); color: var(--text-secondary); white-space: normal; }
+  .reason .i { width: 14px; height: 14px; margin-top: 2px; color: var(--status-failed); stroke-width: 1.75; }
+  .reason.soft .i { color: var(--text-muted); }
+
+  .grab { display: flex; justify-content: flex-end; gap: 4px; }
+  .grab .btn { font-weight: 500; }
+
+  /* Expanded score breakdown */
+  tr.expanded td { background: var(--bg-selected); }
+  tr.expanded + tr.detail td { background: var(--bg-selected); padding: 0 12px 16px; }
+  .breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); padding: 14px 16px; border-radius: var(--radius-md); background: var(--bg-raised); border: 1px solid var(--border); }
+  .breakdown .bh { font: var(--type-caption); color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .06em; }
+  .bd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font: var(--type-body-sm); }
+  .bd-list li { display: grid; grid-template-columns: 1fr auto; gap: var(--space-3); align-items: center; }
+  .bd-list li .why { color: var(--text-muted); font: var(--type-mono-sm); }
+  .bd-list li b { font: 600 12.5px/1 var(--font-mono); text-align: right; }
+  .bd-list li b.pos { color: var(--status-available); }
+  .bd-list li b.zero { color: var(--text-muted); }
+  .bd-list .total { border-top: 1px solid var(--border); padding-top: 8px; margin-top: 2px; font-weight: 600; }
+  .decision { display: grid; gap: 8px; font: var(--type-body-sm); color: var(--text-secondary); }
+  .decision .ok { display: flex; gap: 8px; align-items: flex-start; color: var(--text-primary); }
+  .decision .ok .i { color: var(--status-available); margin-top: 1px; width: 16px; height: 16px; }
+  .decision ul { margin: 0; padding-left: 24px; display: grid; gap: 3px; }
+
+  /* Streaming skeleton rows */
+  tr.sk td { padding: 14px 12px; }
+  tr.sk .skeleton { height: 12px; border-radius: 6px; }
+
+  /* Confirm popover for override */
+  .confirm { position: absolute; right: 12px; width: 380px; --origin: top right; }
+  .confirm h2 { font: var(--type-title-md); margin-bottom: 6px; display: flex; gap: 8px; align-items: center; }
+  .confirm h2 .i { color: var(--status-missing); }
+  .confirm p { font: var(--type-body-sm); color: var(--text-secondary); }
+  .confirm .quote { margin: 10px 0; padding: 8px 10px; border-radius: var(--radius-md); background: var(--bg-sunken); border: 1px solid var(--border); font: var(--type-body-sm); color: var(--text-primary); display: flex; gap: 8px; }
+  .confirm .quote .i { color: var(--status-failed); width: 15px; height: 15px; margin-top: 2px; }
+  .confirm .actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+  .confirm::before { content: ""; position: absolute; top: -6px; right: 44px; width: 10px; height: 10px; background: inherit; border-left: 1px solid var(--border-strong); border-top: 1px solid var(--border-strong); transform: rotate(45deg); }
+  .show-more { display: flex; justify-content: center; padding: 10px; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app rail movie-scope" style="--movie-dominant: #B8643C">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar="films"></nav>
+  <div class="main">
+    <header class="topbar">
+      <nav class="crumbs" aria-label="Breadcrumb">
+        <a href="library-grid.html">Films</a><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg>
+        <a href="movie-detail.html">Halcyon Drift</a><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg>
+        <span aria-current="page">Interactive search</span>
+      </nav>
+      <div class="spacer"></div>
+      <label class="input search" aria-label="Search" style="width:280px">
+        <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+        <input type="search" placeholder="Search…" aria-label="Search films, people, releases">
+        <span class="kbd" aria-hidden="true">⌘K</span>
+      </label>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    </header>
+
+    <main id="main" class="page">
+      <div class="is-head">
+        <div class="thumb"><div class="poster-art" data-film="halcyon-drift"></div></div>
+        <div>
+          <h1>Interactive search</h1>
+          <div class="ctx">
+            <span>Halcyon Drift (2024) · 132 min</span><span class="sep" aria-hidden="true"></span>
+            <span>Profile <b style="color:var(--text-primary);font-weight:500">Cinema UHD</b></span><span class="sep" aria-hidden="true"></span>
+            <span>On disk: WEBDL-2160p</span> <span class="score pos">+70</span><span class="sep" aria-hidden="true"></span>
+            <span>Cutoff: Remux-2160p</span>
+          </div>
+        </div>
+        <div class="right">
+          <button class="btn btn-secondary" type="button"><svg class="i" aria-hidden="true"><use href="#i-refresh-cw"/></svg>Search again</button>
+          <a class="btn btn-ghost" href="movie-detail.html">Done <span class="kbd">Esc</span></a>
+        </div>
+      </div>
+
+      <div class="indexers" role="status" aria-live="polite" aria-label="Indexer progress">
+        <span class="ix ok"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>Nebula NZB <span class="m">14 · 1.2 s</span></span>
+        <span class="ix ok"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>AltReel <span class="m">9 · 2.0 s</span></span>
+        <span class="ix ok"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>Sprocket Tracker <span class="m">11 · 3.4 s</span></span>
+        <span class="ix wait"><span class="pulse" aria-hidden="true"></span>Kinoarchive <span class="m">searching · 6.1 s</span></span>
+        <span class="ix err"><svg class="i" aria-hidden="true"><use href="#i-cloud-off"/></svg>Cinémathèque <span class="m">no answer</span></span>
+        <span class="summary">34 releases · <b style="color:var(--status-available);font-weight:500">4 accepted</b> · 30 rejected</span>
+      </div>
+
+      <div class="notice" role="note">
+        <svg class="i" aria-hidden="true"><use href="#i-cloud-off"/></svg>
+        <div class="grow"><div class="ntitle">Cinémathèque didn’t answer within 15 s.</div><div class="nbody">The other indexers kept searching. It failed 3 times today; Gonema will pause it for 30 min if it happens again.</div></div>
+        <button class="btn btn-secondary btn-sm" type="button">Retry</button>
+        <a class="btn btn-ghost btn-sm" href="#">Indexer health</a>
+      </div>
+
+      <div class="filters">
+        <div class="segmented" role="radiogroup" aria-label="Decision">
+          <button role="radio" aria-checked="true">All <span class="t-muted tnum">34</span></button>
+          <button role="radio" aria-checked="false">Accepted <span class="t-muted tnum">4</span></button>
+          <button role="radio" aria-checked="false">Rejected <span class="t-muted tnum">30</span></button>
+        </div>
+        <button class="chip" type="button"><span class="k">Protocol</span> Any<svg class="i" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+        <button class="chip" type="button"><span class="k">Quality</span> Any<svg class="i" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+        <button class="chip" type="button"><span class="k">Indexer</span> All<svg class="i" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+        <label class="input"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input placeholder="Filter by name or group…" aria-label="Filter releases by name or group"></label>
+        <button class="switch" role="switch" aria-checked="true" type="button"><span class="track" aria-hidden="true"></span>Show reasons</button>
+      </div>
+
+      <div class="results">
+        <table class="rtbl" aria-label="Releases for Halcyon Drift, accepted first">
+          <colgroup><col style="width:132px"><col><col style="width:88px"><col style="width:64px"><col style="width:118px"><col style="width:136px"><col style="width:80px"><col style="width:132px"></colgroup>
+          <thead><tr>
+            <th scope="col">Quality</th><th scope="col">Release</th><th scope="col" class="r">Size</th><th scope="col" class="r">Age</th><th scope="col">Peers</th><th scope="col">Indexer</th><th scope="col" class="r">Score</th><th scope="col"><span class="sr-only">Action</span></th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+
+        <div class="popover confirm" id="confirm" role="dialog" aria-modal="false" aria-labelledby="cf-h">
+          <h2 id="cf-h"><svg class="i" aria-hidden="true"><use href="#i-triangle-alert"/></svg>Grab a rejected release?</h2>
+          <p>Gonema skipped it for this reason:</p>
+          <div class="quote"><svg class="i" aria-hidden="true"><use href="#i-circle-x"/></svg><span>Only 1 seeder. Sprocket Tracker needs at least 3, so it may never finish.</span></div>
+          <p>It will be sent to qBittorrent and logged as a manual grab. If it fails, Gonema won’t retry it automatically.</p>
+          <div class="actions"><button class="btn btn-ghost btn-sm" type="button">Cancel</button><button class="btn btn-primary btn-sm" type="button">Grab anyway</button></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="../system/icons.js"></script>
+<script src="../system/posters.js"></script>
+<script src="../system/mock.js"></script>
+<script>
+  const ic = GN.ic;
+  const NZB = '<span class="proto">' + ic('newspaper') + 'Usenet</span>';
+  const T = (s, l) => '<span class="peers" aria-label="' + s + ' seeders, ' + l + ' leechers"><span class="up">▲ ' + s + '</span><span class="dn">▼ ' + l + '</span></span>';
+  const sc = n => '<span class="score ' + (n > 0 ? 'pos' : n < 0 ? 'neg' : '') + '">' + (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n) + '</span>';
+  const flags = a => a.map(f => '<span class="hdr-flag">' + f + '</span>').join('');
+
+  // q, name, flags, size, age, peers, indexer, score, extra
+  const accepted = [
+    ['2160p Remux', 'Halcyon.Drift.2024.2160p.UHD.BluRay.REMUX.DV.HDR10.TrueHD.Atmos.7.1.HEVC-BOBiNE', ['DV', 'HDR10', 'ATMOS', 'REMUX'], '58.4 GB', '12 d', NZB, 'Nebula NZB', 110, { best: true, expanded: true }],
+    ['2160p Remux', 'Halcyon.Drift.2024.2160p.BluRay.REMUX.HDR10.TrueHD.Atmos.7.1-MARQUEE', ['HDR10', 'ATMOS', 'REMUX'], '61.2 GB', '9 d', T(214, 12), 'Sprocket Tracker', 80, {}],
+    ['2160p Bluray', 'Halcyon.Drift.2024.2160p.UHD.BluRay.x265.10bit.DV.HDR10.TrueHD.Atmos.7.1-AURORAHD', ['DV', 'HDR10', 'ATMOS'], '32.6 GB', '11 d', NZB, 'AltReel', 90, {}],
+    ['2160p Bluray', 'Halcyon.Drift.2024.2160p.BluRay.DV.HDR10.DDP5.1.x265-LUMEN', ['DV', 'HDR10'], '24.1 GB', '10 d', T(88, 4), 'Sprocket Tracker', 75, {}],
+  ];
+  const rejected = [
+    ['2160p Remux', 'Halcyon.Drift.2024.2160p.UHD.BluRay.REMUX.DV.HDR10.TrueHD.Atmos.7.1-NOCTURNE', ['DV', 'ATMOS', 'REMUX'], '59.0 GB', '2 d', T(1, 0), 'Sprocket Tracker', 100, { reasons: [['Only 1 seeder. Sprocket Tracker needs at least 3.', 0]], override: true, confirm: true }],
+    ['1080p Bluray', 'Halcyon.Drift.2024.1080p.BluRay.DTS-HD.MA.7.1.x264-GRANDE', ['DTS-HD'], '41.2 GB', '12 d', NZB, 'Nebula NZB', 25, { reasons: [['Size 41.2 GB is above 25 GB max for Bluray-1080p at 132 min.', 1], ['Not an upgrade: 1080p is lower than your 2160p file.', 1]] }],
+    ['720p Bluray', 'Halcyon.Drift.2024.720p.BluRay.x264-REELiNG', [], '5.4 GB', '12 d', T(402, 31), 'Sprocket Tracker', 0, { reasons: [['720p is below your profile’s floor (1080p).', 1]] }],
+    ['2160p WEB-DL', 'Halcyon.Drift.2024.2160p.WEB-DL.DDP5.1.HDR.H.265-ZEPHYR', ['HDR10'], '18.2 GB', '13 d', NZB, 'AltReel', 30, { reasons: [['Blocklisted: download failed on 2 Nov (CRC error, part 37).', 1]] }],
+    ['2160p WEB-DL', 'Halcyon.Drift.2024.2160p.NF.WEB-DL.DDP5.1.Atmos.HDR10.H.265-NIMBUS', ['HDR10', 'ATMOS'], '17.5 GB', '13 d', NZB, 'Nebula NZB', 50, { reasons: [['Not an upgrade: same quality as your file and a lower score (+50 vs +70).', 0]] }],
+    ['2160p WEBRip', 'Halcyon.Drift.2024.2160p.WEBRip.x265.10bit-MiNiPiX', [], '3.9 GB', '6 d', T(1290, 340), 'Sprocket Tracker', -990, { reasons: [['Score −990 is below your minimum (0): matched “Low-bitrate encoder” (−1000).', 1]] }],
+    ['2160p Remux', 'Halcyon.Drift.2024.GERMAN.DL.2160p.UHD.BluRay.REMUX.DV.HDR10-KINOWELT', ['DV', 'REMUX'], '63.8 GB', '4 d', NZB, 'AltReel', 60, { reasons: [['Language: German first. Your profile wants English audio.', 1]] }],
+  ];
+
+  function row(r, rej) {
+    const [q, name, fl, size, age, peers, ix, score, o] = r;
+    const tags = (o.best ? '<span class="best">' + ic('sparkles', 'i-xs') + 'Best match</span>' : '') + flags(fl);
+    const reasons = rej && o.reasons ? '<div class="reasons">' + o.reasons.map(([t, hard]) => '<div class="reason' + (hard ? '' : ' soft') + '">' + ic(hard ? 'circle-x' : 'info') + '<span>' + t + '</span></div>').join('') + '</div>' : '';
+    const action = rej
+      ? (o.override ? '<div class="grab"><button class="btn btn-secondary btn-sm" type="button" aria-haspopup="dialog" aria-expanded="' + !!o.confirm + '" id="ov">Grab anyway…</button></div>' : '<div class="grab"><button class="icon-btn sm" type="button" aria-label="More about this decision">' + ic('info', 'i-sm') + '</button></div>')
+      : '<div class="grab"><button class="icon-btn sm" type="button" aria-label="' + (o.expanded ? 'Hide' : 'Show') + ' score details" aria-expanded="' + !!o.expanded + '">' + ic(o.expanded ? 'chevron-up' : 'chevron-down', 'i-sm') + '</button><button class="btn ' + (o.best ? 'btn-secondary' : 'btn-ghost') + ' btn-sm" type="button" aria-label="Grab ' + name + '">' + ic('download') + 'Grab</button></div>';
+    let tr = '<tr class="rel' + (rej ? ' rej' : '') + (o.expanded ? ' expanded' : '') + '"' + (o.confirm ? ' id="cf-row"' : '') + '>' +
+      '<td>' + GN.qbadge(q) + '</td>' +
+      '<td><div class="rel-name" title="' + name + '">' + name + '</div>' + (tags ? '<div class="rel-tags">' + tags + '</div>' : '') + reasons + '</td>' +
+      '<td class="r muted-cell">' + size + '</td><td class="r muted-cell">' + age + '</td><td>' + peers + '</td><td class="muted-cell">' + ix + '</td>' +
+      '<td class="r">' + (rej ? sc(score) : '<button class="score pos" type="button" aria-label="Score +' + score + ', show breakdown">+' + score + '</button>') + '</td><td>' + action + '</td></tr>';
+    if (o.expanded) tr += '<tr class="detail"><td colspan="8"><div class="breakdown">' +
+      '<div><p class="bh">Score breakdown</p><ul class="bd-list">' +
+        '<li><span>Dolby Vision <span class="why">DV</span></span><b class="pos">+40</b></li>' +
+        '<li><span>Lossless Atmos <span class="why">TrueHD.Atmos</span></span><b class="pos">+30</b></li>' +
+        '<li><span>Trusted group <span class="why">BOBiNE</span></span><b class="pos">+20</b></li>' +
+        '<li><span>Remux <span class="why">REMUX</span></span><b class="pos">+20</b></li>' +
+        '<li><span>HDR10 fallback <span class="why">HDR10</span></span><b class="zero">0</b></li>' +
+        '<li class="total"><span>Total</span><b class="pos">+110</b></li></ul></div>' +
+      '<div class="decision"><p class="bh">Decision</p><div class="ok">' + ic('circle-check') + '<span>Accepted as an upgrade: WEBDL-2160p (+70) → Remux-2160p (+110).</span></div>' +
+        '<ul><li>Meets your cutoff, so upgrades stop after this one.</li><li>58.4 GB is within 20–90 GB for Remux-2160p at 132 min.</li><li>Ranked first: best quality, then highest score.</li></ul></div>' +
+      '</div></td></tr>';
+    return tr;
+  }
+  const sk = w => '<tr class="sk" aria-hidden="true"><td><div class="skeleton" style="width:84px"></div></td><td><div class="skeleton" style="width:' + w + '%"></div><div class="skeleton" style="width:22%;height:10px;margin-top:8px"></div></td><td><div class="skeleton" style="width:56px;margin-left:auto"></div></td><td><div class="skeleton" style="width:32px;margin-left:auto"></div></td><td><div class="skeleton" style="width:60px"></div></td><td><div class="skeleton" style="width:84px"></div></td><td><div class="skeleton" style="width:40px;margin-left:auto"></div></td><td></td></tr>';
+  document.getElementById('rows').innerHTML =
+    '<tr class="grp"><td colspan="8">Accepted <span class="n">· 4</span> <span style="text-transform:none;letter-spacing:0;font:var(--type-caption);margin-left:8px">best first</span></td></tr>' +
+    accepted.map(r => row(r, false)).join('') +
+    '<tr class="grp"><td colspan="8"><span style="display:inline-flex;align-items:center;gap:8px"><span class="ix wait" style="height:22px;padding:0 8px;font-size:11.5px;letter-spacing:0;text-transform:none;font-stretch:100%"><span class="pulse" aria-hidden="true"></span>Waiting for Kinoarchive</span></span></td></tr>' +
+    sk(72) + sk(64) +
+    '<tr class="grp"><td colspan="8">Rejected <span class="n">· 30</span> <span style="text-transform:none;letter-spacing:0;font:var(--type-caption);margin-left:8px">reason shown under each release</span></td></tr>' +
+    rejected.map(r => row(r, true)).join('');
+  document.querySelector('.results').insertAdjacentHTML('beforeend', '<div class="show-more"><button class="btn btn-ghost btn-sm" type="button">' + ic('chevron-down') + 'Show 23 more rejected</button></div>');
+  GN.renderPosters();
+  // Anchor the confirm popover under the override button.
+  function place() {
+    const b = document.getElementById('ov'), c = document.getElementById('confirm'), box = document.querySelector('.results').getBoundingClientRect();
+    const r = b.getBoundingClientRect(); c.style.top = (r.bottom - box.top + 10) + 'px';
+  }
+  place(); document.fonts.ready.then(place);
+</script>
+</body>
+</html>

@@ -36,3 +36,6 @@ bin/
 # Heavy third-party skills (~54 MB of assets): reinstall with `kit project add design-ui brand`
 .claude/skills/design-taste-frontend/
 .claude/skills/logo-design/
+
+# Full-page design renders: regenerate with docs/design/tools/render.js
+docs/design/renders/*-full-*.png

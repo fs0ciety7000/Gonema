@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Motion · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 40px 96px; }
+  .top { position: sticky; top: 0; z-index: var(--z-topbar); display: flex; align-items: center; gap: var(--space-4); height: 64px; background: var(--glass-1); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); margin: 0 -40px; padding: 0 40px; }
+  .top h1 { font: var(--type-title-lg); }
+  .top .spacer { flex: 1; }
+  section { padding-top: var(--space-12); }
+  h2 { font: var(--type-display-md); letter-spacing: var(--type-display-md-tracking); font-stretch: 125%; margin-bottom: 6px; }
+  .lead { color: var(--text-secondary); max-width: 80ch; margin-bottom: var(--space-5); }
+  .specline { font: var(--type-mono-sm); color: var(--text-muted); margin-bottom: var(--space-4); }
+  .stagebox { position: relative; border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--bg-raised); overflow: hidden; }
+
+  /* Shared element demo */
+  .se { min-height: 440px; }
+  .se-grid { position: relative; padding: 28px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 20px; align-content: start; }
+  .se-grid button { all: unset; cursor: pointer; aspect-ratio: 2/3; border-radius: var(--radius-poster); overflow: hidden; box-shadow: var(--elev-poster); transition: transform var(--spring-gentle-dur) var(--spring-gentle), box-shadow var(--dur-slow) var(--ease-out); }
+  .se-grid button:hover { transform: translateY(-4px) scale(1.015); box-shadow: var(--elev-poster-hover); }
+  .se-grid button:focus-visible { box-shadow: var(--focus-ring); }
+  .se-grid svg, .se-hero-poster svg { width: 100%; height: 100%; }
+  .se-detail { position: absolute; inset: 0; display: none; }
+  .se-detail.open { display: block; }
+  .se-detail .bd { position: absolute; inset: 0; background: radial-gradient(70% 90% at 20% 10%, oklch(0.42 0.12 50 / .7), transparent 70%), var(--bg-base); }
+  .se-hero-poster { position: absolute; left: 40px; top: 40px; width: 210px; aspect-ratio: 2/3; border-radius: 16px; overflow: hidden; box-shadow: 0 30px 60px -24px rgba(0,0,0,.8); transform-origin: top left; }
+  .se-copy { position: absolute; left: 290px; top: 70px; right: 40px; display: grid; gap: 12px; }
+  .se-copy h3 { font: var(--type-display-xl); font-stretch: 125%; letter-spacing: -.015em; }
+  .se-copy p { color: var(--text-secondary); max-width: 60ch; }
+  .se-close { position: absolute; top: 16px; right: 16px; }
+  .frames { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-3); margin-top: var(--space-4); }
+  .frame { display: grid; gap: 6px; font: var(--type-caption); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .frame .scr { position: relative; aspect-ratio: 16/10; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-base); overflow: hidden; }
+  .frame .scr .g { position: absolute; width: 11%; aspect-ratio: 2/3; border-radius: 3px; background: var(--bg-active); }
+  .frame .scr .p { position: absolute; border-radius: 4px; overflow: hidden; box-shadow: 0 6px 12px -6px rgba(0,0,0,.8); }
+  .frame .scr .p svg { width: 100%; height: 100%; }
+  .frame .scr .c { position: absolute; left: 34%; top: 16%; right: 8%; display: grid; gap: 5px; }
+  .frame .scr .c i { display: block; height: 6px; border-radius: 3px; background: var(--text-secondary); }
+  .frame .scr .glow { position: absolute; inset: 0; background: radial-gradient(70% 90% at 20% 10%, oklch(0.42 0.12 50 / .7), transparent 70%); }
+
+  /* Stagger */
+  .st-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 16px; padding: 24px; }
+  .st-grid .poster-art { aspect-ratio: 2/3; border-radius: 10px; overflow: hidden; box-shadow: var(--elev-poster); }
+  .st-grid .poster-art svg { width: 100%; height: 100%; }
+  .st-grid.play .poster-art { animation: rise var(--dur-slow) var(--ease-out) both; animation-delay: calc(min(var(--i), 12) * var(--stagger)); }
+  @keyframes rise { from { opacity: 0; transform: translateY(12px) scale(.98); } }
+  [data-motion="reduce"] .st-grid.play .poster-art { animation-name: fade; animation-duration: 150ms !important; animation-delay: 0ms; }
+  @keyframes fade { from { opacity: 0; } }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
+  .pad { padding: var(--space-6); display: grid; gap: var(--space-5); align-content: start; }
+  .toast-zone { position: relative; height: 96px; display: grid; place-items: end center; }
+  .lib-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--bg-sunken); border: 1px solid var(--border); transition: opacity var(--dur-fast); }
+  .lib-row .thumb { width: 32px; aspect-ratio: 2/3; border-radius: 4px; overflow: hidden; } .lib-row .thumb svg { width: 100%; height: 100%; }
+  .lib-row.gone { opacity: .35; }
+  .toast.leaving { animation: toast-out 150ms var(--ease-exit) both; }
+  @keyframes toast-out { to { opacity: 0; transform: translateY(12px); } }
+  .sk-demo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .sk-demo .cell { position: relative; aspect-ratio: 2/3; border-radius: 10px; overflow: hidden; }
+  .sk-demo .cell .skeleton, .sk-demo .cell .poster-art { position: absolute; inset: 0; border-radius: inherit; }
+  .sk-demo .cell .poster-art { opacity: 0; transition: opacity var(--dur-slow) var(--ease-standard); }
+  .sk-demo .cell .poster-art svg { width: 100%; height: 100%; }
+  .sk-demo.loaded .cell .poster-art { opacity: 1; }
+  .sk-demo.loaded .cell .skeleton { opacity: 0; transition: opacity var(--dur-slow); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Motion</h1><span class="t-caption t-muted">spec: docs/design/motion.md</span>
+    <div class="spacer"></div>
+    <button class="switch" role="switch" aria-checked="false" type="button" id="rm"><span class="track" aria-hidden="true"></span>Simulate reduced motion</button>
+    <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+  </header>
+
+  <main>
+  <section aria-labelledby="h1">
+    <h2 id="h1">Poster → detail (shared element)</h2>
+    <p class="lead">Click a poster. The poster itself travels to its place on the detail page while the rest of the grid fades out and the atmosphere fades in. Close (or Esc) reverses it. Product: View Transitions API with <code>view-transition-name: poster-&lt;id&gt;</code>; this demo uses the equivalent FLIP with WAAPI so it runs everywhere.</p>
+    <p class="specline">poster: transform 300 ms ease-in-out (0.77, 0, 0.175, 1) · grid: opacity 150 ms · atmosphere: opacity 250 ms ease-out · copy: opacity + 8 px rise 200 ms ease-out, delay 120 ms · reverse: 250 ms · reduced: 150 ms crossfade, no travel</p>
+    <div class="stagebox se" id="se">
+      <div class="se-grid" id="se-grid"></div>
+      <div class="se-detail" id="se-detail" aria-hidden="true">
+        <div class="bd"></div>
+        <div class="se-hero-poster" id="se-hero"></div>
+        <div class="se-copy"><span class="t-overline">Science fiction · Drama</span><h3 id="se-title">Halcyon Drift</h3><p>Fourteen years after the generation ship settled a tidally locked world, its engineer discovers the colony has been drifting toward the terminator line.</p><div class="row"><button class="btn btn-secondary" type="button">Interactive search</button></div></div>
+        <button class="icon-btn outlined se-close" type="button" id="se-close" aria-label="Back to library (Esc)"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </div>
+    </div>
+    <div class="frames" id="frames" aria-label="Key frames of the transition"></div>
+  </section>
+
+  <section aria-labelledby="h2">
+    <h2 id="h2">Grid entrance (stagger)</h2>
+    <p class="lead">First paint of a view only, never on scroll or filter changes (virtualised rows appear instantly). 24 ms per item, capped at 12 items (≈ 290 ms total), 250 ms ease-out, 12 px rise.</p>
+    <div class="row" style="margin-bottom:12px"><button class="btn btn-secondary btn-sm" type="button" id="st-play"><svg class="i" aria-hidden="true"><use href="#i-refresh-cw"/></svg>Replay</button></div>
+    <div class="stagebox"><div class="st-grid play" id="st-grid"></div></div>
+  </section>
+
+  <section aria-labelledby="h3">
+    <h2 id="h3">Live progress, hover and press</h2>
+    <div class="two">
+      <div class="stagebox pad">
+        <div><div class="row" style="justify-content:space-between;font:var(--type-body-sm)"><span>The Last Projectionist</span><span class="tnum" id="pp">42%</span></div>
+        <div class="progress live lg" id="pb" style="--p:.42;margin-top:8px" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="42" aria-label="Download progress"><div class="fill"></div></div>
+        <div class="progress-meta"><span>5.2 of 12.4 GB</span><span>18.4 MB/s · 12 min</span></div></div>
+        <p class="t-body-sm t-secondary">Value moves with a 900 ms ease (no jumps when updates arrive every 1–2 s). A soft sheen crosses the filled part every 2.4 s, then rests 30 % of the cycle. No opacity pulsing, no colour change. Reduced motion: no sheen, value still updates.</p>
+      </div>
+      <div class="stagebox pad">
+        <div class="row" style="gap:12px;flex-wrap:wrap">
+          <button class="btn btn-primary" type="button">Press me</button>
+          <button class="btn btn-secondary" type="button">Secondary</button>
+          <button class="icon-btn outlined" type="button" aria-label="More"><svg class="i" aria-hidden="true"><use href="#i-ellipsis"/></svg></button>
+          <button class="switch" role="switch" aria-checked="true" type="button" onclick="this.setAttribute('aria-checked', this.getAttribute('aria-checked') !== 'true')"><span class="track" aria-hidden="true"></span>Monitored</button>
+          <label class="check"><input type="checkbox" checked>Selected</label>
+        </div>
+        <p class="t-body-sm t-secondary">Press: scale 0.97 (icons 0.94) with the snappy spring, 230 ms, released instantly when the pointer lifts. Hover lift on posters: −4 px and 1.5 % with the gentle spring. Switch knob and checkmark: pop spring (9 % overshoot). Hover effects are gated behind <code>(hover: hover)</code> in product.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h4">
+    <h2 id="h4">Toast with Undo, skeleton → content</h2>
+    <div class="two">
+      <div class="stagebox pad">
+        <div class="lib-row" id="lr"><span class="thumb poster-art" data-film="coldharbour"></span><span class="grow">Coldharbour <span class="t-muted">2016</span></span><button class="btn btn-ghost btn-sm" type="button" id="unmon"><svg class="i" aria-hidden="true"><use href="#i-eye-off"/></svg>Unmonitor</button></div>
+        <div class="toast-zone" id="tz"></div>
+        <p class="t-body-sm t-secondary">The action applies at once (optimistic). Toast arrives in 330 ms (gentle spring, 16 px rise), stays 8 s, timer pauses on hover/focus, leaves in 150 ms. Undo restores the row with a 150 ms fade. ⌘Z works while the toast is visible.</p>
+      </div>
+      <div class="stagebox pad">
+        <div class="sk-demo" id="sk"></div>
+        <div class="row"><button class="btn btn-secondary btn-sm" type="button" id="sk-play"><svg class="i" aria-hidden="true"><use href="#i-refresh-cw"/></svg>Reload</button></div>
+        <p class="t-body-sm t-secondary">Skeletons match the final layout. Shimmer: 1.6 s sweep, 40 % rest, staggered 60 ms per item. Content crossfades in over 250 ms; no layout shift. Reduced motion: static skeleton, fade only.</p>
+      </div>
+    </div>
+  </section>
+  </main>
+</div>
+
+<script src="../system/icons.js"></script>
+<script src="../system/posters.js"></script>
+<script src="../system/mock.js"></script>
+<script>
+(function () {
+  const html = document.documentElement;
+  const reduced = () => html.dataset.motion === 'reduce' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const rm = document.getElementById('rm');
+  rm.addEventListener('click', () => { const on = rm.getAttribute('aria-checked') !== 'true'; rm.setAttribute('aria-checked', on); if (on) html.dataset.motion = 'reduce'; else delete html.dataset.motion; });
+  if (html.dataset.motion === 'reduce') rm.setAttribute('aria-checked', 'true');
+
+  const ids = ['halcyon-drift', 'quiet-meridian', 'neon-orchard', 'last-projectionist', 'sundial', 'parallax', 'saltwater-hymn', 'ninefold', 'fathom', 'marrow', 'coldharbour', 'tidewater'];
+  const grid = document.getElementById('se-grid');
+  grid.innerHTML = ids.map(id => '<button type="button" data-id="' + id + '" aria-label="Open ' + GN.films[id].title + '"><div class="poster-art" data-film="' + id + '"></div></button>').join('');
+  const detail = document.getElementById('se-detail'), hero = document.getElementById('se-hero');
+  const EIO = 'cubic-bezier(0.77, 0, 0.175, 1)', EO = 'cubic-bezier(0.23, 1, 0.32, 1)';
+  let from = null;
+
+  function open(btn) {
+    from = btn; const id = btn.dataset.id;
+    hero.innerHTML = GN.poster(id); document.getElementById('se-title').textContent = GN.films[id].title;
+    detail.classList.add('open'); detail.setAttribute('aria-hidden', 'false');
+    const a = btn.getBoundingClientRect(), b = hero.getBoundingClientRect();
+    const bd = detail.querySelector('.bd'), copy = detail.querySelector('.se-copy');
+    if (reduced()) { detail.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: 'linear' }); document.getElementById('se-close').focus(); return; }
+    btn.style.visibility = 'hidden';
+    grid.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, fill: 'forwards' });
+    bd.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250, easing: EO });
+    hero.animate([{ transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width})`, borderRadius: '12px' }, { transform: 'none', borderRadius: '16px' }], { duration: 300, easing: EIO });
+    copy.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 200, delay: 120, easing: EO, fill: 'backwards' });
+    document.getElementById('se-close').focus();
+  }
+  function close() {
+    if (!from) return; const btn = from; const a = btn.getBoundingClientRect(), b = hero.getBoundingClientRect();
+    const done = () => { detail.classList.remove('open'); detail.setAttribute('aria-hidden', 'true'); btn.style.visibility = ''; grid.getAnimations().forEach(x => x.cancel()); btn.focus(); from = null; };
+    if (reduced()) { detail.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150 }).onfinish = done; return; }
+    grid.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay: 50, fill: 'forwards' });
+    detail.querySelector('.bd').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, easing: EO, fill: 'forwards' });
+    detail.querySelector('.se-copy').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, fill: 'forwards' });
+    const an = hero.animate([{ transform: 'none' }, { transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width})`, borderRadius: '12px' }], { duration: 250, easing: EIO, fill: 'forwards' });
+    an.onfinish = () => { done(); detail.getAnimations({ subtree: true }).forEach(x => x.cancel()); hero.getAnimations().forEach(x => x.cancel()); };
+  }
+  grid.addEventListener('click', e => { const b = e.target.closest('button'); if (b) open(b); });
+  document.getElementById('se-close').addEventListener('click', close);
+  addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+  // Key frames (static): poster rect interpolated with ease-in-out
+  const bez = (t, p1, p2) => { // cubic-bezier(x1,y1,x2,y2) solve
+    const [x1, y1, x2, y2] = [0.77, 0, 0.175, 1]; let lo = 0, hi = 1, u = t;
+    for (let i = 0; i < 30; i++) { u = (lo + hi) / 2; const x = 3 * (1 - u) ** 2 * u * x1 + 3 * (1 - u) * u * u * x2 + u ** 3; if (x < t) lo = u; else hi = u; }
+    return 3 * (1 - u) ** 2 * u * y1 + 3 * (1 - u) * u * u * y2 + u ** 3;
+  };
+  const A = { l: 4 + 0, t: 6, w: 11 }, B = { l: 4, t: 10, w: 26 }; // % of frame width; grid poster (col 1) -> hero
+  const frames = [0, 75, 150, 225, 300];
+  document.getElementById('frames').innerHTML = frames.map(ms => {
+    const k = bez(ms / 300); const lerp = (a, b) => a + (b - a) * k;
+    const gridOp = Math.max(0, 1 - ms / 150), bdOp = Math.min(1, ms / 250), copyOp = Math.max(0, Math.min(1, (ms - 120) / 200));
+    let g = ''; for (let i = 1; i < 6; i++) g += '<span class="g" style="left:' + (4 + i * 15.5) + '%;top:6%;opacity:' + gridOp.toFixed(2) + '"></span>';
+    for (let i = 0; i < 6; i++) g += '<span class="g" style="left:' + (4 + i * 15.5) + '%;top:52%;opacity:' + gridOp.toFixed(2) + '"></span>';
+    return '<div class="frame"><div class="scr"><span class="glow" style="opacity:' + bdOp.toFixed(2) + '"></span>' + g +
+      '<span class="p" style="left:' + lerp(A.l, B.l) + '%;top:' + lerp(A.t, B.t) + '%;width:' + lerp(A.w, B.w) + '%;aspect-ratio:2/3">' + GN.poster('halcyon-drift') + '</span>' +
+      '<span class="c" style="opacity:' + copyOp.toFixed(2) + ';transform:translateY(' + (8 * (1 - copyOp)).toFixed(1) + 'px)"><i style="width:30%;opacity:.5"></i><i style="width:70%;height:12px;background:var(--text-primary)"></i><i style="width:90%;opacity:.5"></i><i style="width:80%;opacity:.5"></i></span></div>' +
+      '<span>' + ms + ' ms · poster ' + Math.round(k * 100) + ' %</span></div>';
+  }).join('');
+
+  // Stagger
+  const st = document.getElementById('st-grid');
+  st.innerHTML = Object.keys(GN.films).slice(0, 16).map((id, i) => '<div class="poster-art" data-film="' + id + '" style="--i:' + i + '"></div>').join('');
+  document.getElementById('st-play').addEventListener('click', () => { st.classList.remove('play'); void st.offsetWidth; st.classList.add('play'); });
+
+  // Progress
+  let p = 42; const pb = document.getElementById('pb'), pp = document.getElementById('pp');
+  if (!new URLSearchParams(location.search).get('freeze')) setInterval(() => { p = p >= 99 ? 42 : p + 1; pb.style.setProperty('--p', p / 100); pb.setAttribute('aria-valuenow', p); pp.textContent = p + '%'; }, 1500);
+
+  // Toast + undo
+  const tz = document.getElementById('tz'), lr = document.getElementById('lr'), un = document.getElementById('unmon');
+  let timer;
+  function dismiss() { const t = tz.querySelector('.toast'); if (!t) return; t.classList.add('leaving'); setTimeout(() => t.remove(), 150); }
+  un.addEventListener('click', () => {
+    lr.classList.add('gone'); un.disabled = true; tz.innerHTML = '';
+    tz.insertAdjacentHTML('beforeend', '<div class="toast" role="status" aria-live="polite"><span class="ticon">' + GN.ic('eye-off') + '</span><div><div class="ttitle">Stopped monitoring Coldharbour</div><div class="tbody">It stays in your library.</div></div><div class="tactions"><button class="btn btn-secondary btn-sm" type="button" id="undo">' + GN.ic('undo-2') + 'Undo</button></div><span class="timer" aria-hidden="true"></span></div>');
+    document.getElementById('undo').addEventListener('click', () => { lr.classList.remove('gone'); un.disabled = false; clearTimeout(timer); dismiss(); un.focus(); });
+    clearTimeout(timer); timer = setTimeout(() => { dismiss(); un.disabled = false; }, 8000);
+  });
+
+  // Skeleton -> content
+  const sk = document.getElementById('sk');
+  sk.innerHTML = ['orbit-small-things', 'glass-cartographer', 'velvet-static', 'odeon-vale'].map((id, i) => '<div class="cell"><div class="skeleton" style="--shimmer-delay:' + i * 60 + 'ms"></div><div class="poster-art" data-film="' + id + '"></div></div>').join('');
+  const load = () => { sk.classList.remove('loaded'); setTimeout(() => sk.classList.add('loaded'), 1800); };
+  document.getElementById('sk-play').addEventListener('click', load);
+  if (!new URLSearchParams(location.search).get('freeze')) load();
+
+  GN.renderPosters();
+})();
+</script>
+</body>
+</html>

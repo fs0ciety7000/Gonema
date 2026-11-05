@@ -1,0 +1,114 @@
+[
+  {
+    "page": "library-grid",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 40,
+    "incomplete": 2
+  },
+  {
+    "page": "library-grid-tablet",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 40,
+    "incomplete": 2
+  },
+  {
+    "page": "library-table",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 43,
+    "incomplete": 2
+  },
+  {
+    "page": "movie-detail",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 44,
+    "incomplete": 2
+  },
+  {
+    "page": "interactive-search",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 46,
+    "incomplete": 2
+  },
+  {
+    "page": "design-system-full",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 53,
+    "incomplete": 2
+  },
+  {
+    "page": "motion-full",
+    "theme": "dark",
+    "errors": [],
+    "violations": [],
+    "passes": 36,
+    "incomplete": 2
+  },
+  {
+    "page": "library-grid",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 40,
+    "incomplete": 2
+  },
+  {
+    "page": "library-grid-tablet",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 40,
+    "incomplete": 2
+  },
+  {
+    "page": "library-table",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 43,
+    "incomplete": 2
+  },
+  {
+    "page": "movie-detail",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 44,
+    "incomplete": 2
+  },
+  {
+    "page": "interactive-search",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 46,
+    "incomplete": 2
+  },
+  {
+    "page": "design-system-full",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 53,
+    "incomplete": 2
+  },
+  {
+    "page": "motion-full",
+    "theme": "light",
+    "errors": [],
+    "violations": [],
+    "passes": 36,
+    "incomplete": 2
+  }
+]
