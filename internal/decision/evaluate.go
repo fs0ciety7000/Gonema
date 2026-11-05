@@ -121,6 +121,7 @@ func (x *decider) note(format string, args ...any) {
 func (e *Evaluator) Evaluate(c *Candidate) Decision {
 	x := decider{e: e, c: c, d: Decision{SizeDelta: -1}}
 	x.checkTitle()
+	x.checkContent()
 	x.checkQuality()
 	langOK := x.checkLanguage()
 	x.checkHardcodedSubs()
@@ -170,6 +171,30 @@ func (x *decider) checkTitle() {
 		x.note("release has no year: year not checked")
 	case m.Year != 0 && abs(p.Year-m.Year) > YearTolerance:
 		x.reject(CodeYearMismatch, true, "Year %d does not match %d (±%d tolerated)", p.Year, m.Year, YearTolerance)
+	}
+}
+
+// fixContents names what each repair pack contains, for not_a_movie messages.
+var fixContents = map[parser.FixKind]string{
+	parser.FixNFO:    "a repaired NFO",
+	parser.FixSample: "a repaired sample",
+	parser.FixSub:    "repaired subtitles",
+	parser.FixSync:   "a sync repair",
+	parser.FixProof:  "a repaired proof picture",
+}
+
+// checkContent rejects releases that are not the movie: repair packs (every fix
+// but DIRFIX), bonus-only releases and samples.
+func (x *decider) checkContent() {
+	p := &x.c.Parsed
+	if what, ok := fixContents[p.Fix]; ok {
+		x.reject(CodeNotAMovie, true, "%sFIX releases only contain %s, not the movie", strings.ToUpper(p.Fix.String()), what)
+	}
+	if p.Extras {
+		x.reject(CodeNotAMovie, true, "Bonus-only release, not the movie")
+	}
+	if p.Sample {
+		x.reject(CodeNotAMovie, true, "Sample-only release, not the movie")
 	}
 }
 

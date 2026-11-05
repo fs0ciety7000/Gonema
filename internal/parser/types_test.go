@@ -112,6 +112,14 @@ func TestEnumText(t *testing.T) {
 		roundTrip(t, parser.EditionUncut|parser.EditionRemastered, "uncut,remastered", unmarshalAs[parser.Edition])
 		roundTrip(t, parser.EditionFinalCut|parser.EditionIMAX, "imax,final-cut", unmarshalAs[parser.Edition])
 	})
+	t.Run("FixKind", func(t *testing.T) {
+		for v, s := range map[parser.FixKind]string{
+			parser.FixNone: "none", parser.FixDir: "dir", parser.FixNFO: "nfo", parser.FixSample: "sample",
+			parser.FixSub: "sub", parser.FixSync: "sync", parser.FixProof: "proof",
+		} {
+			roundTrip(t, v, s, unmarshalAs[parser.FixKind])
+		}
+	})
 }
 
 func TestEnumText_Invalid(t *testing.T) {
@@ -119,7 +127,7 @@ func TestEnumText_Invalid(t *testing.T) {
 	targets := map[string]encoding.TextUnmarshaler{
 		"Resolution": new(parser.Resolution), "Source": new(parser.Source), "Modifier": new(parser.Modifier),
 		"Codec": new(parser.Codec), "HDRFormat": new(parser.HDRFormat), "AudioFormat": new(parser.AudioFormat),
-		"Language": new(parser.Language), "Edition": new(parser.Edition),
+		"Language": new(parser.Language), "Edition": new(parser.Edition), "FixKind": new(parser.FixKind),
 	}
 	for name, u := range targets {
 		if err := u.UnmarshalText([]byte("no-such-value")); err == nil {

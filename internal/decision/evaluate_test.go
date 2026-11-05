@@ -593,3 +593,46 @@ func TestAvailability_String(t *testing.T) {
 		t.Error("Availability.String")
 	}
 }
+
+func TestEvaluate_notAMovie(t *testing.T) {
+	t.Parallel()
+	e := newEvaluator(t, baseConfig(t))
+	tests := []struct {
+		release string
+		want    []string // not_a_movie messages; empty: the release is the movie
+	}{
+		{"Alien.Romulus.2024.1080p.BluRay.x264.DIRFIX-SPARKS", nil},
+		{"Alien.Romulus.2024.German.DL.1080p.BluRay.x264.SAMPLEFiX-GMA", []string{"SAMPLEFIX releases only contain a repaired sample, not the movie"}},
+		{"Alien.Romulus.2024.1080p.BluRay.x264.NFOFIX-SPARKS", []string{"NFOFIX releases only contain a repaired NFO, not the movie"}},
+		{"Alien.Romulus.2024.1080p.BluRay.x264.SUBFIX-SPARKS", []string{"SUBFIX releases only contain repaired subtitles, not the movie"}},
+		{"Alien.Romulus.2024.1080p.BluRay.x264.SYNCFIX-SPARKS", []string{"SYNCFIX releases only contain a sync repair, not the movie"}},
+		{"Alien.Romulus.2024.1080p.BluRay.x264.PROOFFIX-SPARKS", []string{"PROOFFIX releases only contain a repaired proof picture, not the movie"}},
+		{"Alien.Romulus.2024.BONUS.1080p.BluRay.x264-SPARKS", []string{"Bonus-only release, not the movie"}},
+		{"Alien.Romulus.2024.SAMPLE.1080p.BluRay.x264-SPARKS", []string{"Sample-only release, not the movie"}},
+		{"Alien.Romulus.2024.Extras.SUBFIX.1080p.BluRay.x264-SPARKS", []string{
+			"SUBFIX releases only contain repaired subtitles, not the movie", "Bonus-only release, not the movie",
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.release, func(t *testing.T) {
+			t.Parallel()
+			c := usenet(tt.release, 9*gb)
+			d := e.Evaluate(&c)
+			var got []string
+			for _, r := range d.Rejections {
+				if r.Code == decision.CodeNotAMovie {
+					if !r.Permanent {
+						t.Error("not_a_movie must be permanent")
+					}
+					got = append(got, r.Message)
+				}
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("not_a_movie messages (-want +got):\n%s", diff)
+			}
+			if d.Accepted != (len(tt.want) == 0) {
+				t.Errorf("accepted = %v, rejections %v", d.Accepted, d.Rejections)
+			}
+		})
+	}
+}

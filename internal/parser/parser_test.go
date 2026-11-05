@@ -426,6 +426,45 @@ func TestParse_GroupContainerStreaming(t *testing.T) {
 	})
 }
 
+type content struct {
+	Title   string
+	Fix     parser.FixKind
+	Extras  bool
+	Sample  bool
+	IsMovie bool
+}
+
+// TestParse_Content covers fix packs, bonus discs and samples: flagged without
+// changing the title, and only DIRFIX is still the movie.
+func TestParse_Content(t *testing.T) {
+	t.Parallel()
+	runField(t, []fieldCase[content]{
+		{"Movie.2019.1080p.BluRay.x264-GRP", content{Title: "Movie", IsMovie: true}},
+		{"Movie.2019.1080p.BluRay.x264.DIRFIX-GRP", content{Title: "Movie", Fix: parser.FixDir, IsMovie: true}},
+		{"Movie.2019.1080p.BluRay.x264.DIR.FIX-GRP", content{Title: "Movie", Fix: parser.FixDir, IsMovie: true}},
+		{"Movie.2019.1080p.BluRay.x264.NFOFIX-GRP", content{Title: "Movie", Fix: parser.FixNFO}},
+		{"Movie.2019.1080p.BluRay.x264.SAMPLEFiX-GRP", content{Title: "Movie", Fix: parser.FixSample}},
+		{"Movie.2019.1080p.BluRay.x264.Sample.Fix-GRP", content{Title: "Movie", Fix: parser.FixSample}},
+		{"Movie.2019.1080p.BluRay.x264.SUBFIX-GRP", content{Title: "Movie", Fix: parser.FixSub}},
+		{"Movie.2019.1080p.BluRay.x264.SYNCFIX-GRP", content{Title: "Movie", Fix: parser.FixSync}},
+		{"Movie.2019.1080p.BluRay.x264.PROOFFIX-GRP", content{Title: "Movie", Fix: parser.FixProof}},
+		{"Movie.2019.NFOFIX.DIRFIX.1080p.BluRay.x264-GRP", content{Title: "Movie", Fix: parser.FixNFO}}, // first fix wins
+		{"Movie.2019.BONUS.COMPLETE.BLURAY-GRP", content{Title: "Movie", Extras: true}},
+		{"Movie.2019.EXTRAS.1080p.BluRay.x264-GRP", content{Title: "Movie", Extras: true}},
+		{"Movie.2019.Featurettes.1080p.WEB.H264-GRP", content{Title: "Movie", Extras: true}},
+		{"Movie.2019.Making.Of.1080p.WEB.H264-GRP", content{Title: "Movie", Extras: true}},
+		{"Movie.2019.SAMPLE.1080p.BluRay.x264-GRP", content{Title: "Movie", Sample: true}},
+		{"Apocalypse.Now.1979.BONUS.Hearts.of.Darkness.MULTI.COMPLETE.BLURAY.DiRFiX-UNTOUCHED",
+			content{Title: "Apocalypse Now", Fix: parser.FixDir, Extras: true}},
+		// In the title, these words are title words.
+		{"The.Making.Of.Fanny.and.Alexander.1984.1080p.BluRay.x264-GRP", content{Title: "The Making Of Fanny and Alexander", IsMovie: true}},
+		{"Free.Sample.2017.1080p.WEB.H264-GRP", content{Title: "Free Sample", IsMovie: true}},
+		{"Featurette.2020.1080p.WEB.H264-GRP", content{Title: "Featurette", IsMovie: true}},
+	}, func(p parser.ParsedRelease) content {
+		return content{p.Title, p.Fix, p.Extras, p.Sample, p.IsMovie()}
+	})
+}
+
 func TestParse_Obfuscated(t *testing.T) {
 	t.Parallel()
 	for _, in := range []string{

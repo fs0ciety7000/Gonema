@@ -20,6 +20,9 @@
 //     the clean movie title or one of its alternate titles (parser.CleanTitle).
 //   - year_mismatch: the release year must be within YearTolerance (±1) of the
 //     movie year. A release without a year passes with a note.
+//   - not_a_movie: repair packs (NFOFIX, SAMPLEFIX, SUBFIX, SYNCFIX, PROOFFIX),
+//     bonus-only releases (BONUS, EXTRAS, FEATURETTE(S), MAKING.OF) and samples
+//     (see parser.ParsedRelease.IsMovie). DIRFIX is a full release and passes.
 //   - unknown_quality, quality_not_allowed: the quality (quality.FromParsed) must be
 //     known and allowed by the profile.
 //   - wrong_language: see Languages below.

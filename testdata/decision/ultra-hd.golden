@@ -61,6 +61,7 @@
    - quality_not_allowed (permanent): Bluray-1080p is not allowed by profile Ultra-HD
 18 REJECT Alien.Romulus.2024.German.DL.1080p.BluRay.x264.SAMPLEFiX-GMA
    Bluray-1080p (rank 21) score 0 | usenet NZBGeek p25 | 3.3 GB | guid-03
+   - not_a_movie (permanent): SAMPLEFIX releases only contain a repaired sample, not the movie
    - quality_not_allowed (permanent): Bluray-1080p is not allowed by profile Ultra-HD
 19 REJECT Aliens.1986.THEATRiCAL.1080p.BluRay.H264-TAPPAD
    Bluray-1080p (rank 21) score 0 | usenet NZBGeek p25 | 3.3 GB | guid-18

@@ -309,6 +309,9 @@ func (e *extractor) extract(p *ParsedRelease, from, yearIdx int) {
 		if t.flags&fSubs != 0 {
 			p.Subs = appendWord(p.Subs, raw)
 		}
+		if t.fix != FixNone && p.Fix == FixNone {
+			p.Fix = t.fix
+		}
 		revInc += int(t.rev)
 		if int(t.ver) > explicitVer {
 			explicitVer = int(t.ver)
@@ -320,6 +323,8 @@ func (e *extractor) extract(p *ParsedRelease, from, yearIdx int) {
 	p.Atmos = flags&fAtmos != 0
 	p.Multi = flags&fMulti != 0
 	p.ThreeD = flags&f3D != 0
+	p.Extras = flags&fExtras != 0
+	p.Sample = flags&fSample != 0
 	p.Revision.Real = flags&fReal != 0
 	p.Revision.Version = max(1+revInc, explicitVer)
 	if flags&fISO != 0 && p.Container == "" {

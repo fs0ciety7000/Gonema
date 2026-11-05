@@ -47,6 +47,21 @@ type ParsedRelease struct {
 	Streaming    string `json:"streaming,omitempty"` // canonical service tag: AMZN, NF, DSNP...
 	Hash         string `json:"hash,omitempty"`      // CRC32 in brackets, e.g. [ABCD1234]
 	ThreeD       bool   `json:"threeD,omitempty"`
+
+	// Fix is a scene fix tag (NFOFIX, SAMPLEFIX, DIRFIX...). Only FixDir is still the
+	// full movie; the other kinds are small repair packs.
+	Fix FixKind `json:"fix,omitempty"`
+	// Extras marks a bonus-only release (BONUS, EXTRAS, FEATURETTE(S), MAKING.OF read
+	// after the title): bonus material, not the movie.
+	Extras bool `json:"extras,omitempty"`
+	// Sample marks a sample-only release (a SAMPLE tag after the title).
+	Sample bool `json:"sample,omitempty"`
+}
+
+// IsMovie reports whether the release contains the movie itself, as opposed to a
+// repair pack (any fix but DIRFIX), bonus material or a sample.
+func (p *ParsedRelease) IsMovie() bool {
+	return (p.Fix == FixNone || p.Fix == FixDir) && !p.Extras && !p.Sample
 }
 
 // Revision identifies re-releases of the same content.
@@ -158,6 +173,32 @@ func (m Modifier) MarshalText() ([]byte, error) { return marshal(enumText(m, mod
 
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (m *Modifier) UnmarshalText(b []byte) error { return enumParse(m, b, modifierNames) }
+
+// FixKind is a scene fix tag.
+type FixKind uint8
+
+// Fix kinds. FixDir (DIRFIX) is a full re-release under a corrected directory
+// name; every other kind only repairs one file of an earlier release.
+const (
+	FixNone   FixKind = iota
+	FixDir            // DIRFIX: full release, corrected directory name
+	FixNFO            // NFOFIX: NFO file only
+	FixSample         // SAMPLEFIX: sample only
+	FixSub            // SUBFIX: subtitles only
+	FixSync           // SYNCFIX: sync repair pack
+	FixProof          // PROOFFIX: proof picture only
+)
+
+var fixNames = []string{"none", "dir", "nfo", "sample", "sub", "sync", "proof"}
+
+// String returns the text form of f.
+func (f FixKind) String() string { return enumString(f, fixNames) }
+
+// MarshalText implements encoding.TextMarshaler.
+func (f FixKind) MarshalText() ([]byte, error) { return marshal(enumText(f, fixNames)) }
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (f *FixKind) UnmarshalText(b []byte) error { return enumParse(f, b, fixNames) }
 
 // Codec is the video codec. x264, H.264 and AVC are all CodecH264; x265, H.265 and HEVC are CodecH265.
 type Codec uint8

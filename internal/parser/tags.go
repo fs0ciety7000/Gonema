@@ -35,6 +35,8 @@ const (
 	// stripped from the end of a title only when two title words remain, so that
 	// "Blade.Runner.Final.Cut.1982" -> "Blade Runner" but "The.Final.Cut.2004" stays.
 	fStripLong
+	fExtras // BONUS, EXTRAS, FEATURETTE(S), MAKING.OF: bonus material only
+	fSample // SAMPLE: a sample only
 )
 
 // srcBits accumulates source evidence; the final Source is resolved by priority.
@@ -75,6 +77,7 @@ type tag struct {
 	stream uint8 // index+1 into streamingNames
 	rev    uint8 // revision increment (PROPER, REPACK, RERIP)
 	ver    uint8 // explicit version (v2, v3)
+	fix    FixKind
 	n      uint8 // number of tokens consumed, set by the matcher
 }
 
@@ -112,6 +115,7 @@ func strongMisc() tag                { return tag{flags: fStrong} }
 func flag(f tagFlags) tag            { return tag{flags: f} }
 func stream(name string) tag         { return tag{stream: streamIdx(name)} }
 func revision() tag                  { return tag{rev: 1, flags: fStrip} }
+func fix(k FixKind) tag              { return tag{fix: k, flags: fStrip} }
 func with(t tag, f func(*tag)) tag   { f(&t); return t }
 func plus(t tag, extra tagFlags) tag { t.flags |= extra; return t }
 func also(t tag, s srcBits) tag      { t.src |= s; return t }
@@ -256,10 +260,17 @@ func buildSingles() map[string]tag {
 
 		// Scene noise: recognised so that they end/strip a title, no field.
 		"INTERNAL": misc(), "INT": misc(), "LIMITED": misc(), "STV": misc(), "FESTIVAL": misc(), "READNFO": misc(),
-		"NFOFIX": misc(), "DIRFIX": misc(), "SAMPLEFIX": misc(), "SUBFIX": misc(), "SYNCFIX": misc(), "PROOFFIX": misc(),
 		"PAL": misc(), "NTSC": misc(), "SECAM": misc(), "WS": misc(), "FS": misc(), "DUBBED": misc(), "DUB": misc(),
-		"CUSTOM": misc(), "EXTRAS": misc(), "BONUS": misc(), "SUBPACK": misc(), "HQ": misc(), "HYBRID": misc(),
+		"CUSTOM": misc(), "SUBPACK": misc(), "HQ": misc(), "HYBRID": misc(),
 		"2DISC": misc(), "3DISC": misc(), "4DISC": misc(), "RETAIL": misc(), "UNTOUCHED": misc(), "HD": misc(),
+
+		// Fixes and non-movie content (see ParsedRelease.IsMovie). The fixes, BONUS and
+		// EXTRAS were already stripped from titles; FEATURETTE(S) and SAMPLE are new
+		// and only read after the title, so they never change it.
+		"DIRFIX": fix(FixDir), "NFOFIX": fix(FixNFO), "SAMPLEFIX": fix(FixSample), "SUBFIX": fix(FixSub),
+		"SYNCFIX": fix(FixSync), "PROOFFIX": fix(FixProof),
+		"BONUS": flag(fExtras | fStrip), "EXTRAS": flag(fExtras | fStrip),
+		"FEATURETTE": flag(fExtras), "FEATURETTES": flag(fExtras), "SAMPLE": flag(fSample),
 	}
 	// Streaming services: never strip (MAX, NOW, STAN are words), only read after the title.
 	for _, s := range streamingNames {
@@ -312,6 +323,9 @@ func buildCompounds2() map[[2]string]tag {
 		{"REAL", "PROPER"}: plus(revision(), fReal), {"REAL", "REPACK"}: plus(revision(), fReal), {"REAL", "RERIP"}: plus(revision(), fReal),
 		{"READ", "NFO"}: misc(), {"H", "SBS"}: flag(f3D | fStrip), {"HALF", "SBS"}: flag(f3D | fStrip), {"H", "OU"}: flag(f3D | fStrip),
 		{"HALF", "OU"}: flag(f3D | fStrip), {"FULL", "SBS"}: flag(f3D | fStrip),
+		{"MAKING", "OF"}: flag(fExtras), {"DIR", "FIX"}: fix(FixDir), {"NFO", "FIX"}: fix(FixNFO),
+		{"SAMPLE", "FIX"}: fix(FixSample), {"SUB", "FIX"}: fix(FixSub), {"SYNC", "FIX"}: fix(FixSync),
+		{"PROOF", "FIX"}: fix(FixProof),
 	}
 	return m
 }

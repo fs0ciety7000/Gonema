@@ -165,6 +165,7 @@ type Code string
 const (
 	CodeTitleMismatch     Code = "title_mismatch"
 	CodeYearMismatch      Code = "year_mismatch"
+	CodeNotAMovie         Code = "not_a_movie"
 	CodeUnknownQuality    Code = "unknown_quality"
 	CodeQualityNotAllowed Code = "quality_not_allowed"
 	CodeWrongLanguage     Code = "wrong_language"

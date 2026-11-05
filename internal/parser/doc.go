@@ -57,6 +57,14 @@
 //     (REPACK2 adds two); "v2" sets it. Real is set by REAL.PROPER and friends.
 //   - Streaming tags that are common words (MAX, NOW, STAN, MA) are only read
 //     after the title; iT and iP are case-sensitive.
+//   - Scene fixes set Fix (first one wins). DIRFIX re-posts the full release under
+//     a corrected directory name and is still the movie; NFOFIX, SAMPLEFIX,
+//     SUBFIX, SYNCFIX and PROOFFIX are small repair packs, not the movie.
+//     BONUS, EXTRAS, FEATURETTE(S) and MAKING.OF set Extras (a bonus disc or
+//     extras-only release, e.g. "Apocalypse.Now.1979.BONUS.Hearts.of.Darkness...");
+//     SAMPLE sets Sample. ParsedRelease.IsMovie combines them. FEATURETTE(S),
+//     MAKING.OF and SAMPLE are only read after the title, so "Free.Sample.2017"
+//     and "The.Making.Of.Fanny.and.Alexander" keep their titles.
 //
 // # Known limitations
 //

@@ -7,24 +7,25 @@
    Remux-1080p (rank 29) score 0 | usenet NZBGeek p25 | 33.2 GB | guid-27
 03 ACCEPT Alien.Romulus.2024.PROPER.SPANiSH.MULTi.1080p.BluRay.x264-CEBRAY
    Bluray-1080p (rank 28) score 0 | usenet DrunkenSlug p10 | 8.1 GB | guid-35
-04 ACCEPT Alien.Romulus.2024.German.DL.1080p.BluRay.x264.SAMPLEFiX-GMA
-   Bluray-1080p (rank 28) score 0 | usenet NZBGeek p25 | 3.3 GB | guid-03
-05 ACCEPT Alien.Romulus.2024.1080p.NF.WEB-DL.DDP5.1.Atmos.H.264-GROUP
+04 ACCEPT Alien.Romulus.2024.1080p.NF.WEB-DL.DDP5.1.Atmos.H.264-GROUP
    WEBDL-1080p (rank 27) score 0 | usenet DrunkenSlug p10 | 10.2 GB | guid-29
-06 ACCEPT Alien.Romulus.2024.1080p.AMZN.WEBRip.DDP5.1.x264-GROUP
+05 ACCEPT Alien.Romulus.2024.1080p.AMZN.WEBRip.DDP5.1.x264-GROUP
    WEBRip-1080p (rank 27) score 0 | usenet NZBGeek p25 | 4.6 GB | guid-30
-07 REJECT Aliens.1986.Directors.Cut.1080p.BluRay.x264-GROUP
+06 REJECT Aliens.1986.Directors.Cut.1080p.BluRay.x264-GROUP
    Bluray-1080p (rank 28) score 5 | torrent TorrentLeech p25 38 seeders | 8.1 GB | guid-25
    score +5 Freeleech
    - title_mismatch (permanent): Title "Aliens" does not match "Alien: Romulus"
    - year_mismatch (permanent): Year 1986 does not match 2024 (±1 tolerated)
-08 REJECT Alien.Romulus.2024.MULTi.TRUEFRENCH.1080p.BluRay.x264-Ulysse
+07 REJECT Alien.Romulus.2024.MULTi.TRUEFRENCH.1080p.BluRay.x264-Ulysse
    Bluray-1080p (rank 28) score 0 | usenet DrunkenSlug p10 | 8.1 GB | guid-05
    - already_grabbed (temporary): Release is already in the download queue or was already grabbed
-09 REJECT Aliens.1986.SE.1080p.BluRay.H264-TAPPAD
+08 REJECT Aliens.1986.SE.1080p.BluRay.H264-TAPPAD
    Bluray-1080p (rank 28) score 0 | usenet DrunkenSlug p10 | 10.6 GB | guid-17
    - title_mismatch (permanent): Title "Aliens" does not match "Alien: Romulus"
    - year_mismatch (permanent): Year 1986 does not match 2024 (±1 tolerated)
+09 REJECT Alien.Romulus.2024.German.DL.1080p.BluRay.x264.SAMPLEFiX-GMA
+   Bluray-1080p (rank 28) score 0 | usenet NZBGeek p25 | 3.3 GB | guid-03
+   - not_a_movie (permanent): SAMPLEFIX releases only contain a repaired sample, not the movie
 10 REJECT Aliens.1986.THEATRiCAL.1080p.BluRay.H264-TAPPAD
    Bluray-1080p (rank 28) score 0 | usenet NZBGeek p25 | 3.3 GB | guid-18
    - title_mismatch (permanent): Title "Aliens" does not match "Alien: Romulus"
