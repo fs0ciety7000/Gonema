@@ -560,33 +560,38 @@ button.score:hover { box-shadow: inset 0 0 0 1px currentColor; }
 /* 3.19 Poster card ------------------------------------------------------------------------
    Poster is the hero; chrome appears on hover/focus. States via data-state:
    available | missing | downloading | failed | upgraded | unmonitored | skeleton */
-.pc { position: relative; min-width: 0; display: grid; gap: 10px; outline: none; color: inherit; text-decoration: none; }
-.pc:hover { text-decoration: none; }
+.pc { position: relative; min-width: 0; display: grid; gap: 10px; color: inherit; }
 .pc-frame { position: relative; aspect-ratio: 2 / 3; border-radius: var(--radius-poster); overflow: hidden; background: var(--bg-raised); box-shadow: var(--elev-poster); transform: translateY(0) scale(1); transition: transform var(--spring-gentle-dur) var(--spring-gentle), box-shadow var(--dur-slow) var(--ease-out); isolation: isolate; }
-.pc-frame::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(255, 244, 232, 0.08); pointer-events: none; z-index: 3; }
-.pc-frame .poster-art, .pc-frame .poster-art svg { width: 100%; height: 100%; }
-.pc-shade { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(10, 8, 7, 0.55) 0%, rgba(10, 8, 7, 0) 28%, rgba(10, 8, 7, 0) 52%, rgba(10, 8, 7, 0.86) 100%); opacity: 0; transition: opacity var(--dur-base) var(--ease-standard); }
-.pc-top { position: absolute; z-index: 2; top: 8px; left: 8px; right: 8px; display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
-.pc-bottom { position: absolute; z-index: 2; left: 10px; right: 10px; bottom: 10px; display: grid; gap: 6px; color: var(--ink-on-poster); }
-.pc-select { opacity: 0; transition: opacity var(--dur-fast); }
+.pc-frame::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(255, 244, 232, 0.08); pointer-events: none; z-index: 4; }
+.pc-link { position: absolute; inset: 0; z-index: 0; display: block; border-radius: inherit; }
+.pc-link:focus-visible { box-shadow: none; }
+.pc-frame .poster-art, .pc-frame .poster-art svg { width: 100%; height: 100%; transition: filter var(--dur-base), opacity var(--dur-base); }
+.pc-shade { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(180deg, rgba(10, 8, 7, 0.5) 0%, rgba(10, 8, 7, 0) 26%, rgba(10, 8, 7, 0) 46%, rgba(10, 8, 7, 0.9) 100%); opacity: 0; transition: opacity var(--dur-base) var(--ease-standard); }
+.pc-top { position: absolute; z-index: 2; top: 8px; left: 8px; right: 8px; display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; pointer-events: none; }
+.pc-top > * { pointer-events: auto; }
+.pc-bottom { position: absolute; z-index: 2; left: 10px; right: 10px; bottom: 10px; display: grid; gap: 8px; color: var(--ink-on-poster); pointer-events: none; }
+.pc-bottom > * { pointer-events: auto; }
+.pc-select { margin-left: auto; opacity: 0; transition: opacity var(--dur-fast); }
 .pc-actions { display: flex; gap: 6px; opacity: 0; transform: translateY(6px); transition: opacity var(--dur-fast) var(--ease-standard), transform var(--dur-base) var(--ease-out); }
 .pc-actions .icon-btn { width: 32px; height: 32px; border-radius: 9px; }
-.pc-hoverinfo { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; opacity: 0; transform: translateY(6px); transition: opacity var(--dur-fast), transform var(--dur-base) var(--ease-out); }
+.pc-actions .icon-btn:last-child { margin-left: auto; }
+.pc-hoverinfo { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; opacity: 0; transform: translateY(6px); transition: opacity var(--dur-fast), transform var(--dur-base) var(--ease-out); pointer-events: none; }
 .pc-hoverinfo .qbadge { border-color: rgba(255, 244, 232, 0.3); color: rgba(247, 240, 230, 0.86); background: rgba(18, 16, 14, 0.5); }
 .pc-hoverinfo .qbadge b { color: #F7F0E6; background: rgba(255, 244, 232, 0.14); }
+.pc-hoverinfo .hdr-flag { color: rgba(247, 240, 230, 0.9); border-color: rgba(255, 244, 232, 0.3); background: rgba(18, 16, 14, 0.5); }
 .pc-meta { display: grid; gap: 2px; padding: 0 2px; min-width: 0; }
 .pc-title { font: 600 14px/20px var(--font-ui); letter-spacing: -0.005em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pc-sub { display: flex; align-items: center; gap: 8px; font: var(--type-body-sm); color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 0; }
 .pc-sub .status { font-size: 12.5px; }
 .pc-sub .sep { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: 0.6; flex: none; }
-/* hover / focus */
-.pc:hover .pc-frame, .pc.is-hover .pc-frame, .pc:focus-visible .pc-frame { transform: translateY(-4px) scale(1.015); box-shadow: var(--elev-poster-hover); }
-.pc:hover .pc-shade, .pc.is-hover .pc-shade, .pc:focus-visible .pc-shade, .pc:focus-within .pc-shade { opacity: 1; }
-.pc:hover .pc-select, .pc.is-hover .pc-select, .pc:focus-within .pc-select, .pc.is-selected .pc-select, .selecting .pc-select { opacity: 1; }
-.pc:hover .pc-actions, .pc.is-hover .pc-actions, .pc:focus-within .pc-actions, .pc:hover .pc-hoverinfo, .pc.is-hover .pc-hoverinfo, .pc:focus-within .pc-hoverinfo { opacity: 1; transform: none; }
-.pc:focus-visible { box-shadow: none; }
-.pc:focus-visible .pc-frame { box-shadow: var(--focus-ring), var(--elev-poster-hover); }
-.pc:active .pc-frame { transform: translateY(-2px) scale(0.99); transition-duration: var(--dur-instant); }
+/* hover / focus (focus = keyboard on the poster link or any control inside) */
+.pc:hover .pc-frame, .pc.is-hover .pc-frame, .pc:has(:focus-visible) .pc-frame { transform: translateY(-4px) scale(1.015); box-shadow: var(--elev-poster-hover); }
+.pc:hover .pc-shade, .pc.is-hover .pc-shade, .pc:has(:focus-visible) .pc-shade { opacity: 1; }
+.pc:hover .pc-select, .pc.is-hover .pc-select, .pc:has(:focus-visible) .pc-select, .pc.is-selected .pc-select, .selecting .pc-select { opacity: 1; }
+.pc:hover .pc-actions, .pc.is-hover .pc-actions, .pc:has(:focus-visible) .pc-actions, .pc:hover .pc-hoverinfo, .pc.is-hover .pc-hoverinfo, .pc:has(:focus-visible) .pc-hoverinfo { opacity: 1; transform: none; }
+.pc:has(.pc-link:focus-visible) .pc-frame, .pc.is-focus .pc-frame { box-shadow: var(--focus-ring), var(--elev-poster-hover); }
+.pc:has(.pc-link:active) .pc-frame { transition-duration: var(--dur-instant); }
+.pc:has(.pc-link:active) .pc-frame { transform: translateY(-2px) scale(0.99); }
 /* selected */
 .pc.is-selected .pc-frame { box-shadow: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--accent), var(--elev-poster-hover); transform: scale(0.97); }
 .pc.is-selected .pc-frame .poster-art { opacity: 0.88; }
@@ -596,10 +601,11 @@ button.score:hover { box-shadow: inset 0 0 0 1px currentColor; }
 .pc[data-state="unmonitored"] .pc-frame .poster-art { filter: grayscale(0.85) brightness(0.62); }
 .pc[data-state="unmonitored"] .pc-title { color: var(--text-secondary); }
 /* downloading: progress lives on the poster foot, always visible */
-.pc-progress { position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; padding: 28px 10px 10px; background: linear-gradient(180deg, transparent, rgba(10, 8, 7, 0.82)); color: var(--ink-on-poster); display: grid; gap: 6px; font: 500 12px/1 var(--font-ui); font-variant-numeric: tabular-nums; }
+.pc-progress { position: absolute; z-index: 2; pointer-events: none; left: 0; right: 0; bottom: 0; padding: 28px 10px 10px; background: linear-gradient(180deg, transparent, rgba(10, 8, 7, 0.82)); color: var(--ink-on-poster); display: grid; gap: 6px; font: 500 12px/1 var(--font-ui); font-variant-numeric: tabular-nums; }
 .pc-progress .row { display: flex; justify-content: space-between; }
 .pc-progress .progress { --c: #5EC4D6; background: rgba(255, 244, 232, 0.18); height: 4px; }
-.pc:hover .pc-progress, .pc.is-hover .pc-progress { opacity: 0; }
+.pc-progress { transition: opacity var(--dur-fast); }
+.pc:hover .pc-progress, .pc.is-hover .pc-progress, .pc:has(:focus-visible) .pc-progress { opacity: 0; }
 /* failed: thin rule on top of the poster, readable reason on hover */
 .pc[data-state="failed"] .pc-frame::before { content: ""; position: absolute; z-index: 2; left: 0; right: 0; top: 0; height: 3px; background: var(--status-failed); }
 /* skeleton */
