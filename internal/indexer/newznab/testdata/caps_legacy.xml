@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<caps>
+  <server version="0.1" title="Legacy Indexer"/>
+  <limits max="50" default="25"/>
+  <searching>
+    <search available="yes"/>
+  </searching>
+  <categories>
+    <category id="2000" name="Movies"/>
+  </categories>
+</caps>

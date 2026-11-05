@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:newznab="http://www.newznab.com/DTD/2010/feeds/attributes/">
+<channel>
+  <atom:link href="https://indexer.example/api" rel="self" type="application/rss+xml"/>
+  <title>indexer.example</title>
+  <description>indexer.example API results</description>
+  <link>https://indexer.example/</link>
+  <newznab:response offset="0" total="3"/>
+  <item>
+    <title>Fight.Club.1999.1080p.BluRay.x264-GROUP</title>
+    <guid isPermaLink="true">https://indexer.example/details/e9c515e02346086e3a477a5436d7bc8c</guid>
+    <link>https://indexer.example/getnzb/e9c515e02346086e3a477a5436d7bc8c.nzb&amp;i=1&amp;r=REDACTED</link>
+    <comments>https://indexer.example/details/e9c515e02346086e3a477a5436d7bc8c#comments</comments>
+    <pubDate>Sun, 06 Jun 2021 17:29:23 +0100</pubDate>
+    <category>Movies &gt; HD</category>
+    <description>Fight.Club.1999.1080p.BluRay.x264-GROUP</description>
+    <enclosure url="https://indexer.example/getnzb/e9c515e02346086e3a477a5436d7bc8c.nzb&amp;i=1&amp;r=REDACTED" length="10737418240" type="application/x-nzb"/>
+    <newznab:attr name="category" value="2000"/>
+    <newznab:attr name="category" value="2040"/>
+    <newznab:attr name="category" value="2040"/>
+    <newznab:attr name="size" value="10737418240"/>
+    <newznab:attr name="grabs" value="42"/>
+    <newznab:attr name="usenetdate" value="Sat, 05 Jun 2021 10:00:00 +0000"/>
+    <newznab:attr name="imdb" value="0137523"/>
+    <newznab:attr name="tmdbid" value="550"/>
+    <newznab:attr name="team" value="GROUP"/>
+  </item>
+  <item>
+    <title>Fight Club 1999 2160p UHD BluRay REMUX HDR HEVC Atmos-GRP2</title>
+    <guid isPermaLink="false">a1b2c3d4e5f60718293a4b5c6d7e8f90</guid>
+    <link>https://indexer.example/getnzb/a1b2c3d4e5f60718293a4b5c6d7e8f90.nzb</link>
+    <pubDate>Mon, 7 Jun 2021 08:00:00 GMT</pubDate>
+    <enclosure url="https://indexer.example/getnzb/a1b2c3d4e5f60718293a4b5c6d7e8f90.nzb" length="64424509440" type="application/x-nzb"/>
+    <newznab:attr name="category" value="2045"/>
+    <newznab:attr name="imdb" value="tt0137523"/>
+  </item>
+  <item>
+    <title></title>
+    <guid>no-title-item</guid>
+    <link>https://indexer.example/getnzb/x.nzb</link>
+  </item>
+</channel>
+</rss>
