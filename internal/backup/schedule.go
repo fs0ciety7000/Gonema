@@ -29,7 +29,7 @@ type Settings struct {
 	IncludeKey    bool `json:"includeKey" doc:"Also store gonema.key in scheduled backups. Warning: whoever gets such an archive can decrypt every stored secret"`
 }
 
-// DefaultSettings: weekly, keep 4.
+// DefaultSettings returns the defaults: weekly, keep 4.
 func DefaultSettings() Settings { return Settings{Enabled: true, IntervalHours: 168, Keep: 4} }
 
 // Validate checks the ranges.
@@ -114,7 +114,7 @@ type failure struct {
 
 // LastScheduledFailure returns the error of the last scheduled backup of this
 // process when it failed, and when (nil when it succeeded or never ran).
-func (s *Service) LastScheduledFailure() (error, time.Time) { //nolint:revive,staticcheck // (error, time) reads naturally here
+func (s *Service) LastScheduledFailure() (error, time.Time) { //nolint:staticcheck // (error, time) reads naturally here
 	if f := s.lastFailure.Load(); f != nil {
 		return f.err, f.at
 	}

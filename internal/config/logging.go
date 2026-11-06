@@ -37,7 +37,7 @@ type LogOutput struct {
 	Buffer    int
 }
 
-// DefaultLogOutput: no file, 10 MB, keep 5, 2000 entries in memory.
+// DefaultLogOutput returns the defaults: no file, 10 MB, keep 5, 2000 entries in memory.
 func DefaultLogOutput() LogOutput { return LogOutput{MaxSizeMB: 10, Keep: 5, Buffer: 2000} }
 
 type logFlags struct{ file, size, keep, buffer *string }

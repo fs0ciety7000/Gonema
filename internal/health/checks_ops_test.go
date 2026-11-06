@@ -21,7 +21,7 @@ type fakeBackup struct {
 	at  time.Time
 }
 
-func (f fakeBackup) LastScheduledFailure() (error, time.Time) { return f.err, f.at } //nolint:revive,staticcheck // mirrors the interface
+func (f fakeBackup) LastScheduledFailure() (error, time.Time) { return f.err, f.at } //nolint:staticcheck // mirrors the interface
 
 func TestImportJournalCheck(t *testing.T) {
 	ctx := context.Background()

@@ -63,16 +63,16 @@ func (e *env) closeStore() {
 	}
 }
 
-func (e *env) set(k, v string) {
+func (e *env) set(v string) {
 	e.t.Helper()
-	if err := store.SetSetting(e.ctx, e.st, k, v); err != nil {
+	if err := store.SetSetting(e.ctx, e.st, "probe", v); err != nil {
 		e.t.Fatal(err)
 	}
 }
 
-func (e *env) get(k string) string {
+func (e *env) get() string {
 	e.t.Helper()
-	v, err := store.GetSetting[string](e.ctx, e.st, k)
+	v, err := store.GetSetting[string](e.ctx, e.st, "probe")
 	if err != nil {
 		e.t.Fatal(err)
 	}
@@ -104,7 +104,7 @@ func zipEntries(t *testing.T, p string) map[string][]byte {
 
 func TestCreateListOpenDelete(t *testing.T) {
 	e := newEnv(t)
-	e.set("probe", "v1")
+	e.set("v1")
 	in, err := e.svc.Create(e.ctx, KindManual, false)
 	if err != nil {
 		t.Fatal(err)
@@ -225,12 +225,12 @@ func TestPrune(t *testing.T) {
 
 func TestStageAndApplyRestore(t *testing.T) {
 	e := newEnv(t)
-	e.set("probe", "old")
+	e.set("old")
 	b, err := e.svc.Create(e.ctx, KindManual, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	e.set("probe", "new")
+	e.set("new")
 	e.now = e.now.Add(time.Minute)
 
 	if _, err := e.svc.StageRestore(e.ctx, b.Name, false, false); !errors.Is(err, ErrConfirmRequired) {
@@ -249,7 +249,7 @@ func TestStageAndApplyRestore(t *testing.T) {
 	if p, err := e.svc.PendingRestore(); err != nil || p == nil || p.Name != b.Name {
 		t.Errorf("pending = %+v %v", p, err)
 	}
-	if e.get("probe") != "new" {
+	if e.get() != "new" {
 		t.Error("the live database changed before the restart")
 	}
 
@@ -262,7 +262,7 @@ func TestStageAndApplyRestore(t *testing.T) {
 		t.Errorf("second apply = %+v %v", p, err)
 	}
 	e.openStore()
-	if got := e.get("probe"); got != "old" {
+	if got := e.get(); got != "old" {
 		t.Errorf("after restore probe = %q, want old", got)
 	}
 	// The pre-restore backup holds the state before the restore.
@@ -274,7 +274,7 @@ func TestStageAndApplyRestore(t *testing.T) {
 		t.Fatal(err)
 	}
 	e.openStore()
-	if got := e.get("probe"); got != "new" {
+	if got := e.get(); got != "new" {
 		t.Errorf("after restoring the pre-restore backup probe = %q, want new", got)
 	}
 	if _, err := os.Stat(filepath.Join(e.dir, KeyFile)); err != nil {
@@ -415,7 +415,7 @@ func TestImportValidates(t *testing.T) {
 
 func TestApplyPendingResumesAfterCrash(t *testing.T) {
 	e := newEnv(t)
-	e.set("probe", "old")
+	e.set("old")
 	b, err := e.svc.Create(e.ctx, KindManual, false)
 	if err != nil {
 		t.Fatal(err)
@@ -440,7 +440,7 @@ func TestApplyPendingResumesAfterCrash(t *testing.T) {
 		t.Error("marker left")
 	}
 	e.openStore()
-	if e.get("probe") != "old" {
+	if e.get() != "old" {
 		t.Error("restored database lost")
 	}
 }

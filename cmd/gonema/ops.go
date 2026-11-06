@@ -156,11 +156,11 @@ func openForOps(ctx context.Context, dataDir string, getenv func(string) string)
 }
 
 func runBackup(ctx context.Context, args []string, stdout, stderr io.Writer, getenv func(string) string) int {
-	fs := flag.NewFlagSet("gonema backup", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	dataDir := fs.String("data-dir", defaultDataDir(getenv), "data directory ("+config.EnvDataDir+")")
-	includeKey := fs.Bool("include-key", false, "also store the master key ("+backup.KeyFile+") in the archive: whoever has the archive can then decrypt every stored secret")
-	if err := fs.Parse(args); err != nil {
+	fl := flag.NewFlagSet("gonema backup", flag.ContinueOnError)
+	fl.SetOutput(stderr)
+	dataDir := fl.String("data-dir", defaultDataDir(getenv), "data directory ("+config.EnvDataDir+")")
+	includeKey := fl.Bool("include-key", false, "also store the master key ("+backup.KeyFile+") in the archive: whoever has the archive can then decrypt every stored secret")
+	if err := fl.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return 0
 		}
@@ -187,27 +187,27 @@ func runBackup(ctx context.Context, args []string, stdout, stderr io.Writer, get
 }
 
 func runRestore(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer, getenv func(string) string) int {
-	fs := flag.NewFlagSet("gonema restore", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	dataDir := fs.String("data-dir", defaultDataDir(getenv), "data directory ("+config.EnvDataDir+")")
-	restoreKey := fs.Bool("restore-key", false, "also restore the master key from the archive (when it includes one)")
-	yes := fs.Bool("yes", false, "do not ask for confirmation")
-	fs.Usage = func() {
+	fl := flag.NewFlagSet("gonema restore", flag.ContinueOnError)
+	fl.SetOutput(stderr)
+	dataDir := fl.String("data-dir", defaultDataDir(getenv), "data directory ("+config.EnvDataDir+")")
+	restoreKey := fl.Bool("restore-key", false, "also restore the master key from the archive (when it includes one)")
+	yes := fl.Bool("yes", false, "do not ask for confirmation")
+	fl.Usage = func() {
 		_, _ = fmt.Fprintln(stderr, "usage: gonema restore [-data-dir DIR] [-restore-key] [-yes] <archive.zip>\n"+
 			"Validates the archive, backs up the current database, and stages the restore: it is applied when Gonema next starts.")
-		fs.PrintDefaults()
+		fl.PrintDefaults()
 	}
-	if err := fs.Parse(args); err != nil {
+	if err := fl.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return 0
 		}
 		return 2
 	}
-	if fs.NArg() != 1 {
-		fs.Usage()
+	if fl.NArg() != 1 {
+		fl.Usage()
 		return 2
 	}
-	archive := fs.Arg(0)
+	archive := fl.Arg(0)
 	if !*yes {
 		_, _ = fmt.Fprintf(stdout, "Restore %s? It replaces the whole database (library, settings, history) when Gonema next starts.\nType yes to continue: ", archive)
 		line, _ := bufio.NewReader(stdin).ReadString('\n')
@@ -259,15 +259,15 @@ func mustAbs(p string) string {
 // runHealthcheck asks /health of the local server: exit 0 when it answers 200.
 // It is the HEALTHCHECK of the Docker image, which has no shell nor curl.
 func runHealthcheck(ctx context.Context, args []string, stdout, stderr io.Writer, getenv func(string) string) int {
-	fs := flag.NewFlagSet("gonema healthcheck", flag.ContinueOnError)
-	fs.SetOutput(stderr)
+	fl := flag.NewFlagSet("gonema healthcheck", flag.ContinueOnError)
+	fl.SetOutput(stderr)
 	bind := strings.TrimSpace(getenv(config.EnvBind))
 	if bind == "" {
 		bind = config.Defaults(inContainer()).Bind
 	}
-	url := fs.String("url", healthURL(bind), "URL of /health")
-	timeout := fs.Duration("timeout", 3*time.Second, "time limit")
-	if err := fs.Parse(args); err != nil {
+	url := fl.String("url", healthURL(bind), "URL of /health")
+	timeout := fl.Duration("timeout", 3*time.Second, "time limit")
+	if err := fl.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return 0
 		}
@@ -275,7 +275,7 @@ func runHealthcheck(ctx context.Context, args []string, stdout, stderr io.Writer
 	}
 	ctx, cancel := context.WithTimeout(ctx, *timeout)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, *url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, *url, http.NoBody)
 	if err != nil {
 		_, _ = fmt.Fprintln(stderr, "gonema: healthcheck:", err)
 		return 2

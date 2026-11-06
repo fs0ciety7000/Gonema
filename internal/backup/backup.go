@@ -473,9 +473,10 @@ func readManifest(p string) (*Manifest, error) {
 		if err != nil {
 			return nil, userErr(ErrInvalid, err, "The manifest of this archive cannot be read")
 		}
-		defer func() { _ = r.Close() }()
 		var m Manifest
-		if err := json.NewDecoder(io.LimitReader(r, 1<<20)).Decode(&m); err != nil {
+		err = json.NewDecoder(io.LimitReader(r, 1<<20)).Decode(&m)
+		_ = r.Close()
+		if err != nil {
 			return nil, userErr(ErrInvalid, err, "The manifest of this archive is not valid JSON")
 		}
 		return &m, nil

@@ -35,7 +35,8 @@ func ImportJournalCheck(src JournalSource) Check {
 				return nil, err
 			}
 			issues := make([]Issue, 0, len(entries))
-			for _, e := range entries {
+			for i := range entries {
+				e := &entries[i]
 				issues = append(issues, Issue{
 					ID: "import.interrupted:" + strconv.FormatInt(e.ID, 10), Severity: Warning,
 					Title: "An import was interrupted and needs a check",

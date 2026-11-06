@@ -215,7 +215,7 @@ func TestLogRoutes(t *testing.T) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", e.ts.URL+"/api/v1/logs/stream?level=info", http.NoBody)
 	req.Header.Set(APIKeyHeader, e.apiKey)
 	req.Header.Set("Last-Event-ID", "1")
-	resp, err := e.ts.Client().Do(req)
+	resp, err := e.ts.Client().Do(req) //nolint:bodyclose // closed by the defer below
 	if err != nil {
 		t.Fatal(err)
 	}
