@@ -1,0 +1,92 @@
+/// <reference types="vitest/config" />
+import { fileURLToPath, URL } from 'node:url';
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
+import { defineConfig, type Plugin } from 'vite';
+
+const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+
+/** Preloads the Latin font files so text renders in its final face on first paint. */
+function preloadFonts(): Plugin {
+  return {
+    name: 'gonema-preload-fonts',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(_html, ctx) {
+        const files = Object.keys(ctx.bundle ?? {}).filter((f) =>
+          /(archivo-latin-wdth-normal|geist-latin-wght-normal|geist-mono-latin-wght-normal)[^/]*\.woff2$/.test(f),
+        );
+        return files.map((f) => ({
+          tag: 'link',
+          attrs: { rel: 'preload', href: `./${f}`, as: 'font', type: 'font/woff2', crossorigin: '' },
+          injectTo: 'head' as const,
+        }));
+      },
+    },
+  };
+}
+
+/** gonema.css starts with `@import url("../../brand/kit/tokens.css")`; tokens.css is
+ *  imported explicitly by app.css, so the nested (and unresolvable) import is removed. */
+function dropNestedTokenImport(): Plugin {
+  const re = /@import\s+(?:url\()?["']?\.\.\/\.\.\/brand\/kit\/tokens\.css["']?\)?\s*;/g;
+  return {
+    name: 'gonema-drop-nested-token-import',
+    enforce: 'post',
+    transform(code, id) {
+      if (!/\.css($|\?)/.test(id) || !code.includes('brand/kit/tokens.css')) return null;
+      return { code: code.replace(re, ''), map: null };
+    },
+    generateBundle(_opts, bundle) {
+      for (const asset of Object.values(bundle)) {
+        if (asset.type === 'asset' && asset.fileName.endsWith('.css') && typeof asset.source === 'string') {
+          asset.source = asset.source.replace(re, '');
+        }
+      }
+    },
+  };
+}
+
+/** The Go server injects <base href> (GONEMA_BASE_URL) into index.html; the dev server gets "/". */
+function devBaseHref(): Plugin {
+  return {
+    name: 'gonema-dev-base-href',
+    apply: 'serve',
+    transformIndexHtml: () => [{ tag: 'base', attrs: { href: '/' }, injectTo: 'head-prepend' }],
+  };
+}
+
+export default defineConfig(({ mode }) => ({
+  // Relative base: the Go server may serve the SPA under GONEMA_BASE_URL.
+  base: './',
+  plugins: [react(), tailwindcss(), dropNestedTokenImport(), preloadFonts(), devBaseHref()],
+  resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+  define: {
+    // Dev-only screens (/__system, unbuilt sections) are compiled out of production builds.
+    __GONEMA_DEV__: JSON.stringify(mode !== 'production' || process.env.GONEMA_DEV_SCREENS === '1'),
+  },
+  server: {
+    port: 5173,
+    fs: { allow: [repoRoot] },
+    proxy: { '/api': { target: process.env.GONEMA_API ?? 'http://127.0.0.1:7676', changeOrigin: false } },
+  },
+  preview: {
+    proxy: { '/api': { target: process.env.GONEMA_API ?? 'http://127.0.0.1:7676', changeOrigin: false } },
+  },
+  build: {
+    target: 'es2023',
+    outDir: 'dist',
+    emptyOutDir: true,
+    sourcemap: false,
+    assetsInlineLimit: 0,
+    reportCompressedSize: true,
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./vitest.setup.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
+    css: false,
+    restoreMocks: true,
+  },
+}));

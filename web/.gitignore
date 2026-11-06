@@ -1,0 +1,5 @@
+node_modules/
+dist/
+tools/openapi/node_modules/
+e2e/__screenshots__/*.png.diff
+test-results/

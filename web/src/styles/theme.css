@@ -1,0 +1,59 @@
+/* Tailwind theme = the design tokens, by reference only (no value is re-typed).
+   Every default Tailwind token is dropped so a utility can only resolve to a
+   Gonema token. `reference` keeps Tailwind from emitting variables that would
+   shadow the brand ones (e.g. --radius-md, --ease-out). */
+@theme {
+  --*: initial;
+}
+@theme inline reference {
+  --spacing: var(--space-1);
+
+  --color-base: var(--bg-base);
+  --color-raised: var(--bg-raised);
+  --color-sunken: var(--bg-sunken);
+  --color-overlay: var(--bg-overlay);
+  --color-hover: var(--bg-hover);
+  --color-active: var(--bg-active);
+  --color-selected: var(--bg-selected);
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-muted: var(--text-muted);
+  --color-disabled: var(--text-disabled);
+  --color-accent: var(--accent);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-line-control: var(--border-control);
+  --color-downloading: var(--status-downloading);
+  --color-missing: var(--status-missing);
+  --color-upgraded: var(--status-upgraded);
+  --color-failed: var(--status-failed);
+  --color-available: var(--status-available);
+  --color-tint: var(--movie-tint);
+
+  --font-display: var(--font-display);
+  --font-ui: var(--font-ui);
+  --font-mono: var(--font-mono);
+
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-poster: var(--radius-poster);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-pill: var(--radius-pill);
+
+  --shadow-1: var(--elev-1);
+  --shadow-2: var(--elev-2);
+  --shadow-3: var(--elev-3);
+  --shadow-4: var(--elev-4);
+
+  --ease-out: var(--ease-out);
+  --ease-in-out: var(--ease-in-out);
+  --ease-standard: var(--ease-standard);
+  --ease-exit: var(--ease-exit);
+
+  --breakpoint-desk: 1101px;
+}
+/* Tablet = the design's max-width breakpoint (sidebar becomes a rail). */
+@custom-variant tablet (@media (max-width: 1100px));
