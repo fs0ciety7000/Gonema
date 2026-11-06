@@ -200,6 +200,16 @@ Galerie : `docs/design/index.html`. Captures 1440 × 900 en sombre et en clair :
 | `docs/design/mockups/error.html` | Serveur injoignable, reconnexion | — |
 | `docs/design/mockups/failed-download.html` | Détail d'un téléchargement échoué | — |
 
+**Ajoutées le 2026-11-06, à valider par le PO** (écrans construits en phase 8 sans maquette) :
+
+| Fichier | Contenu | Variantes |
+|---|---|---|
+| `docs/design/mockups/login.html` | Connexion, « Forgot the password? » | `?state=default·error·throttled` |
+| `docs/design/mockups/onboarding.html` | Étape compte revue : jeton de première installation, force du mot de passe, clé API montrée une fois | `?step=account`, `?step=account&state=key` |
+| `docs/design/mockups/settings-security.html` | Mode de connexion, mot de passe, sessions, clé API, politique sortante, proxys et hôtes | `?dialog=apikey` |
+| `docs/design/mockups/settings-backups.html` | Archives, restauration en attente, planification, clé maître | `?dialog=restore` |
+| `docs/design/mockups/settings-logs.html` | Journal en direct, niveaux, entrée dépliée, valeurs masquées | — |
+
 Paramètres communs : `?theme=light|dark`, `?density=compact`, `?motion=reduce`, `?freeze=1` (boucles figées pour les captures). Les films, personnes, groupes et indexeurs sont **fictifs** ; les posters sont générés en SVG (`docs/design/system/posters.js`).
 
 ## Écarts assumés

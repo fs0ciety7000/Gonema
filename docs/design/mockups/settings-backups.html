@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings · Backups · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: settings › backups. Default: a restore is staged (banner).
+     ?dialog=restore: the restore confirmation, before anything is staged. */
+  /* Settings frame: same as settings-quality.html */
+  .page { padding-top: var(--space-6); max-width: none; }
+  .set { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: var(--space-8); }
+  .snav { position: sticky; top: calc(var(--topbar-h) + 24px); align-self: start; display: grid; gap: 2px; }
+  .snav h2 { font: var(--type-overline); letter-spacing: var(--type-overline-tracking); font-stretch: 125%; text-transform: uppercase; color: var(--text-muted); padding: 0 10px 6px; margin-top: var(--space-4); }
+  .snav h2:first-child { margin-top: 0; }
+  .snav a { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: var(--radius-sm); color: var(--text-secondary); font: 500 13.5px/1 var(--font-ui); }
+  .snav a:hover { background: var(--bg-hover); color: var(--text-primary); text-decoration: none; }
+  .snav a[aria-current="page"] { background: var(--bg-active); color: var(--text-primary); }
+  .snav a .i { width: 16px; height: 16px; color: var(--text-muted); }
+  .shead { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); }
+  .shead h1 { font: var(--type-display-md); letter-spacing: var(--type-display-md-tracking); font-stretch: 125%; }
+  .shead p { color: var(--text-secondary); margin-top: 6px; max-width: 64ch; }
+  .shead .row { flex: none; }
+  @media (max-width: 1100px) {
+    .set { grid-template-columns: minmax(0, 1fr); }
+    .snav { display: none; }
+    .topbar .search { display: none; }
+  }
+
+  .stack-l { display: grid; gap: var(--space-5); min-width: 0; }
+  .explain { font: var(--type-body-sm); color: var(--text-secondary); }
+  .panel-hd .sub { font: var(--type-caption); color: var(--text-muted); font-weight: 400; }
+  .panel-hd h2 .i { color: var(--text-muted); width: 18px; height: 18px; }
+
+  /* Pending restore banner */
+  .pending { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px 16px; border-radius: var(--radius-lg); border: 1px solid color-mix(in srgb, var(--status-missing) 40%, transparent); background: linear-gradient(90deg, color-mix(in srgb, var(--status-missing) 12%, var(--bg-raised)), var(--bg-raised) 70%); box-shadow: var(--elev-2); }
+  .pending .ic { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; background: var(--status-missing-bg); color: var(--status-missing); }
+  .pending .ic .i { width: 20px; height: 20px; }
+  .pending b { display: block; font: 600 14px/20px var(--font-ui); }
+  .pending span.t { font: var(--type-body-sm); color: var(--text-secondary); }
+  .pending .hl { color: var(--text-primary); font-weight: 500; }
+
+  /* Summary tiles */
+  .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+  .tile { display: grid; gap: 4px; padding: 14px 16px; border-radius: var(--radius-lg); background: var(--bg-raised); border: 1px solid var(--border); }
+  .tile .lbl { font: var(--type-caption); color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+  .tile .lbl .i { width: 14px; height: 14px; }
+  .tile .v { font: 600 18px/26px var(--font-ui); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 8px; }
+  .tile .v .status { font-size: 13px; }
+  .tile .s { font: var(--type-caption); color: var(--text-secondary); font-weight: 400; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Backup list */
+  .bk { width: 100%; border-collapse: separate; border-spacing: 0; font: var(--type-body-sm); font-variant-numeric: tabular-nums; }
+  .bk th { height: 32px; padding: 0 10px; text-align: left; font: 500 12px/1 var(--font-ui); color: var(--text-muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .bk td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--text-primary); }
+  .bk tr:last-child td { border-bottom: 0; }
+  .bk th:first-child, .bk td:first-child { padding-left: 0; }
+  .bk th:last-child, .bk td:last-child { padding-right: 0; }
+  .bk .r { text-align: right; }
+  .bk .when { font: 500 14px/20px var(--font-ui); white-space: nowrap; }
+  .bk .fn { display: block; font: var(--type-mono-sm); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; }
+  .bk tbody tr:hover td, .bk tbody tr.is-context td { background: var(--bg-hover); }
+  .bk tbody tr.is-context td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+  .bk tbody tr:is(:hover, .is-context) .fn { color: var(--text-secondary); }
+  .bk tbody tr.is-context td:first-child { padding-left: 10px; }
+  .kind { display: inline-flex; align-items: center; gap: 6px; color: var(--text-secondary); white-space: nowrap; }
+  .kind .i { width: 15px; height: 15px; color: var(--text-muted); }
+  .schema { font: var(--type-mono-sm); color: var(--text-secondary); white-space: nowrap; }
+  .schema small { display: block; font: var(--type-caption); color: var(--text-muted); font-family: var(--font-ui); }
+  .keyc { white-space: nowrap; }
+  .keyc .no { color: var(--text-muted); }
+  .keyc .status { font-size: 12.5px; }
+  .acts { display: flex; gap: 2px; justify-content: flex-end; align-items: center; white-space: nowrap; }
+  .bad td .fn { color: var(--text-secondary); }
+  .problem { display: flex; gap: 6px; align-items: flex-start; margin-top: 3px; font: var(--type-caption); color: var(--status-missing); max-width: 250px; }
+  .problem .i { margin-top: 1px; flex: none; }
+  .problem .i { width: 13px; height: 13px; }
+  .folder { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--border); font: var(--type-caption); color: var(--text-muted); font-weight: 400; }
+  .folder .i { width: 14px; height: 14px; }
+  .folder .t-mono-sm { color: var(--text-secondary); }
+
+  /* Schedule + key */
+  .cols { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+  .form { display: grid; gap: var(--space-4); }
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); }
+  .input .suffix { font: var(--type-body-sm); color: var(--text-muted); white-space: nowrap; }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; }
+  .plain { padding: 12px 14px; border-radius: var(--radius-md); background: var(--bg-selected); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); font: var(--type-body-sm); color: var(--text-secondary); }
+  .plain b { color: var(--text-primary); font-weight: 500; }
+  .sw-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; }
+  .sw-row b { display: block; font: 500 14px/20px var(--font-ui); }
+  .sw-row small { display: block; font: var(--type-caption); color: var(--text-muted); font-weight: 400; margin-top: 2px; }
+  .keypanel { display: grid; gap: var(--space-4); }
+  .keyfig { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; align-items: center; }
+  .keyfig .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--bg-active); color: var(--text-secondary); }
+  .keyfig .ic .i { width: 20px; height: 20px; }
+  .keyfig b { display: block; font: 500 14px/20px var(--font-ui); }
+  .keyfig span { font: var(--type-body-sm); color: var(--text-secondary); }
+  .rules { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; font: var(--type-body-sm); color: var(--text-secondary); }
+  .rules li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; }
+  .rules .i { width: 16px; height: 16px; margin-top: 1px; color: var(--text-muted); }
+  .rules b { color: var(--text-primary); font-weight: 500; }
+
+  /* Restore dialog */
+  .dlg-wrap { position: fixed; inset: 0; z-index: var(--z-dialog); display: grid; place-items: center; padding: 24px; }
+  .dialog.restore { width: min(580px, calc(100vw - 32px)); }
+  .dialog .icon-head.rs { background: var(--status-missing-bg); color: var(--status-missing); }
+  .arch { margin-top: var(--space-4); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--bg-sunken); border: 1px solid var(--border); font: var(--type-caption); color: var(--text-muted); font-weight: 400; }
+  .arch .fn { font: var(--type-mono-sm); color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .arch .ok { color: var(--status-available); display: inline-flex; align-items: center; gap: 4px; font-weight: 500; }
+  .arch .ok .i { width: 13px; height: 13px; }
+  .steps3 { list-style: none; margin: var(--space-5) 0 0; padding: 0; display: grid; gap: 0; counter-reset: s; }
+  .steps3 li { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding-bottom: 14px; }
+  .steps3 li:not(:last-child)::before { content: ""; position: absolute; left: 13.5px; top: 30px; bottom: 2px; width: 1px; background: var(--border-strong); }
+  .steps3 .n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--bg-active); color: var(--text-primary); font: 600 12px/1 var(--font-ui); }
+  .steps3 b { display: block; font: 500 14px/20px var(--font-ui); color: var(--text-primary); margin-top: 3px; }
+  .steps3 span { font: var(--type-body-sm); color: var(--text-secondary); }
+  .steps3 .t-mono-sm { color: var(--text-primary); }
+  .dialog .untouched { display: flex; gap: 8px; align-items: flex-start; padding-top: 12px; border-top: 1px solid var(--border); font: var(--type-caption); color: var(--text-muted); font-weight: 400; }
+  .dialog .untouched .i { width: 14px; height: 14px; flex: none; margin-top: 1px; }
+  [data-dialog="none"] .only-dialog, [data-dialog="restore"] .only-default { display: none !important; }
+
+  @media (max-width: 1100px) {
+    .cols { grid-template-columns: minmax(0, 1fr); }
+    .bk .fn { max-width: 220px; }
+    .bk .col-schema { display: none; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app" id="app" data-dialog="none">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar="settings"></nav>
+  <div class="main">
+    <header class="topbar">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="settings-quality.html?section=index">Settings</a><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg><span aria-current="page">Backups</span></nav>
+      <div class="spacer"></div>
+      <label class="input search" aria-label="Search settings" style="width:260px"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" placeholder="Find a setting…" aria-label="Find a setting"></label>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    </header>
+    <main id="main" class="page">
+      <div class="set">
+        <nav class="snav" aria-label="Settings sections" id="snav"></nav>
+        <div class="stack-l">
+          <div class="shead">
+            <div><h1>Backups</h1><p>Copies of the database, made on a schedule or by hand while Gonema keeps running. A restore takes effect at the next restart.</p></div>
+            <div class="row"><button class="btn btn-secondary" type="button"><svg class="i" aria-hidden="true"><use href="#i-upload"/></svg>Upload…</button><button class="btn btn-primary" type="button"><svg class="i" aria-hidden="true"><use href="#i-hard-drive"/></svg>Back up now</button></div>
+          </div>
+
+          <div class="pending only-default" role="status">
+            <span class="ic"><svg class="i" aria-hidden="true"><use href="#i-archive-restore"/></svg></span>
+            <div><b>A restore is waiting for a restart.</b><span class="t">The backup of <span class="hl">30 Oct, 03:40</span> replaces the current database when Gonema restarts. Staged today at 09:14; until then nothing has changed.</span></div>
+            <button class="btn btn-secondary btn-sm" type="button">Cancel restore</button>
+          </div>
+
+          <div class="tiles">
+            <div class="tile"><span class="lbl"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>Last backup</span><span class="v">Today, 09:14 <span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>OK</span></span><span class="s">Before a restore · 18.3 MB</span></div>
+            <div class="tile"><span class="lbl"><svg class="i" aria-hidden="true"><use href="#i-calendar-clock"/></svg>Schedule</span><span class="v">Every 7 days</span><span class="s">Keeps the 4 newest scheduled backups</span></div>
+            <div class="tile"><span class="lbl"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg>In the folder</span><span class="v">7 archives · 126 MB</span><span class="s">/config/backups</span></div>
+          </div>
+
+          <section class="panel" aria-labelledby="h-list">
+            <div class="panel-hd"><h2 id="h-list"><svg class="i" aria-hidden="true"><use href="#i-database"/></svg>Archives <span class="sub">newest first</span></h2></div>
+            <div class="panel-bd">
+              <table class="bk">
+                <caption class="sr-only">Backup archives</caption>
+                <thead><tr><th scope="col">Made</th><th scope="col">Kind</th><th scope="col" class="r">Size</th><th scope="col" class="col-schema">Schema</th><th scope="col">Master key</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+                <tbody id="rows"></tbody>
+              </table>
+              <div class="folder"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg><span>Stored in <span class="t-mono-sm">/config/backups</span>. Copy them off this machine now and then: a backup on the same disk does not survive the disk.</span></div>
+            </div>
+          </section>
+
+          <div class="cols">
+            <section class="panel" aria-labelledby="h-sched">
+              <div class="panel-hd"><h2 id="h-sched"><svg class="i" aria-hidden="true"><use href="#i-calendar-clock"/></svg>Schedule and retention</h2><span class="t-caption t-muted"><svg class="i i-xs" aria-hidden="true" style="display:inline;vertical-align:-2px"><use href="#i-check"/></svg> Saved</span></div>
+              <div class="panel-bd form">
+                <div class="sw-row"><span><b>Back up on a schedule</b><small>A failed run raises a health issue.</small></span><button class="switch" role="switch" aria-checked="true" type="button" aria-label="Back up on a schedule"><span class="track" aria-hidden="true"></span></button></div>
+                <div class="two">
+                  <div class="field"><label class="field-label" for="every">Every</label><label class="input mono"><input id="every" value="168" inputmode="numeric"><span class="suffix">hours</span></label><div class="presets" role="group" aria-label="Presets"><button class="chip" type="button" aria-pressed="false">Day</button><button class="chip is-on" type="button" aria-pressed="true">Week</button><button class="chip" type="button" aria-pressed="false">Month</button></div></div>
+                  <div class="field"><label class="field-label" for="keep">Keep</label><label class="input mono"><input id="keep" value="4" inputmode="numeric"><span class="suffix">scheduled</span></label><span class="field-hint">1 to 100. Older scheduled ones are deleted after each run.</span></div>
+                </div>
+                <div class="sw-row"><span><b>Include the master key</b><small>Off is safer: with the key inside, whoever gets the file can read every stored password and API key.</small></span><button class="switch" role="switch" aria-checked="false" type="button" aria-label="Include the master key in scheduled backups"><span class="track" aria-hidden="true"></span></button></div>
+                <p class="plain">In plain words: <b>every 7 days</b>, Gonema saves the database and keeps the <b>4 newest</b> scheduled copies, <b>without the master key</b>. Backups made by hand, uploaded or made before a restore stay until you delete them.</p>
+              </div>
+            </section>
+
+            <section class="panel" aria-labelledby="h-mk">
+              <div class="panel-hd"><h2 id="h-mk"><svg class="i" aria-hidden="true"><use href="#i-key-round"/></svg>The master key</h2></div>
+              <div class="panel-bd keypanel">
+                <div class="keyfig"><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg></span><span><b class="t-mono-sm" style="font-size:13px">gonema.key</b>It unlocks the secrets stored in the database: indexer keys, client passwords, the TMDB key.</span></div>
+                <ul class="rules">
+                  <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>Back it up once, somewhere else</b> (a password manager, an offline copy). It never changes.</span></li>
+                  <li><svg class="i" aria-hidden="true"><use href="#i-eye-off"/></svg><span><b>Left out of archives by default.</b> An archive holding both the database and the key unlocks everything.</span></li>
+                  <li><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><span>A backup restored with another key keeps its films and settings; its stored passwords must be entered again.</span></li>
+                </ul>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ?dialog=restore -->
+  <div class="scrim only-dialog"></div>
+  <div class="dlg-wrap only-dialog">
+    <div class="dialog restore" role="dialog" aria-modal="true" aria-labelledby="rs-h" aria-describedby="rs-d">
+      <div class="icon-head rs"><svg class="i i-lg" aria-hidden="true"><use href="#i-archive-restore"/></svg></div>
+      <h2 id="rs-h">Restore the backup of 30 Oct?</h2>
+      <p id="rs-d">Films, settings, history and connections go back to how they were on 30 Oct 2026 at 03:40.</p>
+      <div class="arch"><span class="fn">gonema-backup-20261030-034000-scheduled.zip</span><span class="ok"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>Checked</span><span>Scheduled · 17.9 MB · schema 42 · Gonema 0.1.0</span><span>no master key</span></div>
+      <ol class="steps3">
+        <li><span class="n">1</span><span><b>First, a backup of how things are now</b>Kept as “Before a restore”, so you can come back to today.</span></li>
+        <li><span class="n">2</span><span><b>The master key stays as it is</b>This archive doesn’t hold one. Its stored passwords open with the key that was in use on 30 Oct: this server’s, unless it changed since.</span></li>
+        <li><span class="n">3</span><span><b>It applies at the next restart</b>Nothing changes until Gonema restarts. Until then you can cancel from this page.</span></li>
+      </ol>
+      <div class="untouched"><svg class="i" aria-hidden="true"><use href="#i-film"/></svg>Film files on disk are not touched.</div>
+      <div class="actions"><button class="btn btn-ghost" type="button">Cancel</button><button class="btn btn-danger" type="button"><svg class="i" aria-hidden="true"><use href="#i-archive-restore"/></svg>Back up now, then stage the restore</button></div>
+    </div>
+  </div>
+</div>
+<script src="../system/icons.js"></script>
+<script>
+  const q = new URLSearchParams(location.search);
+  const dlg = q.get('dialog') === 'restore';
+  document.getElementById('app').dataset.dialog = dlg ? 'restore' : 'none';
+  const ic = (n, c) => '<svg class="i ' + (c || '') + '" aria-hidden="true"><use href="#i-' + n + '"/></svg>';
+  const cur = 'backups';
+  const HREF = { index: 'settings-quality.html?section=index', quality: 'settings-quality.html', security: 'settings-security.html', backups: 'settings-backups.html', logs: 'settings-logs.html' };
+  const S = [['General', [['index', 'gauge', 'Overview'], ['', 'film', 'Library &amp; naming'], ['quality', 'sliders-horizontal', 'Quality &amp; scoring'], ['', 'list-checks', 'Import lists']]], ['Connections', [['', 'globe', 'Indexers'], ['', 'arrow-down-to-line', 'Download clients'], ['', 'monitor-play', 'Media servers'], ['', 'bell', 'Notifications']]], ['System', [['security', 'lock', 'Security'], ['backups', 'hard-drive', 'Backups'], ['logs', 'file-video', 'Logs'], ['', 'info', 'About']]]];
+  document.getElementById('snav').innerHTML = S.map(([h, items]) => '<h2>' + h + '</h2>' + items.map(([id, i, l]) => '<a href="' + (HREF[id] || '#') + '"' + (id === cur ? ' aria-current="page"' : '') + '>' + ic(i) + l + '</a>').join('')).join('');
+
+  const KIND = { scheduled: ['calendar-clock', 'Scheduled'], manual: ['hard-drive', 'By hand'], 'pre-restore': ['archive-restore', 'Before a restore'], uploaded: ['upload', 'Uploaded'] };
+  // [when, file, kind, size, schema, version, key, problem, pendingSource]
+  const B = [
+    ['Today, 09:14', 'gonema-backup-20261106-091402-pre-restore.zip', 'pre-restore', '18.3 MB', 42, '0.1.0', false],
+    ['Today, 03:40', 'gonema-backup-20261106-034000-scheduled.zip', 'scheduled', '18.2 MB', 42, '0.1.0', false],
+    ['4 Nov, 22:17', 'gonema-backup-20261104-221715-manual.zip', 'manual', '18.2 MB', 42, '0.1.0', true],
+    ['30 Oct, 03:40', 'gonema-backup-20261030-034000-scheduled.zip', 'scheduled', '17.9 MB', 42, '0.1.0', false, '', true],
+    ['28 Oct, 18:02', 'gonema-backup-20261028-180210-uploaded.zip', 'uploaded', '18.0 MB', 44, '0.2.0', false, 'Made by a newer Gonema (schema 44). Update Gonema first.'],
+    ['23 Oct, 03:40', 'gonema-backup-20261023-034000-scheduled.zip', 'scheduled', '17.6 MB', 41, '0.1.0', false],
+    ['16 Oct, 03:40', 'gonema-backup-20261016-034000-scheduled.zip', 'scheduled', '17.4 MB', 41, '0.1.0', false],
+  ];
+  document.getElementById('rows').innerHTML = B.map(([when, fn, kind, size, schema, ver, key, problem, src]) => {
+    const [ki, kl] = KIND[kind];
+    const cls = [problem ? 'bad' : '', dlg && src ? 'is-context' : ''].join(' ').trim();
+    return '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
+      '<td><span class="when">' + when + (src && !dlg ? ' <span class="badge" data-status="missing" style="margin-left:6px">' + ic('archive-restore') + 'Staged</span>' : '') + '</span><span class="fn" title="' + fn + '">' + fn + '</span>' + (problem ? '<span class="problem">' + ic('triangle-alert') + problem + '</span>' : '') + '</td>' +
+      '<td><span class="kind">' + ic(ki) + kl + '</span></td>' +
+      '<td class="r">' + size + '</td>' +
+      '<td class="col-schema"><span class="schema">' + schema + '<small>Gonema ' + ver + '</small></span></td>' +
+      '<td class="keyc">' + (key ? '<span class="status" data-status="missing">' + ic('key-round') + 'Included</span>' : '<span class="no">Not included</span>') + '</td>' +
+      '<td><div class="acts"><button class="icon-btn sm" type="button" aria-label="Download ' + fn + '" title="Download">' + ic('download', 'i-sm') + '</button>' +
+      '<button class="btn btn-ghost btn-sm" type="button"' + (problem ? ' disabled' : '') + ' aria-label="Restore ' + fn + '…">Restore…</button>' +
+      '<button class="icon-btn sm" type="button" aria-label="Delete ' + fn + '…" title="Delete…">' + ic('trash-2', 'i-sm') + '</button></div></td></tr>';
+  }).join('');
+</script>
+</body>
+</html>

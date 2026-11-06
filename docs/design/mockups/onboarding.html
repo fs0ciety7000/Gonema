@@ -100,6 +100,26 @@
   .flow .t { font: var(--type-caption); color: var(--text-muted); font-variant-numeric: tabular-nums; }
   .search-hit { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--accent); background: var(--bg-selected); }
   .search-hit .poster-art { aspect-ratio: 2/3; border-radius: 5px; overflow: hidden; } .search-hit svg { width: 100%; height: 100%; }
+
+  /* Account step */
+  .pw-lvl { font-weight: 500; color: var(--status-available); }
+  .meter { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .meter span { height: 4px; border-radius: 2px; background: var(--status-available); }
+  .tok-help { display: grid; gap: 6px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--bg-sunken); border: 1px solid var(--border); font: var(--type-caption); font-weight: 400; color: var(--text-secondary); }
+  .tok-help code { font: var(--type-mono-sm); color: var(--text-primary); }
+  code.inl { font: var(--type-mono-sm); color: var(--text-primary); }
+  .key-reveal { display: grid; gap: 14px; padding: 18px; border-radius: var(--radius-lg); background: var(--bg-sunken); border: 1px solid var(--border-strong); max-width: 600px; }
+  .kr-hd { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; align-items: center; }
+  .kr-ic { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; background: var(--bg-active); color: var(--text-primary); }
+  .kr-ic .i { width: 20px; height: 20px; }
+  .kr-hd b { display: block; font: 600 15px/20px var(--font-ui); }
+  .kr-hd span { font: var(--type-body-sm); color: var(--text-secondary); }
+  .kr-val { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 14px; border-radius: var(--radius-md); background: var(--bg-raised); border: 1px dashed var(--border-control); }
+  .kr-val .t-mono { flex: 1; min-width: 0; overflow-wrap: anywhere; color: var(--text-primary); letter-spacing: .01em; }
+  .kr-once { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; font: var(--type-body-sm); color: var(--text-secondary); }
+  .kr-once .i { width: 16px; height: 16px; color: var(--status-missing); margin-top: 1px; }
+  .kr-once b { color: var(--text-primary); font-weight: 600; }
+  [data-acc="form"] .acc-key, [data-acc="form"] .acc-key-btn, [data-acc="key"] .acc-form, [data-acc="key"] .acc-form-btn { display: none !important; }
 </style>
 </head>
 <body>
@@ -138,15 +158,25 @@
     <div class="nav"><span class="hint"><svg class="i i-sm" aria-hidden="true"><use href="#i-info"/></svg>Already have a backup? <a href="#">Restore it instead</a></span><button class="btn btn-primary btn-lg" type="button">Let’s begin<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></div>
   </section>
 
-  <!-- 2 Account -->
+  <!-- 2 Account. ?step=account (form, setup token asked: not on the server itself) | ?step=account&state=key (account made, API key shown once) -->
   <section class="pane" data-step="account" aria-labelledby="h-account" hidden>
-    <div><span class="t-overline">Step 2 · Security</span><h1 id="h-account">Secure the booth</h1><p class="intro">One admin account protects the web interface and the API. You can add more people later.</p></div>
-    <div class="form">
+    <div><span class="t-overline">Step 2 · Security</span><h1 id="h-account">Secure the booth</h1><p class="intro">One admin account protects the web interface and the API. Create it before this server is reachable from other machines.</p></div>
+    <div class="form acc-form">
+      <div class="field"><label class="field-label" for="tok">Setup token</label><label class="input mono"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg><input id="tok" value="7KQ2-MV9D-XR4T-PL8C-2WNA-F6HJ" autocomplete="off" spellcheck="false" aria-describedby="tok-h"></label>
+        <div class="tok-help" id="tok-h"><span>You are not on the server itself, so Gonema asks for proof that you run it. The token is in its log, on the line “no account exists yet”:</span><code>setup=XXXX-XXXX-XXXX-XXXX-XXXX-XXXX</code><span>In Docker: <code class="inl">docker logs gonema</code>. Case, spaces and dashes don’t matter; a new one is made at each start.</span></div></div>
       <div class="field"><label class="field-label" for="u">Username</label><label class="input"><input id="u" value="margaux" autocomplete="username"></label></div>
-      <div class="field"><label class="field-label" for="pw">Password <span class="t-muted" style="font-weight:400">strong</span></label><label class="input"><input id="pw" type="password" value="correct-horse-battery" autocomplete="new-password"><button class="icon-btn sm" type="button" aria-label="Show password"><svg class="i i-sm" aria-hidden="true"><use href="#i-eye"/></svg></button></label><div class="progress" style="--p:.9;--c:var(--status-available);height:4px"><div class="fill"></div></div><span class="field-hint">At least 12 characters. A passphrase is easiest.</span></div>
-      <div class="field"><span class="field-label" id="auth-l">Sign-in method</span><button class="input select" type="button" aria-haspopup="listbox" aria-labelledby="auth-l auth-v"><span class="value" id="auth-v">Login page (recommended)</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button><span class="field-hint">Behind a reverse proxy with its own auth? Choose “External” later in Settings › Security.</span></div>
+      <div class="field"><label class="field-label" for="pw">Password <span class="pw-lvl">strong</span></label><label class="input is-focus"><input id="pw" type="password" value="correct-horse-battery" autocomplete="new-password"><button class="icon-btn sm" type="button" aria-label="Show password"><svg class="i i-sm" aria-hidden="true"><use href="#i-eye"/></svg></button></label><div class="meter" aria-hidden="true"><span></span><span></span><span></span></div><span class="field-hint">At least 10 characters. A passphrase is easiest.</span></div>
+      <p class="t-caption t-muted">Signing in is required on every network. To skip it on a trusted LAN, start Gonema with <span class="t-mono-sm">GONEMA_AUTH=disabled_for_local</span>.</p>
     </div>
-    <div class="nav"><button class="btn btn-ghost" type="button">Back</button><button class="btn btn-primary btn-lg" type="button">Continue<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></div>
+    <div class="form acc-key">
+      <span class="ok-line" role="status"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>Account created. This browser is signed in.</span>
+      <section class="key-reveal" aria-labelledby="kr-h">
+        <div class="kr-hd"><span class="kr-ic"><svg class="i" aria-hidden="true"><use href="#i-key-round"/></svg></span><div><b id="kr-h">Your API key</b><span>For apps and scripts that talk to Gonema, in the <code class="inl">X-Api-Key</code> header.</span></div></div>
+        <div class="kr-val"><span class="t-mono" aria-label="API key">gnm_q7Lx2vR9mT4wKc8ZpN3aHd6YsE1uJb5fG0i-OkV3f9a</span><button class="btn btn-secondary btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg>Copy</button></div>
+        <p class="kr-once"><svg class="i" aria-hidden="true"><use href="#i-eye-off"/></svg><span><b>You won’t see it again.</b> Gonema keeps only a fingerprint. Copy it now; you can make a new one later in Settings › Security.</span></p>
+      </section>
+    </div>
+    <div class="nav"><button class="btn btn-ghost" type="button">Back</button><button class="btn btn-primary btn-lg acc-form-btn" type="button">Create the account<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></button><button class="btn btn-primary btn-lg acc-key-btn" type="button">Continue<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></div>
   </section>
 
   <!-- 3 TMDB -->
@@ -257,7 +287,7 @@
 <script src="../system/posters.js"></script>
 <script src="../system/mock.js"></script>
 <script>
-  const STEPS = [['welcome', 'Welcome', ''], ['account', 'Account', 'Admin login'], ['tmdb', 'Metadata', 'TMDB key'], ['folder', 'Library folder', '/data/movies'], ['client', 'Download client', 'qBittorrent'], ['indexer', 'Indexer', 'Newznab or Torznab'], ['quality', 'Quality', 'Starting profile'], ['film', 'First film', 'Search and grab']];
+  const STEPS = [['welcome', 'Welcome', ''], ['account', 'Account', 'Admin sign-in'], ['tmdb', 'Metadata', 'TMDB key'], ['folder', 'Library folder', '/data/movies'], ['client', 'Download client', 'qBittorrent'], ['indexer', 'Indexer', 'Newznab or Torznab'], ['quality', 'Quality', 'Starting profile'], ['film', 'First film', 'Search and grab']];
   const cur = new URLSearchParams(location.search).get('step') || 'welcome';
   const idx = Math.max(0, STEPS.findIndex(s => s[0] === cur));
   const errAt = cur === 'client' ? 4 : -1;
@@ -269,6 +299,7 @@
   document.getElementById('prog').style.setProperty('--p', (idx + 1) / STEPS.length);
   document.getElementById('prog-t').textContent = 'Step ' + (idx + 1) + ' of ' + STEPS.length;
   document.querySelectorAll('.pane').forEach(p => p.hidden = p.dataset.step !== STEPS[idx][0]);
+  document.querySelector('[data-step="account"]').dataset.acc = new URLSearchParams(location.search).get('state') === 'key' ? 'key' : 'form';
   document.getElementById('brand').innerHTML = GN.MARK + GN.WORDMARK;
   document.getElementById('wall').innerHTML = Object.keys(GN.films).slice(0, 30).map(id => '<div class="poster-art" data-film="' + id + '"></div>').join('');
   GN.renderPosters();
