@@ -1226,7 +1226,13 @@ export function OnboardingScreen() {
                       <span className="sr-only"> (after the account)</span>
                     </span>
                   ) : (
-                    <Link to="/setup" search={{ step: s.id }} aria-current={s.id === step ? 'step' : undefined}>
+                    <Link
+                      to="/setup"
+                      search={{ step: s.id }}
+                      // the router marks its active link "page": a setup step is a "step"
+                      activeProps={{ 'aria-current': s.id === step ? 'step' : undefined }}
+                      aria-current={s.id === step ? 'step' : undefined}
+                    >
                       {body}
                     </Link>
                   )}

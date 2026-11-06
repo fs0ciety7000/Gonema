@@ -282,3 +282,73 @@ messages of the mocked failed sign-ins.
 
 `npm run perf` on the final phase 8 build: grid 59.4 / 28.9 fps, table 60 / 22.0 fps (1× / 4×), first poster 487 ms, CLS 0.002. The machine was shared with
 other builds and tests (load 1.4–9): absolute numbers move between runs, the interleaved comparison does not.
+
+
+---
+
+# Fidelity — phase 8 bis (approved mockups: sign-in, account step, Security, Backups, Logs)
+
+The PO approved `login.html` (`?state=default·error·throttled`), `onboarding.html?step=account` (`&state=key`),
+`settings-security.html` (`?dialog=apikey`), `settings-backups.html` (`?dialog=restore`) and `settings-logs.html`,
+copy included. The screens follow them; the side-by-sides are new: `compare-login-*`, `compare-login-error-*`,
+`compare-login-throttled-*`, `compare-onboarding-account-*`, `compare-onboarding-account-key-*`,
+`compare-settings-security-account-*` (vs `settings-security`), `compare-settings-security-apikey-*`,
+`compare-settings-backups-*`, `compare-settings-backups-restore-*`, `compare-settings-logs-*` (dark and light).
+`settings-security` (local mode, no account) stays app-only.
+
+Accessibility: axe-core 4.14, same tags: **0 violations on 98/98 captures** (49 states × dark + light). Console: only the
+401 / 429 resource messages of the mocked failed sign-ins. `e2e/system.test.mjs` (new) audits the sign-in states, Security,
+the restore dialog and the expanded log entry too.
+
+Mocked for these captures (besides phase 8's sign-in mocks): `onboarding-account*` answer `GET /auth/status` as a browser on
+another machine (`setupTokenRequired: true`, so the token field shows as in the mockup) and, for the key state,
+`POST /auth/setup` with a fictional key (the demo keeps no account). `settings-security-account` / `-apikey` complete the real
+answer with an account, three sessions (LAN, LAN, internet) and a key. Backups are real archives made by the capture
+(one with the master key) and a real staged restore, canceled right after the capture. Logs are the live buffer.
+
+## Resolved by the mockups
+
+| # | Was | Now |
+|---|---|---|
+| D32 | Sign-in derived from onboarding.html, 440 px card, no background | login.html: 500 px card centred in the stage, display-lg title, help as a chevron disclosure with the 3-step procedure. Background: see D45. |
+| D33 | 429 as an amber notice with an inline countdown; after 401 the help stayed closed | Calm countdown **ring** (amber `status-missing`, not red), “Sign-in is paused for a few minutes.”, button “Try again in m:ss” (disabled), password field and its show button disabled; focus returns to the password when the wait ends. After 401: password cleared and focused, “Forgot the password?” opened. Screen readers hear the wait once, in minutes. |
+| D34 | Account step without the auth mode | Copy states the mode in force (`GONEMA_AUTH`, `enabled` or `disabled_for_local`); one account; 10 characters minimum; overlines “Step 2 · Security” … “Step 8 · First screening” (8 steps). |
+| D35 | Setup token hint as a field hint | Sunken help under the field: the log line (`setup=XXXX-…`), `docker logs gonema`, “a new one is made at each start”. Still shown only when `setupTokenRequired` (another machine), as the mockup’s comment says. |
+| D36 | Key in a read-only text field | `key-reveal` as drawn: icon head “Your API key” + `X-Api-Key`, dashed value row with **Copy**, “You won’t see it again.” with eye-off. The value stays a read-only input (select + `execCommand` fallback on plain HTTP). Same component in the Security dialog and after a password change. |
+| D39 | Session list as mini rows; “Sign out” for others | Device icon (from the user agent), IP + network context derived client-side (“This machine”, “Local network”, “Internet”), last seen (“Active now” for this browser), **Sign out** here and **Revoke** + Undo (8 s) elsewhere. Password and API key panels in two columns; “Also make a new API key” (`regenerateApiKey`); “Make a new API key?” dialog with the current key and its last use. |
+| D40 | Read-only lists | Auth modes as two read-only cards (“In use” on `authMode`), each with its variable; account row “One account, no roles”; outbound policy as destinations (Internet, local network, this machine) × callers (integrations, webhooks, TMDB and images: static front text, the server has no switch for it); “Never contacted” tags from `alwaysBlocked`; reverse proxy panel (allowed hosts, trusted proxies, trusted origins, cookie) with their variables. |
+| D41 | Mini rows, notice, generic form | Pending-restore banner (Cancel restore) and **Staged** pill on the archive named by `pendingRestore.name`; 3 tiles (last backup, schedule, count and total size computed from the list); table with schema version, Gonema version and master key columns, Download / Delete as named icon buttons, Restore… disabled with the server’s `problem` shown under the name (newer schema) and tied with `aria-describedby`; “Back up now” and “Upload…” in the page header; schedule with Day / Week / Month presets (24 / 168 / 720 → `intervalHours`) and the “In plain words” summary, saved as you change it (“Saved” in the header); master key panel; 3-step restore dialog (backup first, master key, next restart). Restore and delete still confirm. |
+| D42 | Segmented level filter (server-side), viewer in a panel | Server level as a select in the page header (“Server writes from”), facts line; multi-select level chips with counts of the lines held (the API gets the lowest level shown, the rest is filtered client-side); search, Live, Download; mono rows time / level / component / message with dimmed attributes, errors with a red rule; rows expand (button, `aria-expanded`) into key/value attributes with **Copy as JSON**; `[redacted]` (the server’s marker) renders as the “••• redacted” token with a lock; floating “N new” pill with `End`. Component column from `LogEntry.component` (hidden when no line carries one). |
+| D44 | `file-video` for Logs (to review) | Kept: the approved mockups still use it. |
+
+D37 (no “Restore it instead” on Welcome) and D38 (other steps locked before the account) are unchanged: the mockups do not
+show them differently. D43 (Health) is outside these mockups.
+
+Overview (`settings-quality.html?section=index`): the mockup now reads “Login page · one account”, “Regenerate…” and
+“Every 7 days · Keep 4” (re-rendered: `settings-index-*.jpg`); the app shows the real schedule, “one account (name)”, and
+links “Regenerate…” / “Review” to Security.
+
+## Remaining deviations
+
+| # | Difference | Justification |
+|---|---|---|
+| D45 | Sign-in / setup background without a poster: blurred tiles in the brand’s status and accent colours | Signed out, the library cannot be read; posters would be invented data. Same blur, rotation and vignette as the mockup’s wall, lower opacity. |
+| D46 | Session network context says “Internet” where the mockup says “Through your reverse proxy” | The API does not say whether a request came through a trusted proxy; the label is derived from the address only. |
+| D47 | Last backup tile has no “next run” | Not in the API (as briefed). |
+| D48 | Logs: counts are those of the lines held in the browser (after the search), and only for levels at or above the lowest one shown | The API filters from the lowest level shown; a lower level’s count would need another request. |
+| D49 | Logs: an opened entry stops the tail from following (the pill counts what arrives), and scrolls its details into view | Reading an entry must not be interrupted by new lines. |
+| D50 | Mockup samples (`rss`, `grab`, `decision` components; SABnzbd messages) are not reproduced | Real loggers only: whatever `component` the server sends. |
+| D51 | Setup footer reads “N of 7 done” instead of “Step 2 of 8” | Unchanged from lot 3: progress is the server’s done state; the current step is announced and marked `aria-current="step"` (fixed: the router used to overwrite it with `page`). |
+| D52 | Schedule fields save on blur / preset / switch, no Save button | The mockup shows “Saved” in the panel header and no button. Invalid values show a field error and are not sent. |
+
+Mockup renders: `docs/design/tools/render.js` + axe 4.14 now reports `label-content-name-mismatch` (6 sidebar links with a
+count) on every mockup with the sidebar, including untouched ones (`settings-security`): the shell’s mockup markup, not
+these screens (the app passes). `a11y-report.json` was updated for `settings-index` only.
+
+### Measurements (this machine, 2026-11-06)
+
+- Initial JS (library route, `npm run perf`): **154,236 B gzip** (phase 8: 154,168 B; budget 200 KB). Nothing of this lot is in
+  the first chunk. Lazy (gzip): Security 7.0 KB, Backups 6.0 KB, Logs 4.5 KB, sign-in 2.4 KB, AuthParts 2.0 KB + 2.0 KB CSS,
+  `system.css` 4.1 KB.
+- Scroll: grid 59.8 / 30.8 fps, table 60 / 20.7 fps (1× / 4×); first poster 427 ms; CLS 0.002.
+- Reduced motion: the countdown ring and the help chevron lose their transitions; nothing else of this lot animates.

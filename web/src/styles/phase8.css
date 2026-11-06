@@ -1,5 +1,5 @@
 /* Phase 8 screens: sign-in, account step, Settings › Security, Backups, Logs, About.
-   Derived from onboarding.html and settings-quality.html (no dedicated mockup; see e2e/fidelity.md).
+   login.html, onboarding.html (account step); the settings pages are in system.css.
    Loaded with these lazy screens only. */
 @layer screens {
   /* ------------------------------------------------------------ sign-in (login.html) */
@@ -197,10 +197,10 @@
     --c: var(--accent);
   }
   .ob-page .atmos .wall:has(.wall-tile) {
-    opacity: 0.22;
+    opacity: 0.3;
   }
   [data-theme="light"] .ob-page .atmos .wall:has(.wall-tile) {
-    opacity: 0.16;
+    opacity: 0.22;
   }
 
   /* ------------------------------------------------------------ password field + strength */
@@ -346,34 +346,6 @@
     font: var(--type-mono-sm);
     color: var(--text-primary);
   }
-  .backups li {
-    grid-template-columns: minmax(0, 1fr) auto auto auto;
-  }
-  .backups .bname {
-    font: var(--type-mono-sm);
-    color: var(--text-primary);
-    overflow-wrap: anywhere;
-  }
-  .backups .kind {
-    font: var(--type-caption);
-    color: var(--text-secondary);
-  }
-  .key-warn {
-    color: var(--status-missing);
-  }
-  .restore-opts {
-    display: grid;
-    gap: var(--space-3);
-    margin-top: var(--space-2);
-  }
-  .restore-opts ul {
-    margin: 0;
-    padding-left: 18px;
-    display: grid;
-    gap: 6px;
-    font: var(--type-body-sm);
-    color: var(--text-secondary);
-  }
   .upload-input {
     position: absolute;
     width: 1px;
@@ -382,97 +354,10 @@
     pointer-events: none;
   }
 
-  /* Logs viewer (settings-quality.html .logs, virtualised) */
-  .logs-tools {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2);
-  }
-  .logs-tools .search {
-    width: 260px;
-  }
-  .logs-tools .spacer {
-    flex: 1;
-  }
-  .logs-view {
-    position: relative;
-    height: min(60vh, 560px);
-    overflow: auto;
-    contain: strict;
-    background: var(--bg-sunken);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    font: 400 12px / 20px var(--font-mono);
-    color: var(--text-secondary);
-  }
-  .logs-view:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring);
-  }
-  .logs-view ol {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    position: relative;
-  }
-  .log-line {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    display: grid;
-    grid-template-columns: 64px 48px minmax(0, 1fr);
-    gap: 10px;
-    padding: 0 12px;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
-  .log-line time {
-    color: var(--text-muted);
-    font-variant-numeric: tabular-nums;
-  }
-  .log-line .lvl {
-    font-weight: 600;
-  }
-  .log-line[data-level="debug"] .lvl {
-    color: var(--text-muted);
-  }
-  .log-line[data-level="info"] .lvl {
-    color: var(--text-secondary);
-  }
-  .log-line[data-level="warn"] {
-    color: var(--status-missing);
-  }
-  .log-line[data-level="error"] {
-    color: var(--status-failed);
-  }
-  .log-line .attrs {
-    color: var(--text-muted);
-  }
-  .log-line[data-level="warn"] .attrs,
-  .log-line[data-level="error"] .attrs {
-    color: inherit;
-  }
   .logs-empty {
     padding: var(--space-6);
     font: var(--type-body-sm);
     color: var(--text-secondary);
-  }
-  .logs-foot {
-    display: flex;
-    justify-content: space-between;
-    gap: var(--space-3);
-    font: var(--type-caption);
-    color: var(--text-muted);
-  }
-  .jump-latest {
-    position: absolute;
-    right: 16px;
-    bottom: 16px;
-  }
-  .logs-wrap {
-    position: relative;
   }
   /* overview card: the last lines, not virtualised */
   .logs-mini {

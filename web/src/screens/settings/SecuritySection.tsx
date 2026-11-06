@@ -85,7 +85,10 @@ function DeviceIcon({ ua }: { ua: string }) {
 
 /** Where an address is, as the outbound policy sees it: "This machine", "Local network" or "Internet". */
 export function networkOf(raw: string): string {
-  const ip = raw.trim().toLowerCase().replace(/^::ffff:/, '');
+  const ip = raw
+    .trim()
+    .toLowerCase()
+    .replace(/^::ffff:/, '');
   if (!ip) return '';
   const v4 = /^(\d{1,3})\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/.exec(ip);
   if (v4) {
@@ -130,13 +133,11 @@ function ReadOnly({ icon, children }: { icon: ReactNode; children: ReactNode }) 
   );
 }
 
-const initials = (name: string) =>
-  name
-    .split(/[\s._-]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]!.toUpperCase())
-    .join('') || name.slice(0, 2).toUpperCase();
+/** "MA" for margaux, "JD" for john.doe */
+export const initials = (name: string) => {
+  const words = name.split(/[\s._-]+/).filter(Boolean);
+  return (words.length > 1 ? words[0]![0]! + words[1]![0]! : name.slice(0, 2)).toUpperCase();
+};
 
 function SignIn({ s }: { s: SecuritySettings }) {
   const local = s.authMode === 'disabled_for_local';
@@ -377,11 +378,7 @@ function ApiKeyPanel({ s }: { s: SecuritySettings }) {
       <div className="keycard">
         <div className="k">
           <KeyRound className="i" aria-hidden="true" />
-          {k.present ? (
-            <span className="val">{masked}</span>
-          ) : (
-            <span className="val none">No key yet</span>
-          )}
+          {k.present ? <span className="val">{masked}</span> : <span className="val none">No key yet</span>}
           <Button
             size="sm"
             variant="ghost"
@@ -461,10 +458,7 @@ function ApiKeyPanel({ s }: { s: SecuritySettings }) {
             {k.present && (
               <div className="now-key">
                 <KeyRound className="i i-sm" aria-hidden="true" />
-                Current key{' '}
-                <span className="t-mono-sm">
-                  gnm_••••••••{k.last4}
-                </span>
+                Current key <span className="t-mono-sm">gnm_••••••••{k.last4}</span>
                 <span className="t-caption t-muted">
                   {k.lastUsedAt ? `used ${lower(sinceWhen(k.lastUsedAt))}` : 'never used'}
                 </span>
@@ -570,7 +564,12 @@ function Sessions({ s }: { s: SecuritySettings }) {
                         Sign out
                       </Button>
                     ) : (
-                      <Button size="sm" variant="ghost" onClick={() => revoke(x)} aria-label={`Revoke ${name}, ${x.ip}`}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => revoke(x)}
+                        aria-label={`Revoke ${name}, ${x.ip}`}
+                      >
                         Revoke
                       </Button>
                     )}

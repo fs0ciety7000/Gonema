@@ -37,8 +37,8 @@ import { StatusText } from '@/components/ui/Badges';
 import { buttonClass } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Feedback';
 import { formatBytes } from '@/lib/format';
-import { HeaderSlot } from './headerSlot';
 import { ClientsSection, EVENTS, IndexersSection, MediaServersSection, NotificationsSection } from './Connections';
+import { HeaderSlot } from './headerSlot';
 import { AcquisitionSection, LibrarySection, MetadataSection, TagsSection } from './Sections';
 
 const QualitySection = lazy(() => import('./QualitySection'));
@@ -159,7 +159,8 @@ export const SECTIONS: ReadonlyArray<{ heading: string; items: readonly SectionD
         label: 'Security',
         icon: Lock,
         title: 'Security',
-        intro: 'Who can sign in, the browsers signed in right now, the API key, and where Gonema is allowed to connect.',
+        intro:
+          'Who can sign in, the browsers signed in right now, the API key, and where Gonema is allowed to connect.',
         keywords: 'password sign in login session api key logout ssrf outbound network auth',
       },
       {
@@ -176,7 +177,8 @@ export const SECTIONS: ReadonlyArray<{ heading: string; items: readonly SectionD
         label: 'Logs',
         icon: FileVideo,
         title: 'Logs',
-        intro: 'What Gonema did and why, as it happens. Passwords, keys and tokens are removed before anything is written.',
+        intro:
+          'What Gonema did and why, as it happens. Passwords, keys and tokens are removed before anything is written.',
         keywords: 'log level debug error warning tail download',
       },
       {

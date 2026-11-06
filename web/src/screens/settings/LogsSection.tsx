@@ -1,7 +1,20 @@
+import '@/styles/system.css';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ArrowDownToLine, Download, Search } from 'lucide-react';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ArrowDownToLine,
+  Check,
+  ChevronUp,
+  Copy,
+  Database,
+  Download,
+  FileVideo,
+  Lock,
+  Radio,
+  RefreshCw,
+  Search,
+} from 'lucide-react';
+import { Fragment, memo, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { notifyUnauthorized } from '@/api/client';
 import { EventStream } from '@/api/events';
 import {
@@ -17,19 +30,23 @@ import {
 } from '@/api/ops';
 import type { LogEntry } from '@/api/schema';
 import { problemText } from '@/components/auth/AuthParts';
-import { Button, buttonClass } from '@/components/ui/Button';
+import { Button, buttonClass, IconButton, Kbd } from '@/components/ui/Button';
+import { Chip } from '@/components/ui/Chip';
 import { Skeleton } from '@/components/ui/Feedback';
-import { Segmented } from '@/components/ui/Segmented';
+import { Select } from '@/components/ui/Select';
 import { Switch } from '@/components/ui/Switch';
 import { toast } from '@/components/ui/Toast';
 import { formatNumber } from '@/lib/format';
-import { Panel } from './Sections';
+import { HeaderActions } from './headerSlot';
 
 const MAX_LINES = 5000;
-const LINE_H = 20;
+const LINE_H = 24;
 const LABEL: Record<LogLevel, string> = { debug: 'Debug', info: 'Info', warn: 'Warn', error: 'Error' };
+const SPOKEN: Record<LogLevel, string> = { debug: 'Debug', info: 'Info', warn: 'Warning', error: 'Error' };
 const SHORT: Record<LogLevel, string> = { debug: 'DBG', info: 'INF', warn: 'WRN', error: 'ERR' };
 const RANK: Record<LogLevel, number> = { debug: 0, info: 1, warn: 2, error: 3 };
+/** What the server writes in place of a secret (internal/logbuf.Redacted). */
+export const REDACTED = '[redacted]';
 
 const clock = new Intl.DateTimeFormat('en-GB', {
   hour: '2-digit',
@@ -37,6 +54,10 @@ const clock = new Intl.DateTimeFormat('en-GB', {
   second: '2-digit',
   hour12: false,
 });
+const timeOf = (iso: string) => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : clock.format(d);
+};
 
 export const attrsText = (a: LogEntry['attrs']) =>
   Object.entries(a ?? {})
@@ -60,36 +81,156 @@ export function mergeEntries(prev: readonly LogEntry[], add: readonly LogEntry[]
   return next.length > MAX_LINES ? next.slice(next.length - MAX_LINES) : next;
 }
 
+/** The lowest level among those shown: the API filters from it, the rest is filtered here. */
+export function minLevel(shown: ReadonlySet<LogLevel>): LogLevel {
+  return LOG_LEVELS.find((l) => shown.has(l)) ?? 'error';
+}
+
+/** Entries per level, in what is held in memory here. */
+export function countLevels(entries: readonly LogEntry[]): Record<LogLevel, number> {
+  const c: Record<LogLevel, number> = { debug: 0, info: 0, warn: 0, error: 0 };
+  for (const e of entries) c[e.level]++;
+  return c;
+}
+
+/** Splits a value around the server's redaction marker, so secrets read as a token, not as text. */
+export function Redactable({ text }: { text: string }) {
+  if (!text.includes(REDACTED)) return text;
+  const parts = text.split(REDACTED);
+  return (
+    <>
+      {parts.map((p, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: fixed split of one string
+        <Fragment key={i}>
+          {p}
+          {i < parts.length - 1 && (
+            <span className="red">
+              <Lock className="i" aria-hidden="true" />
+              <span aria-hidden="true">•••</span> redacted
+            </span>
+          )}
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
+function Attrs({ a }: { a: LogEntry['attrs'] }) {
+  const list = Object.entries(a ?? {});
+  if (!list.length) return null;
+  return (
+    <>
+      {list.map(([k, v]) => (
+        <span key={k} className="a">
+          {' '}
+          {k}=
+          <b>
+            <Redactable text={/\s/.test(v) ? JSON.stringify(v) : v} />
+          </b>
+        </span>
+      ))}
+    </>
+  );
+}
+
+async function copyJson(e: LogEntry): Promise<boolean> {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(JSON.stringify(e, null, 2));
+      return true;
+    }
+  } catch {
+    /* fall through */
+  }
+  return false;
+}
+
+function Detail({ e, onCollapse }: { e: LogEntry; onCollapse: () => void }) {
+  const [copied, setCopied] = useState<boolean | null>(null);
+  return (
+    <section className="log-detail" aria-label="Details of this entry">
+      <div className="dh">
+        <span className="t-mono-sm">{e.time}</span>
+        <span>entry #{formatNumber(e.id)}</span>
+        <span className="row">
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={copied ? <Check className="i" aria-hidden="true" /> : <Copy className="i" aria-hidden="true" />}
+            onClick={() => void copyJson(e).then(setCopied)}
+          >
+            {copied ? 'Copied' : 'Copy as JSON'}
+          </Button>
+          <IconButton size="sm" label="Collapse entry" onClick={onCollapse}>
+            <ChevronUp className="i i-sm" aria-hidden="true" />
+          </IconButton>
+        </span>
+      </div>
+      {copied === false && (
+        <p className="t-caption t-muted" role="status">
+          This browser blocked the copy (plain HTTP). Download the logs instead.
+        </p>
+      )}
+      <dl className="attrs">
+        <dt>message</dt>
+        <dd>
+          <Redactable text={e.message} />
+        </dd>
+        {e.component && (
+          <>
+            <dt>component</dt>
+            <dd>{e.component}</dd>
+          </>
+        )}
+        {Object.entries(e.attrs ?? {}).map(([k, v]) => (
+          <Fragment key={k}>
+            <dt>{k}</dt>
+            <dd>
+              <Redactable text={v} />
+            </dd>
+          </Fragment>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
 const Line = memo(function Line({
   e,
   top,
   index,
+  open,
   measure,
+  onToggle,
 }: {
   e: LogEntry;
   top: number;
   index: number;
+  open: boolean;
   measure: (el: HTMLElement | null) => void;
+  onToggle: (id: number) => void;
 }) {
-  const attrs = attrsText(e.attrs);
-  const d = new Date(e.time);
   return (
-    <li
-      ref={measure}
-      data-index={index}
-      className="log-line"
-      data-level={e.level}
-      style={{ transform: `translateY(${top}px)` }}
-    >
-      <time dateTime={e.time}>{Number.isNaN(d.getTime()) ? '' : clock.format(d)}</time>
-      <span className="lvl">
-        <span aria-hidden="true">{SHORT[e.level]}</span>
-        <span className="sr-only">{LABEL[e.level]}</span>
-      </span>
-      <span>
-        {e.message}
-        {attrs && <span className="attrs"> {attrs}</span>}
-      </span>
+    <li ref={measure} data-index={index} className="ln-item" style={{ transform: `translateY(${top}px)` }}>
+      <button
+        type="button"
+        className={open ? 'ln open' : 'ln'}
+        data-lv={e.level}
+        aria-expanded={open}
+        onClick={() => onToggle(e.id)}
+      >
+        <time dateTime={e.time}>{timeOf(e.time)}</time>
+        <span className="lvl">
+          <span aria-hidden="true">{SHORT[e.level]}</span>
+          <span className="sr-only">{SPOKEN[e.level]}</span>
+        </span>
+        <span className="comp">{e.component}</span>
+        <span className="msg">
+          <Redactable text={e.message} />
+          <Attrs a={e.attrs} />
+        </span>
+      </button>
+      {open && <Detail e={e} onCollapse={() => onToggle(e.id)} />}
     </li>
   );
 });
@@ -104,17 +245,19 @@ function useDebounced<T>(v: T, ms: number): T {
 }
 
 function Viewer() {
-  const [level, setLevel] = useState<LogLevel>('info');
+  const [shown, setShown] = useState<ReadonlySet<LogLevel>>(() => new Set<LogLevel>(['info', 'warn', 'error']));
+  const level = minLevel(shown);
   const [text, setText] = useState('');
   const q = useDebounced(text.trim(), 250);
   const [live, setLive] = useState(true);
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [follow, setFollow] = useState(true);
   const [unseen, setUnseen] = useState(0);
+  const [openId, setOpenId] = useState<number | null>(null);
   const list = useQuery(logsQuery(level, q));
   const scrollRef = useRef<HTMLElement>(null);
 
-  // The recent entries (server-side filter), then the live tail on top of them.
+  // The recent entries (server-side filter from the lowest level shown), then the live tail on top.
   useEffect(() => {
     if (list.data) setEntries(list.data.entries ?? []);
   }, [list.data]);
@@ -151,23 +294,28 @@ function Viewer() {
     };
   }, [live, level]);
 
+  const counts = useMemo(() => countLevels(entries), [entries]);
+  const visible = useMemo(() => entries.filter((e) => shown.has(e.level)), [entries, shown]);
+  // the column stays hidden until the server names components (older servers send none)
+  const hasComponent = useMemo(() => visible.some((e) => e.component), [visible]);
+
   const v = useVirtualizer({
-    count: entries.length,
+    count: visible.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => LINE_H,
     overscan: 20,
-    getItemKey: (i) => entries[i]?.id ?? i,
+    getItemKey: (i) => visible[i]?.id ?? i,
   });
 
-  // Follow the tail while the reader is at the bottom; otherwise count what arrives.
+  // Follow the tail while the reader is at the bottom (and nothing is open); otherwise count arrivals.
   const prevLen = useRef(0);
   useEffect(() => {
-    const added = entries.length - prevLen.current;
-    prevLen.current = entries.length;
-    if (!entries.length) return;
-    if (follow) v.scrollToIndex(entries.length - 1, { align: 'end' });
+    const added = visible.length - prevLen.current;
+    prevLen.current = visible.length;
+    if (!visible.length) return;
+    if (follow && openId === null) v.scrollToIndex(visible.length - 1, { align: 'end' });
     else if (added > 0) setUnseen((n) => n + added);
-  }, [entries, follow, v]);
+  }, [visible, follow, openId, v]);
 
   const onScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -177,26 +325,53 @@ function Viewer() {
     if (atBottom) setUnseen(0);
   }, []);
 
+  const jump = () => {
+    setFollow(true);
+    setUnseen(0);
+    setOpenId(null);
+    v.scrollToIndex(visible.length - 1, { align: 'end' });
+  };
+  const toggle = useCallback((id: number) => setOpenId((o) => (o === id ? null : id)), []);
+  // an entry opened near the bottom: bring its details into view once they are measured
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
+  useEffect(() => {
+    if (openId === null) return;
+    const i = visibleRef.current.findIndex((e) => e.id === openId);
+    if (i < 0) return;
+    const raf = requestAnimationFrame(() => v.scrollToIndex(i, { align: 'auto' }));
+    return () => cancelAnimationFrame(raf);
+  }, [openId, v]);
+  const toggleLevel = (l: LogLevel) =>
+    setShown((s) => {
+      const n = new Set(s);
+      if (n.has(l)) n.delete(l);
+      else n.add(l);
+      return n.size ? n : s; // at least one level stays shown
+    });
+
   const items = v.getVirtualItems();
-  const empty = !list.isPending && !entries.length;
+  const empty = !list.isPending && !visible.length;
+  const oldest = entries[0];
+  const shownList = LOG_LEVELS.filter((l) => shown.has(l))
+    .map((l) => LABEL[l].toLowerCase())
+    .join(', ');
   return (
-    <Panel
-      id="logs-viewer"
-      title="Recent entries"
-      aside={
-        <a className={buttonClass('ghost', 'sm')} href={logDownloadUrl} download>
-          <Download className="i" aria-hidden="true" />
-          Download
-        </a>
-      }
-    >
-      <div className="logs-tools">
-        <Segmented
-          label="Show from level"
-          value={level}
-          onChange={setLevel}
-          options={LOG_LEVELS.map((l) => ({ value: l, label: LABEL[l] }))}
-        />
+    <section className="panel viewer" aria-labelledby="logs-h">
+      <h2 id="logs-h" className="sr-only">
+        Log entries
+      </h2>
+      <div className="vt">
+        {/* biome-ignore lint/a11y/useSemanticElements: a group of toggle buttons, not a form fieldset */}
+        <div className="chips" role="group" aria-label="Levels shown">
+          {LOG_LEVELS.map((l) => (
+            <Chip key={l} pressed={shown.has(l)} data-lv={l} onClick={() => toggleLevel(l)}>
+              <span className="lv" aria-hidden="true" />
+              {LABEL[l]}
+              {RANK[l] >= RANK[level] && <span className="k">{formatNumber(counts[l])}</span>}
+            </Chip>
+          ))}
+        </div>
         <label className="input search">
           <Search className="i" aria-hidden="true" />
           <input
@@ -212,14 +387,19 @@ function Viewer() {
         <Switch checked={live} onCheckedChange={setLive}>
           Live
         </Switch>
+        <span className="divider" aria-hidden="true" />
+        <a className={buttonClass('ghost', 'sm')} href={logDownloadUrl} download>
+          <Download className="i" aria-hidden="true" />
+          Download
+        </a>
       </div>
-      <div className="logs-wrap">
+      <div className="logwrap" data-nocomp={hasComponent ? undefined : ''}>
         <section
           ref={scrollRef}
-          className="logs-view"
+          className="log"
           // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable log must be reachable by keyboard (WCAG 2.1.1)
           tabIndex={0}
-          aria-label={`Log entries, ${formatNumber(entries.length)} shown`}
+          aria-label={`Log entries, ${formatNumber(visible.length)} shown`}
           aria-busy={list.isPending || undefined}
           onScroll={onScroll}
         >
@@ -231,41 +411,52 @@ function Viewer() {
             </p>
           ) : empty ? (
             <p className="logs-empty">
-              {q
-                ? `No entry at ${LABEL[level].toLowerCase()} level or above mentions “${q}”.`
-                : 'Nothing logged at this level yet.'}
+              {q ? `No ${shownList} entry mentions “${q}”.` : `Nothing logged at ${shownList} level yet.`}
             </p>
           ) : (
             <ol style={{ height: v.getTotalSize() }}>
               {items.map((it) => {
-                const e = entries[it.index]!;
-                return <Line key={e.id} e={e} top={it.start} index={it.index} measure={v.measureElement} />;
+                const e = visible[it.index]!;
+                return (
+                  <Line
+                    key={e.id}
+                    e={e}
+                    top={it.start}
+                    index={it.index}
+                    open={openId === e.id}
+                    measure={v.measureElement}
+                    onToggle={toggle}
+                  />
+                );
               })}
             </ol>
           )}
         </section>
         {!follow && unseen > 0 && (
-          <Button
-            size="sm"
-            className="jump-latest"
-            icon={<ArrowDownToLine className="i" aria-hidden="true" />}
-            onClick={() => {
-              setFollow(true);
-              setUnseen(0);
-              v.scrollToIndex(entries.length - 1, { align: 'end' });
-            }}
-          >
-            {`${formatNumber(unseen)} new`}
-          </Button>
+          <button type="button" className="newpill" onClick={jump}>
+            <ArrowDownToLine className="i" aria-hidden="true" />
+            {formatNumber(unseen)} new <Kbd>End</Kbd>
+          </button>
         )}
       </div>
-      <div className="logs-foot">
+      <div className="vf">
         <span>
-          {live ? 'Live: new entries appear as they are written.' : 'Paused: turn Live on to follow new entries.'}
+          <Radio className="i" aria-hidden="true" />
+          {!live
+            ? 'Paused: turn Live on to follow new entries.'
+            : follow && openId === null
+              ? 'Live: new entries appear as they are written.'
+              : 'Live, following paused while you read: new entries wait below.'}
         </span>
-        {list.data && <span>Gonema keeps the last {formatNumber(list.data.capacity)} entries in memory.</span>}
+        <span className="spacer" />
+        {list.data && (
+          <span>
+            {formatNumber(visible.length)} of the last {formatNumber(list.data.capacity)} entries
+            {oldest ? ` · oldest ${timeOf(oldest.time)}` : ''}
+          </span>
+        )}
       </div>
-    </Panel>
+    </section>
   );
 }
 
@@ -288,51 +479,75 @@ function ServerLevel() {
       toast.error('The log level did not change', problemText(e));
     },
   });
-  const file = s.data?.file;
   return (
-    <Panel id="logs-level" title="What Gonema writes">
-      {!s.data ? (
-        <Skeleton className="sk-row" />
-      ) : (
+    <HeaderActions>
+      <div className="lvlbox">
+        <span className="field-label" id="lvl-l">
+          Server writes from
+        </span>
+        {s.data ? (
+          <Select
+            labelledBy="lvl-l"
+            value={s.data.level}
+            onValueChange={(l) => m.mutate(l)}
+            options={LOG_LEVELS.map((l) => ({ value: l, label: LABEL[l] }))}
+          />
+        ) : (
+          <Skeleton className="sk-row" />
+        )}
+      </div>
+    </HeaderActions>
+  );
+}
+
+function Facts() {
+  const s = useQuery(logSettingsQuery).data;
+  if (!s) return null;
+  const f = s.file;
+  const fact = (icon: ReactNode, body: ReactNode) => (
+    <span>
+      {icon}
+      <span>{body}</span>
+    </span>
+  );
+  return (
+    <div className="facts">
+      {fact(
+        <RefreshCw className="i" aria-hidden="true" />,
         <>
-          <div className="row">
-            <Segmented
-              label="Server log level"
-              value={s.data.level}
-              onChange={(l) => m.mutate(l)}
-              options={LOG_LEVELS.map((l) => ({ value: l, label: LABEL[l] }))}
-            />
-          </div>
-          <p className="explain">
-            Applies at once and lasts until Gonema restarts; the start option (<code>GONEMA_LOG_LEVEL</code>) wins then.
-            Debug is verbose: use it while chasing a problem.
-          </p>
-          <dl className="kv">
-            <dt>In memory</dt>
-            <dd>last {formatNumber(s.data.bufferSize)} entries</dd>
-            <dt>Log file</dt>
-            <dd>
-              {file?.enabled ? (
-                <>
-                  <code>{file.path}</code> · rotated at {file.maxSizeMB} MB, {file.keep} kept
-                </>
-              ) : (
-                'None: the server writes to its standard error (GONEMA_LOG_FILE adds a file).'
-              )}
-            </dd>
-          </dl>
-        </>
+          Level applies at once, until the next restart (<span className="t-mono-sm">GONEMA_LOG_LEVEL</span> wins then)
+        </>,
       )}
-    </Panel>
+      {fact(
+        <Database className="i" aria-hidden="true" />,
+        <>
+          In memory: <b>last {formatNumber(s.bufferSize)} entries</b>
+        </>,
+      )}
+      {fact(
+        <FileVideo className="i" aria-hidden="true" />,
+        f?.enabled ? (
+          <>
+            File: <span className="t-mono-sm">{f.path}</span> · rotated at {f.maxSizeMB} MB, {f.keep} kept
+          </>
+        ) : (
+          <>
+            File: none, the server writes to standard error (<span className="t-mono-sm">GONEMA_LOG_FILE</span> adds
+            one)
+          </>
+        ),
+      )}
+    </div>
   );
 }
 
 export function LogsSection() {
   return (
-    <>
+    <div className="sys-stack logs-stack">
       <ServerLevel />
+      <Facts />
       <Viewer />
-    </>
+    </div>
   );
 }
 
@@ -347,7 +562,8 @@ export function RecentLogLines({ count = 4 }: { count?: number }) {
     <ul className="logs-mini" aria-label="Recent log lines">
       {lines.map((e) => (
         <li key={e.id} data-level={e.level}>
-          {clock.format(new Date(e.time))} {SHORT[e.level]} {e.message} {attrsText(e.attrs)}
+          {timeOf(e.time)} {SHORT[e.level]} {e.component ? `${e.component.padEnd(8)} ` : ''}
+          {e.message} {attrsText(e.attrs)}
         </li>
       ))}
     </ul>

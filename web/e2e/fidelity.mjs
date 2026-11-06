@@ -424,6 +424,7 @@ SCREENS.push(
   // by answering GET /auth/status as signed out, and its error states by answering POST /auth/login.
   {
     name: 'login',
+    render: 'login',
     url: '/login?redirect=%2Ffilms',
     mock: (page) => mockSignedOut(page),
     async prepare(page) {
@@ -433,6 +434,7 @@ SCREENS.push(
   },
   {
     name: 'login-error',
+    render: 'login-error',
     url: '/login',
     mock: (page) => mockSignedOut(page, 401),
     async prepare(page) {
@@ -445,17 +447,52 @@ SCREENS.push(
   },
   {
     name: 'login-throttled',
+    render: 'login-throttled',
     url: '/login',
     mock: (page) => mockSignedOut(page, 429),
     async prepare(page) {
       await page.getByLabel('Username').fill('margaux');
       await page.getByLabel('Password', { exact: true }).fill('not the password');
       await page.getByRole('button', { name: 'Sign in' }).click();
-      await page.getByText('Too many attempts.').waitFor();
+      await page.getByText('Sign-in is paused for a few minutes.').waitFor();
       await settle(page);
     },
   },
   {
+    // the mockup shows the setup token (a browser on another machine): GET /auth/status says so
+    name: 'onboarding-account',
+    render: 'onboarding-account',
+    url: '/setup?step=account',
+    before: setupState(false),
+    mock: (page) => mockSetup(page),
+    async prepare(page) {
+      await page.getByRole('heading', { name: 'Secure the booth' }).waitFor();
+      await page.getByLabel('Setup token').fill('7KQ2-MV9D-XR4T-PL8C-2WNA-F6HJ');
+      await page.getByLabel('Username').fill('margaux');
+      await page.getByLabel('Password', { exact: true }).fill('correct-horse-battery');
+      await page.evaluate(() => document.activeElement?.blur?.());
+      await settle(page);
+    },
+  },
+  {
+    // account made: POST /auth/setup is answered (the demo keeps no account), the key is shown once
+    name: 'onboarding-account-key',
+    render: 'onboarding-account-key',
+    url: '/setup?step=account',
+    before: setupState(false),
+    mock: (page) => mockSetup(page, true),
+    async prepare(page) {
+      await page.getByLabel('Setup token').fill('7KQ2-MV9D-XR4T-PL8C-2WNA-F6HJ');
+      await page.getByLabel('Username').fill('margaux');
+      await page.getByLabel('Password', { exact: true }).fill('correct-horse-battery');
+      await page.getByRole('button', { name: /Create the account/ }).click();
+      await page.getByRole('textbox', { name: 'API key' }).waitFor();
+      await page.evaluate(() => document.activeElement?.blur?.());
+      await settle(page);
+    },
+  },
+  {
+    // local mode, no account: the real answer
     name: 'settings-security',
     url: '/settings/security',
     async prepare(page) {
@@ -466,6 +503,7 @@ SCREENS.push(
   {
     // signed-in state (the local demo has no account): the real answer, with an account, sessions and a key
     name: 'settings-security-account',
+    render: 'settings-security',
     url: '/settings/security',
     mock: (page) => mockSecurityAccount(page),
     async prepare(page) {
@@ -474,30 +512,71 @@ SCREENS.push(
     },
   },
   {
-    name: 'settings-backups',
-    url: '/settings/backups',
+    name: 'settings-security-apikey',
+    render: 'settings-security-apikey',
+    url: '/settings/security',
+    mock: (page) => mockSecurityAccount(page),
     async prepare(page) {
-      await page.locator('.backups li').first().waitFor();
+      await page.getByRole('button', { name: 'Regenerate…' }).click();
+      await page.getByRole('dialog', { name: 'Make a new API key?' }).waitFor();
+      await settle(page);
+    },
+  },
+  {
+    // real archives (made here, one with the master key) and a real staged restore, canceled after
+    name: 'settings-backups',
+    render: 'settings-backups',
+    url: '/settings/backups',
+    before: async () => {
+      const list = await demoBackups();
+      await api('/backups/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: list.at(-1).name, confirm: true }),
+      });
+    },
+    after: () => api('/backups/restore', { method: 'DELETE' }).catch(() => {}),
+    async prepare(page) {
+      await page.locator('.bk tbody tr').first().waitFor();
+      await page.locator('.pending').waitFor();
       await settle(page);
     },
   },
   {
     name: 'settings-backups-restore',
+    render: 'settings-backups-restore',
     url: '/settings/backups',
+    before: async () => {
+      await demoBackups();
+      await api('/backups/restore', { method: 'DELETE' }).catch(() => {});
+    },
     async prepare(page) {
+      await page.locator('.bk tbody tr').first().waitFor();
       await page
         .getByRole('button', { name: /^Restore .*…$/ })
-        .first()
+        .last()
         .click();
-      await page.getByRole('dialog', { name: 'Restore this backup?' }).waitFor();
+      await page.getByRole('dialog', { name: /^Restore the backup of/ }).waitFor();
       await settle(page);
     },
   },
   {
+    // live log, one entry expanded (as the mockup)
     name: 'settings-logs',
+    render: 'settings-logs',
     url: '/settings/logs',
     async prepare(page) {
-      await page.locator('.log-line').first().waitFor();
+      await page.locator('.ln').first().waitFor();
+      // the demo's info lines are mostly HTTP requests: open the newest warning the buffer still holds
+      // (found by its message), else the last line
+      const warn = ((await api('/logs?level=warn&limit=50')).entries ?? []).at(-1);
+      if (warn) {
+        await page.getByRole('searchbox', { name: 'Search the logs' }).fill(warn.message);
+        await page.waitForTimeout(800);
+        await page.locator('.ln[data-lv="warn"]').last().click();
+      } else await page.locator('.ln').last().click();
+      await page.locator('.log-detail').waitFor();
+      await page.mouse.move(1, 1);
       await settle(page);
     },
   },
@@ -543,6 +622,51 @@ async function mockSignedOut(page, fail) {
     );
 }
 
+/** Account step: GET /auth/status as seen from another machine (setup token asked); with `created`,
+ *  POST /auth/setup answers as the server does (a fictional key: the demo keeps no account). */
+async function mockSetup(page, created = false) {
+  await page.route('**/api/v1/auth/status', (r) =>
+    r.fulfill(
+      json({
+        setupRequired: true,
+        authenticated: false,
+        method: 'none',
+        authMode: 'enabled',
+        setupTokenRequired: true,
+      }),
+    ),
+  );
+  if (created)
+    await page.route('**/api/v1/auth/setup', (r) =>
+      r.fulfill(
+        json({
+          apiKey: 'gnm_q7Lx2vR9mT4wKc8ZpN3aHd6YsE1uJb5fG0i-OkV3f9a',
+          apiKeyLast4: '3f9a',
+          expiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+          user: { id: 1, username: 'margaux', createdAt: new Date().toISOString(), lastLoginAt: null },
+        }),
+      ),
+    );
+}
+
+/** Real archives for the backup captures: at least three, the newest with the master key. */
+let backupsMade = false;
+async function demoBackups() {
+  if (!backupsMade) {
+    const post = (includeKey) =>
+      api('/backups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ includeKey }),
+      });
+    const have = (await api('/backups')).backups ?? [];
+    for (let i = have.length; i < 2; i++) await post(false);
+    if (!have.some((b) => b.includesKey)) await post(true);
+    backupsMade = true;
+  }
+  return (await api('/backups')).backups;
+}
+
 /** The real /settings/security answer, completed with what a signed-in server has. */
 async function mockSecurityAccount(page) {
   const real = await api('/settings/security');
@@ -574,6 +698,16 @@ async function mockSecurityAccount(page) {
             ip: '192.168.1.31',
             userAgent:
               'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+          },
+          {
+            id: 1,
+            current: false,
+            createdAt: at(24 * 16),
+            lastSeenAt: at(24 * 3),
+            expiresAt: at(-24 * 14),
+            ip: '203.0.113.42',
+            userAgent:
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36',
           },
         ],
       }),
@@ -640,6 +774,7 @@ async function run() {
       await page.goto(`${BASE}${path}`);
       await s.prepare(page);
       const file = join(out, `${s.name}-${theme}.png`);
+      if (s.after) await s.after();
       await page.screenshot({ path: file });
       const violations = await axe(page);
       report.screens.push({ screen: s.name, theme, url: path, violations, errors: page.errors });

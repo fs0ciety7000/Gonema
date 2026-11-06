@@ -71,7 +71,7 @@ export function SystemCards() {
                   Sign-in
                   <small>
                     {s.authMode === 'disabled_for_local' ? 'Off for this network' : 'Login page'}
-                    {s.user ? ` · ${s.user.username}` : ' · no account yet'}
+                    {s.user ? ` · one account (${s.user.username})` : ' · no account yet'}
                   </small>
                 </span>
               </li>
@@ -84,12 +84,14 @@ export function SystemCards() {
                       : 'none'}
                   </small>
                 </span>
+                {s.user && go('security', s.apiKey.present ? 'Regenerate…' : 'Make a key…')}
               </li>
               <li>
                 <span>
                   Signed-in browsers
                   <small>{others === 1 ? '1 browser' : `${others} browsers`}</small>
                 </span>
+                {others > 0 && go('security', 'Review')}
               </li>
             </ul>
           )}

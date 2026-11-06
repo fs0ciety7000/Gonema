@@ -163,8 +163,21 @@
     "page": "settings-index",
     "theme": "dark",
     "errors": [],
-    "violations": [],
-    "passes": 43,
+    "violations": [
+      {
+        "id": "label-content-name-mismatch",
+        "impact": "serious",
+        "n": 6,
+        "help": "Elements must have their visible text as part of their accessible name",
+        "targets": [
+          "a[aria-label=\"Films\"] :: Text inside the element is not included in the accessible name",
+          "a[aria-label=\"Collections\"] :: Text inside the element is not included in the accessible name",
+          "a[href$=\"add-film.html\"] :: Text inside the element is not included in the accessible name",
+          "a[href$=\"queue.html\"] :: Text inside the element is not included in the accessible name"
+        ]
+      }
+    ],
+    "passes": 44,
     "incomplete": 3
   },
   {
@@ -411,8 +424,21 @@
     "page": "settings-index",
     "theme": "light",
     "errors": [],
-    "violations": [],
-    "passes": 43,
+    "violations": [
+      {
+        "id": "label-content-name-mismatch",
+        "impact": "serious",
+        "n": 6,
+        "help": "Elements must have their visible text as part of their accessible name",
+        "targets": [
+          "a[aria-label=\"Films\"] :: Text inside the element is not included in the accessible name",
+          "a[aria-label=\"Collections\"] :: Text inside the element is not included in the accessible name",
+          "a[href$=\"add-film.html\"] :: Text inside the element is not included in the accessible name",
+          "a[href$=\"queue.html\"] :: Text inside the element is not included in the accessible name"
+        ]
+      }
+    ],
+    "passes": 44,
     "incomplete": 3
   },
   {

@@ -98,7 +98,10 @@ export function LoginScreen() {
       } else if (response.status === 422) {
         setProblem({ kind: 'invalid', title: detail ?? 'Check the username and the password.' });
       } else {
-        setProblem({ kind: 'server', title: detail ?? `The server answered ${response.status}. Try again in a moment.` });
+        setProblem({
+          kind: 'server',
+          title: detail ?? `The server answered ${response.status}. Try again in a moment.`,
+        });
       }
     } catch {
       setProblem({
@@ -134,7 +137,7 @@ export function LoginScreen() {
           {waiting ? (
             <div className="login-wait" role="status">
               <div className="ring" aria-hidden="true">
-                <svg viewBox="0 0 56 56">
+                <svg viewBox="0 0 56 56" aria-hidden="true">
                   <circle className="bg" cx="28" cy="28" r="26" />
                   <circle className="fg" cx="28" cy="28" r="26" style={{ strokeDashoffset: RING * (1 - fraction) }} />
                 </svg>
@@ -206,15 +209,13 @@ export function LoginScreen() {
               size="lg"
               loading={busy}
               disabled={waiting}
-              icon={
-                waiting ? <Clock className="i" aria-hidden="true" /> : <LogIn className="i" aria-hidden="true" />
-              }
+              icon={waiting ? <Clock className="i" aria-hidden="true" /> : <LogIn className="i" aria-hidden="true" />}
               className="login-submit"
             >
               {waiting ? (
-                <>
+                <span>
                   Try again in <span className="countdown">{formatCountdown(left)}</span>
-                </>
+                </span>
               ) : (
                 'Sign in'
               )}
@@ -236,8 +237,8 @@ export function LoginScreen() {
               </ol>
               <span className="keep">
                 <Info className="i" aria-hidden="true" />
-                Films, settings and connections are kept. The API key goes with the account: put the new one in the
-                apps that use it.
+                Films, settings and connections are kept. The API key goes with the account: put the new one in the apps
+                that use it.
               </span>
             </div>
           </details>
