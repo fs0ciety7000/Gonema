@@ -18,11 +18,13 @@ import (
 // once, after New and before serving.
 func (s *Server) RegisterImportRoutes(svc *importer.Service) {
 	r := &importRoutes{s: s, svc: svc}
+	s.files = svc
 	r.settings()
 	r.manual()
 	r.library()
 	r.recycle()
 	r.naming()
+	r.fileOps()
 }
 
 type importRoutes struct {
@@ -36,6 +38,8 @@ func (r *importRoutes) problem(ctx context.Context, err error, upstream bool) er
 	switch {
 	case msg != "" && (errors.Is(err, importer.ErrInvalid) || errors.Is(err, importer.ErrOutsideRoots) || errors.Is(err, importer.ErrConfirmRequired)):
 		return huma.Error422UnprocessableEntity(msg)
+	case msg != "" && errors.Is(err, importer.ErrConflict):
+		return huma.Error409Conflict(msg)
 	case msg != "" && errors.Is(err, importer.ErrNotFound):
 		return huma.Error404NotFound(msg)
 	case msg != "" && errors.Is(err, importer.ErrFileSystem):

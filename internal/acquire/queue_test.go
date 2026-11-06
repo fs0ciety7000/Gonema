@@ -1,6 +1,7 @@
 package acquire
 
 import (
+	"encoding/json"
 	"errors"
 	"slices"
 	"strings"
@@ -130,15 +131,20 @@ func TestTrackerProgressEvents(t *testing.T) {
 	if _, err := e.svc.TrackOnce(e.ctx); err != nil {
 		t.Fatal(err)
 	}
-	var progress *QueueItem
+	var progress *ProgressUpdate
 	for len(sub.C()) > 0 {
 		ev := <-sub.C()
-		if it, ok := ev.Data.(QueueItem); ok && ev.Type == "download.progress" {
+		if it, ok := ev.Data.(ProgressUpdate); ok && ev.Type == "download.progress" {
 			progress = &it
 		}
 	}
-	if progress == nil || progress.Progress != 0.5 || progress.Status != "downloading" || progress.EtaSeconds == nil {
+	// Compact and keyed by download id: no release title, no messages list.
+	if progress == nil || progress.ID != d.ID || progress.MovieID != d.MovieID || progress.Progress != 0.5 ||
+		progress.Status != "downloading" || progress.EtaSeconds == nil {
 		t.Fatalf("progress event = %+v", progress)
+	}
+	if raw, _ := json.Marshal(progress); strings.Contains(string(raw), "title") || len(raw) > 200 {
+		t.Errorf("progress payload not compact: %s", raw)
 	}
 	// Progress is in memory; the status change was persisted.
 	got, _ := e.st.Read().GetDownload(e.ctx, d.ID)

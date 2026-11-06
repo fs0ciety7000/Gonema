@@ -19,6 +19,7 @@ import (
 
 	"github.com/fs0ciety7000/gonema/internal/acquire"
 	"github.com/fs0ciety7000/gonema/internal/events"
+	"github.com/fs0ciety7000/gonema/internal/importer"
 	"github.com/fs0ciety7000/gonema/internal/jobs"
 	"github.com/fs0ciety7000/gonema/internal/library"
 	"github.com/fs0ciety7000/gonema/internal/metadata"
@@ -56,6 +57,7 @@ type Deps struct {
 // Server is the HTTP API.
 type Server struct {
 	d       Deps
+	files   *importer.Service // file operations; set by RegisterImportRoutes
 	log     *slog.Logger
 	handler http.Handler
 	api     huma.API

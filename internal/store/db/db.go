@@ -63,6 +63,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.countScoringRulesStmt, err = db.PrepareContext(ctx, countScoringRules); err != nil {
 		return nil, fmt.Errorf("error preparing query CountScoringRules: %w", err)
 	}
+	if q.countTagMoviesStmt, err = db.PrepareContext(ctx, countTagMovies); err != nil {
+		return nil, fmt.Errorf("error preparing query CountTagMovies: %w", err)
+	}
 	if q.createDownloadClientStmt, err = db.PrepareContext(ctx, createDownloadClient); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateDownloadClient: %w", err)
 	}
@@ -119,6 +122,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.deleteMovieStmt, err = db.PrepareContext(ctx, deleteMovie); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteMovie: %w", err)
+	}
+	if q.deleteMovieFileStmt, err = db.PrepareContext(ctx, deleteMovieFile); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteMovieFile: %w", err)
 	}
 	if q.deleteNotificationStmt, err = db.PrepareContext(ctx, deleteNotification); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteNotification: %w", err)
@@ -186,6 +192,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getMovieStmt, err = db.PrepareContext(ctx, getMovie); err != nil {
 		return nil, fmt.Errorf("error preparing query GetMovie: %w", err)
 	}
+	if q.getMovieAtLocationStmt, err = db.PrepareContext(ctx, getMovieAtLocation); err != nil {
+		return nil, fmt.Errorf("error preparing query GetMovieAtLocation: %w", err)
+	}
 	if q.getMovieByImdbIDStmt, err = db.PrepareContext(ctx, getMovieByImdbID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetMovieByImdbID: %w", err)
 	}
@@ -218,6 +227,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.getSettingStmt, err = db.PrepareContext(ctx, getSetting); err != nil {
 		return nil, fmt.Errorf("error preparing query GetSetting: %w", err)
+	}
+	if q.getTagStmt, err = db.PrepareContext(ctx, getTag); err != nil {
+		return nil, fmt.Errorf("error preparing query GetTag: %w", err)
 	}
 	if q.getTagByLabelStmt, err = db.PrepareContext(ctx, getTagByLabel); err != nil {
 		return nil, fmt.Errorf("error preparing query GetTagByLabel: %w", err)
@@ -273,17 +285,26 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listDownloadClientsStmt, err = db.PrepareContext(ctx, listDownloadClients); err != nil {
 		return nil, fmt.Errorf("error preparing query ListDownloadClients: %w", err)
 	}
+	if q.listDownloadLinksStmt, err = db.PrepareContext(ctx, listDownloadLinks); err != nil {
+		return nil, fmt.Errorf("error preparing query ListDownloadLinks: %w", err)
+	}
 	if q.listEnabledMediaServersStmt, err = db.PrepareContext(ctx, listEnabledMediaServers); err != nil {
 		return nil, fmt.Errorf("error preparing query ListEnabledMediaServers: %w", err)
 	}
 	if q.listEnabledNotificationsStmt, err = db.PrepareContext(ctx, listEnabledNotifications); err != nil {
 		return nil, fmt.Errorf("error preparing query ListEnabledNotifications: %w", err)
 	}
+	if q.listExcludedTmdbIDsStmt, err = db.PrepareContext(ctx, listExcludedTmdbIDs); err != nil {
+		return nil, fmt.Errorf("error preparing query ListExcludedTmdbIDs: %w", err)
+	}
 	if q.listFailedImportsStmt, err = db.PrepareContext(ctx, listFailedImports); err != nil {
 		return nil, fmt.Errorf("error preparing query ListFailedImports: %w", err)
 	}
 	if q.listFileSizesInRootFolderStmt, err = db.PrepareContext(ctx, listFileSizesInRootFolder); err != nil {
 		return nil, fmt.Errorf("error preparing query ListFileSizesInRootFolder: %w", err)
+	}
+	if q.listHistoryFilteredStmt, err = db.PrepareContext(ctx, listHistoryFiltered); err != nil {
+		return nil, fmt.Errorf("error preparing query ListHistoryFiltered: %w", err)
 	}
 	if q.listImportListExclusionsStmt, err = db.PrepareContext(ctx, listImportListExclusions); err != nil {
 		return nil, fmt.Errorf("error preparing query ListImportListExclusions: %w", err)
@@ -333,6 +354,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listMoviesBySortTitleStmt, err = db.PrepareContext(ctx, listMoviesBySortTitle); err != nil {
 		return nil, fmt.Errorf("error preparing query ListMoviesBySortTitle: %w", err)
 	}
+	if q.listMoviesByTmdbIDsStmt, err = db.PrepareContext(ctx, listMoviesByTmdbIDs); err != nil {
+		return nil, fmt.Errorf("error preparing query ListMoviesByTmdbIDs: %w", err)
+	}
 	if q.listMoviesForRefreshStmt, err = db.PrepareContext(ctx, listMoviesForRefresh); err != nil {
 		return nil, fmt.Errorf("error preparing query ListMoviesForRefresh: %w", err)
 	}
@@ -350,6 +374,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.listQualitySizesStmt, err = db.PrepareContext(ctx, listQualitySizes); err != nil {
 		return nil, fmt.Errorf("error preparing query ListQualitySizes: %w", err)
+	}
+	if q.listQueueContextStmt, err = db.PrepareContext(ctx, listQueueContext); err != nil {
+		return nil, fmt.Errorf("error preparing query ListQueueContext: %w", err)
 	}
 	if q.listRecentHistoryStmt, err = db.PrepareContext(ctx, listRecentHistory); err != nil {
 		return nil, fmt.Errorf("error preparing query ListRecentHistory: %w", err)
@@ -384,6 +411,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listTagsStmt, err = db.PrepareContext(ctx, listTags); err != nil {
 		return nil, fmt.Errorf("error preparing query ListTags: %w", err)
 	}
+	if q.listTagsWithUsageStmt, err = db.PrepareContext(ctx, listTagsWithUsage); err != nil {
+		return nil, fmt.Errorf("error preparing query ListTagsWithUsage: %w", err)
+	}
 	if q.purgeHistoryStmt, err = db.PrepareContext(ctx, purgeHistory); err != nil {
 		return nil, fmt.Errorf("error preparing query PurgeHistory: %w", err)
 	}
@@ -404,6 +434,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.removeMovieTagStmt, err = db.PrepareContext(ctx, removeMovieTag); err != nil {
 		return nil, fmt.Errorf("error preparing query RemoveMovieTag: %w", err)
+	}
+	if q.renameTagStmt, err = db.PrepareContext(ctx, renameTag); err != nil {
+		return nil, fmt.Errorf("error preparing query RenameTag: %w", err)
 	}
 	if q.resetMediaServerHealthStmt, err = db.PrepareContext(ctx, resetMediaServerHealth); err != nil {
 		return nil, fmt.Errorf("error preparing query ResetMediaServerHealth: %w", err)
@@ -426,8 +459,14 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.setMediaServerSecretsStmt, err = db.PrepareContext(ctx, setMediaServerSecrets); err != nil {
 		return nil, fmt.Errorf("error preparing query SetMediaServerSecrets: %w", err)
 	}
+	if q.setMovieFileRelativePathStmt, err = db.PrepareContext(ctx, setMovieFileRelativePath); err != nil {
+		return nil, fmt.Errorf("error preparing query SetMovieFileRelativePath: %w", err)
+	}
 	if q.setMovieLastSearchedStmt, err = db.PrepareContext(ctx, setMovieLastSearched); err != nil {
 		return nil, fmt.Errorf("error preparing query SetMovieLastSearched: %w", err)
+	}
+	if q.setMovieLocationStmt, err = db.PrepareContext(ctx, setMovieLocation); err != nil {
+		return nil, fmt.Errorf("error preparing query SetMovieLocation: %w", err)
 	}
 	if q.setMovieMonitoredStmt, err = db.PrepareContext(ctx, setMovieMonitored); err != nil {
 		return nil, fmt.Errorf("error preparing query SetMovieMonitored: %w", err)
@@ -571,6 +610,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing countScoringRulesStmt: %w", cerr)
 		}
 	}
+	if q.countTagMoviesStmt != nil {
+		if cerr := q.countTagMoviesStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing countTagMoviesStmt: %w", cerr)
+		}
+	}
 	if q.createDownloadClientStmt != nil {
 		if cerr := q.createDownloadClientStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createDownloadClientStmt: %w", cerr)
@@ -664,6 +708,11 @@ func (q *Queries) Close() error {
 	if q.deleteMovieStmt != nil {
 		if cerr := q.deleteMovieStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing deleteMovieStmt: %w", cerr)
+		}
+	}
+	if q.deleteMovieFileStmt != nil {
+		if cerr := q.deleteMovieFileStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteMovieFileStmt: %w", cerr)
 		}
 	}
 	if q.deleteNotificationStmt != nil {
@@ -776,6 +825,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getMovieStmt: %w", cerr)
 		}
 	}
+	if q.getMovieAtLocationStmt != nil {
+		if cerr := q.getMovieAtLocationStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getMovieAtLocationStmt: %w", cerr)
+		}
+	}
 	if q.getMovieByImdbIDStmt != nil {
 		if cerr := q.getMovieByImdbIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getMovieByImdbIDStmt: %w", cerr)
@@ -829,6 +883,11 @@ func (q *Queries) Close() error {
 	if q.getSettingStmt != nil {
 		if cerr := q.getSettingStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getSettingStmt: %w", cerr)
+		}
+	}
+	if q.getTagStmt != nil {
+		if cerr := q.getTagStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getTagStmt: %w", cerr)
 		}
 	}
 	if q.getTagByLabelStmt != nil {
@@ -921,6 +980,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listDownloadClientsStmt: %w", cerr)
 		}
 	}
+	if q.listDownloadLinksStmt != nil {
+		if cerr := q.listDownloadLinksStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listDownloadLinksStmt: %w", cerr)
+		}
+	}
 	if q.listEnabledMediaServersStmt != nil {
 		if cerr := q.listEnabledMediaServersStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listEnabledMediaServersStmt: %w", cerr)
@@ -931,6 +995,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listEnabledNotificationsStmt: %w", cerr)
 		}
 	}
+	if q.listExcludedTmdbIDsStmt != nil {
+		if cerr := q.listExcludedTmdbIDsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listExcludedTmdbIDsStmt: %w", cerr)
+		}
+	}
 	if q.listFailedImportsStmt != nil {
 		if cerr := q.listFailedImportsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listFailedImportsStmt: %w", cerr)
@@ -939,6 +1008,11 @@ func (q *Queries) Close() error {
 	if q.listFileSizesInRootFolderStmt != nil {
 		if cerr := q.listFileSizesInRootFolderStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listFileSizesInRootFolderStmt: %w", cerr)
+		}
+	}
+	if q.listHistoryFilteredStmt != nil {
+		if cerr := q.listHistoryFilteredStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listHistoryFilteredStmt: %w", cerr)
 		}
 	}
 	if q.listImportListExclusionsStmt != nil {
@@ -1021,6 +1095,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listMoviesBySortTitleStmt: %w", cerr)
 		}
 	}
+	if q.listMoviesByTmdbIDsStmt != nil {
+		if cerr := q.listMoviesByTmdbIDsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listMoviesByTmdbIDsStmt: %w", cerr)
+		}
+	}
 	if q.listMoviesForRefreshStmt != nil {
 		if cerr := q.listMoviesForRefreshStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listMoviesForRefreshStmt: %w", cerr)
@@ -1049,6 +1128,11 @@ func (q *Queries) Close() error {
 	if q.listQualitySizesStmt != nil {
 		if cerr := q.listQualitySizesStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listQualitySizesStmt: %w", cerr)
+		}
+	}
+	if q.listQueueContextStmt != nil {
+		if cerr := q.listQueueContextStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listQueueContextStmt: %w", cerr)
 		}
 	}
 	if q.listRecentHistoryStmt != nil {
@@ -1106,6 +1190,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listTagsStmt: %w", cerr)
 		}
 	}
+	if q.listTagsWithUsageStmt != nil {
+		if cerr := q.listTagsWithUsageStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listTagsWithUsageStmt: %w", cerr)
+		}
+	}
 	if q.purgeHistoryStmt != nil {
 		if cerr := q.purgeHistoryStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing purgeHistoryStmt: %w", cerr)
@@ -1139,6 +1228,11 @@ func (q *Queries) Close() error {
 	if q.removeMovieTagStmt != nil {
 		if cerr := q.removeMovieTagStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing removeMovieTagStmt: %w", cerr)
+		}
+	}
+	if q.renameTagStmt != nil {
+		if cerr := q.renameTagStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing renameTagStmt: %w", cerr)
 		}
 	}
 	if q.resetMediaServerHealthStmt != nil {
@@ -1176,9 +1270,19 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing setMediaServerSecretsStmt: %w", cerr)
 		}
 	}
+	if q.setMovieFileRelativePathStmt != nil {
+		if cerr := q.setMovieFileRelativePathStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing setMovieFileRelativePathStmt: %w", cerr)
+		}
+	}
 	if q.setMovieLastSearchedStmt != nil {
 		if cerr := q.setMovieLastSearchedStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing setMovieLastSearchedStmt: %w", cerr)
+		}
+	}
+	if q.setMovieLocationStmt != nil {
+		if cerr := q.setMovieLocationStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing setMovieLocationStmt: %w", cerr)
 		}
 	}
 	if q.setMovieMonitoredStmt != nil {
@@ -1353,6 +1457,7 @@ type Queries struct {
 	countMoviesStmt                   *sql.Stmt
 	countMoviesInRootFolderStmt       *sql.Stmt
 	countScoringRulesStmt             *sql.Stmt
+	countTagMoviesStmt                *sql.Stmt
 	createDownloadClientStmt          *sql.Stmt
 	createIndexerStmt                 *sql.Stmt
 	createMediaServerStmt             *sql.Stmt
@@ -1372,6 +1477,7 @@ type Queries struct {
 	deleteIndexerStmt                 *sql.Stmt
 	deleteMediaServerStmt             *sql.Stmt
 	deleteMovieStmt                   *sql.Stmt
+	deleteMovieFileStmt               *sql.Stmt
 	deleteNotificationStmt            *sql.Stmt
 	deleteQualityProfileStmt          *sql.Stmt
 	deleteQualityProfileItemsStmt     *sql.Stmt
@@ -1394,6 +1500,7 @@ type Queries struct {
 	getLibraryVersionStmt             *sql.Stmt
 	getMediaServerStmt                *sql.Stmt
 	getMovieStmt                      *sql.Stmt
+	getMovieAtLocationStmt            *sql.Stmt
 	getMovieByImdbIDStmt              *sql.Stmt
 	getMovieByTmdbIDStmt              *sql.Stmt
 	getMovieStateStmt                 *sql.Stmt
@@ -1405,6 +1512,7 @@ type Queries struct {
 	getRootFolderStmt                 *sql.Stmt
 	getSavedViewStmt                  *sql.Stmt
 	getSettingStmt                    *sql.Stmt
+	getTagStmt                        *sql.Stmt
 	getTagByLabelStmt                 *sql.Stmt
 	insertAlternateTitleStmt          *sql.Stmt
 	insertBlocklistStmt               *sql.Stmt
@@ -1423,10 +1531,13 @@ type Queries struct {
 	listCollectionMoviesStmt          *sql.Stmt
 	listCollectionsStmt               *sql.Stmt
 	listDownloadClientsStmt           *sql.Stmt
+	listDownloadLinksStmt             *sql.Stmt
 	listEnabledMediaServersStmt       *sql.Stmt
 	listEnabledNotificationsStmt      *sql.Stmt
+	listExcludedTmdbIDsStmt           *sql.Stmt
 	listFailedImportsStmt             *sql.Stmt
 	listFileSizesInRootFolderStmt     *sql.Stmt
+	listHistoryFilteredStmt           *sql.Stmt
 	listImportListExclusionsStmt      *sql.Stmt
 	listIndexersStmt                  *sql.Stmt
 	listJobsByStatusStmt              *sql.Stmt
@@ -1443,12 +1554,14 @@ type Queries struct {
 	listMovieTagsStmt                 *sql.Stmt
 	listMoviesByAddedDescStmt         *sql.Stmt
 	listMoviesBySortTitleStmt         *sql.Stmt
+	listMoviesByTmdbIDsStmt           *sql.Stmt
 	listMoviesForRefreshStmt          *sql.Stmt
 	listNotificationsStmt             *sql.Stmt
 	listProfileScoresStmt             *sql.Stmt
 	listQualityProfileItemsStmt       *sql.Stmt
 	listQualityProfilesStmt           *sql.Stmt
 	listQualitySizesStmt              *sql.Stmt
+	listQueueContextStmt              *sql.Stmt
 	listRecentHistoryStmt             *sql.Stmt
 	listRecentJobsStmt                *sql.Stmt
 	listRemotePathMappingsStmt        *sql.Stmt
@@ -1460,6 +1573,7 @@ type Queries struct {
 	listSearchableMoviesStmt          *sql.Stmt
 	listSettingsStmt                  *sql.Stmt
 	listTagsStmt                      *sql.Stmt
+	listTagsWithUsageStmt             *sql.Stmt
 	purgeHistoryStmt                  *sql.Stmt
 	reassignDownloadMovieStmt         *sql.Stmt
 	recordMediaServerFailureStmt      *sql.Stmt
@@ -1467,6 +1581,7 @@ type Queries struct {
 	recordNotificationFailureStmt     *sql.Stmt
 	recordNotificationOKStmt          *sql.Stmt
 	removeMovieTagStmt                *sql.Stmt
+	renameTagStmt                     *sql.Stmt
 	resetMediaServerHealthStmt        *sql.Stmt
 	resetNotificationHealthStmt       *sql.Stmt
 	resetRunningJobsStmt              *sql.Stmt
@@ -1474,7 +1589,9 @@ type Queries struct {
 	setDownloadClientSecretsStmt      *sql.Stmt
 	setIndexerSecretsStmt             *sql.Stmt
 	setMediaServerSecretsStmt         *sql.Stmt
+	setMovieFileRelativePathStmt      *sql.Stmt
 	setMovieLastSearchedStmt          *sql.Stmt
+	setMovieLocationStmt              *sql.Stmt
 	setMovieMonitoredStmt             *sql.Stmt
 	setMoviePathStmt                  *sql.Stmt
 	setNotificationSecretsStmt        *sql.Stmt
@@ -1518,6 +1635,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		countMoviesStmt:                   q.countMoviesStmt,
 		countMoviesInRootFolderStmt:       q.countMoviesInRootFolderStmt,
 		countScoringRulesStmt:             q.countScoringRulesStmt,
+		countTagMoviesStmt:                q.countTagMoviesStmt,
 		createDownloadClientStmt:          q.createDownloadClientStmt,
 		createIndexerStmt:                 q.createIndexerStmt,
 		createMediaServerStmt:             q.createMediaServerStmt,
@@ -1537,6 +1655,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		deleteIndexerStmt:                 q.deleteIndexerStmt,
 		deleteMediaServerStmt:             q.deleteMediaServerStmt,
 		deleteMovieStmt:                   q.deleteMovieStmt,
+		deleteMovieFileStmt:               q.deleteMovieFileStmt,
 		deleteNotificationStmt:            q.deleteNotificationStmt,
 		deleteQualityProfileStmt:          q.deleteQualityProfileStmt,
 		deleteQualityProfileItemsStmt:     q.deleteQualityProfileItemsStmt,
@@ -1559,6 +1678,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		getLibraryVersionStmt:             q.getLibraryVersionStmt,
 		getMediaServerStmt:                q.getMediaServerStmt,
 		getMovieStmt:                      q.getMovieStmt,
+		getMovieAtLocationStmt:            q.getMovieAtLocationStmt,
 		getMovieByImdbIDStmt:              q.getMovieByImdbIDStmt,
 		getMovieByTmdbIDStmt:              q.getMovieByTmdbIDStmt,
 		getMovieStateStmt:                 q.getMovieStateStmt,
@@ -1570,6 +1690,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		getRootFolderStmt:                 q.getRootFolderStmt,
 		getSavedViewStmt:                  q.getSavedViewStmt,
 		getSettingStmt:                    q.getSettingStmt,
+		getTagStmt:                        q.getTagStmt,
 		getTagByLabelStmt:                 q.getTagByLabelStmt,
 		insertAlternateTitleStmt:          q.insertAlternateTitleStmt,
 		insertBlocklistStmt:               q.insertBlocklistStmt,
@@ -1588,10 +1709,13 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		listCollectionMoviesStmt:          q.listCollectionMoviesStmt,
 		listCollectionsStmt:               q.listCollectionsStmt,
 		listDownloadClientsStmt:           q.listDownloadClientsStmt,
+		listDownloadLinksStmt:             q.listDownloadLinksStmt,
 		listEnabledMediaServersStmt:       q.listEnabledMediaServersStmt,
 		listEnabledNotificationsStmt:      q.listEnabledNotificationsStmt,
+		listExcludedTmdbIDsStmt:           q.listExcludedTmdbIDsStmt,
 		listFailedImportsStmt:             q.listFailedImportsStmt,
 		listFileSizesInRootFolderStmt:     q.listFileSizesInRootFolderStmt,
+		listHistoryFilteredStmt:           q.listHistoryFilteredStmt,
 		listImportListExclusionsStmt:      q.listImportListExclusionsStmt,
 		listIndexersStmt:                  q.listIndexersStmt,
 		listJobsByStatusStmt:              q.listJobsByStatusStmt,
@@ -1608,12 +1732,14 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		listMovieTagsStmt:                 q.listMovieTagsStmt,
 		listMoviesByAddedDescStmt:         q.listMoviesByAddedDescStmt,
 		listMoviesBySortTitleStmt:         q.listMoviesBySortTitleStmt,
+		listMoviesByTmdbIDsStmt:           q.listMoviesByTmdbIDsStmt,
 		listMoviesForRefreshStmt:          q.listMoviesForRefreshStmt,
 		listNotificationsStmt:             q.listNotificationsStmt,
 		listProfileScoresStmt:             q.listProfileScoresStmt,
 		listQualityProfileItemsStmt:       q.listQualityProfileItemsStmt,
 		listQualityProfilesStmt:           q.listQualityProfilesStmt,
 		listQualitySizesStmt:              q.listQualitySizesStmt,
+		listQueueContextStmt:              q.listQueueContextStmt,
 		listRecentHistoryStmt:             q.listRecentHistoryStmt,
 		listRecentJobsStmt:                q.listRecentJobsStmt,
 		listRemotePathMappingsStmt:        q.listRemotePathMappingsStmt,
@@ -1625,6 +1751,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		listSearchableMoviesStmt:          q.listSearchableMoviesStmt,
 		listSettingsStmt:                  q.listSettingsStmt,
 		listTagsStmt:                      q.listTagsStmt,
+		listTagsWithUsageStmt:             q.listTagsWithUsageStmt,
 		purgeHistoryStmt:                  q.purgeHistoryStmt,
 		reassignDownloadMovieStmt:         q.reassignDownloadMovieStmt,
 		recordMediaServerFailureStmt:      q.recordMediaServerFailureStmt,
@@ -1632,6 +1759,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		recordNotificationFailureStmt:     q.recordNotificationFailureStmt,
 		recordNotificationOKStmt:          q.recordNotificationOKStmt,
 		removeMovieTagStmt:                q.removeMovieTagStmt,
+		renameTagStmt:                     q.renameTagStmt,
 		resetMediaServerHealthStmt:        q.resetMediaServerHealthStmt,
 		resetNotificationHealthStmt:       q.resetNotificationHealthStmt,
 		resetRunningJobsStmt:              q.resetRunningJobsStmt,
@@ -1639,7 +1767,9 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		setDownloadClientSecretsStmt:      q.setDownloadClientSecretsStmt,
 		setIndexerSecretsStmt:             q.setIndexerSecretsStmt,
 		setMediaServerSecretsStmt:         q.setMediaServerSecretsStmt,
+		setMovieFileRelativePathStmt:      q.setMovieFileRelativePathStmt,
 		setMovieLastSearchedStmt:          q.setMovieLastSearchedStmt,
+		setMovieLocationStmt:              q.setMovieLocationStmt,
 		setMovieMonitoredStmt:             q.setMovieMonitoredStmt,
 		setMoviePathStmt:                  q.setMoviePathStmt,
 		setNotificationSecretsStmt:        q.setNotificationSecretsStmt,

@@ -74,6 +74,16 @@ type Extra struct {
 	Crew     []Credit `json:"crew,omitempty"`
 	Videos   []Video  `json:"videos,omitempty"` // YouTube trailers and teasers, preferred first
 	Keywords []string `json:"keywords,omitempty"`
+	// Companies are the production companies (studios), in provider order.
+	Companies []Company `json:"companies,omitempty"`
+}
+
+// Company is a production company.
+type Company struct {
+	TMDBID   int    `json:"tmdbId"`
+	Name     string `json:"name"`
+	LogoPath string `json:"logoPath,omitempty"` // provider path
+	Country  string `json:"country,omitempty"`  // ISO 3166-1
 }
 
 // MovieSummary is a movie as returned by searches, lists and collections.

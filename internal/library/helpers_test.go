@@ -27,12 +27,17 @@ type fakeProvider struct {
 	mu          sync.Mutex
 	movies      map[int]*metadata.Movie
 	collections map[int]*metadata.Collection
+	lists       map[string][]metadata.MovieSummary // discover lists: popular, trending-day, trending-week, upcoming, now_playing
+	people      map[int]*metadata.Filmography
 	calls       map[string]int
 	validateErr error
 }
 
 func newFakeProvider() *fakeProvider {
-	return &fakeProvider{movies: map[int]*metadata.Movie{}, collections: map[int]*metadata.Collection{}, calls: map[string]int{}}
+	return &fakeProvider{
+		movies: map[int]*metadata.Movie{}, collections: map[int]*metadata.Collection{}, calls: map[string]int{},
+		lists: map[string][]metadata.MovieSummary{}, people: map[int]*metadata.Filmography{},
+	}
 }
 
 func (p *fakeProvider) set(m *metadata.Movie) {
@@ -94,24 +99,38 @@ func (p *fakeProvider) Collection(_ context.Context, id int) (*metadata.Collecti
 	return c, nil
 }
 
-func (p *fakeProvider) PersonFilmography(context.Context, int) (*metadata.Filmography, error) {
-	return nil, metadata.ErrNotFound
+func (p *fakeProvider) PersonFilmography(_ context.Context, id int) (*metadata.Filmography, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	f, ok := p.people[id]
+	if !ok {
+		return nil, metadata.ErrNotFound
+	}
+	return f, nil
 }
 
-func (p *fakeProvider) Popular(context.Context, int) (metadata.Page[metadata.MovieSummary], error) {
-	return metadata.Page[metadata.MovieSummary]{}, nil
+func (p *fakeProvider) list(name string, page int) (metadata.Page[metadata.MovieSummary], error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.calls[name]++
+	r := p.lists[name]
+	return metadata.Page[metadata.MovieSummary]{Page: max(page, 1), TotalPages: 1, TotalResults: len(r), Results: r}, nil
 }
 
-func (p *fakeProvider) Trending(context.Context, metadata.TrendingWindow, int) (metadata.Page[metadata.MovieSummary], error) {
-	return metadata.Page[metadata.MovieSummary]{}, nil
+func (p *fakeProvider) Popular(_ context.Context, page int) (metadata.Page[metadata.MovieSummary], error) {
+	return p.list("popular", page)
 }
 
-func (p *fakeProvider) Upcoming(context.Context, int) (metadata.Page[metadata.MovieSummary], error) {
-	return metadata.Page[metadata.MovieSummary]{}, nil
+func (p *fakeProvider) Trending(_ context.Context, w metadata.TrendingWindow, page int) (metadata.Page[metadata.MovieSummary], error) {
+	return p.list("trending-"+string(w), page)
 }
 
-func (p *fakeProvider) NowPlaying(context.Context, int) (metadata.Page[metadata.MovieSummary], error) {
-	return metadata.Page[metadata.MovieSummary]{}, nil
+func (p *fakeProvider) Upcoming(_ context.Context, page int) (metadata.Page[metadata.MovieSummary], error) {
+	return p.list("upcoming", page)
+}
+
+func (p *fakeProvider) NowPlaying(_ context.Context, page int) (metadata.Page[metadata.MovieSummary], error) {
+	return p.list("now_playing", page)
 }
 
 func (p *fakeProvider) ValidateKey(context.Context) error { return p.validateErr }

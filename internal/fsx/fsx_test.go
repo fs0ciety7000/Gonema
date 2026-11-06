@@ -555,3 +555,43 @@ func TestUnknownMode(t *testing.T) {
 }
 
 var _ io.Writer = (*failingTemp)(nil)
+
+func TestRemoveEmptyDir(t *testing.T) {
+	dir := t.TempDir()
+	ops := fsx.New(fsx.OS{}, fsx.Options{})
+	empty := filepath.Join(dir, "empty")
+	full := filepath.Join(dir, "full")
+	for _, d := range []string{empty, full} {
+		if err := os.Mkdir(d, 0o750); err != nil {
+			t.Fatal(err)
+		}
+	}
+	file := filepath.Join(full, "movie.mkv")
+	if err := os.WriteFile(file, []byte("data"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(dir, "link")
+	if err := os.Symlink(empty, link); err != nil && runtime.GOOS != "windows" {
+		t.Fatal(err)
+	}
+	if err := ops.RemoveEmptyDir(full); !errors.Is(err, fsx.ErrNotEmpty) {
+		t.Errorf("non-empty folder: %v", err)
+	}
+	if err := ops.RemoveEmptyDir(file); !errors.Is(err, fsx.ErrNotRegular) {
+		t.Errorf("file: %v", err)
+	}
+	if runtime.GOOS != "windows" {
+		if err := ops.RemoveEmptyDir(link); !errors.Is(err, fsx.ErrNotRegular) {
+			t.Errorf("symlink: %v", err)
+		}
+	}
+	if err := ops.RemoveEmptyDir(empty); err != nil {
+		t.Fatalf("empty folder: %v", err)
+	}
+	if _, err := os.Stat(file); err != nil {
+		t.Errorf("file inside the non-empty folder is gone: %v", err)
+	}
+	if _, err := os.Stat(empty); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("empty folder still there: %v", err)
+	}
+}

@@ -9,13 +9,15 @@ import (
 	"unicode/utf8"
 
 	"github.com/fs0ciety7000/gonema/internal/metadata"
-	"github.com/fs0ciety7000/gonema/internal/store"
 )
 
 // LookupResult is a provider search result, flagged when already in the library.
 type LookupResult struct {
 	metadata.MovieSummary
-	MovieID int64 // library movie id, 0 when not in the library
+	MovieID   int64  // library movie id, 0 when not in the library
+	Monitored bool   // library movies only
+	State     string // library state, "" when not in the library
+	Excluded  bool   // on the import list exclusions
 }
 
 // Lookup searches the provider. The query is a title, "tmdb:<id>", or an IMDb
@@ -71,16 +73,18 @@ func (s *Service) Lookup(ctx context.Context, query string, year int) ([]LookupR
 		}
 		found = page.Results
 	}
+	ids := make([]int, 0, len(found))
+	for i := range found {
+		ids = append(ids, found[i].TMDBID)
+	}
+	flags, err := s.FlagMovies(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("library: lookup: %w", err)
+	}
 	out := make([]LookupResult, 0, len(found))
 	for i := range found {
-		m := &found[i]
-		r := LookupResult{MovieSummary: *m}
-		if row, err := s.st.Read().GetMovieByTmdbID(ctx, int64(m.TMDBID)); err == nil {
-			r.MovieID = row.ID
-		} else if !errors.Is(store.MapError(err), store.ErrNotFound) {
-			return nil, store.MapError(fmt.Errorf("library: lookup: %w", err))
-		}
-		out = append(out, r)
+		f := flags[found[i].TMDBID]
+		out = append(out, LookupResult{MovieSummary: found[i], MovieID: f.MovieID, Monitored: f.Monitored, State: f.State, Excluded: f.Excluded})
 	}
 	return out, nil
 }

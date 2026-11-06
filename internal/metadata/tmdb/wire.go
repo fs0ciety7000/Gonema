@@ -55,6 +55,12 @@ type wireMovie struct {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
 	} `json:"genres"`
+	ProductionCompanies []struct {
+		ID            int    `json:"id"`
+		Name          string `json:"name"`
+		LogoPath      string `json:"logo_path"`
+		OriginCountry string `json:"origin_country"`
+	} `json:"production_companies"`
 
 	// append_to_response
 	Credits *struct {
@@ -225,6 +231,13 @@ func (w *wireMovie) toMovie(region string, now time.Time) *metadata.Movie {
 	}
 	for _, g := range w.Genres {
 		m.Genres = append(m.Genres, g.Name)
+	}
+	for _, c := range w.ProductionCompanies {
+		if name := strings.TrimSpace(c.Name); name != "" {
+			m.Extra.Companies = append(m.Extra.Companies, metadata.Company{
+				TMDBID: c.ID, Name: name, LogoPath: c.LogoPath, Country: strings.ToUpper(c.OriginCountry),
+			})
+		}
 	}
 	if c := w.BelongsToCollection; c != nil && c.ID != 0 {
 		m.Collection = &metadata.CollectionRef{TMDBID: c.ID, Name: c.Name, PosterPath: c.PosterPath, BackdropPath: c.BackdropPath}

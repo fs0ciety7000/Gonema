@@ -29,6 +29,27 @@ const testKey = "0123456789abcdef0123456789abcdef"
 type provider struct {
 	metadata.Provider // unused methods panic
 	movies            map[int]*metadata.Movie
+	popular           []metadata.MovieSummary
+	collections       map[int]*metadata.Collection
+	people            map[int]*metadata.Filmography
+}
+
+func (p *provider) Popular(context.Context, int) (metadata.Page[metadata.MovieSummary], error) {
+	return metadata.Page[metadata.MovieSummary]{Page: 1, TotalPages: 1, TotalResults: len(p.popular), Results: p.popular}, nil
+}
+
+func (p *provider) Collection(_ context.Context, id int) (*metadata.Collection, error) {
+	if c, ok := p.collections[id]; ok {
+		return c, nil
+	}
+	return nil, metadata.ErrNotFound
+}
+
+func (p *provider) PersonFilmography(_ context.Context, id int) (*metadata.Filmography, error) {
+	if f, ok := p.people[id]; ok {
+		return f, nil
+	}
+	return nil, metadata.ErrNotFound
 }
 
 func (p *provider) Movie(_ context.Context, id int) (*metadata.Movie, error) {
@@ -62,6 +83,7 @@ type testEnv struct {
 	st     *store.Store
 	rootID int64
 	profID int64
+	prov   *provider
 }
 
 func newTestEnv(t *testing.T, baseURL string) *testEnv {
@@ -112,7 +134,7 @@ func newTestEnv(t *testing.T, baseURL string) *testEnv {
 		srv.Shutdown()
 		ts.Close()
 	})
-	return &testEnv{srv: srv, ts: ts, lib: lib, bus: bus, st: st, rootID: lib2.RootFolderID, profID: lib2.ProfileID}
+	return &testEnv{srv: srv, ts: ts, lib: lib, bus: bus, st: st, rootID: lib2.RootFolderID, profID: lib2.ProfileID, prov: prov}
 }
 
 type response struct {

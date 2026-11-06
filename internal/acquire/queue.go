@@ -59,6 +59,27 @@ type QueueItem struct {
 	ImportedAt  *time.Time `json:"importedAt"`
 }
 
+// ProgressUpdate is the data of download.progress events: the live fields of
+// one queue entry, keyed by its id (GET /queue has the full entry). It is sent
+// at every poll of the download clients, so it stays small.
+type ProgressUpdate struct {
+	ID         int64   `json:"id" doc:"Queue entry id"`
+	MovieID    int64   `json:"movieId"`
+	Status     string  `json:"status" enum:"queued,downloading,paused,completed,importing,imported,failed,warning,removed"`
+	Progress   float64 `json:"progress" doc:"0 to 1"`
+	SpeedBps   int64   `json:"speedBps"`
+	EtaSeconds *int64  `json:"etaSeconds"`
+	Message    string  `json:"message,omitempty" doc:"Latest status message"`
+}
+
+func progressOf(it QueueItem) ProgressUpdate {
+	p := ProgressUpdate{ID: it.ID, MovieID: it.MovieID, Status: it.Status, Progress: it.Progress, SpeedBps: it.SpeedBps, EtaSeconds: it.EtaSeconds}
+	if n := len(it.Messages); n > 0 {
+		p.Message = it.Messages[n-1]
+	}
+	return p
+}
+
 // live is the in-memory state of a tracked download.
 type live struct {
 	status      string
@@ -308,7 +329,7 @@ func (s *Service) reconcile(ctx context.Context, c *db.DownloadClient, cl downlo
 	if persist {
 		s.persistState(ctx, d, string(it.Status), l, it.Message, string(it.Status) != d.Status)
 	}
-	s.publish(events.Event{Type: events.DownloadProgress, MovieID: d.MovieID, Data: s.queueItemLive(d, c.Name, l)})
+	s.publish(events.Event{Type: events.DownloadProgress, MovieID: d.MovieID, Data: progressOf(s.queueItemLive(d, c.Name, l))})
 }
 
 // importFailed reports whether a download waits in warning after a failed

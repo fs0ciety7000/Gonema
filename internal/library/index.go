@@ -82,9 +82,24 @@ type ListFilter struct {
 	YearTo       int
 	Genre        string
 	RootFolderID int64
-	Tag          string // tag label
-	Query        string // substring of the title, original title or an alternate title
+	Tag          string   // tag label; merged with Tags
+	Tags         []string // tag labels: movies with any of them (TagMatch "any", default) or all (TagMatch "all")
+	TagMatch     string   // TagMatchAny (default) or TagMatchAll
+	Wanted       string   // WantedMissing or WantedCutoffUnmet: the Wanted lists (see Counts)
+	Query        string   // substring of the title, original title or an alternate title
 }
+
+// Tag matching of ListFilter.TagMatch.
+const (
+	TagMatchAny = "any"
+	TagMatchAll = "all"
+)
+
+// Wanted lists of ListFilter.Wanted.
+const (
+	WantedMissing     = "missing"      // monitored, no file, released enough for the minimum availability
+	WantedCutoffUnmet = "cutoff_unmet" // monitored, file below the cutoff
+)
 
 // ListQuery is a list request. Cursor is the opaque NextCursor of the previous
 // page ("" for the first page).
@@ -103,6 +118,8 @@ type MovieSummary struct {
 	// LastDownloadFailed: the newest download failed after the current file
 	// (if any) was imported, and none is active.
 	LastDownloadFailed bool
+	// TagIDs are the ids of the movie's tags, ascending.
+	TagIDs []int64
 }
 
 // MoviePage is one page of movies. The rows are shared with the in-memory
@@ -206,7 +223,9 @@ type filter struct {
 	yearMin, yearMax int64
 	genre            string // JSON-encoded, quotes included: matched in the genres array text
 	rootFolderID     int64
-	tag              string
+	tags             []string
+	tagAll           bool
+	wanted           string
 	query            string // lower case
 }
 
@@ -244,7 +263,24 @@ func (fl *ListFilter) compile() (filter, error) {
 		}
 		f.genre = string(g)
 	}
-	f.tag = strings.TrimSpace(fl.Tag)
+	for _, t := range append([]string{fl.Tag}, fl.Tags...) {
+		if t = strings.TrimSpace(t); t != "" && !slices.Contains(f.tags, t) {
+			f.tags = append(f.tags, t)
+		}
+	}
+	switch fl.TagMatch {
+	case "", TagMatchAny:
+	case TagMatchAll:
+		f.tagAll = true
+	default:
+		return f, invalid("tagMatch", "tagMatch must be any or all")
+	}
+	switch fl.Wanted {
+	case "", WantedMissing, WantedCutoffUnmet:
+		f.wanted = fl.Wanted
+	default:
+		return f, invalid("kind", "the wanted list must be missing or cutoff_unmet")
+	}
 	if q := strings.TrimSpace(fl.Query); q != "" {
 		if len(q) > 200 {
 			return f, invalid("q", "the search text is longer than 200 characters")
@@ -287,6 +323,51 @@ func matchesStates(m *MovieSummary, states []string) bool {
 		}
 	}
 	return false
+}
+
+// matchesTags reports whether a movie with the tags has any (or all) of want
+// (none = all movies).
+func matchesTags(have, want []int64, all bool) bool {
+	if len(want) == 0 {
+		return true
+	}
+	for _, id := range want {
+		ok := slices.Contains(have, id)
+		if ok && !all {
+			return true
+		}
+		if !ok && all {
+			return false
+		}
+	}
+	return all
+}
+
+// matchesWanted reports whether a row is on a Wanted list ("" = all rows).
+func matchesWanted(m *MovieSummary, wanted string) bool {
+	switch wanted {
+	case WantedMissing:
+		return m.Monitored && m.State == StateMissing && meetsAvailability(m.Status, m.MinimumAvailability)
+	case WantedCutoffUnmet:
+		return m.Monitored && m.State == StateUpgradable
+	}
+	return true
+}
+
+// tagIDs resolves tag labels; missing reports that a label is unknown.
+func (s *Service) tagIDs(ctx context.Context, labels []string) (ids []int64, missing bool, err error) {
+	for _, l := range labels {
+		t, err := s.st.Read().GetTagByLabel(ctx, l)
+		switch err = store.MapError(err); {
+		case err == nil:
+			ids = append(ids, t.ID)
+		case errors.Is(err, store.ErrNotFound):
+			missing = true
+		default:
+			return nil, false, fmt.Errorf("library: tag %q: %w", l, err)
+		}
+	}
+	return ids, missing, nil
 }
 
 // libraryIndex is the in-memory index of every movie, valid for one value of
@@ -366,6 +447,9 @@ func (s *Service) index(ctx context.Context) (*libraryIndex, error) {
 		for _, t := range tags {
 			idx.tags[t.MovieID] = append(idx.tags[t.MovieID], t.TagID)
 		}
+		for i := range idx.rows {
+			idx.rows[i].TagIDs = idx.tags[idx.rows[i].ID]
+		}
 		return nil
 	})
 	if err != nil {
@@ -413,17 +497,12 @@ func (s *Service) ListMovies(ctx context.Context, lq ListQuery) (MoviePage, erro
 	if err != nil {
 		return MoviePage{}, err
 	}
-	var tagID int64 = -1
-	if f.tag != "" {
-		t, err := s.st.Read().GetTagByLabel(ctx, f.tag)
-		switch err = store.MapError(err); {
-		case err == nil:
-			tagID = t.ID
-		case errors.Is(err, store.ErrNotFound):
-			return MoviePage{Movies: []*MovieSummary{}}, nil
-		default:
-			return MoviePage{}, fmt.Errorf("library: tag %q: %w", f.tag, err)
-		}
+	tagIDs, anyTagMissing, err := s.tagIDs(ctx, f.tags)
+	if err != nil {
+		return MoviePage{}, err
+	}
+	if len(f.tags) > 0 && (len(tagIDs) == 0 || f.tagAll && anyTagMissing) {
+		return MoviePage{Movies: []*MovieSummary{}}, nil // no movie can match
 	}
 	var altMatches map[int64]bool
 	if f.query != "" {
@@ -451,7 +530,8 @@ func (s *Service) ListMovies(ctx context.Context, lq ListQuery) (MoviePage, erro
 			f.quality != "" && (m.FileQuality == nil || *m.FileQuality != f.quality) ||
 			f.genre != "" && !strings.Contains(m.Genres, f.genre) ||
 			!matchesStates(m, f.states) ||
-			tagID >= 0 && !slices.Contains(idx.tags[m.ID], tagID) {
+			!matchesTags(idx.tags[m.ID], tagIDs, f.tagAll) ||
+			!matchesWanted(m, f.wanted) {
 			continue
 		}
 		if f.query != "" && !altMatches[m.ID] &&
@@ -574,7 +654,7 @@ func (s *Service) Stats(ctx context.Context) (Counts, error) {
 			c.Available++
 		case StateMissing:
 			c.Missing++
-			if m.Monitored && meetsAvailability(m.Status, m.MinimumAvailability) {
+			if matchesWanted(m, WantedMissing) {
 				c.Wanted++
 			}
 		case StateDownloading:

@@ -110,8 +110,12 @@ func movieDetailsOf(d *library.MovieDetails) Movie {
 // LookupResult is a TMDB search result.
 type LookupResult struct {
 	metadata.MovieSummary
-	InLibrary bool  `json:"inLibrary"`
-	MovieID   int64 `json:"movieId,omitempty" doc:"Library movie id when inLibrary"`
+	InLibrary bool    `json:"inLibrary"`
+	MovieID   int64   `json:"movieId,omitempty" doc:"Library movie id when inLibrary"`
+	Monitored bool    `json:"monitored" doc:"Library movies only"`
+	State     *string `json:"state" enum:"available,missing,downloading,upgradable" doc:"Library state; null when not in the library"`
+	Excluded  bool    `json:"excluded" doc:"On the import list exclusions"`
+	PosterURL *string `json:"posterUrl" doc:"w342, through the image cache"`
 }
 
 // Collection is a saga.

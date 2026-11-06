@@ -11,6 +11,8 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
+	"github.com/fs0ciety7000/gonema/internal/imagecache"
+	"github.com/fs0ciety7000/gonema/internal/importer"
 	"github.com/fs0ciety7000/gonema/internal/jobs"
 	"github.com/fs0ciety7000/gonema/internal/library"
 	"github.com/fs0ciety7000/gonema/internal/metadata"
@@ -111,17 +113,6 @@ func (s *Server) systemRoutes() {
 		}
 		return out, nil
 	})
-
-	huma.Register(s.api, huma.Operation{
-		OperationID: "list-history", Method: http.MethodGet, Path: "/history",
-		Summary: "Recent history", Description: "Every automatic action and its reasons, newest first.", Tags: []string{"History"},
-	}, func(ctx context.Context, in *PageParams) (*historyOutput, error) {
-		rows, err := s.d.Store.Read().ListRecentHistory(ctx, db.ListRecentHistoryParams{BeforeID: in.beforeID(), Limit: in.Limit})
-		if err != nil {
-			return nil, s.problem(ctx, store.MapError(err), false)
-		}
-		return historyPage(rows), nil
-	})
 }
 
 func historyPage(rows []db.History) *historyOutput {
@@ -161,6 +152,11 @@ type updateMovieInput struct {
 		RootFolderID        *int64    `json:"rootFolderId,omitempty" minimum:"1" doc:"Files are not moved"`
 		Tags                *[]string `json:"tags,omitempty" maxItems:"20"`
 	}
+}
+
+type deleteMovieOutput struct {
+	Status int
+	Body   *importer.Deletion
 }
 
 type refreshOutput struct {
@@ -230,16 +226,32 @@ func (s *Server) movieRoutes() {
 
 	huma.Register(s.api, huma.Operation{
 		OperationID: "delete-movie", Method: http.MethodDelete, Path: "/movies/{id}", Summary: "Remove a movie from the library",
-		Description: "Removes the movie from the database only. Its folder and files are never deleted.",
-		Tags:        tags, DefaultStatus: http.StatusNoContent,
+		Description: "By default removes the movie from the database only: its folder and files stay on disk (204). " +
+			"With deleteFiles=true and confirm=true, every file of the movie folder first goes to the recycle bin " +
+			"(never a permanent deletion), then the movie is removed (200 with what was recycled). " +
+			"deleteFiles without confirm is refused (422).",
+		Tags: tags, DefaultStatus: http.StatusNoContent,
 	}, func(ctx context.Context, in *struct {
 		IDParam
 		AddExclusion bool `query:"addExclusion" doc:"Keep import lists from adding it again"`
-	}) (*struct{}, error) {
+		DeleteFiles  bool `query:"deleteFiles" doc:"Also move the movie's files to the recycle bin"`
+		Confirm      bool `query:"confirm" doc:"Required with deleteFiles: the user confirmed it"`
+	}) (*deleteMovieOutput, error) {
+		out := &deleteMovieOutput{Status: http.StatusNoContent}
+		if in.DeleteFiles {
+			if s.files == nil {
+				return nil, huma.Error503ServiceUnavailable("Deleting files is not available on this server.")
+			}
+			d, err := s.files.RecycleFolder(ctx, in.ID, in.Confirm)
+			if err != nil {
+				return nil, s.fileProblem(ctx, err)
+			}
+			out.Status, out.Body = http.StatusOK, &d
+		}
 		if _, err := s.d.Library.DeleteMovie(ctx, in.ID, library.DeleteOptions{AddExclusion: in.AddExclusion}); err != nil {
 			return nil, s.problem(ctx, err, false)
 		}
-		return nil, nil
+		return out, nil
 	})
 
 	huma.Register(s.api, huma.Operation{
@@ -289,7 +301,10 @@ func (s *Server) movieRoutes() {
 		out := &struct{ Body []LookupResult }{make([]LookupResult, 0, len(res))}
 		for i := range res {
 			r := &res[i]
-			out.Body = append(out.Body, LookupResult{MovieSummary: r.MovieSummary, InLibrary: r.MovieID != 0, MovieID: r.MovieID})
+			out.Body = append(out.Body, LookupResult{
+				MovieSummary: r.MovieSummary, InLibrary: r.MovieID != 0, MovieID: r.MovieID, Monitored: r.Monitored,
+				State: optStr(r.State), Excluded: r.Excluded, PosterURL: s.imageURLOf(imagecache.Poster, gridPosterSize, r.PosterPath),
+			})
 		}
 		return out, nil
 	})

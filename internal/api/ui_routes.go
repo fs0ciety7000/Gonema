@@ -91,14 +91,16 @@ type MovieFilterParams struct {
 	YearTo       int      `query:"yearTo" minimum:"0" maximum:"2200"`
 	Genre        string   `query:"genre" maxLength:"100"`
 	RootFolderID int64    `query:"rootFolderId" minimum:"0"`
-	Tag          string   `query:"tag" maxLength:"64" doc:"Tag label"`
+	Tag          string   `query:"tag" maxLength:"64" doc:"Tag label (same as a one-label tags)"`
+	Tags         []string `query:"tags" maxItems:"20" doc:"Tag labels, comma-separated: movies with any of them (tagMatch=any) or all (tagMatch=all)"`
+	TagMatch     string   `query:"tagMatch" enum:"any,all" default:"any"`
 	Q            string   `query:"q" maxLength:"200" doc:"Text in the title, original title or an alternate title (case-insensitive)"`
 }
 
 func (p *MovieFilterParams) query() library.ListQuery {
 	q := library.ListQuery{Sort: p.Sort, Order: p.Order, Filter: library.ListFilter{
 		Status: p.Status, States: p.State, Quality: p.Quality, YearFrom: p.YearFrom, YearTo: p.YearTo,
-		Genre: p.Genre, RootFolderID: p.RootFolderID, Tag: p.Tag, Query: p.Q,
+		Genre: p.Genre, RootFolderID: p.RootFolderID, Tag: p.Tag, Tags: p.Tags, TagMatch: p.TagMatch, Query: p.Q,
 	}}
 	if p.Monitored != "" {
 		v := p.Monitored == "true"
@@ -265,6 +267,11 @@ func (s *Server) uiRoutes() {
 
 	s.viewRoutes()
 	s.imageRoute()
+	s.tagRoutes()
+	s.bulkRoutes()
+	s.historyRoutes()
+	s.discoverRoutes()
+	s.wantedRoute()
 }
 
 // liveIfDownloading reads the live queue only when a row is downloading.

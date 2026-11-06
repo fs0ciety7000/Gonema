@@ -154,7 +154,7 @@ Le statut de bibliothèque (`missing`, `downloading`, `available`, `upgradable`)
 
 **blocklist** — `id, movie_id FK nullable, kind ('release'|'group'), source_title, release_group, indexer_id, protocol, info_hash, reason, created_at`. Index `(movie_id)`, `(info_hash)`, `(release_group)`.
 
-**history** (ajout seul) — `id, movie_id FK, event, source_title, quality, custom_score, download_id, data JSON, created_at`.
+**history** (ajout seul) — `id, movie_id FK, event, source_title, quality, custom_score, download_id, data JSON, created_at`. Index `(event, id)` pour le filtre par type de l'écran History (migration 00005). Les renommages et déplacements de dossier écrivent `file_renamed` (`data.kind` = `rename` | `move`), les suppressions demandées `file_deleted` (fichiers dans la corbeille).
 `event` ∈ `grabbed`, `grab_failed`, `download_failed`, `imported`, `upgraded`, `import_failed`, `file_deleted`, `file_renamed`, `blocklisted`, `ignored`, `metadata_changed`. Index `(movie_id, created_at)`, `(created_at)`.
 
 ### Découverte

@@ -115,6 +115,12 @@ func (s *Service) handle(e *events.Event) {
 	if err := s.Request(ctx, folder, reason); err != nil {
 		s.log.Error("media server refresh not scheduled", slog.Int64("movie_id", e.MovieID), slog.Any("error", err))
 	}
+	// A move also changes the folder the movie left: rescan it too.
+	if old, _ := data["oldPath"].(string); filepath.IsAbs(old) && filepath.Clean(old) != filepath.Clean(folder) {
+		if err := s.Request(ctx, old, reason); err != nil {
+			s.log.Error("media server refresh not scheduled", slog.Int64("movie_id", e.MovieID), slog.Any("error", err))
+		}
+	}
 }
 
 // movieFolder returns the folder of a movie as Gonema sees it.

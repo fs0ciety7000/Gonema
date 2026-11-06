@@ -216,6 +216,8 @@ func TestMovieDetails(t *testing.T) {
 		{"Keywords", len(m.Extra.Keywords), 15},
 		{"Keywords[0]", m.Extra.Keywords[0], "based on novel or book"},
 		{"Tagline", m.Extra.Tagline, "Mischief. Mayhem. Soap."},
+		{"Companies", len(m.Extra.Companies), 2},
+		{"Companies[0]", m.Extra.Companies[0], metadata.Company{TMDBID: 1, Name: "Lucasfilm Ltd.", LogoPath: "/tlVSws0RvvtPBwViUyOFAO0vcQS.png", Country: "US"}},
 	}
 	for _, c := range checks {
 		if diff := cmp.Diff(c.want, c.got); diff != "" {

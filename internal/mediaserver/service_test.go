@@ -333,3 +333,28 @@ func TestJoinUnder(t *testing.T) {
 		}
 	}
 }
+
+// TestRefresherMoveRescansBothFolders: a move publishes the folder the movie
+// left (oldPath) with the new one; both are rescanned.
+func TestRefresherMoveRescansBothFolders(t *testing.T) {
+	e := newEnv(t)
+	m := e.movie(t)
+	if _, err := e.svc.Create(context.Background(), MediaServerInput{Name: "Plex", Kind: Plex, BaseURL: "http://plex:32400",
+		Token: ptr(plexToken), RefreshOn: []Reason{ReasonRename}}); err != nil {
+		t.Fatal(err)
+	}
+	e.bus.Publish(events.Event{Type: events.MovieFileRenamed, MovieID: m.ID, Data: map[string]any{
+		"path": "/archive/Halcyon Drift (2024)", "oldPath": "/movies/Halcyon Drift (2024)",
+	}})
+	got := map[string]bool{}
+	for range 2 {
+		r := waitRefresh(t, e.fake)
+		if r.Reason != ReasonRename {
+			t.Errorf("refresh = %+v", r)
+		}
+		got[r.Path] = true
+	}
+	if !got["/archive/Halcyon Drift (2024)"] || !got["/movies/Halcyon Drift (2024)"] {
+		t.Errorf("refreshed folders = %v", got)
+	}
+}

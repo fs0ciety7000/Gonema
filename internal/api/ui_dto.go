@@ -151,7 +151,15 @@ type MovieListItem struct {
 	CustomScore         *int64            `json:"customScore" doc:"Custom score of the current file"`
 	HDR                 []string          `json:"hdr" doc:"HDR formats of the current file (DV, HDR10...)"`
 	Edition             *string           `json:"edition"`
+	TagIDs              []int64           `json:"tagIds" doc:"Ids of the movie's tags (GET /tags has the labels)"`
 	Download            *DownloadProgress `json:"download" doc:"Active download; null otherwise"`
+}
+
+func tagIDs(ids []int64) []int64 {
+	if ids == nil {
+		return []int64{}
+	}
+	return ids
 }
 
 // splitHDR turns the stored "dv hdr10" into display names ["DV", "HDR10"].
@@ -168,6 +176,13 @@ func qualityName(id *string) *string {
 	}
 	n := quality.ID(*id).Name()
 	return &n
+}
+
+func optStr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 func emptyToNil(s *string) *string {
@@ -191,7 +206,7 @@ func (s *Server) movieListItemOf(m *library.MovieSummary, live map[int64]*acquir
 		RootFolderID: m.RootFolderID, Path: m.Path, CollectionID: m.CollectionID, AddedAt: ts(m.AddedAt),
 		ReleaseCinema: m.ReleaseCinema, ReleaseDigital: m.ReleaseDigital, ReleasePhysical: m.ReleasePhysical,
 		Quality: m.FileQuality, QualityName: qualityName(m.FileQuality), SizeOnDisk: m.FileSize,
-		CustomScore: m.FileScore, HDR: splitHDR(m.FileHdr), Edition: emptyToNil(m.FileEdition),
+		CustomScore: m.FileScore, HDR: splitHDR(m.FileHdr), Edition: emptyToNil(m.FileEdition), TagIDs: tagIDs(m.TagIDs),
 	}
 	if m.State == library.StateDownloading {
 		if q, ok := live[m.ID]; ok {
@@ -229,6 +244,14 @@ type MovieColumns struct {
 	Genres        []stringList      `json:"genres"`
 	RuntimeMin    []int64           `json:"runtimeMin"`
 	RatingTMDB    []*float64        `json:"ratingTmdb" doc:"TMDB average out of 10"`
+
+	SortTitle           []string  `json:"sortTitle"`
+	QualityProfileID    []int64   `json:"qualityProfileId"`
+	MinimumAvailability []string  `json:"minimumAvailability"`
+	ReleaseCinema       []*string `json:"releaseCinema" doc:"YYYY-MM-DD"`
+	ReleaseDigital      []*string `json:"releaseDigital"`
+	ReleasePhysical     []*string `json:"releasePhysical"`
+	TagIDs              [][]int64 `json:"tagIds" doc:"Ids of each movie's tags"`
 }
 
 func (s *Server) movieColumnsOf(rows []*library.MovieSummary, live map[int64]*acquire.QueueItem) MovieColumns {
@@ -240,7 +263,9 @@ func (s *Server) movieColumnsOf(rows []*library.MovieSummary, live map[int64]*ac
 		SizeOnDisk: make([]*int64, n), CustomScore: make([]*int64, n), HDR: make([]string, n),
 		Progress: make([]*float64, n), AddedAt: make([]int64, n), RootFolderID: make([]int64, n),
 		Path: make([]string, n), Genres: make([]stringList, n), RuntimeMin: make([]int64, n),
-		RatingTMDB: make([]*float64, n),
+		RatingTMDB: make([]*float64, n), SortTitle: make([]string, n), QualityProfileID: make([]int64, n),
+		MinimumAvailability: make([]string, n), ReleaseCinema: make([]*string, n), ReleaseDigital: make([]*string, n),
+		ReleasePhysical: make([]*string, n), TagIDs: make([][]int64, n),
 	}
 	for i, m := range rows {
 		c.ID[i], c.Title[i], c.Year[i], c.Status[i], c.State[i] = m.ID, m.Title, m.Year, m.Status, m.State
@@ -265,6 +290,9 @@ func (s *Server) movieColumnsOf(rows []*library.MovieSummary, live map[int64]*ac
 		if m.RatingTmdb >= 0 {
 			c.RatingTMDB[i] = &m.RatingTmdb
 		}
+		c.SortTitle[i], c.QualityProfileID[i], c.MinimumAvailability[i] = m.SortTitle, m.QualityProfileID, m.MinimumAvailability
+		c.ReleaseCinema[i], c.ReleaseDigital[i], c.ReleasePhysical[i] = m.ReleaseCinema, m.ReleaseDigital, m.ReleasePhysical
+		c.TagIDs[i] = tagIDs(m.TagIDs)
 	}
 	return c
 }
@@ -344,9 +372,52 @@ type MovieFile struct {
 	Languages    stringList `json:"languages"`
 	ReleaseGroup string     `json:"releaseGroup"`
 	SceneName    string     `json:"sceneName"`
-	CustomScore  int64      `json:"customScore"`
+	CustomScore  int64      `json:"customScore" doc:"Score given at import"`
 	ImportedAt   time.Time  `json:"importedAt"`
 	Media        FileMedia  `json:"media"`
+	// ScoreBreakdown is the score with today's rules and profile: it differs
+	// from customScore when the rules changed since the import.
+	ScoreBreakdown ScoreBreakdown `json:"scoreBreakdown"`
+}
+
+// ScoreBreakdown is a custom score with the contribution of each matched rule.
+type ScoreBreakdown struct {
+	Total int         `json:"total"`
+	Rules []ScoreRule `json:"rules" doc:"Matched rules in rule order; score 0 when the profile does not score the rule"`
+}
+
+// ScoreRule is the contribution of one scoring rule.
+type ScoreRule struct {
+	Rule  string `json:"rule"`
+	Score int    `json:"score"`
+}
+
+func breakdownOf(b *quality.Breakdown) ScoreBreakdown {
+	out := ScoreBreakdown{Rules: []ScoreRule{}}
+	if b == nil {
+		return out
+	}
+	out.Total = b.Total
+	for _, r := range b.Rules {
+		out.Rules = append(out.Rules, ScoreRule{Rule: r.Rule, Score: r.Score})
+	}
+	return out
+}
+
+// ReleaseRegions are the regions (ISO 3166-1 alpha-2, e.g. US) the release
+// dates and certification were taken from; null when unknown.
+type ReleaseRegions struct {
+	Cinema        *string `json:"cinema"`
+	Digital       *string `json:"digital"`
+	Physical      *string `json:"physical"`
+	Certification *string `json:"certification"`
+}
+
+// Studio is a production company.
+type Studio struct {
+	TmdbID  int    `json:"tmdbId"`
+	Name    string `json:"name"`
+	Country string `json:"country,omitempty" doc:"ISO 3166-1 alpha-2"`
 }
 
 // MovieDetail is everything the movie page shows.
@@ -359,6 +430,8 @@ type MovieDetail struct {
 	Homepage           string             `json:"homepage"`
 	Keywords           []string           `json:"keywords"`
 	StatusReason       string             `json:"statusReason" doc:"Why the release stage is what it is"`
+	ReleaseRegions     ReleaseRegions     `json:"releaseRegions" doc:"Filled at the next metadata refresh for movies added before this field existed"`
+	Studios            []Studio           `json:"studios" doc:"Production companies, TMDB order"`
 	Cast               []Person           `json:"cast" doc:"Billing order"`
 	Crew               []Person           `json:"crew"`
 	Videos             []Video            `json:"videos" doc:"Preferred first"`
@@ -373,7 +446,8 @@ type MovieDetail struct {
 
 type extraDoc struct {
 	metadata.Extra
-	StatusReason string `json:"statusReason"`
+	StatusReason   string                  `json:"statusReason"`
+	ReleaseRegions *library.ReleaseRegions `json:"releaseRegions"`
 }
 
 func (s *Server) movieDetailOf(d *library.MovieDetails, live map[int64]*acquire.QueueItem) MovieDetail {
@@ -384,6 +458,7 @@ func (s *Server) movieDetailOf(d *library.MovieDetails, live map[int64]*acquire.
 		PosterURLLarge: s.imageURL(imagecache.Poster, detailPosterSize, m.PosterPath),
 		BackdropURL:    s.imageURL(imagecache.Backdrop, backdropSize, m.BackdropPath),
 		Keywords:       []string{}, Cast: []Person{}, Crew: []Person{}, Videos: []Video{}, History: []HistoryEntry{},
+		Studios:            []Studio{},
 		QualityProfileName: d.ProfileName, RootFolderPath: d.RootFolderPath,
 	}
 	var x extraDoc
@@ -397,6 +472,14 @@ func (s *Server) movieDetailOf(d *library.MovieDetails, live map[int64]*acquire.
 		}
 		for _, c := range x.Crew {
 			out.Crew = append(out.Crew, s.personOf(&c))
+		}
+		if r := x.ReleaseRegions; r != nil {
+			out.ReleaseRegions = ReleaseRegions{
+				Cinema: optStr(r.Cinema), Digital: optStr(r.Digital), Physical: optStr(r.Physical), Certification: optStr(r.Certification),
+			}
+		}
+		for _, c := range x.Companies {
+			out.Studios = append(out.Studios, Studio{TmdbID: c.TMDBID, Name: c.Name, Country: c.Country})
 		}
 		for _, v := range x.Videos {
 			out.Videos = append(out.Videos, Video{
@@ -424,6 +507,7 @@ func (s *Server) movieDetailOf(d *library.MovieDetails, live map[int64]*acquire.
 			Size: f.Size, Quality: f.Quality, QualityName: quality.ID(f.Quality).Name(), Revision: f.Revision,
 			Edition: f.Edition, Languages: stringList(f.Languages), ReleaseGroup: f.ReleaseGroup, SceneName: f.SceneName,
 			CustomScore: f.CustomScore, ImportedAt: ts(f.ImportedAt), Media: fileMediaOf(f),
+			ScoreBreakdown: breakdownOf(d.FileScore),
 		}
 	}
 	for i := range d.History {

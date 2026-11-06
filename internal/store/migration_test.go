@@ -52,7 +52,7 @@ func TestMigration2HistoryRebuild(t *testing.T) {
 			t.Errorf("append %s: %v", ev, MapError(err))
 		}
 	}
-	checkHistorySchema(t, s, []string{"history_created_at", "history_download_id", "history_movie_id_created_at"})
+	checkHistorySchema(t, s, []string{"history_created_at", "history_download_id", "history_event_id", "history_movie_id_created_at"})
 
 	if err := s.MigrateDownTo(ctx, 1); err != nil {
 		t.Fatal(err)

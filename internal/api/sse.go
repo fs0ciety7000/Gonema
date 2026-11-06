@@ -38,6 +38,8 @@ func (s *Server) registerEvents() {
 			"job.completed, job.failed, health.changed, download.progress, download.grabbed, download.updated, " +
 			"download.imported, download.failed, download.removed, search.batch, search.indexer_done, " +
 			"search.indexer_failed, search.finished, ...) and JSON data {id, type, time, movieId, data}. " +
+			"download.progress data is compact, keyed by download id: {id, movieId, status, progress, speedBps, etaSeconds, message}. " +
+			"moviefile.renamed / moviefile.deleted follow file operations; tags.changed follows tag edits. " +
 			"A comment is sent every 15 s as a heartbeat. An event named \"resync\" means events were missed: refetch.",
 		Responses: map[string]*huma.Response{
 			"200": {Description: "An endless text/event-stream", Content: map[string]*huma.MediaType{

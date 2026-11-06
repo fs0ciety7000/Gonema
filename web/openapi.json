@@ -68,6 +68,101 @@
         ],
         "type": "object"
       },
+      "AddCollectionInputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "minimumAvailability": {
+            "default": "released",
+            "enum": [
+              "announced",
+              "in_cinemas",
+              "released"
+            ],
+            "type": "string"
+          },
+          "monitorCollection": {
+            "description": "Also add the collection's future movies automatically (the movies are then monitored)",
+            "type": "boolean"
+          },
+          "monitored": {
+            "description": "Monitor the added movies; default true",
+            "type": "boolean"
+          },
+          "qualityProfileId": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "rootFolderId": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "searchOnAdd": {
+            "type": "boolean"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "rootFolderId",
+          "qualityProfileId"
+        ],
+        "type": "object"
+      },
+      "AddCollectionResult": {
+        "additionalProperties": false,
+        "properties": {
+          "added": {
+            "items": {
+              "$ref": "#/components/schemas/Movie"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "collection": {
+            "$ref": "#/components/schemas/Collection"
+          },
+          "existing": {
+            "description": "Library ids of the parts already in the library (left unchanged)",
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "skipped": {
+            "description": "Parts not added, with the reason",
+            "items": {
+              "$ref": "#/components/schemas/SkippedPart"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "collection",
+          "added",
+          "existing",
+          "skipped"
+        ],
+        "type": "object"
+      },
       "AddMovieInputBody": {
         "additionalProperties": false,
         "properties": {
@@ -259,6 +354,197 @@
         "required": [
           "total"
         ],
+        "type": "object"
+      },
+      "BulkFileResult": {
+        "additionalProperties": false,
+        "properties": {
+          "results": {
+            "description": "One per movie, in request order",
+            "items": {
+              "$ref": "#/components/schemas/MoveOutcome"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "results"
+        ],
+        "type": "object"
+      },
+      "BulkInputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "ids": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "maxItems": 10000,
+            "minItems": 1,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "set": {
+            "$ref": "#/components/schemas/BulkSet"
+          }
+        },
+        "required": [
+          "ids",
+          "set"
+        ],
+        "type": "object"
+      },
+      "BulkMoveInputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "ids": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "moveFiles": {
+            "type": "boolean"
+          },
+          "rootFolderId": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ids",
+          "rootFolderId",
+          "moveFiles"
+        ],
+        "type": "object"
+      },
+      "BulkRenameInputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "ids": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "type": "object"
+      },
+      "BulkResult": {
+        "additionalProperties": false,
+        "properties": {
+          "changed": {
+            "description": "Movies whose settings changed",
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "moves": {
+            "description": "One per movie when rootFolderId was set",
+            "items": {
+              "$ref": "#/components/schemas/MoveOutcome"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "previous": {
+            "description": "Settings before the edit, one per movie: POST them to /movies/bulk/restore to undo (root folders: move back with /movies/move)",
+            "items": {
+              "$ref": "#/components/schemas/MovieSettings"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "changed",
+          "previous",
+          "moves"
+        ],
+        "type": "object"
+      },
+      "BulkSet": {
+        "additionalProperties": false,
+        "properties": {
+          "addTags": {
+            "description": "Labels; missing tags are created",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "minimumAvailability": {
+            "enum": [
+              "announced",
+              "in_cinemas",
+              "released"
+            ],
+            "type": "string"
+          },
+          "monitored": {
+            "type": "boolean"
+          },
+          "moveFiles": {
+            "description": "With rootFolderId: move the files too, into folders named with the template",
+            "type": "boolean"
+          },
+          "qualityProfileId": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "removeTags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "rootFolderId": {
+            "description": "Move to this root folder (see POST /movies/{id}/move)",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
         "type": "object"
       },
       "Candidate": {
@@ -557,6 +843,79 @@
         ],
         "type": "object"
       },
+      "DeletedTag": {
+        "additionalProperties": false,
+        "properties": {
+          "movieIds": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "tag": {
+            "$ref": "#/components/schemas/Tag"
+          }
+        },
+        "required": [
+          "tag",
+          "movieIds"
+        ],
+        "type": "object"
+      },
+      "Deletion": {
+        "additionalProperties": false,
+        "properties": {
+          "bin": {
+            "description": "Recycle bin the files went to",
+            "type": "string"
+          },
+          "missing": {
+            "description": "Files Gonema knew of that were already gone from disk",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "movieId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "recycled": {
+            "description": "Names of the items in the recycle bin (restore them from there)",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "movieId",
+          "bin",
+          "recycled",
+          "missing",
+          "notes"
+        ],
+        "type": "object"
+      },
       "DeliveryHealth": {
         "additionalProperties": false,
         "properties": {
@@ -587,6 +946,208 @@
           "failureCount",
           "lastOkAt",
           "lastFailedAt"
+        ],
+        "type": "object"
+      },
+      "DiscoverCollection": {
+        "additionalProperties": false,
+        "properties": {
+          "backdropUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "collectionId": {
+            "description": "Library collection (GET /collections/{id}); null when none of its movies was added",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "inLibrary": {
+            "description": "Parts already in the library",
+            "format": "int64",
+            "type": "integer"
+          },
+          "monitored": {
+            "description": "New movies of the collection are added automatically",
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "overview": {
+            "type": "string"
+          },
+          "parts": {
+            "description": "By release date, undated last; part n is entry n-1",
+            "items": {
+              "$ref": "#/components/schemas/DiscoverMovie"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "posterUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tmdbId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tmdbId",
+          "name",
+          "overview",
+          "posterUrl",
+          "backdropUrl",
+          "collectionId",
+          "monitored",
+          "inLibrary",
+          "parts"
+        ],
+        "type": "object"
+      },
+      "DiscoverMovie": {
+        "additionalProperties": false,
+        "properties": {
+          "backdropUrl": {
+            "description": "w1280",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "excluded": {
+            "description": "On the import list exclusions",
+            "type": "boolean"
+          },
+          "inLibrary": {
+            "type": "boolean"
+          },
+          "monitored": {
+            "description": "Library movies only",
+            "type": "boolean"
+          },
+          "movieId": {
+            "description": "Library movie id when inLibrary",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "originalLanguage": {
+            "type": "string"
+          },
+          "originalTitle": {
+            "type": "string"
+          },
+          "overview": {
+            "type": "string"
+          },
+          "popularity": {
+            "format": "double",
+            "type": "number"
+          },
+          "posterUrl": {
+            "description": "w342, through the image cache",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rating": {
+            "$ref": "#/components/schemas/Rating"
+          },
+          "releaseDate": {
+            "description": "YYYY-MM-DD",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "description": "Library state; null when not in the library",
+            "enum": [
+              "available",
+              "missing",
+              "downloading",
+              "upgradable"
+            ],
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "tmdbId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "year": {
+            "description": "0 when unknown",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tmdbId",
+          "title",
+          "year",
+          "releaseDate",
+          "overview",
+          "posterUrl",
+          "backdropUrl",
+          "popularity",
+          "rating",
+          "inLibrary",
+          "movieId",
+          "monitored",
+          "state",
+          "excluded"
+        ],
+        "type": "object"
+      },
+      "DiscoverPage": {
+        "additionalProperties": false,
+        "properties": {
+          "page": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/DiscoverMovie"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "totalPages": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalResults": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "page",
+          "totalPages",
+          "totalResults",
+          "results"
         ],
         "type": "object"
       },
@@ -996,6 +1557,22 @@
         ],
         "type": "object"
       },
+      "FileOp": {
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "type": "object"
+      },
       "FileQuality": {
         "additionalProperties": false,
         "properties": {
@@ -1014,6 +1591,30 @@
           "quality",
           "revision",
           "customScore"
+        ],
+        "type": "object"
+      },
+      "Filmography": {
+        "additionalProperties": false,
+        "properties": {
+          "movies": {
+            "description": "Cast and crew merged by movie, deduplicated; upcoming (undated) first, then newest first",
+            "items": {
+              "$ref": "#/components/schemas/PersonCredit"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "tmdbId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tmdbId",
+          "movies"
         ],
         "type": "object"
       },
@@ -1136,6 +1737,161 @@
           }
         },
         "required": [
+          "id",
+          "movieId",
+          "event",
+          "sourceTitle",
+          "quality",
+          "customScore",
+          "downloadId",
+          "data",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "HistoryMovie": {
+        "additionalProperties": false,
+        "properties": {
+          "dominantColor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "posterUrl": {
+            "description": "w342",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "year",
+          "posterUrl",
+          "dominantColor"
+        ],
+        "type": "object"
+      },
+      "HistoryPage": {
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryRow"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "nextCursor": {
+            "description": "Pass as cursor for older entries; absent on the last page",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entries"
+        ],
+        "type": "object"
+      },
+      "HistoryRow": {
+        "additionalProperties": false,
+        "properties": {
+          "chainId": {
+            "description": "First download of the retry chain: rows with one chainId are one acquisition (grabbed, failed, retried, imported, upgraded)",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "customScore": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "data": {
+            "description": "Reasons and details of the event"
+          },
+          "downloadId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "event": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "movie": {
+            "$ref": "#/components/schemas/HistoryMovie",
+            "description": "null when the movie is no longer in the library (sourceTitle remains)"
+          },
+          "movieId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "quality": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "qualityName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "description": "Plain-language reason (data.reason); empty when the event has none",
+            "type": "string"
+          },
+          "retryOf": {
+            "description": "The failed download this entry's download replaced",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "sourceTitle": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "qualityName",
+          "reason",
+          "movie",
+          "retryOf",
+          "chainId",
           "id",
           "movieId",
           "event",
@@ -1842,6 +2598,10 @@
           "backdropPath": {
             "type": "string"
           },
+          "excluded": {
+            "description": "On the import list exclusions",
+            "type": "boolean"
+          },
           "genreIds": {
             "items": {
               "format": "int64",
@@ -1853,6 +2613,10 @@
             ]
           },
           "inLibrary": {
+            "type": "boolean"
+          },
+          "monitored": {
+            "description": "Library movies only",
             "type": "boolean"
           },
           "movieId": {
@@ -1876,11 +2640,31 @@
           "posterPath": {
             "type": "string"
           },
+          "posterUrl": {
+            "description": "w342, through the image cache",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "rating": {
             "$ref": "#/components/schemas/Rating"
           },
           "releaseDate": {
             "type": "string"
+          },
+          "state": {
+            "description": "Library state; null when not in the library",
+            "enum": [
+              "available",
+              "missing",
+              "downloading",
+              "upgradable"
+            ],
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "title": {
             "type": "string"
@@ -1896,6 +2680,10 @@
         },
         "required": [
           "inLibrary",
+          "monitored",
+          "state",
+          "excluded",
+          "posterUrl",
           "tmdbId",
           "title"
         ],
@@ -2257,6 +3045,49 @@
         ],
         "type": "object"
       },
+      "MoveBody": {
+        "additionalProperties": false,
+        "properties": {
+          "moveFiles": {
+            "description": "Move the files into a folder named with the template (refused if it exists); false only changes where Gonema looks",
+            "type": "boolean"
+          },
+          "rootFolderId": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rootFolderId",
+          "moveFiles"
+        ],
+        "type": "object"
+      },
+      "MoveOutcome": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "description": "Why the movie was not moved",
+            "type": "string"
+          },
+          "movieId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "relocation": {
+            "$ref": "#/components/schemas/Relocation"
+          }
+        },
+        "required": [
+          "movieId",
+          "ok"
+        ],
+        "type": "object"
+      },
       "Movie": {
         "additionalProperties": false,
         "properties": {
@@ -2551,6 +3382,15 @@
               "null"
             ]
           },
+          "minimumAvailability": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "monitored": {
             "items": {
               "type": "boolean"
@@ -2615,12 +3455,59 @@
             "description": "Display name of each quality id present",
             "type": "object"
           },
+          "qualityProfileId": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "ratingTmdb": {
             "description": "TMDB average out of 10",
             "items": {
               "format": "double",
               "type": [
                 "number",
+                "null"
+              ]
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "releaseCinema": {
+            "description": "YYYY-MM-DD",
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "releaseDigital": {
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "releasePhysical": {
+            "items": {
+              "type": [
+                "string",
                 "null"
               ]
             },
@@ -2662,6 +3549,15 @@
               "null"
             ]
           },
+          "sortTitle": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "state": {
             "items": {
               "type": "string"
@@ -2675,6 +3571,23 @@
             "description": "Release stage",
             "items": {
               "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "tagIds": {
+            "description": "Ids of each movie's tags",
+            "items": {
+              "items": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
             },
             "type": [
               "array",
@@ -2727,7 +3640,14 @@
           "path",
           "genres",
           "runtimeMin",
-          "ratingTmdb"
+          "ratingTmdb",
+          "sortTitle",
+          "qualityProfileId",
+          "minimumAvailability",
+          "releaseCinema",
+          "releaseDigital",
+          "releasePhysical",
+          "tagIds"
         ],
         "type": "object"
       },
@@ -2940,6 +3860,10 @@
               "null"
             ]
           },
+          "releaseRegions": {
+            "$ref": "#/components/schemas/ReleaseRegions",
+            "description": "Filled at the next metadata refresh for movies added before this field existed"
+          },
           "rootFolderId": {
             "format": "int64",
             "type": "integer"
@@ -2970,6 +3894,16 @@
           "statusReason": {
             "description": "Why the release stage is what it is",
             "type": "string"
+          },
+          "studios": {
+            "description": "Production companies, TMDB order",
+            "items": {
+              "$ref": "#/components/schemas/Studio"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "tagline": {
             "type": "string"
@@ -3014,6 +3948,8 @@
           "homepage",
           "keywords",
           "statusReason",
+          "releaseRegions",
+          "studios",
           "cast",
           "crew",
           "videos",
@@ -3064,6 +4000,7 @@
         "additionalProperties": false,
         "properties": {
           "customScore": {
+            "description": "Score given at import",
             "format": "int64",
             "type": "integer"
           },
@@ -3110,6 +4047,9 @@
           "sceneName": {
             "type": "string"
           },
+          "scoreBreakdown": {
+            "$ref": "#/components/schemas/ScoreBreakdown"
+          },
           "size": {
             "format": "int64",
             "type": "integer"
@@ -3129,7 +4069,8 @@
           "sceneName",
           "customScore",
           "importedAt",
-          "media"
+          "media",
+          "scoreBreakdown"
         ],
         "type": "object"
       },
@@ -3342,6 +4283,17 @@
             ],
             "type": "string"
           },
+          "tagIds": {
+            "description": "Ids of the movie's tags (GET /tags has the labels)",
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "title": {
             "type": "string"
           },
@@ -3386,6 +4338,7 @@
           "customScore",
           "hdr",
           "edition",
+          "tagIds",
           "download"
         ],
         "type": "object"
@@ -3415,6 +4368,53 @@
         "required": [
           "movies",
           "total"
+        ],
+        "type": "object"
+      },
+      "MovieSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "minimumAvailability": {
+            "enum": [
+              "announced",
+              "in_cinemas",
+              "released"
+            ],
+            "type": "string"
+          },
+          "monitored": {
+            "type": "boolean"
+          },
+          "qualityProfileId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "rootFolderId": {
+            "description": "Informative: a restore does not move movies",
+            "format": "int64",
+            "type": "integer"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "monitored",
+          "qualityProfileId",
+          "minimumAvailability",
+          "rootFolderId",
+          "tags"
         ],
         "type": "object"
       },
@@ -3475,6 +4475,33 @@
           "tmdbId",
           "title"
         ],
+        "type": "object"
+      },
+      "MovieTagsInputBody": {
+        "additionalProperties": false,
+        "properties": {
+          "add": {
+            "description": "Labels; missing tags are created",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "remove": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
         "type": "object"
       },
       "NamingPreview": {
@@ -3961,6 +4988,239 @@
         ],
         "type": "object"
       },
+      "PersonCredit": {
+        "additionalProperties": false,
+        "properties": {
+          "backdropUrl": {
+            "description": "w1280",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "characters": {
+            "description": "Cast roles",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "departments": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "excluded": {
+            "description": "On the import list exclusions",
+            "type": "boolean"
+          },
+          "inLibrary": {
+            "type": "boolean"
+          },
+          "jobs": {
+            "description": "Crew jobs (Director, Writer...)",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "monitored": {
+            "description": "Library movies only",
+            "type": "boolean"
+          },
+          "movieId": {
+            "description": "Library movie id when inLibrary",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "originalLanguage": {
+            "type": "string"
+          },
+          "originalTitle": {
+            "type": "string"
+          },
+          "overview": {
+            "type": "string"
+          },
+          "popularity": {
+            "format": "double",
+            "type": "number"
+          },
+          "posterUrl": {
+            "description": "w342, through the image cache",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rating": {
+            "$ref": "#/components/schemas/Rating"
+          },
+          "releaseDate": {
+            "description": "YYYY-MM-DD",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "description": "Library state; null when not in the library",
+            "enum": [
+              "available",
+              "missing",
+              "downloading",
+              "upgradable"
+            ],
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "tmdbId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "year": {
+            "description": "0 when unknown",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "characters",
+          "jobs",
+          "departments",
+          "tmdbId",
+          "title",
+          "year",
+          "releaseDate",
+          "overview",
+          "posterUrl",
+          "backdropUrl",
+          "popularity",
+          "rating",
+          "inLibrary",
+          "movieId",
+          "monitored",
+          "state",
+          "excluded"
+        ],
+        "type": "object"
+      },
+      "Plan": {
+        "additionalProperties": false,
+        "properties": {
+          "fileFrom": {
+            "description": "Current file, relative to the movie folder",
+            "type": "string"
+          },
+          "fileTo": {
+            "description": "New name of the current file",
+            "type": "string"
+          },
+          "fromFolder": {
+            "description": "Absolute movie folder now",
+            "type": "string"
+          },
+          "fromPath": {
+            "description": "Movie folder relative to its root folder, now",
+            "type": "string"
+          },
+          "fromRootFolderId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "rename",
+              "move"
+            ],
+            "type": "string"
+          },
+          "moveFiles": {
+            "type": "boolean"
+          },
+          "movieId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "noChange": {
+            "description": "Names and location already match: nothing to do",
+            "type": "boolean"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "ops": {
+            "items": {
+              "$ref": "#/components/schemas/FileOp"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "problems": {
+            "description": "Why the operation is refused; empty when it can run",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "toFolder": {
+            "description": "Absolute movie folder after the operation",
+            "type": "string"
+          },
+          "toPath": {
+            "type": "string"
+          },
+          "toRootFolderId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "movieId",
+          "fromRootFolderId",
+          "toRootFolderId",
+          "fromFolder",
+          "toFolder",
+          "fromPath",
+          "toPath",
+          "moveFiles",
+          "ops",
+          "problems",
+          "notes",
+          "noChange"
+        ],
+        "type": "object"
+      },
       "PreviewInputBody": {
         "additionalProperties": false,
         "properties": {
@@ -4087,6 +5347,240 @@
           "position",
           "groupName",
           "allowed"
+        ],
+        "type": "object"
+      },
+      "QueueActions": {
+        "additionalProperties": false,
+        "properties": {
+          "pause": {
+            "type": "boolean"
+          },
+          "remove": {
+            "description": "Remove (optionally blocklist and retry)",
+            "type": "boolean"
+          },
+          "resume": {
+            "type": "boolean"
+          },
+          "retryImport": {
+            "description": "The import failed: POST /queue/{id}/import",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "pause",
+          "resume",
+          "remove",
+          "retryImport"
+        ],
+        "type": "object"
+      },
+      "QueueEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "actions": {
+            "$ref": "#/components/schemas/QueueActions"
+          },
+          "client": {
+            "type": "string"
+          },
+          "clientId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "customScore": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "downloadedBytes": {
+            "description": "size x progress",
+            "format": "int64",
+            "type": "integer"
+          },
+          "etaSeconds": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "failedReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "grabbedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "importFailed": {
+            "description": "Completed but the import failed; failedReason says why",
+            "type": "boolean"
+          },
+          "importedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "importing": {
+            "type": "boolean"
+          },
+          "indexer": {
+            "description": "Indexer name, empty when unknown",
+            "type": "string"
+          },
+          "indexerId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "manual": {
+            "type": "boolean"
+          },
+          "messages": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "movie": {
+            "$ref": "#/components/schemas/QueueMovie"
+          },
+          "movieId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "progress": {
+            "description": "0 to 1",
+            "format": "double",
+            "type": "number"
+          },
+          "protocol": {
+            "enum": [
+              "usenet",
+              "torrent"
+            ],
+            "type": "string"
+          },
+          "quality": {
+            "type": "string"
+          },
+          "qualityName": {
+            "type": "string"
+          },
+          "retry": {
+            "$ref": "#/components/schemas/QueueRetry",
+            "description": "Set when this download replaces a failed one"
+          },
+          "retryOf": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "seeders": {
+            "description": "Torrents: seeders when grabbed",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "size": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "speedBps": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "downloading",
+              "paused",
+              "completed",
+              "importing",
+              "imported",
+              "failed",
+              "warning",
+              "removed"
+            ],
+            "type": "string"
+          },
+          "statusMessage": {
+            "description": "Latest message from the client or the importer",
+            "type": "string"
+          },
+          "title": {
+            "description": "Release title",
+            "type": "string"
+          },
+          "upgradeFrom": {
+            "description": "Quality name of the file on disk it would replace; null without a file",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "movie",
+          "indexer",
+          "seeders",
+          "downloadedBytes",
+          "upgradeFrom",
+          "statusMessage",
+          "importing",
+          "importFailed",
+          "failedReason",
+          "retry",
+          "actions",
+          "id",
+          "movieId",
+          "title",
+          "protocol",
+          "size",
+          "quality",
+          "qualityName",
+          "customScore",
+          "status",
+          "progress",
+          "speedBps",
+          "etaSeconds",
+          "clientId",
+          "client",
+          "indexerId",
+          "messages",
+          "manual",
+          "retryOf",
+          "grabbedAt",
+          "completedAt",
+          "importedAt"
         ],
         "type": "object"
       },
@@ -4233,6 +5727,77 @@
           "grabbedAt",
           "completedAt",
           "importedAt"
+        ],
+        "type": "object"
+      },
+      "QueueMovie": {
+        "additionalProperties": false,
+        "properties": {
+          "dominantColor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "posterUrl": {
+            "description": "w342",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "year",
+          "posterUrl",
+          "dominantColor"
+        ],
+        "type": "object"
+      },
+      "QueueRetry": {
+        "additionalProperties": false,
+        "properties": {
+          "attempt": {
+            "description": "This release's number among the movie's grabs of the last 24 hours",
+            "format": "int64",
+            "type": "integer"
+          },
+          "of": {
+            "description": "Attempts allowed per day (Settings \u003e Acquisition)",
+            "format": "int64",
+            "type": "integer"
+          },
+          "previousDownloadId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "previousReason": {
+            "description": "Why the previous release failed",
+            "type": "string"
+          },
+          "previousRelease": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "attempt",
+          "of",
+          "previousDownloadId",
+          "previousRelease",
+          "previousReason"
         ],
         "type": "object"
       },
@@ -4437,6 +6002,151 @@
         ],
         "type": "object"
       },
+      "ReleaseRegions": {
+        "additionalProperties": false,
+        "properties": {
+          "certification": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cinema": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "digital": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "physical": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "cinema",
+          "digital",
+          "physical",
+          "certification"
+        ],
+        "type": "object"
+      },
+      "Relocation": {
+        "additionalProperties": false,
+        "properties": {
+          "done": {
+            "description": "File operations performed",
+            "items": {
+              "$ref": "#/components/schemas/FileOp"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "fileFrom": {
+            "description": "Current file, relative to the movie folder",
+            "type": "string"
+          },
+          "fileTo": {
+            "description": "New name of the current file",
+            "type": "string"
+          },
+          "fromFolder": {
+            "description": "Absolute movie folder now",
+            "type": "string"
+          },
+          "fromPath": {
+            "description": "Movie folder relative to its root folder, now",
+            "type": "string"
+          },
+          "fromRootFolderId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "rename",
+              "move"
+            ],
+            "type": "string"
+          },
+          "moveFiles": {
+            "type": "boolean"
+          },
+          "movieId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "noChange": {
+            "description": "Names and location already match: nothing to do",
+            "type": "boolean"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "ops": {
+            "items": {
+              "$ref": "#/components/schemas/FileOp"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "problems": {
+            "description": "Why the operation is refused; empty when it can run",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "toFolder": {
+            "description": "Absolute movie folder after the operation",
+            "type": "string"
+          },
+          "toPath": {
+            "type": "string"
+          },
+          "toRootFolderId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "done",
+          "kind",
+          "movieId",
+          "fromRootFolderId",
+          "toRootFolderId",
+          "fromFolder",
+          "toFolder",
+          "fromPath",
+          "toPath",
+          "moveFiles",
+          "ops",
+          "problems",
+          "notes",
+          "noChange"
+        ],
+        "type": "object"
+      },
       "RemotePathMapping": {
         "additionalProperties": false,
         "properties": {
@@ -4491,6 +6201,26 @@
         ],
         "type": "object"
       },
+      "Restore-movie-settingsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "previous": {
+            "items": {
+              "$ref": "#/components/schemas/MovieSettings"
+            },
+            "maxItems": 10000,
+            "minItems": 1,
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "previous"
+        ],
+        "type": "object"
+      },
       "Restore-recycledResponse": {
         "additionalProperties": false,
         "properties": {
@@ -4515,6 +6245,25 @@
         },
         "required": [
           "name"
+        ],
+        "type": "object"
+      },
+      "RestoreResult": {
+        "additionalProperties": false,
+        "properties": {
+          "changed": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "changed"
         ],
         "type": "object"
       },
@@ -4765,6 +6514,47 @@
         },
         "required": [
           "path"
+        ],
+        "type": "object"
+      },
+      "ScoreBreakdown": {
+        "additionalProperties": false,
+        "properties": {
+          "rules": {
+            "description": "Matched rules in rule order; score 0 when the profile does not score the rule",
+            "items": {
+              "$ref": "#/components/schemas/ScoreRule"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "rules"
+        ],
+        "type": "object"
+      },
+      "ScoreRule": {
+        "additionalProperties": false,
+        "properties": {
+          "rule": {
+            "type": "string"
+          },
+          "score": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rule",
+          "score"
         ],
         "type": "object"
       },
@@ -5245,6 +7035,27 @@
         ],
         "type": "object"
       },
+      "Studio": {
+        "additionalProperties": false,
+        "properties": {
+          "country": {
+            "description": "ISO 3166-1 alpha-2",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tmdbId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tmdbId",
+          "name"
+        ],
+        "type": "object"
+      },
       "SystemStatus": {
         "additionalProperties": false,
         "properties": {
@@ -5317,6 +7128,43 @@
         },
         "required": [
           "configured"
+        ],
+        "type": "object"
+      },
+      "Tag": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "label": {
+            "type": "string"
+          },
+          "movies": {
+            "description": "Movies carrying the tag",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "movies"
+        ],
+        "type": "object"
+      },
+      "TagLabelBody": {
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "label"
         ],
         "type": "object"
       },
@@ -5766,6 +7614,227 @@
         ]
       }
     },
+    "/collections/{tmdbId}/add": {
+      "post": {
+        "description": "Adds the parts that are not in the library (excluded ones are skipped) with the given settings; with monitorCollection, its future movies are added too.",
+        "operationId": "add-collection",
+        "parameters": [
+          {
+            "description": "TMDB collection id",
+            "in": "path",
+            "name": "tmdbId",
+            "required": true,
+            "schema": {
+              "description": "TMDB collection id",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCollectionInputBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddCollectionResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Add every movie of a TMDB collection",
+        "tags": [
+          "Collections"
+        ]
+      }
+    },
+    "/discover/collection/{tmdbId}": {
+      "get": {
+        "description": "Every part, flagged when already in the library.",
+        "operationId": "discover-collection",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tmdbId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoverCollection"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "A TMDB collection",
+        "tags": [
+          "Discover"
+        ]
+      }
+    },
+    "/discover/person/{tmdbId}": {
+      "get": {
+        "description": "Cast and crew credits merged by movie, flagged when in the library. TMDB does not return the person's name here: use the cast or crew entry it came from.",
+        "operationId": "discover-person",
+        "parameters": [
+          {
+            "description": "TMDB person id",
+            "in": "path",
+            "name": "tmdbId",
+            "required": true,
+            "schema": {
+              "description": "TMDB person id",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Filmography"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Filmography of a person",
+        "tags": [
+          "Discover"
+        ]
+      }
+    },
+    "/discover/{list}": {
+      "get": {
+        "description": "Popular, trending, upcoming and now playing movies (upcoming and now playing for the configured region), flagged when already in the library. Adult movies are left out.",
+        "operationId": "discover-list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "list",
+            "required": true,
+            "schema": {
+              "enum": [
+                "popular",
+                "trending",
+                "upcoming",
+                "now_playing"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Trending period",
+            "explode": false,
+            "in": "query",
+            "name": "window",
+            "schema": {
+              "default": "week",
+              "description": "Trending period",
+              "enum": [
+                "day",
+                "week"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoverPage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "A TMDB list",
+        "tags": [
+          "Discover"
+        ]
+      }
+    },
     "/download-clients": {
       "get": {
         "description": "Passwords and API keys are never returned.",
@@ -6081,7 +8150,7 @@
     },
     "/events": {
       "get": {
-        "description": "Each message has an id, an event name (movie.added, movie.updated, movie.deleted, job.started, job.completed, job.failed, health.changed, download.progress, download.grabbed, download.updated, download.imported, download.failed, download.removed, search.batch, search.indexer_done, search.indexer_failed, search.finished, ...) and JSON data {id, type, time, movieId, data}. A comment is sent every 15 s as a heartbeat. An event named \"resync\" means events were missed: refetch.",
+        "description": "Each message has an id, an event name (movie.added, movie.updated, movie.deleted, job.started, job.completed, job.failed, health.changed, download.progress, download.grabbed, download.updated, download.imported, download.failed, download.removed, search.batch, search.indexer_done, search.indexer_failed, search.finished, ...) and JSON data {id, type, time, movieId, data}. download.progress data is compact, keyed by download id: {id, movieId, status, progress, speedBps, etaSeconds, message}. moviefile.renamed / moviefile.deleted follow file operations; tags.changed follows tag edits. A comment is sent every 15 s as a heartbeat. An event named \"resync\" means events were missed: refetch.",
         "operationId": "stream-events",
         "parameters": [
           {
@@ -6238,19 +8307,100 @@
     },
     "/history": {
       "get": {
-        "description": "Every automatic action and its reasons, newest first.",
+        "description": "Every automatic action and user file operation with its reasons, newest first, with filters. Rows of one download chain (grab, failure, retry, import, upgrade) share chainId.",
         "operationId": "list-history",
         "parameters": [
           {
-            "description": "Return entries with an id lower than this (keyset pagination); 0 = from the newest",
+            "description": "Event kinds, comma-separated; all when absent",
             "explode": false,
             "in": "query",
-            "name": "before",
+            "name": "event",
             "schema": {
-              "description": "Return entries with an id lower than this (keyset pagination); 0 = from the newest",
+              "description": "Event kinds, comma-separated; all when absent",
+              "items": {
+                "enum": [
+                  "grabbed",
+                  "grab_failed",
+                  "grab_overridden",
+                  "download_failed",
+                  "download_removed",
+                  "imported",
+                  "upgraded",
+                  "import_failed",
+                  "file_deleted",
+                  "file_renamed",
+                  "blocklisted",
+                  "ignored",
+                  "metadata_changed",
+                  "movie_added",
+                  "movie_deleted",
+                  "retry_scheduled",
+                  "retries_exhausted"
+                ],
+                "type": "string"
+              },
+              "maxItems": 17,
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Only this movie (also after its removal)",
+            "explode": false,
+            "in": "query",
+            "name": "movieId",
+            "schema": {
+              "description": "Only this movie (also after its removal)",
               "format": "int64",
               "minimum": 0,
               "type": "integer"
+            }
+          },
+          {
+            "description": "Only the entries of this download",
+            "explode": false,
+            "in": "query",
+            "name": "downloadId",
+            "schema": {
+              "description": "Only the entries of this download",
+              "format": "int64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Entries at or after this time (RFC 3339)",
+            "explode": false,
+            "in": "query",
+            "name": "since",
+            "schema": {
+              "description": "Entries at or after this time (RFC 3339)",
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Entries before this time (RFC 3339)",
+            "explode": false,
+            "in": "query",
+            "name": "until",
+            "schema": {
+              "description": "Entries before this time (RFC 3339)",
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "nextCursor of the previous page",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "nextCursor of the previous page",
+              "maxLength": 20,
+              "type": "string"
             }
           },
           {
@@ -6271,13 +8421,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/HistoryEntry"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "$ref": "#/components/schemas/HistoryPage"
                 }
               }
             },
@@ -6294,7 +8438,7 @@
             "description": "Error"
           }
         },
-        "summary": "Recent history",
+        "summary": "History",
         "tags": [
           "History"
         ]
@@ -7568,13 +9712,43 @@
             }
           },
           {
-            "description": "Tag label",
+            "description": "Tag label (same as a one-label tags)",
             "explode": false,
             "in": "query",
             "name": "tag",
             "schema": {
-              "description": "Tag label",
+              "description": "Tag label (same as a one-label tags)",
               "maxLength": 64,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Tag labels, comma-separated: movies with any of them (tagMatch=any) or all (tagMatch=all)",
+            "explode": false,
+            "in": "query",
+            "name": "tags",
+            "schema": {
+              "description": "Tag labels, comma-separated: movies with any of them (tagMatch=any) or all (tagMatch=all)",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 20,
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "tagMatch",
+            "schema": {
+              "default": "any",
+              "enum": [
+                "any",
+                "all"
+              ],
               "type": "string"
             }
           },
@@ -7683,6 +9857,90 @@
           }
         },
         "summary": "Add a movie from TMDB",
+        "tags": [
+          "Movies"
+        ]
+      }
+    },
+    "/movies/bulk": {
+      "post": {
+        "description": "Settings and tags change in one transaction (all movies or none). The previous settings come back for Undo. With rootFolderId, each movie is then moved (one result per movie in moves).",
+        "operationId": "bulk-update-movies",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkInputBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Change several movies at once",
+        "tags": [
+          "Movies"
+        ]
+      }
+    },
+    "/movies/bulk/restore": {
+      "post": {
+        "description": "Puts movies back to the given settings (monitored, quality profile, minimum availability, exact tags), as returned in previous by a bulk edit. Root folders are not changed.",
+        "operationId": "restore-movie-settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Restore-movie-settingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Undo a bulk edit",
         "tags": [
           "Movies"
         ]
@@ -7834,13 +10092,43 @@
             }
           },
           {
-            "description": "Tag label",
+            "description": "Tag label (same as a one-label tags)",
             "explode": false,
             "in": "query",
             "name": "tag",
             "schema": {
-              "description": "Tag label",
+              "description": "Tag label (same as a one-label tags)",
               "maxLength": 64,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Tag labels, comma-separated: movies with any of them (tagMatch=any) or all (tagMatch=all)",
+            "explode": false,
+            "in": "query",
+            "name": "tags",
+            "schema": {
+              "description": "Tag labels, comma-separated: movies with any of them (tagMatch=any) or all (tagMatch=all)",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 20,
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "tagMatch",
+            "schema": {
+              "default": "any",
+              "enum": [
+                "any",
+                "all"
+              ],
               "type": "string"
             }
           },
@@ -7884,9 +10172,117 @@
         ]
       }
     },
+    "/movies/move": {
+      "post": {
+        "description": "Each movie as POST /movies/{id}/move; a failure is reported for its movie and the others go on.",
+        "operationId": "move-movies",
+        "parameters": [
+          {
+            "description": "Only return the planned operations",
+            "explode": false,
+            "in": "query",
+            "name": "preview",
+            "schema": {
+              "description": "Only return the planned operations",
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkMoveInputBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkFileResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Move several movies",
+        "tags": [
+          "Movie files"
+        ]
+      }
+    },
+    "/movies/rename": {
+      "post": {
+        "description": "Each movie as POST /movies/{id}/rename; preview=true only plans.",
+        "operationId": "rename-movies",
+        "parameters": [
+          {
+            "description": "Only return the planned operations",
+            "explode": false,
+            "in": "query",
+            "name": "preview",
+            "schema": {
+              "description": "Only return the planned operations",
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkRenameInputBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkFileResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Rename several movies",
+        "tags": [
+          "Movie files"
+        ]
+      }
+    },
     "/movies/{id}": {
       "delete": {
-        "description": "Removes the movie from the database only. Its folder and files are never deleted.",
+        "description": "By default removes the movie from the database only: its folder and files stay on disk (204). With deleteFiles=true and confirm=true, every file of the movie folder first goes to the recycle bin (never a permanent deletion), then the movie is removed (200 with what was recycled). deleteFiles without confirm is refused (422).",
         "operationId": "delete-movie",
         "parameters": [
           {
@@ -7910,10 +10306,37 @@
               "description": "Keep import lists from adding it again",
               "type": "boolean"
             }
+          },
+          {
+            "description": "Also move the movie's files to the recycle bin",
+            "explode": false,
+            "in": "query",
+            "name": "deleteFiles",
+            "schema": {
+              "description": "Also move the movie's files to the recycle bin",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Required with deleteFiles: the user confirmed it",
+            "explode": false,
+            "in": "query",
+            "name": "confirm",
+            "schema": {
+              "description": "Required with deleteFiles: the user confirmed it",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
           "204": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deletion"
+                }
+              }
+            },
             "description": "No Content"
           },
           "default": {
@@ -8030,6 +10453,62 @@
         ]
       }
     },
+    "/movies/{id}/file": {
+      "delete": {
+        "description": "Moves the file and its subtitles to the recycle bin (never a permanent deletion) and forgets it: the movie is missing again. Requires confirm=true (422 otherwise). Written to history (file_deleted).",
+        "operationId": "delete-movie-file",
+        "parameters": [
+          {
+            "description": "Identifier",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Identifier",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Required: the user confirmed the deletion",
+            "explode": false,
+            "in": "query",
+            "name": "confirm",
+            "schema": {
+              "description": "Required: the user confirmed the deletion",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deletion"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete the file of a movie",
+        "tags": [
+          "Movie files"
+        ]
+      }
+    },
     "/movies/{id}/history": {
       "get": {
         "description": "Newest first; kept after the movie is removed.",
@@ -8106,6 +10585,72 @@
         ]
       }
     },
+    "/movies/{id}/move": {
+      "post": {
+        "description": "With moveFiles, every file of the movie folder moves into a folder named with the folder template (a rename on one file system; across file systems each file is copied, verified, then its source removed). Refused (409) when the destination folder exists. Written to history (file_renamed). preview=true only plans.",
+        "operationId": "move-movie",
+        "parameters": [
+          {
+            "description": "Identifier",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Identifier",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Only return the planned operations",
+            "explode": false,
+            "in": "query",
+            "name": "preview",
+            "schema": {
+              "description": "Only return the planned operations",
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Relocation"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Move a movie to another root folder",
+        "tags": [
+          "Movie files"
+        ]
+      }
+    },
     "/movies/{id}/refresh": {
       "post": {
         "description": "Queues a metadata refresh from TMDB.",
@@ -8149,6 +10694,98 @@
         "summary": "Refresh movie metadata",
         "tags": [
           "Movies"
+        ]
+      }
+    },
+    "/movies/{id}/rename": {
+      "post": {
+        "description": "Renames the folder (same root folder), the file and its subtitles; refused (409) when a new name is taken. Written to history (file_renamed); media servers are asked to rescan.",
+        "operationId": "rename-movie",
+        "parameters": [
+          {
+            "description": "Identifier",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Identifier",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Relocation"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Rename a movie to the templates",
+        "tags": [
+          "Movie files"
+        ]
+      }
+    },
+    "/movies/{id}/rename/preview": {
+      "get": {
+        "description": "Current and new names with the naming templates: folder, file and its subtitles. problems lists what would block it.",
+        "operationId": "preview-movie-rename",
+        "parameters": [
+          {
+            "description": "Identifier",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Identifier",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plan"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Preview the rename of a movie",
+        "tags": [
+          "Movie files"
         ]
       }
     },
@@ -8241,6 +10878,62 @@
         "summary": "Start an interactive search",
         "tags": [
           "Search"
+        ]
+      }
+    },
+    "/movies/{id}/tags": {
+      "post": {
+        "description": "The previous settings come back for Undo (POST /movies/bulk/restore).",
+        "operationId": "update-movie-tags",
+        "parameters": [
+          {
+            "description": "Identifier",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Identifier",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MovieTagsInputBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Add or remove tags of a movie",
+        "tags": [
+          "Movies"
         ]
       }
     },
@@ -8668,7 +11361,7 @@
     },
     "/queue": {
       "get": {
-        "description": "Live progress; updates stream as download.progress and download.* events.",
+        "description": "Oldest first, with the movie, indexer, retry chain and allowed actions. download.progress events carry the live fields of one entry, keyed by id (see ProgressUpdate); download.* events mean: refetch.",
         "operationId": "list-queue",
         "responses": {
           "200": {
@@ -8676,7 +11369,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/QueueItem"
+                    "$ref": "#/components/schemas/QueueEntry"
                   },
                   "type": [
                     "array",
@@ -9832,6 +12525,184 @@
         ]
       }
     },
+    "/tags": {
+      "get": {
+        "description": "By label, with the number of movies carrying each.",
+        "operationId": "list-tags",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Tag"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List tags",
+        "tags": [
+          "Tags"
+        ]
+      },
+      "post": {
+        "description": "Labels are unique (409 otherwise).",
+        "operationId": "create-tag",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagLabelBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tag"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Create a tag",
+        "tags": [
+          "Tags"
+        ]
+      }
+    },
+    "/tags/{id}": {
+      "delete": {
+        "description": "Removes it from every movie. The answer lists those movies, for Undo.",
+        "operationId": "delete-tag",
+        "parameters": [
+          {
+            "description": "Identifier",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Identifier",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedTag"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete a tag",
+        "tags": [
+          "Tags"
+        ]
+      },
+      "put": {
+        "description": "The movies keep the tag. Labels are unique (409 otherwise).",
+        "operationId": "rename-tag",
+        "parameters": [
+          {
+            "description": "Identifier",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Identifier",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagLabelBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tag"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Rename a tag",
+        "tags": [
+          "Tags"
+        ]
+      }
+    },
     "/views": {
       "get": {
         "description": "Ordered by page then position. Views are shared until user accounts exist.",
@@ -10054,6 +12925,103 @@
         "summary": "Replace a saved view",
         "tags": [
           "Saved views"
+        ]
+      }
+    },
+    "/wanted": {
+      "get": {
+        "description": "missing: monitored, no file, released enough for the minimum availability. cutoff_unmet: monitored, the file is below the profile's cutoff. Same rows and paging as GET /movies.",
+        "operationId": "list-wanted",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "kind",
+            "schema": {
+              "default": "missing",
+              "enum": [
+                "missing",
+                "cutoff_unmet"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "title",
+              "enum": [
+                "title",
+                "year",
+                "added",
+                "size",
+                "score",
+                "quality"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "maxLength": 512,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 100,
+              "format": "int64",
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoviePage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Wanted movies",
+        "tags": [
+          "Movies"
         ]
       }
     }

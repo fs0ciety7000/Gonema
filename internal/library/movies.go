@@ -14,6 +14,8 @@ import (
 	"github.com/fs0ciety7000/gonema/internal/jobs"
 	"github.com/fs0ciety7000/gonema/internal/match"
 	"github.com/fs0ciety7000/gonema/internal/metadata"
+	"github.com/fs0ciety7000/gonema/internal/parser"
+	"github.com/fs0ciety7000/gonema/internal/quality"
 	"github.com/fs0ciety7000/gonema/internal/store"
 	"github.com/fs0ciety7000/gonema/internal/store/db"
 )
@@ -99,6 +101,17 @@ type metaFields struct {
 type extraJSON struct {
 	metadata.Extra
 	StatusReason string `json:"statusReason,omitempty"`
+	// ReleaseRegions are the regions the release dates and the certification
+	// were taken from (ISO 3166-1; see metadata.SelectReleases).
+	ReleaseRegions *ReleaseRegions `json:"releaseRegions,omitempty"`
+}
+
+// ReleaseRegions are the regions of the chosen release dates, "" when unknown.
+type ReleaseRegions struct {
+	Cinema        string `json:"cinema,omitempty"`
+	Digital       string `json:"digital,omitempty"`
+	Physical      string `json:"physical,omitempty"`
+	Certification string `json:"certification,omitempty"`
 }
 
 func optString(s string) *string {
@@ -127,7 +140,10 @@ func (s *Service) fieldsOf(m *metadata.Movie) (metaFields, error) {
 	if err != nil {
 		return metaFields{}, fmt.Errorf("encode ratings: %w", err)
 	}
-	x, err := json.Marshal(extraJSON{Extra: m.Extra, StatusReason: reason})
+	x, err := json.Marshal(extraJSON{Extra: m.Extra, StatusReason: reason, ReleaseRegions: &ReleaseRegions{
+		Cinema: m.Releases.Cinema.Region, Digital: m.Releases.Digital.Region, Physical: m.Releases.Physical.Region,
+		Certification: m.Releases.CertificationRegion,
+	}})
 	if err != nil {
 		return metaFields{}, fmt.Errorf("encode extra: %w", err)
 	}
@@ -396,7 +412,11 @@ type MovieDetails struct {
 	Tags            []string
 	AlternateTitles []db.AlternateTitle
 
-	File             *db.MovieFile // nil without a file
+	File *db.MovieFile // nil without a file
+	// FileScore is the custom score of File recomputed with the current rules
+	// and profile (per-rule contributions); File.CustomScore is the score at
+	// import. nil without a file.
+	FileScore        *quality.Breakdown
 	Collection       *db.Collection
 	CollectionMovies []db.ListCollectionMovieStatesRow // library movies of the collection
 	ProfileName      string
@@ -455,6 +475,20 @@ func (d *MovieDetails) loadPageData(ctx context.Context, q *db.Queries) error {
 		d.File = &f
 	case !errors.Is(err, store.ErrNotFound):
 		return fmt.Errorf("file: %w", err)
+	}
+	if d.File != nil {
+		prof, err := LoadQualityProfile(ctx, q, m.QualityProfileID)
+		if err != nil {
+			return err
+		}
+		rules, err := LoadScoringRules(ctx, q)
+		if err != nil {
+			return err
+		}
+		var parsed parser.ParsedRelease
+		_ = json.Unmarshal([]byte(d.File.Parsed), &parsed) // stored by the importer; a bad value scores the name only
+		b := quality.Score(&prof, rules, &quality.Release{Title: d.File.SceneName, Parsed: &parsed, Size: d.File.Size})
+		d.FileScore = &b
 	}
 	if m.CollectionID != nil {
 		c, err := q.GetCollection(ctx, *m.CollectionID)

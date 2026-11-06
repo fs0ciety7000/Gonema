@@ -319,13 +319,18 @@ func (s *Server) acquireRoutes() {
 	qTags := []string{"Queue"}
 	huma.Register(s.api, huma.Operation{
 		OperationID: "list-queue", Method: http.MethodGet, Path: "/queue", Summary: "Downloads in progress",
-		Description: "Live progress; updates stream as download.progress and download.* events.", Tags: qTags,
-	}, func(ctx context.Context, _ *struct{}) (*struct{ Body []acquire.QueueItem }, error) {
+		Description: "Oldest first, with the movie, indexer, retry chain and allowed actions. download.progress events " +
+			"carry the live fields of one entry, keyed by id (see ProgressUpdate); download.* events mean: refetch.", Tags: qTags,
+	}, func(ctx context.Context, _ *struct{}) (*struct{ Body []QueueEntry }, error) {
 		list, err := a.Queue(ctx)
 		if err != nil {
 			return nil, s.problem(ctx, err, false)
 		}
-		return &struct{ Body []acquire.QueueItem }{list}, nil
+		entries, err := s.queueEntries(ctx, list, a.AcquisitionSettings(ctx).MaxAttemptsPerDay)
+		if err != nil {
+			return nil, s.problem(ctx, err, false)
+		}
+		return &struct{ Body []QueueEntry }{entries}, nil
 	})
 	for _, op := range []struct {
 		path, id, summary string

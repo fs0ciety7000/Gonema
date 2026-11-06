@@ -49,6 +49,8 @@ var (
 	ErrUnsupported = errors.New("fsx: not supported on this platform")
 	// ErrInvalidName: a recycle bin item name is not a plain file name.
 	ErrInvalidName = errors.New("fsx: invalid item name")
+	// ErrNotEmpty: RemoveEmptyDir found something in the folder.
+	ErrNotEmpty = errors.New("fsx: the folder is not empty")
 )
 
 // TempFile is a file being written by Copy.
@@ -164,6 +166,27 @@ func (o *Ops) EvalSymlinks(path string) (string, error) { return o.fs.EvalSymlin
 // FreeSpace returns the bytes available on the file system holding path, or
 // ErrUnsupported.
 func (o *Ops) FreeSpace(path string) (uint64, error) { return o.fs.FreeSpace(path) }
+
+// RemoveEmptyDir removes the folder path if it is empty (ErrNotEmpty
+// otherwise). It never removes a file, a symbolic link or anything inside the
+// folder: it tidies the folders a move left behind.
+func (o *Ops) RemoveEmptyDir(path string) error {
+	fi, err := o.fs.Lstat(path)
+	if err != nil {
+		return err
+	}
+	if !fi.IsDir() {
+		return &fs.PathError{Op: "rmdir", Path: path, Err: ErrNotRegular}
+	}
+	entries, err := o.fs.ReadDir(path)
+	if err != nil {
+		return err
+	}
+	if len(entries) > 0 {
+		return &fs.PathError{Op: "rmdir", Path: path, Err: ErrNotEmpty}
+	}
+	return o.fs.Remove(path)
+}
 
 // regular returns the info of a regular file, without following links.
 func (o *Ops) regular(name string) (fs.FileInfo, error) {
