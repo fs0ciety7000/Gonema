@@ -12,7 +12,9 @@
       "!openapi.json",
       "!dist",
       "!tools/openapi/node_modules",
-      "!e2e/__screenshots__"
+      "!e2e/__screenshots__",
+      "!**/*.md",
+      "!e2e/perf.json"
     ]
   },
   "formatter": {

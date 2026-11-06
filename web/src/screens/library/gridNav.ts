@@ -48,11 +48,11 @@ export function navigate(
   const i = Math.max(0, Math.min(count - 1, index));
   const ri = rowOf[i] ?? 0;
   const row = rows[ri];
-  if (!row || row.kind !== 'cards') return null;
+  if (row?.kind !== 'cards') return null;
   const col = i - row.start;
   const toRow = (target: number) => {
     const r = rows[target];
-    if (!r || r.kind !== 'cards') return i;
+    if (r?.kind !== 'cards') return i;
     return Math.min(r.start + col, r.end - 1);
   };
   switch (key) {

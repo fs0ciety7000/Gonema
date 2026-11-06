@@ -53,7 +53,7 @@ export function FiltersButton({
           variant="ghost"
           size="sm"
           icon={<ListFilter className="i" aria-hidden="true" />}
-          aria-label={n ? `Filters, ${n} active` : 'Filters'}
+          aria-label={n ? `Filters ${n} active` : 'Filters'}
         >
           Filters
           {n > 0 && (

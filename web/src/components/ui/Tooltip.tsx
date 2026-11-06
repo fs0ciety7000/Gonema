@@ -1,5 +1,6 @@
 import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip';
 import type { ReactElement, ReactNode } from 'react';
+import { overlayRoot } from './overlayRoot';
 
 // ----------------------------------------------------------------- tooltip
 
@@ -24,7 +25,7 @@ export function Tooltip({
   return (
     <BaseTooltip.Root>
       <BaseTooltip.Trigger render={children} />
-      <BaseTooltip.Portal>
+      <BaseTooltip.Portal container={overlayRoot()}>
         <BaseTooltip.Positioner sideOffset={8} className="tooltip-positioner">
           <BaseTooltip.Popup className="tooltip">
             {content}

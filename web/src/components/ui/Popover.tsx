@@ -1,5 +1,6 @@
 import { Popover as BasePopover } from '@base-ui/react/popover';
 import type { ReactElement, ReactNode } from 'react';
+import { overlayRoot } from './overlayRoot';
 
 // ----------------------------------------------------------------- popover
 
@@ -27,7 +28,7 @@ export function Popover({
       {...(onOpenChange ? { onOpenChange: (o: boolean) => onOpenChange(o) } : {})}
     >
       <BasePopover.Trigger render={trigger} />
-      <BasePopover.Portal>
+      <BasePopover.Portal container={overlayRoot()}>
         <BasePopover.Positioner sideOffset={8} align={align} className="menu-positioner">
           <BasePopover.Popup className="popover" aria-label={label}>
             {children}

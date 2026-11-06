@@ -45,6 +45,14 @@ describe('filters, sort, group', () => {
   });
 });
 
+describe('quality', () => {
+  it('shows SD catalog entries as SD + source', async () => {
+    const { parseQuality, qualityName } = await import('@/lib/quality');
+    expect(parseQuality('dvd')).toEqual({ res: 'SD', source: 'DVD', uhd: false });
+    expect(qualityName('webdl-2160p')).toBe('WEBDL-2160p');
+  });
+});
+
 describe('fromColumns', () => {
   it('maps the derived states failed / unmonitored to flags', () => {
     const [a, b] = fromColumns({

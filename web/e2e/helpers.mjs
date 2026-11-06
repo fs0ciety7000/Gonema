@@ -4,6 +4,7 @@
 //   gonema serve -data-dir /tmp/gonema-demo        (binary built with `make release`)
 // GONEMA_E2E_URL points at it (default http://127.0.0.1:7676). The browser is the
 // preinstalled Chromium (PLAYWRIGHT_CHROMIUM, default /opt/pw-browsers/chromium).
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
@@ -63,7 +64,8 @@ export async function api(path, init) {
 
 /** axe-core (WCAG 2.1 A/AA + best-practice), as docs/design/tools/render.js does for the mockups. */
 export async function axe(page) {
-  await page.addScriptTag({ path: require.resolve('axe-core/axe.min.js') });
+  // evaluated through the DevTools protocol: not blocked by the page's CSP
+  await page.evaluate(readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8'));
   return page.evaluate(async () => {
     const r = await window.axe.run(document, {
       runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'] },

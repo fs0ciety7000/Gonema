@@ -498,7 +498,6 @@ export default function SystemSheet() {
                   onSearch={noop}
                   onToggleMonitor={noop}
                   onFocusCard={noop}
-                  menu={() => <MenuItem>Open</MenuItem>}
                 />
               );
             })}

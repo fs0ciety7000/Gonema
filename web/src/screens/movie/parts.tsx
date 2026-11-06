@@ -33,7 +33,7 @@ import type { DisplayStatus } from '@/lib/status';
 type Rating = { value: number; votes: number } | null | undefined;
 
 export function RatingRing({ source, rating }: { source: string; rating: Rating }) {
-  if (!rating || !rating.votes) return null;
+  if (!rating?.votes) return null;
   const v = Math.max(0, Math.min(1, rating.value / 10));
   return (
     <div className="rating">

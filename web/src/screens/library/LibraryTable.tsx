@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, Ellipsis } from 'lucide-react';
 import {
   type KeyboardEvent,
   type MouseEvent,
+  memo,
   type ReactNode,
   useCallback,
   useEffect,
@@ -17,7 +18,8 @@ import { QualityBadge, ScorePill, StatusText } from '@/components/ui/Badges';
 import { IconButton } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { cx } from '@/components/ui/cx';
-import { Menu } from '@/components/ui/Menu';
+import { openContextMenuFrom } from '@/components/ui/Menu';
+import { overlayRoot } from '@/components/ui/overlayRoot';
 import { PosterArt } from '@/components/ui/PosterArt';
 import { formatBytes, formatDate, formatEta } from '@/lib/format';
 import { displayStatus, STATUS, statusText } from '@/lib/status';
@@ -94,6 +96,7 @@ export function LibraryTable({
     count: items.length,
     estimateSize: () => rowH + 1,
     overscan: 10,
+    useFlushSync: false,
     scrollMargin: top,
   });
   // biome-ignore lint/correctness/useExhaustiveDependencies: row height follows density
@@ -177,13 +180,26 @@ export function LibraryTable({
     }
   };
 
-  const onRowClick = (ev: MouseEvent<HTMLTableRowElement>, m: LibraryItem, i: number) => {
-    const t = ev.target as HTMLElement;
-    if (t.closest('button, input, label, a')) return;
-    setActive(i);
-    if (ev.shiftKey) selection.range(m.id);
-    else if (ev.metaKey || ev.ctrlKey) selection.toggle(m.id);
-  };
+  const { range, toggle } = selection;
+  const onRowClick = useCallback(
+    (ev: MouseEvent<HTMLTableRowElement>, m: LibraryItem, i: number) => {
+      const t = ev.target as HTMLElement;
+      if (t.closest('button, input, label, a')) return;
+      setActive(i);
+      if (ev.shiftKey) range(m.id);
+      else if (ev.metaKey || ev.ctrlKey) toggle(m.id);
+    },
+    [range, toggle],
+  );
+  const onSelectClick = useCallback(
+    (ev: MouseEvent<HTMLInputElement>, m: LibraryItem) => {
+      if (ev.shiftKey) {
+        ev.preventDefault();
+        range(m.id);
+      } else toggle(m.id);
+    },
+    [range, toggle],
+  );
 
   const [ctx, setCtx] = useState<LibraryItem | null>(null);
   const [ctxOpen, setCtxOpen] = useState(false);
@@ -265,117 +281,44 @@ export function LibraryTable({
               </th>
             </tr>
           </thead>
-          <tbody ref={bodyRef} onKeyDown={onKeyDown}>
-            {padTop > 0 && (
-              // biome-ignore lint/a11y/noInteractiveElementToNoninteractiveRole: virtualisation spacer, not a row of data
-              <tr role="presentation" className="spacer">
-                <td colSpan={visible.length + 3} style={{ height: padTop }} />
-              </tr>
-            )}
+          {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: keyboard navigation of the rows (role=grid), delegated */}
+          <tbody
+            ref={bodyRef}
+            onKeyDown={onKeyDown}
+            style={padTop ? { transform: `translateY(${padTop}px)` } : undefined}
+          >
             {vItems.map((vr) => {
               const m = items[vr.index]!;
-              const s = displayStatus(m);
-              const sel = selection.selected.has(m.id);
-              const lv = live.get(m.id);
-              const text =
-                s === 'downloading' && lv
-                  ? [`${Math.round(lv.progress * 100)}%`, formatEta(lv.etaSeconds)].filter(Boolean).join(' · ')
-                  : s === 'available'
-                    ? STATUS.available.label
-                    : statusText(m, s);
-              const root = rootPath(m);
               return (
-                <tr
+                <TableRow
                   key={m.id}
-                  data-movie-id={m.id}
-                  aria-rowindex={vr.index + 2}
-                  aria-selected={sel}
-                  tabIndex={m.id === activeId ? 0 : -1}
-                  className={cx(ctxOpen && ctx?.id === m.id && 'is-context')}
-                  onClick={(ev) => onRowClick(ev, m, vr.index)}
-                  onFocus={(ev) => {
-                    if (ev.target === ev.currentTarget) setActive(vr.index);
-                  }}
-                >
-                  <td className="c-check">
-                    <Checkbox
-                      checked={sel}
-                      tabIndex={-1}
-                      aria-label={`Select ${m.title}`}
-                      onClick={(ev) => {
-                        if (ev.shiftKey) {
-                          ev.preventDefault();
-                          selection.range(m.id);
-                        } else selection.toggle(m.id);
-                      }}
-                    />
-                  </td>
-                  <td className={cx(s === 'unmonitored' && 'unmon')}>
-                    <div className="t-cell">
-                      <span className="thumb" data-poster-frame={m.id}>
-                        <PosterArt src={m.posterUrl} title={m.title} color={m.dominantColor} />
-                      </span>
-                      <a
-                        className="name"
-                        href={hrefOf(m)}
-                        tabIndex={-1}
-                        onClick={(ev) => {
-                          if (ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey) return;
-                          ev.preventDefault();
-                          onOpen(m, ev.currentTarget.parentElement?.querySelector<HTMLElement>('.thumb') ?? null);
-                        }}
-                      >
-                        {m.title}
-                      </a>
-                      {m.year > 0 && <span className="yr">{m.year}</span>}
-                    </div>
-                  </td>
-                  {columns.has('quality') && <td>{m.quality ? <QualityBadge quality={m.quality} /> : <Dash />}</td>}
-                  {columns.has('size') && <td className="r">{m.size ? formatBytes(m.size) : <Dash />}</td>}
-                  {columns.has('score') && (
-                    <td className="r">{m.score !== null && m.quality ? <ScorePill score={m.score} /> : <Dash />}</td>
-                  )}
-                  {columns.has('status') && (
-                    <td>
-                      <StatusText status={s}>{text}</StatusText>
-                    </td>
-                  )}
-                  {columns.has('added') && <td className="muted">{formatDate(m.addedAt)}</td>}
-                  {columns.has('path') && (
-                    <td className="mono">
-                      <span className="path" title={root ? `${root.replace(/\/+$/, '')}/${folderOf(m)}` : folderOf(m)}>
-                        <span className="t-muted">…/</span>
-                        {m.quality ? folderOf(m) : <span className="t-muted">{folderOf(m)}</span>}
-                      </span>
-                    </td>
-                  )}
-                  <td>
-                    <Menu
-                      label={`Actions for ${m.title}`}
-                      heading={m.title}
-                      align="end"
-                      trigger={
-                        <IconButton size="sm" className="row-more" label={`Actions for ${m.title}`} tabIndex={-1}>
-                          <Ellipsis className="i i-sm" aria-hidden="true" />
-                        </IconButton>
-                      }
-                    >
-                      {menu(m)}
-                    </Menu>
-                  </td>
-                </tr>
+                  m={m}
+                  index={vr.index}
+                  selected={selection.selected.has(m.id)}
+                  active={m.id === activeId}
+                  context={ctxOpen && ctx?.id === m.id}
+                  live={live.get(m.id)}
+                  columns={columns}
+                  root={rootPath(m)}
+                  href={hrefOf(m)}
+                  onOpen={onOpen}
+                  onRowClick={onRowClick}
+                  onActive={setActive}
+                  onSelectClick={onSelectClick}
+                />
               );
             })}
-            {padBottom > 0 && (
-              // biome-ignore lint/a11y/noInteractiveElementToNoninteractiveRole: virtualisation spacer, not a row of data
-              <tr role="presentation" className="spacer">
-                <td colSpan={visible.length + 3} style={{ height: padBottom }} />
-              </tr>
-            )}
+          </tbody>
+          {/* Height of the rows outside the window, in one spacer row after them (rows above are
+              moved with a transform), so the sticky header spans the whole list. */}
+          <tbody aria-hidden="true" className="spacer-body">
+            <tr className="spacer">
+              <td colSpan={visible.length + 3} style={{ height: padTop + padBottom }} />
+            </tr>
           </tbody>
         </table>
       </ContextMenu.Trigger>
-      <ContextMenu.Portal>
+      <ContextMenu.Portal container={overlayRoot()}>
         <ContextMenu.Positioner className="menu-positioner">
           <ContextMenu.Popup className="menu ctx-menu" aria-label={ctx ? `Actions for ${ctx.title}` : 'Actions'}>
             {ctx && (
@@ -392,6 +335,120 @@ export function LibraryTable({
     </ContextMenu.Root>
   );
 }
+
+type RowProps = {
+  m: LibraryItem;
+  index: number;
+  selected: boolean;
+  active: boolean;
+  context: boolean;
+  live: LiveDownload | undefined;
+  columns: ReadonlySet<ColumnId>;
+  root: string | undefined;
+  href: string;
+  onOpen: (m: LibraryItem, from: HTMLElement | null) => void;
+  onRowClick: (ev: MouseEvent<HTMLTableRowElement>, m: LibraryItem, i: number) => void;
+  onActive: (i: number) => void;
+  onSelectClick: (ev: MouseEvent<HTMLInputElement>, m: LibraryItem) => void;
+};
+
+/** One row, memoised: scrolling re-renders only the rows that enter the window. */
+const TableRow = memo(function TableRow({
+  m,
+  index,
+  selected,
+  active,
+  context,
+  live: lv,
+  columns,
+  root,
+  href,
+  onOpen,
+  onRowClick,
+  onActive,
+  onSelectClick,
+}: RowProps) {
+  const s = displayStatus(m);
+  const text =
+    s === 'downloading' && lv
+      ? [`${Math.round(lv.progress * 100)}%`, formatEta(lv.etaSeconds)].filter(Boolean).join(' · ')
+      : s === 'available'
+        ? STATUS.available.label
+        : statusText(m, s);
+  return (
+    <tr
+      data-movie-id={m.id}
+      aria-rowindex={index + 2}
+      aria-selected={selected}
+      tabIndex={active ? 0 : -1}
+      className={cx(context && 'is-context')}
+      onClick={(ev) => onRowClick(ev, m, index)}
+      onFocus={(ev) => {
+        if (ev.target === ev.currentTarget) onActive(index);
+      }}
+    >
+      <td className="c-check">
+        <Checkbox
+          checked={selected}
+          tabIndex={-1}
+          aria-label={`Select ${m.title}`}
+          onClick={(ev) => onSelectClick(ev, m)}
+        />
+      </td>
+      <td className={cx(s === 'unmonitored' && 'unmon')}>
+        <div className="t-cell">
+          <span className="thumb" data-poster-frame={m.id}>
+            <PosterArt src={m.posterUrl} title={m.title} color={m.dominantColor} />
+          </span>
+          <a
+            className="name"
+            href={href}
+            tabIndex={-1}
+            onClick={(ev) => {
+              if (ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey) return;
+              ev.preventDefault();
+              onOpen(m, ev.currentTarget.parentElement?.querySelector<HTMLElement>('.thumb') ?? null);
+            }}
+          >
+            {m.title}
+          </a>
+          {m.year > 0 && <span className="yr">{m.year}</span>}
+        </div>
+      </td>
+      {columns.has('quality') && <td>{m.quality ? <QualityBadge quality={m.quality} /> : <Dash />}</td>}
+      {columns.has('size') && <td className="r">{m.size ? formatBytes(m.size) : <Dash />}</td>}
+      {columns.has('score') && (
+        <td className="r">{m.score !== null && m.quality ? <ScorePill score={m.score} /> : <Dash />}</td>
+      )}
+      {columns.has('status') && (
+        <td>
+          <StatusText status={s}>{text}</StatusText>
+        </td>
+      )}
+      {columns.has('added') && <td className="muted">{formatDate(m.addedAt)}</td>}
+      {columns.has('path') && (
+        <td className="mono">
+          <span className="path" title={root ? `${root.replace(/\/+$/, '')}/${folderOf(m)}` : folderOf(m)}>
+            <span className="t-muted">…/</span>
+            {m.quality ? folderOf(m) : <span className="t-muted">{folderOf(m)}</span>}
+          </span>
+        </td>
+      )}
+      <td>
+        <IconButton
+          size="sm"
+          className="row-more"
+          label={`Actions for ${m.title}`}
+          aria-haspopup="menu"
+          tabIndex={-1}
+          onClick={(ev) => openContextMenuFrom(ev.currentTarget)}
+        >
+          <Ellipsis className="i i-sm" aria-hidden="true" />
+        </IconButton>
+      </td>
+    </tr>
+  );
+});
 
 function Dash() {
   return <span className="t-muted">—</span>;

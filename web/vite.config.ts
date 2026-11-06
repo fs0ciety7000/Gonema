@@ -1,5 +1,7 @@
 /// <reference types="vitest/config" />
+import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath, URL } from 'node:url';
+import { brotliCompressSync, gzipSync, constants as zc } from 'node:zlib';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
@@ -48,6 +50,27 @@ function dropNestedTokenImport(): Plugin {
   };
 }
 
+/** Precompressed siblings (.br, .gz) that internal/webui serves when the client accepts them. */
+function precompress(): Plugin {
+  return {
+    name: 'gonema-precompress',
+    apply: 'build',
+    // after the files are written (emitting during generateBundle disturbs Vite's own rewrites)
+    writeBundle(opts, bundle) {
+      const dir = opts.dir ?? 'dist';
+      for (const name of Object.keys(bundle)) {
+        // index.html is excluded: the server injects <base href> and the runtime config into it.
+        if (!/\.(js|css|svg|json|webmanifest)$/.test(name)) continue;
+        const path = `${dir}/${name}`;
+        const buf = readFileSync(path);
+        if (buf.length < 1024) continue;
+        writeFileSync(`${path}.gz`, gzipSync(buf, { level: 9 }));
+        writeFileSync(`${path}.br`, brotliCompressSync(buf, { params: { [zc.BROTLI_PARAM_QUALITY]: 11 } }));
+      }
+    },
+  };
+}
+
 /** The Go server injects <base href> (GONEMA_BASE_URL) into index.html; the dev server gets "/". */
 function devBaseHref(): Plugin {
   return {
@@ -60,7 +83,7 @@ function devBaseHref(): Plugin {
 export default defineConfig(({ mode }) => ({
   // Relative base: the Go server may serve the SPA under GONEMA_BASE_URL.
   base: './',
-  plugins: [react(), tailwindcss(), dropNestedTokenImport(), preloadFonts(), devBaseHref()],
+  plugins: [react(), tailwindcss(), dropNestedTokenImport(), preloadFonts(), devBaseHref(), precompress()],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   define: {
     // Dev-only screens (/__system, unbuilt sections) are compiled out of production builds.

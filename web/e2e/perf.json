@@ -1,0 +1,112 @@
+{
+  "base": "http://127.0.0.1:17676",
+  "date": "2026-11-06T02:48:50.460Z",
+  "runs": [
+    {
+      "layout": "grid",
+      "cpuSlowdown": 1,
+      "frames": 299,
+      "fps": 59.6,
+      "avgMs": 16.78,
+      "p95Ms": 16.8,
+      "p99Ms": 16.8,
+      "maxMs": 33.5,
+      "over20ms": 2
+    },
+    {
+      "layout": "table",
+      "cpuSlowdown": 1,
+      "frames": 286,
+      "fps": 57.2,
+      "avgMs": 17.48,
+      "p95Ms": 16.8,
+      "p99Ms": 33.3,
+      "maxMs": 33.4,
+      "over20ms": 14
+    },
+    {
+      "layout": "grid",
+      "cpuSlowdown": 4,
+      "frames": 124,
+      "fps": 24.6,
+      "avgMs": 40.72,
+      "p95Ms": 83.3,
+      "p99Ms": 83.4,
+      "maxMs": 116.7,
+      "over20ms": 94
+    },
+    {
+      "layout": "table",
+      "cpuSlowdown": 4,
+      "frames": 73,
+      "fps": 14.5,
+      "avgMs": 69.18,
+      "p95Ms": 116.6,
+      "p99Ms": 166.7,
+      "maxMs": 166.7,
+      "over20ms": 71
+    }
+  ],
+  "initial": {
+    "firstPosterMs": 1067,
+    "domContentLoadedMs": 131,
+    "listRequestMs": 348,
+    "listTransferBytes": 430656,
+    "listDecodedBytes": 2258013,
+    "renderAfterListMs": 570,
+    "cls": 0.023,
+    "loadedWithin1500ms": {
+      "files": {
+        "index-cUTlZ6rY.css": {
+          "raw": 93533,
+          "gzip": 18105
+        },
+        "Button-e976XLGr.js": {
+          "raw": 12877,
+          "gzip": 5048
+        },
+        "overlayRoot-CtUWuaai.js": {
+          "raw": 111349,
+          "gzip": 38492
+        },
+        "index-Cnx69LSS.js": {
+          "raw": 489349,
+          "gzip": 155893
+        },
+        "Select-Dn0FLntt.js": {
+          "raw": 27871,
+          "gzip": 9962
+        },
+        "FiltersPopover-C38_yzWD.js": {
+          "raw": 14403,
+          "gzip": 5191
+        }
+      },
+      "jsGzip": 214586,
+      "cssGzip": 18105
+    },
+    "critical": {
+      "files": {
+        "index-Cnx69LSS.js": {
+          "raw": 489349,
+          "gzip": 155893
+        },
+        "Button-e976XLGr.js": {
+          "raw": 12877,
+          "gzip": 5048
+        },
+        "overlayRoot-CtUWuaai.js": {
+          "raw": 111349,
+          "gzip": 38492
+        },
+        "index-cUTlZ6rY.css": {
+          "raw": 93533,
+          "gzip": 18105
+        }
+      },
+      "jsGzip": 199433,
+      "cssGzip": 18105
+    }
+  },
+  "allChunks": 9
+}

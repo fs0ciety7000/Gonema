@@ -15,6 +15,7 @@ import {
 import type { LibraryItem } from '@/api/model';
 import { type LiveDownload, PosterCard, PosterSkeleton } from '@/components/movie/PosterCard';
 import { cx } from '@/components/ui/cx';
+import { overlayRoot } from '@/components/ui/overlayRoot';
 import { displayStatus } from '@/lib/status';
 import { buildRows, type GridRow, indexRows, navigate } from './gridNav';
 import type { Group } from './model';
@@ -70,6 +71,7 @@ export function PosterGrid({
   const [box, setBox] = useState({ width: 0, posterMin: 168, gapX: 24, gapY: 32, top: 0 });
 
   // Columns follow the design grid: auto-fill, minmax(--poster-min, 1fr).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: density changes the CSS variables read here
   useLayoutEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
@@ -110,6 +112,8 @@ export function PosterGrid({
     count: rows.length,
     estimateSize: (i) => (rows[i]?.kind === 'header' ? HEADER_H : rowH + box.gapY),
     overscan: 3,
+    // let React batch scroll renders instead of flushing synchronously inside the scroll handler
+    useFlushSync: false,
     scrollMargin: box.top,
   });
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when the geometry changes
@@ -217,7 +221,7 @@ export function PosterGrid({
         onToggleMonitor(m);
       } else if (ev.key === '.') {
         ev.preventDefault();
-        cell.querySelector<HTMLButtonElement>('.pc-actions [aria-haspopup="menu"]')?.click();
+        cell.querySelector<HTMLButtonElement>('[data-more]')?.click();
       }
     }
   };
@@ -340,7 +344,6 @@ export function PosterGrid({
                     onSearch={onSearch}
                     onToggleMonitor={onToggleMonitor}
                     onFocusCard={onFocusCard}
-                    menu={menu}
                     eager={vr.index < 2}
                     className={enter ? 'pc-enter' : undefined}
                     style={enter ? ({ ['--i' as string]: Math.min(order, 12) } as CSSProperties) : undefined}
@@ -362,7 +365,7 @@ export function PosterGrid({
               );
             })}
           </ContextMenu.Trigger>
-          <ContextMenu.Portal>
+          <ContextMenu.Portal container={overlayRoot()}>
             <ContextMenu.Positioner className="menu-positioner">
               <ContextMenu.Popup className="menu" aria-label={ctx ? `Actions for ${ctx.title}` : 'Actions'}>
                 {ctx && (

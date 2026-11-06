@@ -14,13 +14,13 @@ export function DemoBanner() {
   const demo = (status.data as { demo?: boolean } | undefined)?.demo;
   if (!demo) return null;
   return (
-    <div className="app-banner" data-tone="info" role="note">
+    <aside className="app-banner" data-tone="info" aria-label="Demo mode">
       <FlaskConical className="i" aria-hidden="true" />
       <span>
         <strong>Demo mode.</strong>{' '}
         <span className="t-secondary">These films are generated sample data, not a real library.</span>
       </span>
-    </div>
+    </aside>
   );
 }
 

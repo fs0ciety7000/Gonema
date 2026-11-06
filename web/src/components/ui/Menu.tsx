@@ -3,6 +3,7 @@ import { Menu as BaseMenu } from '@base-ui/react/menu';
 import { Check, ChevronRight } from 'lucide-react';
 import { type ReactElement, type ReactNode, useState } from 'react';
 import { cx } from './cx';
+import { overlayRoot } from './overlayRoot';
 
 /* Menus use Base UI for focus, typeahead, keyboard and ARIA; all styling is .menu
    from the design system. Pointer-opened menus pop in from their trigger
@@ -46,7 +47,7 @@ export function Menu({
       }}
     >
       <BaseMenu.Trigger render={trigger} />
-      <BaseMenu.Portal>
+      <BaseMenu.Portal container={overlayRoot()}>
         <BaseMenu.Positioner sideOffset={6} align={align} side={side} className="menu-positioner">
           <BaseMenu.Popup className={cx('menu', className)} aria-label={label} data-instant={instant || undefined}>
             {heading && (
@@ -75,7 +76,7 @@ export function ContextMenu({ children, label, heading, items, onOpenChange }: C
   return (
     <BaseContextMenu.Root {...(onOpenChange ? { onOpenChange: (o: boolean) => onOpenChange(o) } : {})}>
       <BaseContextMenu.Trigger render={children} />
-      <BaseContextMenu.Portal>
+      <BaseContextMenu.Portal container={overlayRoot()}>
         <BaseContextMenu.Positioner className="menu-positioner">
           <BaseContextMenu.Popup className="menu" aria-label={label}>
             {heading && (
@@ -198,11 +199,26 @@ export function Submenu({
         <span className="label">{label}</span>
         <ChevronRight className="i i-sm" aria-hidden="true" />
       </BaseMenu.SubmenuTrigger>
-      <BaseMenu.Portal>
+      <BaseMenu.Portal container={overlayRoot()}>
         <BaseMenu.Positioner sideOffset={4} alignOffset={-6} className="menu-positioner">
           <BaseMenu.Popup className="menu submenu-popup">{children}</BaseMenu.Popup>
         </BaseMenu.Positioner>
       </BaseMenu.Portal>
     </BaseMenu.SubmenuRoot>
+  );
+}
+
+/** Opens the context menu that owns `el` (one shared menu per list), anchored under the
+ *  button: lists of thousands of items keep a single menu instead of one per row. */
+export function openContextMenuFrom(el: HTMLElement) {
+  const r = el.getBoundingClientRect();
+  el.dispatchEvent(
+    new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      clientX: r.left,
+      clientY: r.bottom + 4,
+      button: 2,
+    }),
   );
 }

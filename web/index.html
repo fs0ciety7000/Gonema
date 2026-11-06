@@ -13,7 +13,7 @@
       // Theme before first paint (no flash): stored choice (dark, light or system); dark by default.
       (() => {
         var d = document.documentElement, t = null;
-        try { t = localStorage.getItem('gn-theme'); } catch (e) {}
+        try { t = localStorage.getItem('gn-theme'); } catch {}
         if (t === 'system') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
         if (t !== 'light' && t !== 'dark') t = 'dark';
         d.dataset.theme = t;

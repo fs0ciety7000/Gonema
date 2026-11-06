@@ -45,16 +45,10 @@ function Count({ entry }: { entry: NavEntry }) {
   return null;
 }
 
-function countLabel(entry: NavEntry, lib?: number, queue?: number): string {
-  if (entry.id === 'films' && lib !== undefined) return `${entry.label}, ${formatNumber(lib)} films`;
-  if (entry.id === 'queue' && queue) return `${entry.label}, ${queue} downloading`;
-  return entry.label;
-}
-
 function Disk() {
   const roots = useRootFolders();
   const r = roots.data?.find((x) => x.totalSpace);
-  if (!r || !r.totalSpace) return null;
+  if (!r?.totalSpace) return null;
   const used = r.totalSpace - (r.freeSpace ?? 0);
   return (
     <div className="disk">
@@ -78,8 +72,6 @@ export function Sidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const active = activeSection(pathname);
   const status = useSystemStatus();
-  const lib = useLibrary();
-  const queue = useQueue();
   return (
     <nav className="sidebar" aria-label="Main">
       <Link className="brand" to="/films" aria-label="Gonema, films">
@@ -99,7 +91,6 @@ export function Sidebar() {
                 className="nav-item"
                 to={entry.path as never}
                 aria-current={active === entry.id ? 'page' : undefined}
-                aria-label={countLabel(entry, lib.data?.length, queue.data?.length)}
               >
                 <Icon className="i" aria-hidden="true" />
                 <span className="label">{entry.label}</span>

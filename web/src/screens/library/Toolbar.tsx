@@ -51,7 +51,7 @@ export function SortMenu({
           variant="ghost"
           size="sm"
           icon={<ArrowUpDown className="i" aria-hidden="true" />}
-          aria-label={`Sort by ${SORT_LABEL[sort]}, ${dir === 'asc' ? 'ascending' : 'descending'}`}
+          aria-label={`Sort ${SORT_LABEL[sort]}, ${dir === 'asc' ? 'ascending' : 'descending'}`}
         >
           <span className="lbl">Sort</span> <span className="val">{SORT_LABEL[sort]}</span>
         </Button>
@@ -83,12 +83,7 @@ export function GroupMenu({ group, onChange }: { group: GroupKey; onChange: (g: 
       label="Group"
       align="end"
       trigger={
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<Layers className="i" aria-hidden="true" />}
-          aria-label={`Group by ${GROUP_LABEL[group]}`}
-        >
+        <Button variant="ghost" size="sm" icon={<Layers className="i" aria-hidden="true" />}>
           <span className="lbl">Group</span> <span className="val">{GROUP_LABEL[group]}</span>
         </Button>
       }

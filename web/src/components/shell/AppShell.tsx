@@ -21,6 +21,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </OfflineOverlay>
       <Toaster />
+      <section id="gn-overlays" aria-label="Menus and dialogs" />
     </>
   );
 }

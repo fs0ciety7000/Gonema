@@ -29,12 +29,12 @@ describe('library and film page', () => {
   });
 
   it('filters by status from the Filters popover', async () => {
-    await page.getByRole('button', { name: /^Filters/ }).hover();
-    await page.getByRole('button', { name: /^Filters/ }).click();
+    // the real popover trigger replaces its placeholder once the chunk is idle-loaded
+    await page.locator('button[aria-haspopup="dialog"][aria-expanded]', { hasText: 'Filters' }).click();
     const missing = page.getByRole('dialog', { name: 'Filters' }).getByRole('button', { name: 'Missing' });
     await missing.click();
     await page.keyboard.press('Escape');
-    await page.waitForURL(/status=missing/);
+    await page.waitForFunction(() => decodeURIComponent(location.search).includes('missing'));
     await page.getByRole('group', { name: 'Active filters' }).getByText('Missing').waitFor();
     const states = await page.locator('.pc').evaluateAll((els) => els.map((e) => e.getAttribute('data-state')));
     assert.ok(states.length > 0);
@@ -43,7 +43,7 @@ describe('library and film page', () => {
       `only missing films: ${[...new Set(states)]}`,
     );
     await page.getByRole('button', { name: 'Clear all' }).click();
-    await page.waitForURL((u) => !u.search.includes('status='));
+    await page.waitForFunction(() => !location.search.includes('status='));
   });
 
   it('selects with click and shift+click, then clears with Escape', async () => {
@@ -85,7 +85,12 @@ describe('library and film page', () => {
     const sw = page.locator('.hero .switch');
     assert.equal(await sw.getAttribute('aria-checked'), String(before));
     await sw.click();
-    assert.equal(await sw.getAttribute('aria-checked'), String(!before), 'applied at once');
+    // optimistic: flipped before the PATCH returns (within a frame or two)
+    await page.waitForFunction(
+      ([want]) => document.querySelector('.hero .switch')?.getAttribute('aria-checked') === want,
+      [String(!before)],
+      { timeout: 300 },
+    );
     const toastUndo = page.getByRole('status').filter({ hasText: title }).getByRole('button', { name: 'Undo' });
     await toastUndo.waitFor();
     await page.waitForFunction(
@@ -97,7 +102,10 @@ describe('library and film page', () => {
       async ([id, want]) => (await (await fetch(`api/v1/movies/${id}`)).json()).monitored === want,
       [movieId, before],
     );
-    assert.equal(await sw.getAttribute('aria-checked'), String(before), 'restored');
+    await page.waitForFunction(
+      ([want]) => document.querySelector('.hero .switch')?.getAttribute('aria-checked') === want,
+      [String(before)],
+    );
   });
 
   it('J / K walk the list without leaving the page', async () => {

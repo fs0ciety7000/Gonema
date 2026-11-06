@@ -1,12 +1,12 @@
 import { Bookmark, BookmarkMinus, Ellipsis, Search } from 'lucide-react';
-import { type CSSProperties, type MouseEvent, memo, type ReactNode } from 'react';
+import { type CSSProperties, type MouseEvent, memo } from 'react';
 import type { LibraryItem } from '@/api/model';
 import { HdrFlag, QualityBadge, StatusBadge, StatusText } from '@/components/ui/Badges';
 import { IconButton } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { cx } from '@/components/ui/cx';
 import { Skeleton } from '@/components/ui/Feedback';
-import { Menu } from '@/components/ui/Menu';
+import { openContextMenuFrom } from '@/components/ui/Menu';
 import { PosterArt } from '@/components/ui/PosterArt';
 import { ProgressBar } from '@/components/ui/Progress';
 import { formatEta, formatSpeed } from '@/lib/format';
@@ -28,7 +28,6 @@ type PosterCardProps = {
   onSearch: (movie: LibraryItem) => void;
   onToggleMonitor: (movie: LibraryItem) => void;
   onFocusCard: (movie: LibraryItem) => void;
-  menu: (movie: LibraryItem) => ReactNode;
   style?: CSSProperties;
   className?: string;
   eager?: boolean;
@@ -47,7 +46,6 @@ export const PosterCard = memo(function PosterCard({
   onSearch,
   onToggleMonitor,
   onFocusCard,
-  menu,
   style,
   className,
   eager,
@@ -146,17 +144,16 @@ export const PosterCard = memo(function PosterCard({
                 <Bookmark className="i i-sm" aria-hidden="true" />
               )}
             </IconButton>
-            <Menu
-              label={`Actions for ${m.title}`}
-              heading={m.title}
-              trigger={
-                <IconButton variant="on-media" label={`More actions for ${m.title}`} tabIndex={tab}>
-                  <Ellipsis className="i i-sm" aria-hidden="true" />
-                </IconButton>
-              }
+            <IconButton
+              variant="on-media"
+              label={`More actions for ${m.title}`}
+              aria-haspopup="menu"
+              tabIndex={tab}
+              data-more
+              onClick={(ev) => openContextMenuFrom(ev.currentTarget)}
             >
-              {menu(m)}
-            </Menu>
+              <Ellipsis className="i i-sm" aria-hidden="true" />
+            </IconButton>
           </div>
         </div>
       </div>

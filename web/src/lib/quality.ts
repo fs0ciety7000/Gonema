@@ -24,8 +24,11 @@ export function parseQuality(id: string | null | undefined): QualityParts | null
   if (!id) return null;
   const m = /^([a-z0-9]+)-(\d{3,4}p)$/i.exec(id.trim());
   if (!m) {
-    const res = /(\d{3,4}p)/.exec(id)?.[1] ?? id;
-    return { res, source: '', uhd: res === '2160p' };
+    // SD catalog entries have no resolution in their id ("dvd", "sdtv"): show the source as "SD".
+    const res = /(\d{3,4}p)/.exec(id)?.[1];
+    if (res) return { res, source: '', uhd: res === '2160p' };
+    const src = SOURCE[id.trim().toLowerCase()];
+    return { res: 'SD', source: src ?? id, uhd: false };
   }
   const src = m[1]!.toLowerCase();
   const res = m[2]!.toLowerCase();

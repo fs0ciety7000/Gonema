@@ -1,6 +1,7 @@
 import { Dialog as BaseDialog } from '@base-ui/react/dialog';
 import type { ReactNode } from 'react';
 import { cx } from './cx';
+import { overlayRoot } from './overlayRoot';
 
 // ----------------------------------------------------------------- dialog
 
@@ -31,7 +32,7 @@ export function Dialog({
 }: DialogProps) {
   return (
     <BaseDialog.Root open={open} onOpenChange={(o) => onOpenChange(o)}>
-      <BaseDialog.Portal>
+      <BaseDialog.Portal container={overlayRoot()}>
         <BaseDialog.Backdrop className="scrim" />
         <BaseDialog.Popup className={cx('dialog dialog-centered', wide && 'dialog-wide', className)}>
           {icon && <div className="icon-head">{icon}</div>}

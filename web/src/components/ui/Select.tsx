@@ -1,6 +1,7 @@
 import { Select as BaseSelect } from '@base-ui/react/select';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cx } from './cx';
+import { overlayRoot } from './overlayRoot';
 
 // ----------------------------------------------------------------- select
 
@@ -49,7 +50,7 @@ export function Select<T extends string | number>({
         <span className={cx('value', mono && 't-mono')}>{current?.label ?? placeholder}</span>
         <ChevronsUpDown className="i" aria-hidden="true" />
       </BaseSelect.Trigger>
-      <BaseSelect.Portal>
+      <BaseSelect.Portal container={overlayRoot()}>
         <BaseSelect.Positioner sideOffset={6} alignItemWithTrigger={false} className="menu-positioner">
           <BaseSelect.Popup className="menu select-popup">
             <BaseSelect.List>
