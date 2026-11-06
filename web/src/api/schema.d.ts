@@ -4,6 +4,251 @@
  */
 
 export interface paths {
+    "/auth/api-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate a new API key
+         * @description Replaces the API key: the previous one stops working at once. The new key is shown only in this response.
+         */
+        post: operations["auth-regenerate-api-key"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in
+         * @description Public. Opens a new session (HttpOnly, SameSite=Lax cookie; Secure over HTTPS) and ends the one the browser presented. Failed attempts are throttled per address and per account: 429 with Retry-After.
+         */
+        post: operations["auth-login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign out
+         * @description Public. Ends the session of the cookie (if any) and clears the cookie.
+         */
+        post: operations["auth-logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change the password
+         * @description Requires the current password. Ends every other session; a browser caller gets a fresh session cookie.
+         */
+        put: operations["auth-change-password"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * End a session
+         * @description Signs a browser out. Ending the current session signs this browser out too.
+         */
+        delete: operations["auth-revoke-session"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create the admin account (first run only)
+         * @description Public while no account exists, 409 afterwards. Signs the caller in (session cookie) and returns the API key, shown only once. Password: 10 to 256 characters.
+         */
+        post: operations["auth-setup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Setup and sign-in state
+         * @description Public. setupRequired: no account yet. authenticated: the cookie, the API key or the local mode lets the caller in.
+         */
+        get: operations["get-auth-status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Backups in the data directory */
+        get: operations["list-backups"];
+        put?: never;
+        /**
+         * Back up the database now
+         * @description A consistent online copy (VACUUM INTO, writers are not blocked) zipped with a manifest (Gonema version, schema version, date). The master key file gonema.key is NOT included unless includeKey is true: such an archive unlocks every stored secret. 409 while another backup or restore runs.
+         */
+        post: operations["create-backup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backups/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore a backup at the next start
+         * @description Requires confirm=true. Validates the archive (manifest, checksum, integrity, schema version), backs up the current state first (kind pre-restore), then stages the database: it replaces the current one when Gonema restarts (202; restart Gonema to apply it). To restore a file from this computer, upload it first (POST /backups/upload).
+         */
+        post: operations["restore-backup"];
+        /**
+         * Cancel the staged restore
+         * @description The pre-restore backup made when it was staged is kept. 404 when nothing is staged.
+         */
+        delete: operations["cancel-restore"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backups/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a backup archive from this computer
+         * @description multipart/form-data with a file field. The archive is validated (manifest, checksum, database integrity, schema version not newer than this Gonema) and stored as kind uploaded; restore it by name.
+         */
+        post: operations["upload-backup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backups/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a backup archive
+         * @description Requires confirm=true (422 otherwise). Only archives of the backups folder can be deleted.
+         */
+        delete: operations["delete-backup"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backups/{name}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a backup archive
+         * @description Streams the zip. The name must be an archive name Gonema creates: no path can be given.
+         */
+        get: operations["download-backup"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/blocklist": {
         parameters: {
             query?: never;
@@ -523,6 +768,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/imports/journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Interrupted imports that need attention
+         * @description At startup Gonema reconciles the imports a crash interrupted: it completes the database when the file arrived and runs the import again when nothing moved. The entries it could not settle without guessing are listed here (and as health issues); all=true lists the latest 500 entries of every status.
+         */
+        get: operations["list-import-journal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/imports/journal/{id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark an interrupted import as handled
+         * @description Requires confirm=true. Changes no file: you checked the files by hand. The health issue goes away.
+         */
+        post: operations["dismiss-import-journal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/indexers": {
         parameters: {
             query?: never;
@@ -681,6 +966,66 @@ export interface paths {
          * @description Totals of the library header and counts of the tabs.
          */
         get: operations["get-library-stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent log entries
+         * @description From the in-memory ring (the last GONEMA_LOG_BUFFER entries). Secrets are redacted.
+         */
+        get: operations["list-logs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/logs/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the logs
+         * @description The log file and its rotated files (oldest first) when a log file is configured, else the in-memory entries, as text. Secrets are redacted.
+         */
+        get: operations["download-logs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/logs/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Live log entries (Server-Sent Events)
+         * @description A dedicated stream, apart from /events: each message has an id, the event name log.entry and a log entry as JSON data. A comment is sent every 15 s; "resync" means entries were dropped (slow connection): fetch /logs again.
+         */
+        get: operations["stream-logs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1819,6 +2164,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/backups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Scheduled backups */
+        get: operations["get-backup-settings"];
+        /**
+         * Change scheduled backups
+         * @description Interval (hours), scheduled backups kept, and whether they include gonema.key (off by default: see the warning). A new interval applies at once.
+         */
+        put: operations["set-backup-settings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/general": {
         parameters: {
             query?: never;
@@ -1850,6 +2216,27 @@ export interface paths {
          * @description Free space (share of the disk or GB) and recycle bin size. Out-of-range values are refused (422).
          */
         put: operations["set-health-settings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Log level and outputs */
+        get: operations["get-log-settings"];
+        /**
+         * Change the log level now
+         * @description Applies at once to every output. It is not saved: at the next start the level of GONEMA_LOG_LEVEL (or -log-level) applies again.
+         */
+        put: operations["set-log-settings"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1892,6 +2279,26 @@ export interface paths {
          * @description Renders the templates for a library movie, or a built-in example. Invalid templates get a 422 listing every problem.
          */
         post: operations["preview-naming"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/security": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Security settings
+         * @description Authentication mode, signed-in sessions, API key (last four characters only) and the outbound connection policy.
+         */
+        get: operations["get-security-settings"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2074,6 +2481,21 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        APIKeyCreated: {
+            /** @description Shown only now; the previous key no longer works */
+            apiKey: string;
+            /** Format: date-time */
+            createdAt: string;
+            last4: string;
+        };
+        APIKeyState: {
+            /** Format: date-time */
+            createdAt?: string;
+            last4?: string;
+            /** Format: date-time */
+            lastUsedAt?: string;
+            present: boolean;
+        };
         AcquisitionSettings: {
             /** @description A failed download also blocks its release group for the movie */
             blocklistGroupOnFailure: boolean;
@@ -2159,6 +2581,88 @@ export interface components {
             /** @enum {string} */
             source: "tmdb" | "user";
             title: string;
+        };
+        AuthSession: {
+            /** Format: date-time */
+            createdAt: string;
+            /** @description The session of this request */
+            current: boolean;
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: int64 */
+            id: number;
+            ip: string;
+            /**
+             * Format: date-time
+             * @description Updated at most every 5 minutes
+             */
+            lastSeenAt: string;
+            userAgent: string;
+        };
+        AuthStatus: {
+            /** @enum {string} */
+            authMode: "enabled" | "disabled_for_local";
+            /** @description The caller may use the API */
+            authenticated: boolean;
+            /**
+             * @description How the caller is authenticated; local = GONEMA_AUTH=disabled_for_local and a local address
+             * @enum {string}
+             */
+            method: "session" | "apikey" | "local" | "none";
+            /** @description No account exists yet: show the account creation screen (POST /auth/setup) */
+            setupRequired: boolean;
+            username?: string;
+        };
+        AuthUser: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: date-time */
+            lastLoginAt: string | null;
+            username: string;
+        };
+        BackupInfo: {
+            appVersion: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description The archive holds gonema.key: whoever has the file can decrypt the stored secrets */
+            includesKey: boolean;
+            /** @enum {string} */
+            kind: "manual" | "scheduled" | "pre-restore" | "uploaded";
+            name: string;
+            /** @description Why it cannot be restored (restorable false) */
+            problem?: string;
+            restorable: boolean;
+            /** Format: int64 */
+            schemaVersion: number;
+            /** Format: int64 */
+            size: number;
+        };
+        BackupList: {
+            /** @description Newest first */
+            backups: components["schemas"]["BackupInfo"][] | null;
+            /** @description Folder of the archives, inside the data directory */
+            directory: string;
+            /** @description What a backup holds about the master key, to show next to the list */
+            keyNotice: string;
+            /** @description A restore staged for the next start */
+            pendingRestore?: components["schemas"]["PendingRestore"];
+        };
+        BackupSettings: {
+            enabled: boolean;
+            /** @description Also store gonema.key in scheduled backups. Warning: whoever gets such an archive can decrypt every stored secret */
+            includeKey: boolean;
+            /**
+             * Format: int64
+             * @description Hours between two scheduled backups; default 168 (weekly)
+             */
+            intervalHours: number;
+            /**
+             * Format: int64
+             * @description Scheduled backups kept; older scheduled ones are deleted (manual, uploaded and pre-restore backups are kept until you delete them)
+             */
+            keep: number;
         };
         "Block-groupRequest": {
             group: string;
@@ -2391,6 +2895,14 @@ export interface components {
             unit?: string;
             /** @description Choices of a choice input */
             values: string[] | null;
+        };
+        CreateBackupRequest: {
+            /** @description Also store gonema.key in the archive. Warning: whoever gets the archive can then decrypt every stored secret */
+            includeKey?: boolean;
+        };
+        Credentials: {
+            password: string;
+            username: string;
         };
         Dashboard: {
             clients: components["schemas"]["ServiceStatus"][] | null;
@@ -2918,6 +3430,25 @@ export interface components {
             retryOf: number | null;
             sourceTitle: string;
         };
+        ImportJournalEntry: {
+            /** Format: date-time */
+            createdAt: string;
+            destination: string;
+            /** Format: int64 */
+            downloadId?: number;
+            /** Format: int64 */
+            id: number;
+            message: string;
+            /** @enum {string} */
+            mode: "move" | "copy" | "hardlink";
+            /** Format: int64 */
+            movieId: number;
+            source: string;
+            /** @enum {string} */
+            status: "pending" | "done" | "failed" | "attention" | "dismissed";
+            /** Format: date-time */
+            updatedAt: string;
+        };
         ImportSettingsBody: {
             /** @description Folders imports may read from, as seen by Gonema; remote path mappings are allowed too */
             allowedRoots: string[] | null;
@@ -3156,6 +3687,55 @@ export interface components {
              * @description Monitored, missing and available for release according to the minimum availability
              */
             wanted: number;
+        };
+        LogEntry: {
+            /** @description Attributes, redacted; groups are joined with dots */
+            attrs?: {
+                [key: string]: string;
+            };
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            level: "debug" | "info" | "warn" | "error";
+            message: string;
+            /** Format: date-time */
+            time: string;
+        };
+        LogFileSettings: {
+            enabled: boolean;
+            /** Format: int64 */
+            keep?: number;
+            /** Format: int64 */
+            maxSizeMB?: number;
+            path?: string;
+        };
+        LogList: {
+            /**
+             * Format: int64
+             * @description Entries kept in memory
+             */
+            capacity: number;
+            /** @description Oldest first: the newest limit matches */
+            entries: components["schemas"]["LogEntry"][] | null;
+        };
+        LogSettings: {
+            /**
+             * Format: int64
+             * @description Entries kept in memory (GONEMA_LOG_BUFFER)
+             */
+            bufferSize: number;
+            /** @description Log file (GONEMA_LOG_FILE), read-only here */
+            file: components["schemas"]["LogFileSettings"];
+            /** @enum {string} */
+            level: "debug" | "info" | "warn" | "error";
+        };
+        LoginResult: {
+            /**
+             * Format: date-time
+             * @description End of the session (absolute); it also ends after 14 days without use
+             */
+            expiresAt: string;
+            user: components["schemas"]["AuthUser"];
         };
         LookupResult: {
             adult?: boolean;
@@ -3736,6 +4316,14 @@ export interface components {
             message: string;
             ok: boolean;
         };
+        OutboundPolicy: {
+            /** @description Destinations never contacted, whatever the policy */
+            alwaysBlocked: string[] | null;
+            /** @description Indexers, download clients, media servers, ntfy, Gotify, email */
+            integration: components["schemas"]["Policy"];
+            /** @description Webhooks, Discord, Slack */
+            webhook: components["schemas"]["Policy"];
+        };
         PaletteFilm: {
             dominantColor: string | null;
             /**
@@ -3826,6 +4414,15 @@ export interface components {
             /** Format: int64 */
             year?: number;
         };
+        PasswordChange: {
+            currentPassword: string;
+            /** @description At least 10 characters */
+            newPassword: string;
+        };
+        PasswordChanged: {
+            /** @description Every other session was ended; the caller's session was renewed */
+            sessionsRevoked: boolean;
+        };
         PauseAllResult: {
             /** Format: int64 */
             changed: number;
@@ -3840,6 +4437,12 @@ export interface components {
              * @description Downloads already in that state, importing, failed to import, or without a client
              */
             skipped: number;
+        };
+        PendingRestore: {
+            name: string;
+            restoreKey: boolean;
+            /** Format: date-time */
+            stagedAt: string;
         };
         PeoplePage: {
             /** Format: int64 */
@@ -3956,6 +4559,12 @@ export interface components {
             toPath: string;
             /** Format: int64 */
             toRootFolderId: number;
+        };
+        Policy: {
+            /** @description 127.0.0.0/8 and ::1 may be contacted */
+            allowLoopback: boolean;
+            /** @description Private ranges (10/8, 172.16/12, 192.168/16, 100.64/10, fc00::/7) may be contacted */
+            allowPrivate: boolean;
         };
         Preview: {
             cutoffLabel: string;
@@ -4480,12 +5089,27 @@ export interface components {
         "Restore-recycledResponse": {
             path: string;
         };
+        RestoreBackupRequest: {
+            /** @description Must be true */
+            confirm: boolean;
+            /** @description Archive name from the list */
+            name: string;
+            /** @description Also restore gonema.key from the archive (when it includes one); the current key is moved aside */
+            restoreKey?: boolean;
+        };
         RestoreInputBody: {
             /** @description Item name, as listed */
             name: string;
         };
         RestoreResult: {
             changed: number[] | null;
+        };
+        RestoreStaged: {
+            message: string;
+            /** @description The backup of the state before the restore */
+            preRestoreBackup: components["schemas"]["BackupInfo"];
+            restartRequired: boolean;
+            warnings?: string[] | null;
         };
         Revision: {
             real?: boolean;
@@ -4728,6 +5352,30 @@ export interface components {
             /** @enum {string} */
             status: "running" | "finished" | "failed";
         };
+        SecuritySettings: {
+            apiKey: components["schemas"]["APIKeyState"];
+            /**
+             * @description GONEMA_AUTH
+             * @enum {string}
+             */
+            authMode: "enabled" | "disabled_for_local";
+            /**
+             * @description GONEMA_COOKIE_SECURE
+             * @enum {string}
+             */
+            cookieSecure: "auto" | "true" | "false";
+            /**
+             * @description How this request is authenticated
+             * @enum {string}
+             */
+            method: "session" | "apikey" | "local";
+            outbound: components["schemas"]["OutboundPolicy"];
+            sessions: components["schemas"]["AuthSession"][] | null;
+            /** @description GONEMA_TRUSTED_ORIGINS */
+            trustedOrigins: string[] | null;
+            /** @description null before setup (local mode only) */
+            user: components["schemas"]["AuthUser"];
+        };
         Selection: {
             mode?: string;
             /** Format: int64 */
@@ -4814,6 +5462,10 @@ export interface components {
             /** @description TMDB API Read Access Token or API Key */
             key: string;
         };
+        SetLogLevelRequest: {
+            /** @enum {string} */
+            level: "debug" | "info" | "warn" | "error";
+        };
         Settings: {
             /**
              * Format: int64
@@ -4830,6 +5482,17 @@ export interface components {
              * @description Mention the recycle bin once it holds more than this many GB (1 to 100000)
              */
             recycleBinMaxGb: number;
+        };
+        SetupResult: {
+            /** @description The API key, shown only now: store it in the app that needs it */
+            apiKey: string;
+            apiKeyLast4: string;
+            /**
+             * Format: date-time
+             * @description End of the session that was opened
+             */
+            expiresAt: string;
+            user: components["schemas"]["AuthUser"];
         };
         SetupStatus: {
             /** @description Every available step is done */
@@ -4993,12 +5656,20 @@ export interface components {
     headers: never;
     pathItems: never;
 }
+export type ApiKeyCreated = components['schemas']['APIKeyCreated'];
+export type ApiKeyState = components['schemas']['APIKeyState'];
 export type AcquisitionSettings = components['schemas']['AcquisitionSettings'];
 export type AddRootFolderRequest = components['schemas']['Add-root-folderRequest'];
 export type AddCollectionInputBody = components['schemas']['AddCollectionInputBody'];
 export type AddCollectionResult = components['schemas']['AddCollectionResult'];
 export type AddMovieInputBody = components['schemas']['AddMovieInputBody'];
 export type AlternateTitle = components['schemas']['AlternateTitle'];
+export type AuthSession = components['schemas']['AuthSession'];
+export type AuthStatus = components['schemas']['AuthStatus'];
+export type AuthUser = components['schemas']['AuthUser'];
+export type BackupInfo = components['schemas']['BackupInfo'];
+export type BackupList = components['schemas']['BackupList'];
+export type BackupSettings = components['schemas']['BackupSettings'];
 export type BlockGroupRequest = components['schemas']['Block-groupRequest'];
 export type BlocklistItem = components['schemas']['BlocklistItem'];
 export type Breakdown = components['schemas']['Breakdown'];
@@ -5020,6 +5691,8 @@ export type Collection = components['schemas']['Collection'];
 export type CollectionPart = components['schemas']['CollectionPart'];
 export type CollectionSummary = components['schemas']['CollectionSummary'];
 export type ConditionKindInfo = components['schemas']['ConditionKindInfo'];
+export type CreateBackupRequest = components['schemas']['CreateBackupRequest'];
+export type Credentials = components['schemas']['Credentials'];
 export type Dashboard = components['schemas']['Dashboard'];
 export type DashboardHealth = components['schemas']['DashboardHealth'];
 export type DashboardMonth = components['schemas']['DashboardMonth'];
@@ -5053,6 +5726,7 @@ export type HistoryEntry = components['schemas']['HistoryEntry'];
 export type HistoryMovie = components['schemas']['HistoryMovie'];
 export type HistoryPage = components['schemas']['HistoryPage'];
 export type HistoryRow = components['schemas']['HistoryRow'];
+export type ImportJournalEntry = components['schemas']['ImportJournalEntry'];
 export type ImportSettingsBody = components['schemas']['ImportSettingsBody'];
 export type Indexer = components['schemas']['Indexer'];
 export type IndexerHealth = components['schemas']['IndexerHealth'];
@@ -5066,6 +5740,11 @@ export type LibraryResult = components['schemas']['LibraryResult'];
 export type LibraryScanInputBody = components['schemas']['LibraryScanInputBody'];
 export type LibrarySelection = components['schemas']['LibrarySelection'];
 export type LibraryStats = components['schemas']['LibraryStats'];
+export type LogEntry = components['schemas']['LogEntry'];
+export type LogFileSettings = components['schemas']['LogFileSettings'];
+export type LogList = components['schemas']['LogList'];
+export type LogSettings = components['schemas']['LogSettings'];
+export type LoginResult = components['schemas']['LoginResult'];
 export type LookupResult = components['schemas']['LookupResult'];
 export type Manifest = components['schemas']['Manifest'];
 export type ManualInputBody = components['schemas']['ManualInputBody'];
@@ -5096,17 +5775,22 @@ export type NotificationInput = components['schemas']['NotificationInput'];
 export type NotificationSecretsInput = components['schemas']['NotificationSecretsInput'];
 export type NotificationSecretsSet = components['schemas']['NotificationSecretsSet'];
 export type NotificationTest = components['schemas']['NotificationTest'];
+export type OutboundPolicy = components['schemas']['OutboundPolicy'];
 export type PaletteFilm = components['schemas']['PaletteFilm'];
 export type PaletteRemote = components['schemas']['PaletteRemote'];
 export type PaletteResult = components['schemas']['PaletteResult'];
 export type ParsedRelease = components['schemas']['ParsedRelease'];
+export type PasswordChange = components['schemas']['PasswordChange'];
+export type PasswordChanged = components['schemas']['PasswordChanged'];
 export type PauseAllResult = components['schemas']['PauseAllResult'];
+export type PendingRestore = components['schemas']['PendingRestore'];
 export type PeoplePage = components['schemas']['PeoplePage'];
 export type Person = components['schemas']['Person'];
 export type PersonCredit = components['schemas']['PersonCredit'];
 export type PersonProfile = components['schemas']['PersonProfile'];
 export type PersonResult = components['schemas']['PersonResult'];
 export type Plan = components['schemas']['Plan'];
+export type Policy = components['schemas']['Policy'];
 export type Preview = components['schemas']['Preview'];
 export type PreviewDecision = components['schemas']['PreviewDecision'];
 export type PreviewFile = components['schemas']['PreviewFile'];
@@ -5143,8 +5827,10 @@ export type RemotePathMapping = components['schemas']['RemotePathMapping'];
 export type RemotePathMappingInput = components['schemas']['RemotePathMappingInput'];
 export type RestoreMovieSettingsRequest = components['schemas']['Restore-movie-settingsRequest'];
 export type RestoreRecycledResponse = components['schemas']['Restore-recycledResponse'];
+export type RestoreBackupRequest = components['schemas']['RestoreBackupRequest'];
 export type RestoreInputBody = components['schemas']['RestoreInputBody'];
 export type RestoreResult = components['schemas']['RestoreResult'];
+export type RestoreStaged = components['schemas']['RestoreStaged'];
 export type Revision = components['schemas']['Revision'];
 export type RootFolder = components['schemas']['RootFolder'];
 export type RuleMatchMovie = components['schemas']['RuleMatchMovie'];
@@ -5164,13 +5850,16 @@ export type ScoringRuleSaved = components['schemas']['ScoringRuleSaved'];
 export type SearchResult = components['schemas']['SearchResult'];
 export type SearchSnapshot = components['schemas']['SearchSnapshot'];
 export type SearchStarted = components['schemas']['SearchStarted'];
+export type SecuritySettings = components['schemas']['SecuritySettings'];
 export type Selection = components['schemas']['Selection'];
 export type ServerPathMapping = components['schemas']['ServerPathMapping'];
 export type ServiceSettings = components['schemas']['ServiceSettings'];
 export type ServiceStatus = components['schemas']['ServiceStatus'];
 export type SetOnboardingRequest = components['schemas']['Set-onboardingRequest'];
 export type SetTmdbKeyRequest = components['schemas']['Set-tmdb-keyRequest'];
+export type SetLogLevelRequest = components['schemas']['SetLogLevelRequest'];
 export type Settings = components['schemas']['Settings'];
+export type SetupResult = components['schemas']['SetupResult'];
 export type SetupStatus = components['schemas']['SetupStatus'];
 export type SetupStep = components['schemas']['SetupStep'];
 export type SizeRange = components['schemas']['SizeRange'];
@@ -5188,6 +5877,528 @@ export type UpgradeInfo = components['schemas']['UpgradeInfo'];
 export type Video = components['schemas']['Video'];
 export type $defs = Record<string, never>;
 export interface operations {
+    "auth-regenerate-api-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIKeyCreated"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "auth-login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Credentials"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResult"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "auth-logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    "Cache-Control"?: string;
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "auth-change-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChange"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordChanged"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "auth-revoke-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "auth-setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Credentials"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    "Cache-Control"?: string;
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupResult"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-auth-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthStatus"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-backups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-backup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBackupRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupInfo"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "restore-backup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreBackupRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestoreStaged"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "cancel-restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "upload-backup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description A backup archive made by Gonema
+                     */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupInfo"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "delete-backup": {
+        parameters: {
+            query?: {
+                /** @description Must be true */
+                confirm?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Archive name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "download-backup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Archive name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The archive */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "list-blocklist": {
         parameters: {
             query?: {
@@ -6212,6 +7423,73 @@ export interface operations {
             };
         };
     };
+    "list-import-journal": {
+        parameters: {
+            query?: {
+                /** @description Every recent entry, not only those needing attention */
+                all?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJournalEntry"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "dismiss-import-journal": {
+        parameters: {
+            query?: {
+                /** @description Must be true */
+                confirm?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJournalEntry"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "list-indexers": {
         parameters: {
             query?: never;
@@ -6553,6 +7831,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LibraryStats"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-logs": {
+        parameters: {
+            query?: {
+                /** @description Minimum level */
+                level?: "debug" | "info" | "warn" | "error";
+                /** @description Entries at or after this time (RFC 3339) */
+                since?: string;
+                /** @description Case-insensitive text in the message or the attributes */
+                q?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "download-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Log lines */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "stream-logs": {
+        parameters: {
+            query?: {
+                /** @description Minimum level */
+                level?: "debug" | "info" | "warn" | "error";
+            };
+            header?: {
+                /** @description Id of the last entry received; newer entries still in memory are replayed */
+                "Last-Event-ID"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description An endless text/event-stream */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
                 };
             };
             /** @description Error */
@@ -9084,6 +10463,68 @@ export interface operations {
             };
         };
     };
+    "get-backup-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "set-backup-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackupSettings"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-general-settings": {
         parameters: {
             query?: never;
@@ -9162,6 +10603,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Settings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-log-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "set-log-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetLogLevelRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogSettings"];
                 };
             };
             /** @description Error */
@@ -9257,6 +10760,36 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NamingPreview"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-security-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecuritySettings"];
                 };
             };
             /** @description Error */

@@ -1,0 +1,372 @@
+/* Phase 8 screens: sign-in, account step, Settings › Security, Backups, Logs, About.
+   Derived from onboarding.html and settings-quality.html (no dedicated mockup; see e2e/fidelity.md).
+   Loaded with these lazy screens only. */
+@layer screens {
+  /* ------------------------------------------------------------ sign-in (from onboarding.html) */
+  .login-page {
+    display: flex;
+    flex-direction: column;
+  }
+  .login {
+    width: 440px;
+    max-width: calc(100vw - 32px);
+    margin: clamp(16px, 10vh, 120px) auto 40px;
+    border-radius: var(--radius-xl);
+    padding: var(--space-10) var(--space-10) var(--space-8);
+  }
+  .login-form {
+    display: grid;
+    gap: var(--space-5);
+  }
+  .login-form .t-overline {
+    display: block;
+    margin-bottom: 8px;
+  }
+  .login-form h1 {
+    font: var(--type-display-md);
+    letter-spacing: var(--type-display-md-tracking);
+    font-stretch: 125%;
+  }
+  .login-form .intro {
+    margin-top: 8px;
+    color: var(--text-secondary);
+    font: var(--type-body);
+  }
+  .login-submit {
+    width: 100%;
+    justify-content: center;
+  }
+  .login-help {
+    border-top: 1px solid var(--border);
+    padding-top: var(--space-4);
+    font: var(--type-body-sm);
+    color: var(--text-secondary);
+  }
+  .login-help summary {
+    cursor: pointer;
+    color: var(--text-secondary);
+    border-radius: var(--radius-xs);
+    width: fit-content;
+  }
+  .login-help summary:hover {
+    color: var(--text-primary);
+  }
+  .login-help summary:focus-visible {
+    box-shadow: var(--focus-ring);
+    outline: none;
+  }
+  .login-help p {
+    margin-top: var(--space-2);
+  }
+  .countdown {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+  }
+  @media (max-width: 520px) {
+    .login {
+      padding: var(--space-6);
+    }
+  }
+
+  /* ------------------------------------------------------------ password field + strength */
+  .input .pw-toggle {
+    margin-right: -6px;
+  }
+  .pw-meter {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    height: 4px;
+    max-width: 240px;
+  }
+  .pw-meter span {
+    border-radius: var(--radius-pill);
+    background: var(--border-control);
+  }
+  .pw-meter[data-level="1"] span:nth-child(-n + 1),
+  .pw-meter[data-level="2"] span:nth-child(-n + 2) {
+    background: var(--status-missing);
+  }
+  .pw-meter[data-level="3"] span {
+    background: var(--status-available);
+  }
+
+  /* ------------------------------------------------------------ API key, shown once */
+  .key-reveal {
+    display: grid;
+    gap: 10px;
+    padding: 16px 18px;
+    border-radius: var(--radius-lg);
+    background: var(--bg-sunken);
+    border: 1px solid var(--border-control);
+    max-width: 640px;
+  }
+  .key-reveal h2 {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font: 500 14px/20px var(--font-ui);
+  }
+  .key-reveal p {
+    font: var(--type-body-sm);
+    color: var(--text-secondary);
+  }
+  .key-reveal p strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+  .key-row {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+  }
+  .key-row .key-field {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ------------------------------------------------------------ settings: security, backups, logs, about */
+  .set-bd .kv {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 8px 16px;
+    font: var(--type-body-sm);
+    margin: 0;
+  }
+  .set-bd .kv dt {
+    color: var(--text-muted);
+  }
+  .set-bd .kv dd {
+    margin: 0;
+    color: var(--text-primary);
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .set-bd .explain {
+    font: var(--type-body-sm);
+    color: var(--text-secondary);
+    max-width: 72ch;
+  }
+  .set-bd .explain code,
+  .set-bd .kv code {
+    font: var(--type-mono-sm);
+    color: var(--text-primary);
+  }
+  .sessions li {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+  .sessions .this {
+    font: var(--type-caption);
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-control);
+  }
+  .policy {
+    width: 100%;
+    border-collapse: collapse;
+    font: var(--type-body-sm);
+  }
+  .policy th,
+  .policy td {
+    text-align: left;
+    padding: 8px 10px 8px 0;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .policy thead th {
+    font: 500 12px/1 var(--font-ui);
+    color: var(--text-muted);
+  }
+  .policy tbody th {
+    font-weight: 500;
+  }
+  .policy tbody th small {
+    display: block;
+    font: var(--type-caption);
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .blocked-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .blocked-list li {
+    font: var(--type-mono-sm);
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-sunken);
+    border: 1px solid var(--border);
+  }
+
+  .backups li {
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+  }
+  .backups .bname {
+    font: var(--type-mono-sm);
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+  }
+  .backups .kind {
+    font: var(--type-caption);
+    color: var(--text-secondary);
+  }
+  .key-warn {
+    color: var(--status-missing);
+  }
+  .restore-opts {
+    display: grid;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+  }
+  .restore-opts ul {
+    margin: 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 6px;
+    font: var(--type-body-sm);
+    color: var(--text-secondary);
+  }
+  .upload-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Logs viewer (settings-quality.html .logs, virtualised) */
+  .logs-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .logs-tools .search {
+    width: 260px;
+  }
+  .logs-tools .spacer {
+    flex: 1;
+  }
+  .logs-view {
+    position: relative;
+    height: min(60vh, 560px);
+    overflow: auto;
+    contain: strict;
+    background: var(--bg-sunken);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font: 400 12px/20px var(--font-mono);
+    color: var(--text-secondary);
+  }
+  .logs-view:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+  .logs-view ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+  }
+  .log-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    display: grid;
+    grid-template-columns: 64px 48px minmax(0, 1fr);
+    gap: 10px;
+    padding: 0 12px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .log-line time {
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .log-line .lvl {
+    font-weight: 600;
+  }
+  .log-line[data-level="debug"] .lvl {
+    color: var(--text-muted);
+  }
+  .log-line[data-level="info"] .lvl {
+    color: var(--text-secondary);
+  }
+  .log-line[data-level="warn"] {
+    color: var(--status-missing);
+  }
+  .log-line[data-level="error"] {
+    color: var(--status-failed);
+  }
+  .log-line .attrs {
+    color: var(--text-muted);
+  }
+  .log-line[data-level="warn"] .attrs,
+  .log-line[data-level="error"] .attrs {
+    color: inherit;
+  }
+  .logs-empty {
+    padding: var(--space-6);
+    font: var(--type-body-sm);
+    color: var(--text-secondary);
+  }
+  .logs-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    font: var(--type-caption);
+    color: var(--text-muted);
+  }
+  .jump-latest {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+  }
+  .logs-wrap {
+    position: relative;
+  }
+  /* overview card: the last lines, not virtualised */
+  .logs-mini {
+    font: 400 11.5px/18px var(--font-mono);
+    color: var(--text-secondary);
+    background: var(--bg-sunken);
+    border-radius: var(--radius-md);
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    white-space: pre;
+    overflow: hidden;
+    margin: 0;
+    list-style: none;
+  }
+  .logs-mini li {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .logs-mini [data-level="warn"] {
+    color: var(--status-missing);
+  }
+  .logs-mini [data-level="error"] {
+    color: var(--status-failed);
+  }
+
+  .about-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .about-notes {
+    display: grid;
+    gap: 6px;
+    font: var(--type-body-sm);
+    color: var(--text-secondary);
+    margin: 0;
+    padding-left: 18px;
+  }
+}

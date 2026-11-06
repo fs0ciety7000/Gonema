@@ -396,6 +396,126 @@
         ],
         "type": "object"
       },
+      "BackupInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "appVersion": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "includesKey": {
+            "description": "The archive holds gonema.key: whoever has the file can decrypt the stored secrets",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "manual",
+              "scheduled",
+              "pre-restore",
+              "uploaded"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "problem": {
+            "description": "Why it cannot be restored (restorable false)",
+            "type": "string"
+          },
+          "restorable": {
+            "type": "boolean"
+          },
+          "schemaVersion": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "size",
+          "createdAt",
+          "kind",
+          "appVersion",
+          "schemaVersion",
+          "includesKey",
+          "restorable"
+        ],
+        "type": "object"
+      },
+      "BackupList": {
+        "additionalProperties": false,
+        "properties": {
+          "backups": {
+            "description": "Newest first",
+            "items": {
+              "$ref": "#/components/schemas/BackupInfo"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "directory": {
+            "description": "Folder of the archives, inside the data directory",
+            "type": "string"
+          },
+          "keyNotice": {
+            "description": "What a backup holds about the master key, to show next to the list",
+            "type": "string"
+          },
+          "pendingRestore": {
+            "$ref": "#/components/schemas/PendingRestore",
+            "description": "A restore staged for the next start"
+          }
+        },
+        "required": [
+          "backups",
+          "directory",
+          "keyNotice"
+        ],
+        "type": "object"
+      },
+      "BackupSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "includeKey": {
+            "description": "Also store gonema.key in scheduled backups. Warning: whoever gets such an archive can decrypt every stored secret",
+            "type": "boolean"
+          },
+          "intervalHours": {
+            "description": "Hours between two scheduled backups; default 168 (weekly)",
+            "format": "int64",
+            "maximum": 720,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "keep": {
+            "description": "Scheduled backups kept; older scheduled ones are deleted (manual, uploaded and pre-restore backups are kept until you delete them)",
+            "format": "int64",
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "intervalHours",
+          "keep",
+          "includeKey"
+        ],
+        "type": "object"
+      },
       "Block-groupRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1253,6 +1373,16 @@
           "input",
           "values"
         ],
+        "type": "object"
+      },
+      "CreateBackupRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "includeKey": {
+            "description": "Also store gonema.key in the archive. Warning: whoever gets the archive can then decrypt every stored secret",
+            "type": "boolean"
+          }
+        },
         "type": "object"
       },
       "Credentials": {
@@ -2868,6 +2998,70 @@
         ],
         "type": "object"
       },
+      "ImportJournalEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "destination": {
+            "type": "string"
+          },
+          "downloadId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "move",
+              "copy",
+              "hardlink"
+            ],
+            "type": "string"
+          },
+          "movieId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "source": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "done",
+              "failed",
+              "attention",
+              "dismissed"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "movieId",
+          "source",
+          "destination",
+          "mode",
+          "status",
+          "message",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
       "ImportSettingsBody": {
         "additionalProperties": false,
         "properties": {
@@ -3550,6 +3744,123 @@
           "upgradable",
           "wanted",
           "cutoffUnmet"
+        ],
+        "type": "object"
+      },
+      "LogEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "attrs": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Attributes, redacted; groups are joined with dots",
+            "type": "object"
+          },
+          "id": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "level": {
+            "enum": [
+              "debug",
+              "info",
+              "warn",
+              "error"
+            ],
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "time": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "time",
+          "level",
+          "message"
+        ],
+        "type": "object"
+      },
+      "LogFileSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "keep": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "maxSizeMB": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "type": "object"
+      },
+      "LogList": {
+        "additionalProperties": false,
+        "properties": {
+          "capacity": {
+            "description": "Entries kept in memory",
+            "format": "int64",
+            "type": "integer"
+          },
+          "entries": {
+            "description": "Oldest first: the newest limit matches",
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "entries",
+          "capacity"
+        ],
+        "type": "object"
+      },
+      "LogSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "bufferSize": {
+            "description": "Entries kept in memory (GONEMA_LOG_BUFFER)",
+            "format": "int64",
+            "type": "integer"
+          },
+          "file": {
+            "$ref": "#/components/schemas/LogFileSettings",
+            "description": "Log file (GONEMA_LOG_FILE), read-only here"
+          },
+          "level": {
+            "enum": [
+              "debug",
+              "info",
+              "warn",
+              "error"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "bufferSize",
+          "file"
         ],
         "type": "object"
       },
@@ -6249,6 +6560,27 @@
         ],
         "type": "object"
       },
+      "PendingRestore": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "restoreKey": {
+            "type": "boolean"
+          },
+          "stagedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "stagedAt",
+          "restoreKey"
+        ],
+        "type": "object"
+      },
       "PeoplePage": {
         "additionalProperties": false,
         "properties": {
@@ -8285,6 +8617,29 @@
         ],
         "type": "object"
       },
+      "RestoreBackupRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "confirm": {
+            "description": "Must be true",
+            "type": "boolean"
+          },
+          "name": {
+            "description": "Archive name from the list",
+            "maxLength": 80,
+            "type": "string"
+          },
+          "restoreKey": {
+            "description": "Also restore gonema.key from the archive (when it includes one); the current key is moved aside",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "confirm"
+        ],
+        "type": "object"
+      },
       "RestoreInputBody": {
         "additionalProperties": false,
         "properties": {
@@ -8316,6 +8671,36 @@
         },
         "required": [
           "changed"
+        ],
+        "type": "object"
+      },
+      "RestoreStaged": {
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "preRestoreBackup": {
+            "$ref": "#/components/schemas/BackupInfo",
+            "description": "The backup of the state before the restore"
+          },
+          "restartRequired": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "restartRequired",
+          "preRestoreBackup",
+          "message"
         ],
         "type": "object"
       },
@@ -9421,6 +9806,24 @@
         ],
         "type": "object"
       },
+      "SetLogLevelRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "level": {
+            "enum": [
+              "debug",
+              "info",
+              "warn",
+              "error"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "level"
+        ],
+        "type": "object"
+      },
       "Settings": {
         "additionalProperties": false,
         "properties": {
@@ -10321,6 +10724,297 @@
         "summary": "Setup and sign-in state",
         "tags": [
           "Auth"
+        ]
+      }
+    },
+    "/backups": {
+      "get": {
+        "operationId": "list-backups",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Backups in the data directory",
+        "tags": [
+          "Backups"
+        ]
+      },
+      "post": {
+        "description": "A consistent online copy (VACUUM INTO, writers are not blocked) zipped with a manifest (Gonema version, schema version, date). The master key file gonema.key is NOT included unless includeKey is true: such an archive unlocks every stored secret. 409 while another backup or restore runs.",
+        "operationId": "create-backup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBackupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupInfo"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Back up the database now",
+        "tags": [
+          "Backups"
+        ]
+      }
+    },
+    "/backups/restore": {
+      "delete": {
+        "description": "The pre-restore backup made when it was staged is kept. 404 when nothing is staged.",
+        "operationId": "cancel-restore",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Cancel the staged restore",
+        "tags": [
+          "Backups"
+        ]
+      },
+      "post": {
+        "description": "Requires confirm=true. Validates the archive (manifest, checksum, integrity, schema version), backs up the current state first (kind pre-restore), then stages the database: it replaces the current one when Gonema restarts (202; restart Gonema to apply it). To restore a file from this computer, upload it first (POST /backups/upload).",
+        "operationId": "restore-backup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreBackupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreStaged"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Restore a backup at the next start",
+        "tags": [
+          "Backups"
+        ]
+      }
+    },
+    "/backups/upload": {
+      "post": {
+        "description": "multipart/form-data with a file field. The archive is validated (manifest, checksum, database integrity, schema version not newer than this Gonema) and stored as kind uploaded; restore it by name.",
+        "operationId": "upload-backup",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "file": {
+                  "contentType": "application/zip,application/x-zip-compressed,application/octet-stream"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "file": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "A backup archive made by Gonema",
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupInfo"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Add a backup archive from this computer",
+        "tags": [
+          "Backups"
+        ]
+      }
+    },
+    "/backups/{name}": {
+      "delete": {
+        "description": "Requires confirm=true (422 otherwise). Only archives of the backups folder can be deleted.",
+        "operationId": "delete-backup",
+        "parameters": [
+          {
+            "description": "Archive name",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "description": "Archive name",
+              "maxLength": 80,
+              "pattern": "^gonema-backup-[0-9]{8}-[0-9]{6}(-[0-9]{1,3})?-(manual|scheduled|pre-restore|uploaded)\\.zip$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must be true",
+            "explode": false,
+            "in": "query",
+            "name": "confirm",
+            "schema": {
+              "description": "Must be true",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete a backup archive",
+        "tags": [
+          "Backups"
+        ]
+      }
+    },
+    "/backups/{name}/download": {
+      "get": {
+        "description": "Streams the zip. The name must be an archive name Gonema creates: no path can be given.",
+        "operationId": "download-backup",
+        "parameters": [
+          {
+            "description": "Archive name",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "description": "Archive name",
+              "maxLength": 80,
+              "pattern": "^gonema-backup-[0-9]{8}-[0-9]{6}(-[0-9]{1,3})?-(manual|scheduled|pre-restore|uploaded)\\.zip$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "contentMediaType": "application/octet-stream",
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The archive"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Download a backup archive",
+        "tags": [
+          "Backups"
         ]
       }
     },
@@ -12029,6 +12723,112 @@
         ]
       }
     },
+    "/imports/journal": {
+      "get": {
+        "description": "At startup Gonema reconciles the imports a crash interrupted: it completes the database when the file arrived and runs the import again when nothing moved. The entries it could not settle without guessing are listed here (and as health issues); all=true lists the latest 500 entries of every status.",
+        "operationId": "list-import-journal",
+        "parameters": [
+          {
+            "description": "Every recent entry, not only those needing attention",
+            "explode": false,
+            "in": "query",
+            "name": "all",
+            "schema": {
+              "description": "Every recent entry, not only those needing attention",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ImportJournalEntry"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Interrupted imports that need attention",
+        "tags": [
+          "Import"
+        ]
+      }
+    },
+    "/imports/journal/{id}/dismiss": {
+      "post": {
+        "description": "Requires confirm=true. Changes no file: you checked the files by hand. The health issue goes away.",
+        "operationId": "dismiss-import-journal",
+        "parameters": [
+          {
+            "description": "Identifier",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Identifier",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Must be true",
+            "explode": false,
+            "in": "query",
+            "name": "confirm",
+            "schema": {
+              "description": "Must be true",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportJournalEntry"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Mark an interrupted import as handled",
+        "tags": [
+          "Import"
+        ]
+      }
+    },
     "/indexers": {
       "get": {
         "description": "Preferred first. API keys are never returned: apiKeySet tells whether one is stored.",
@@ -12521,6 +13321,184 @@
         "summary": "Library counts",
         "tags": [
           "Movies"
+        ]
+      }
+    },
+    "/logs": {
+      "get": {
+        "description": "From the in-memory ring (the last GONEMA_LOG_BUFFER entries). Secrets are redacted.",
+        "operationId": "list-logs",
+        "parameters": [
+          {
+            "description": "Minimum level",
+            "explode": false,
+            "in": "query",
+            "name": "level",
+            "schema": {
+              "default": "debug",
+              "description": "Minimum level",
+              "enum": [
+                "debug",
+                "info",
+                "warn",
+                "error"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Entries at or after this time (RFC 3339)",
+            "explode": false,
+            "in": "query",
+            "name": "since",
+            "schema": {
+              "description": "Entries at or after this time (RFC 3339)",
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Case-insensitive text in the message or the attributes",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Case-insensitive text in the message or the attributes",
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 500,
+              "format": "int64",
+              "maximum": 5000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Recent log entries",
+        "tags": [
+          "Logs"
+        ]
+      }
+    },
+    "/logs/download": {
+      "get": {
+        "description": "The log file and its rotated files (oldest first) when a log file is configured, else the in-memory entries, as text. Secrets are redacted.",
+        "operationId": "download-logs",
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Log lines"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Download the logs",
+        "tags": [
+          "Logs"
+        ]
+      }
+    },
+    "/logs/stream": {
+      "get": {
+        "description": "A dedicated stream, apart from /events: each message has an id, the event name log.entry and a log entry as JSON data. A comment is sent every 15 s; \"resync\" means entries were dropped (slow connection): fetch /logs again.",
+        "operationId": "stream-logs",
+        "parameters": [
+          {
+            "description": "Minimum level",
+            "explode": false,
+            "in": "query",
+            "name": "level",
+            "schema": {
+              "default": "debug",
+              "description": "Minimum level",
+              "enum": [
+                "debug",
+                "info",
+                "warn",
+                "error"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Id of the last entry received; newer entries still in memory are replayed",
+            "in": "header",
+            "name": "Last-Event-ID",
+            "schema": {
+              "description": "Id of the last entry received; newer entries still in memory are replayed",
+              "maxLength": 20,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "An endless text/event-stream"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Live log entries (Server-Sent Events)",
+        "tags": [
+          "Logs"
         ]
       }
     },
@@ -16400,6 +17378,77 @@
         ]
       }
     },
+    "/settings/backups": {
+      "get": {
+        "operationId": "get-backup-settings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Scheduled backups",
+        "tags": [
+          "Settings"
+        ]
+      },
+      "put": {
+        "description": "Interval (hours), scheduled backups kept, and whether they include gonema.key (off by default: see the warning). A new interval applies at once.",
+        "operationId": "set-backup-settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Change scheduled backups",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
     "/settings/general": {
       "get": {
         "operationId": "get-general-settings",
@@ -16497,6 +17546,77 @@
           }
         },
         "summary": "Change health check thresholds",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/settings/logs": {
+      "get": {
+        "operationId": "get-log-settings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Log level and outputs",
+        "tags": [
+          "Settings"
+        ]
+      },
+      "put": {
+        "description": "Applies at once to every output. It is not saved: at the next start the level of GONEMA_LOG_LEVEL (or -log-level) applies again.",
+        "operationId": "set-log-settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetLogLevelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Change the log level now",
         "tags": [
           "Settings"
         ]

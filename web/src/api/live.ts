@@ -1,6 +1,6 @@
 import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useSyncExternalStore } from 'react';
-import { API_ROOT } from './client';
+import { API_ROOT, notifyUnauthorized } from './client';
 import { type ConnectionState, EventStream, type ServerEvent } from './events';
 import { setProgress } from './progress';
 import { keys, type QueueItem } from './queries';
@@ -116,10 +116,11 @@ export function handleServerEvent(qc: QueryClient, e: ServerEvent, scheduleLibra
   }
 }
 
-/** Mount once (in the app shell). */
-export function useServerEvents() {
+/** Mount once (in the app shell); runs while the caller is signed in. */
+export function useServerEvents(enabled = true) {
   const qc = useQueryClient();
   useEffect(() => {
+    if (!enabled) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const scheduleLibrary = () => {
       if (timer) return;
@@ -136,6 +137,7 @@ export function useServerEvents() {
         emitServerEvent(e);
       },
       onResync: () => void qc.invalidateQueries(),
+      onUnauthorized: notifyUnauthorized,
       onState: (c) => {
         // Back after an outage: whatever happened meanwhile is refetched.
         if (c.status === 'open' && wasDown) void qc.invalidateQueries();
@@ -150,5 +152,5 @@ export function useServerEvents() {
       s.stop();
       if (stream === s) stream = null;
     };
-  }, [qc]);
+  }, [qc, enabled]);
 }

@@ -185,6 +185,12 @@ Toute modification d'un profil ou d'une règle recalcule, dans la même transact
 
 **library_version** — compteur unique incrémenté par triggers sur les colonnes visibles de la bibliothèque ; invalide l'index en mémoire des listes (migration 00004).
 
+**library_changes** (migration 00008) — `seq PK AUTOINCREMENT, movie_id NULL`. Une ligne par changement visible d'un film (mêmes triggers que `library_version`, avec l'id du film ; `NULL` = tous les films, p. ex. modification d'un profil de qualité). L'index en mémoire applique ces deltas par film au lieu de tout relire ; un trigger ne garde que les 2 000 à 3 000 derniers changements (au-delà : rechargement complet).
+
+**import_journal** (migration 00008) — `id, movie_id FK, download_id FK NULL, source, destination, staging, mode ('move'|'copy'|'hardlink'), size, record JSON, status ('pending'|'done'|'failed'|'attention'|'dismissed'), message, created_at, updated_at`. Index `(status, id)`. L'intention d'un import est écrite **avant** toute opération sur les fichiers ; `done` est posé dans la transaction de la ligne `movie_files`. Au démarrage, les lignes `pending` sont réconciliées (base complétée, nouvel essai, ou `attention` + problème de santé, sans jamais supprimer de fichier). `record` contient la ligne `movie_files` et l'historique à écrire. Lignes `done`/`dismissed` purgées après 30 jours.
+
+**Sauvegardes** (hors base) — archives zip dans `<data>/backups/` (`gonema.db` copiée par `VACUUM INTO`, `manifest.json`, `gonema.key` seulement sur demande) ; réglages dans `settings` sous la clé `backup.settings` (`enabled`, `intervalHours`, `keep`, `includeKey`). Voir `docs/operations.md`.
+
 **settings** — `key PK, value JSON`. Nommage (gabarits), mode d'import (hardlink/copy/move), rétention, clé TMDB (chiffrée), etc. Lot 3 de la phase 7 : `ui.preferences` (thème, densité, profil / dossier / disponibilité par défaut de l'ajout de film, calendrier, premier jour de la semaine) et `ui.onboarding_dismissed`. Port, adresse d'écoute, URL de base et niveau de log restent des options de démarrage (drapeaux et variables `GONEMA_*`), affichées en lecture seule.
 
 ## Types du moteur pur (Go, hors base)

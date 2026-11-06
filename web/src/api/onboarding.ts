@@ -5,9 +5,10 @@ import { api, unwrap } from './client';
 import type { SetupStatus } from './schema';
 
 /** UI step ids, in the order of the guided setup. */
-export type OnboardingStepId = 'tmdb' | 'folder' | 'quality' | 'indexer' | 'client' | 'film';
+export type OnboardingStepId = 'account' | 'tmdb' | 'folder' | 'quality' | 'indexer' | 'client' | 'film';
 
 const SERVER_ID: Record<OnboardingStepId, string> = {
+  account: 'account',
   tmdb: 'tmdb',
   folder: 'root_folder',
   quality: 'quality_profile',

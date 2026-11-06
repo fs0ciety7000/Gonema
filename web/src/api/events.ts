@@ -31,6 +31,8 @@ export type EventStreamOptions = {
   /** The server says events were missed: refetch everything. */
   onResync: (reason: string) => void;
   onState?: (s: ConnectionState) => void;
+  /** The server answered 401 (signed out): the stream stops instead of retrying. */
+  onUnauthorized?: () => void;
   /** Delay before attempt n (1-based), given the server's advised retry. */
   backoff?: (attempt: number, retryMs: number) => number;
   now?: () => number;
@@ -143,6 +145,11 @@ export class EventStream {
     if (this.lastEventId) headers['Last-Event-ID'] = this.lastEventId;
     try {
       const res = await this.fetchFn(this.opts.url, { headers, signal: controller.signal, cache: 'no-store' });
+      if (res.status === 401 && this.opts.onUnauthorized) {
+        this.stop();
+        this.opts.onUnauthorized();
+        return;
+      }
       if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
       this.attempt = 0;
       this.setState({ status: 'open', attempt: 0, nextRetryAt: null, lostAt: null });

@@ -8,6 +8,8 @@ import {
   redirect,
 } from '@tanstack/react-router';
 import { lazy, Suspense } from 'react';
+import { authKey, authStatusQuery, safeRedirect } from '@/api/auth';
+import { setUnauthorizedHandler } from '@/api/client';
 import { libraryQuery, movieQuery, statusQuery } from '@/api/queries';
 import { AppShell } from '@/components/shell/AppShell';
 import { ScreenError } from '@/components/shell/Status';
@@ -36,6 +38,24 @@ const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   ),
   notFoundComponent: () => <NotFound />,
   errorComponent: ({ error, reset }) => <ScreenError error={error} reset={reset} />,
+  beforeLoad: async ({ context, location }) => {
+    // Sign-in guard: no account yet -> the setup's account step; signed out -> the sign-in page,
+    // then back to this URL. A server that cannot be reached is left to the offline screen.
+    const s = await context.queryClient.ensureQueryData(authStatusQuery).catch(() => null);
+    if (!s) return;
+    const path = location.pathname;
+    if (path === '/login') {
+      if (s.setupRequired && !s.authenticated) throw redirect({ to: '/setup', search: { step: 'account' }, replace: true });
+      if (s.authenticated) throw redirect({ href: safeRedirect((location.search as { redirect?: unknown }).redirect) ?? '/', replace: true });
+      return;
+    }
+    if (s.authenticated) return;
+    if (s.setupRequired) {
+      if (path !== '/setup') throw redirect({ to: '/setup', replace: true });
+      return;
+    }
+    throw redirect({ to: '/login', search: { redirect: safeRedirect(location.href) }, replace: true });
+  },
   loader: ({ context }) => {
     void context.queryClient.prefetchQuery(statusQuery);
   },
@@ -190,6 +210,15 @@ const settingsAnchorRoute = createRoute({
   component: settingsScreen,
 });
 
+export type LoginSearch = { redirect?: string };
+
+export const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/login',
+  validateSearch: (raw: Record<string, unknown>): LoginSearch => ({ redirect: safeRedirect(raw.redirect) }),
+  component: lazyRouteComponent(() => import('@/screens/auth/LoginScreen'), 'LoginScreen'),
+});
+
 export type SetupSearch = { step?: string };
 
 export const setupRoute = createRoute({
@@ -251,6 +280,7 @@ const routeTree = rootRoute.addChildren([
   settingsRoute,
   settingsAnchorRoute,
   setupRoute,
+  loginRoute,
   ...(__GONEMA_DEV__ ? [systemRoute] : []),
   ...placeholderRoutes,
 ]);
@@ -259,7 +289,7 @@ const routeTree = rootRoute.addChildren([
 export const basepath = new URL(document.baseURI).pathname.replace(/\/$/, '') || '/';
 
 export function makeRouter(queryClient: QueryClient) {
-  return createRouter({
+  const router = createRouter({
     routeTree,
     context: { queryClient },
     basepath,
@@ -268,6 +298,15 @@ export function makeRouter(queryClient: QueryClient) {
     scrollRestoration: true,
     defaultNotFoundComponent: () => <NotFound />,
   });
+  // A 401 anywhere (session expired, revoked from another browser): sign in again, then come back.
+  setUnauthorizedHandler(() => {
+    queryClient.setQueryData(authKey, (s) => (s ? { ...s, authenticated: false, method: 'none' as const } : s));
+    void queryClient.invalidateQueries({ queryKey: authKey });
+    const loc = router.state.location;
+    if (loc.pathname === '/login' || loc.pathname === '/setup') return;
+    void router.navigate({ to: '/login', search: { redirect: safeRedirect(loc.href) }, replace: true });
+  });
+  return router;
 }
 
 declare module '@tanstack/react-router' {

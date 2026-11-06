@@ -14,7 +14,7 @@ func TestLoadLogOutput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := LogOutput{File: filepath.Join("/srv", "g", "logs", "gonema.log"), MaxSizeMB: 50, Keep: 2, Buffer: 500}
+	want := LogOutput{File: filepath.FromSlash("/srv/g/logs/gonema.log"), MaxSizeMB: 50, Keep: 2, Buffer: 500}
 	if c.Log != want {
 		t.Errorf("log = %+v, want %+v", c.Log, want)
 	}

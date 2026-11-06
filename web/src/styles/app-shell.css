@@ -28,6 +28,26 @@
   background: var(--bg-active);
   color: var(--text-secondary);
 }
+.sidebar .user-row .who {
+  min-width: 0;
+}
+.sidebar .user-row .who .name {
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 13px;
+}
+.sidebar .user-row .sign-out {
+  margin-left: auto;
+  flex: none;
+}
+.app.rail .sidebar .user-row {
+  flex-direction: column;
+}
+@media (max-width: 1100px) {
+  .sidebar .user-row {
+    flex-direction: column;
+  }
+}
 .sidebar .foot,
 .disk {
   min-width: 0;

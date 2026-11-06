@@ -1,0 +1,88 @@
+# GoReleaser v2 (checked with goreleaser v2.20: `goreleaser check`).
+# Release: `make release-snapshot` locally, or `goreleaser release --clean` from a tag.
+# The web interface is built first (make web) and embedded in every binary.
+version: 2
+
+project_name: gonema
+
+before:
+  hooks:
+    - go mod download
+    - make web
+
+builds:
+  - id: gonema
+    main: ./cmd/gonema
+    binary: gonema
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    tags:
+      - timetzdata # time zones embedded: scratch images and Windows have none
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64, arm]
+    goarm: ["7"]
+    ignore:
+      - goos: darwin
+        goarch: arm
+      - goos: windows
+        goarch: arm
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: gonema
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}"
+    files:
+      - LICENSE
+      - README.md
+      - docs/configuration.md
+      - docs/operations.md
+      - docker-compose.example.yml
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+# SBOM of each archive (SPDX JSON). Needs syft on the release machine.
+sboms:
+  - artifacts: archive
+
+# Multi-arch image: one manifest for linux/amd64, linux/arm64 and linux/arm/v7,
+# built with buildx from the binaries above (Dockerfile.goreleaser).
+dockers_v2:
+  - id: gonema
+    ids: [gonema]
+    dockerfile: Dockerfile.goreleaser
+    images:
+      - ghcr.io/fs0ciety7000/gonema
+    tags:
+      - "{{ .Version }}"
+      - "{{ if not .Prerelease }}latest{{ end }}"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+      - linux/arm/v7
+    labels:
+      org.opencontainers.image.title: Gonema
+      org.opencontainers.image.description: Self-hosted movie collection manager
+      org.opencontainers.image.licenses: GPL-3.0-only
+      org.opencontainers.image.source: https://github.com/fs0ciety7000/gonema
+      org.opencontainers.image.version: "{{ .Version }}"
+      org.opencontainers.image.revision: "{{ .FullCommit }}"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^wip"
+      - "^docs:"
+
+release:
+  draft: true

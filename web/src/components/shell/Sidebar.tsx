@@ -1,7 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
-import { Link, useRouterState } from '@tanstack/react-router';
-import { UserRound } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
+import { LogOut, UserRound } from 'lucide-react';
+import { useState } from 'react';
+import { authStatusQuery, signOut } from '@/api/auth';
 import { healthQuery, useLibrary, useQueue, useRootFolders, useSystemStatus } from '@/api/queries';
+import { IconButton } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/Progress';
 import { formatBytes, formatNumber } from '@/lib/format';
 import { type NavEntry, visibleNav } from '@/lib/nav';
@@ -68,10 +71,50 @@ function Disk() {
   );
 }
 
+/** Who is signed in, and the way out. In the local mode (GONEMA_AUTH=disabled_for_local) there is no session to end. */
+function UserRow() {
+  const status = useSystemStatus();
+  const auth = useQuery(authStatusQuery);
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [leaving, setLeaving] = useState(false);
+  const a = auth.data;
+  const local = a?.method === 'local';
+  const name = a?.username ?? (local ? 'Local access' : '…');
+  const role = local ? (a?.username ? 'Local access' : 'No sign-in on this network') : 'Admin';
+  return (
+    <div className="user-row">
+      <span className="avatar" aria-hidden="true">
+        <UserRound className="i i-sm" />
+      </span>
+      <span className="who">
+        <span className="name truncate">{name}</span>
+        <span>
+          {role} · v{status.data?.version ?? '…'}
+        </span>
+      </span>
+      {a?.method === 'session' && (
+        <IconButton
+          size="sm"
+          className="sign-out"
+          label="Sign out"
+          title="Sign out"
+          disabled={leaving}
+          onClick={() => {
+            setLeaving(true);
+            void signOut(qc).finally(() => navigate({ to: '/login', replace: true }));
+          }}
+        >
+          <LogOut className="i i-sm" aria-hidden="true" />
+        </IconButton>
+      )}
+    </div>
+  );
+}
+
 export function Sidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const active = activeSection(pathname);
-  const status = useSystemStatus();
   return (
     <nav className="sidebar" aria-label="Main">
       <Link className="brand" to="/" aria-label="Gonema, home">
@@ -102,15 +145,7 @@ export function Sidebar() {
       ))}
       <div className="foot">
         <Disk />
-        <div className="user-row">
-          <span className="avatar" aria-hidden="true">
-            <UserRound className="i i-sm" />
-          </span>
-          <span className="who">
-            This server
-            <span>No sign-in yet · v{status.data?.version ?? '…'}</span>
-          </span>
-        </div>
+        <UserRow />
       </div>
     </nav>
   );

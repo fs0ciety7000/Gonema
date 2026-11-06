@@ -1,4 +1,3 @@
-import { ContextMenu } from '@base-ui/react/context-menu';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import { ArrowDown, ArrowUp, Ellipsis } from 'lucide-react';
 import {
@@ -18,8 +17,7 @@ import { QualityBadge, ScorePill, StatusText } from '@/components/ui/Badges';
 import { IconButton } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { cx } from '@/components/ui/cx';
-import { openContextMenuFrom } from '@/components/ui/Menu';
-import { overlayRoot } from '@/components/ui/overlayRoot';
+import { ListMenu, openContextMenuFrom, useListMenu } from '@/components/ui/Menu';
 import { PosterArt } from '@/components/ui/PosterArt';
 import { formatBytes, formatDate, formatEta } from '@/lib/format';
 import { displayStatus, STATUS, statusText } from '@/lib/status';
@@ -194,8 +192,12 @@ export function LibraryTable({
     [range, toggle],
   );
 
-  const [ctx, setCtx] = useState<LibraryItem | null>(null);
-  const [ctxOpen, setCtxOpen] = useState(false);
+  const ctxMenu = useListMenu((t) => {
+    const tr = t.closest<HTMLElement>('tr[data-movie-id]');
+    return tr ? items.find((x) => x.id === Number(tr.dataset.movieId)) : undefined;
+  });
+  const ctx = ctxMenu.item;
+  const ctxOpen = ctxMenu.open;
 
   const all = items.length > 0 && items.every((m) => selection.selected.has(m.id));
   const some = !all && items.some((m) => selection.selected.has(m.id));
@@ -207,20 +209,8 @@ export function LibraryTable({
     k && k === sort ? (dir === 'asc' ? 'ascending' : 'descending') : k ? 'none' : undefined;
 
   return (
-    <ContextMenu.Root open={ctxOpen} onOpenChange={(o) => setCtxOpen(o && ctx !== null)}>
-      <ContextMenu.Trigger
-        render={
-          <div
-            className="table-wrap"
-            onContextMenuCapture={(ev) => {
-              const tr = (ev.target as HTMLElement).closest<HTMLElement>('tr[data-movie-id]');
-              const m = tr ? items.find((x) => x.id === Number(tr.dataset.movieId)) : undefined;
-              setCtx(m ?? null);
-              if (!m) ev.stopPropagation();
-            }}
-          />
-        }
-      >
+    <>
+      <div className="table-wrap" onContextMenu={ctxMenu.onContextMenu}>
         <table
           className="tbl"
           // biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: ARIA grid on a table (multi-select, DESIGN.md)
@@ -310,22 +300,18 @@ export function LibraryTable({
             </tr>
           </tbody>
         </table>
-      </ContextMenu.Trigger>
-      <ContextMenu.Portal container={overlayRoot()}>
-        <ContextMenu.Positioner className="menu-positioner">
-          <ContextMenu.Popup className="menu ctx-menu" aria-label={ctx ? `Actions for ${ctx.title}` : 'Actions'}>
-            {ctx && (
-              <>
-                <div className="menu-heading" aria-hidden="true">
-                  {ctx.title}
-                </div>
-                {menu(ctx)}
-              </>
-            )}
-          </ContextMenu.Popup>
-        </ContextMenu.Positioner>
-      </ContextMenu.Portal>
-    </ContextMenu.Root>
+      </div>
+      <ListMenu
+        open={ctxMenu.open}
+        onOpenChange={ctxMenu.setOpen}
+        point={ctxMenu.point}
+        returnFocus={ctxMenu.returnFocus}
+        label={ctx ? `Actions for ${ctx.title}` : 'Actions'}
+        heading={ctx?.title}
+      >
+        {ctx && menu(ctx)}
+      </ListMenu>
+    </>
   );
 }
 

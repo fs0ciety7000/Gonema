@@ -1,4 +1,3 @@
-import { ContextMenu } from '@base-ui/react/context-menu';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import {
   type CSSProperties,
@@ -16,7 +15,7 @@ import type { LibraryItem } from '@/api/model';
 import { openMovieDialog } from '@/components/movie/dialogStore';
 import { type LiveDownload, PosterCard, PosterSkeleton } from '@/components/movie/PosterCard';
 import { cx } from '@/components/ui/cx';
-import { overlayRoot } from '@/components/ui/overlayRoot';
+import { ListMenu, useListMenu } from '@/components/ui/Menu';
 import { displayStatus } from '@/lib/status';
 import { buildRows, type GridRow, indexRows, navigate } from './gridNav';
 import type { Group } from './model';
@@ -267,8 +266,11 @@ export function PosterGrid({
   );
 
   // ------------------------------------------------------------ context menu (one for the whole grid)
-  const [ctx, setCtx] = useState<LibraryItem | null>(null);
-  const [ctxOpen, setCtxOpen] = useState(false);
+  const ctxMenu = useListMenu((t) => {
+    const cell = t.closest<HTMLElement>('[data-movie-id]');
+    return cell ? items.find((x) => x.id === Number(cell.dataset.movieId)) : undefined;
+  });
+  const ctx = ctxMenu.item;
 
   const selecting = selection.selected.size > 0;
   const vItems = v.getVirtualItems();
@@ -287,34 +289,20 @@ export function PosterGrid({
           ))}
         </div>
       ) : (
-        <ContextMenu.Root
-          open={ctxOpen}
-          onOpenChange={(o) => {
-            setCtxOpen(o && ctx !== null);
-          }}
-        >
-          <ContextMenu.Trigger
-            render={
-              // biome-ignore lint/a11y/useSemanticElements: a virtualised poster grid cannot be a <table>
-              <div
-                ref={gridRef}
-                role="grid"
-                aria-label={label}
-                aria-rowcount={rows.length}
-                aria-colcount={cols}
-                aria-multiselectable="true"
-                id="library-panel"
-                className={cx('pg', selecting && 'selecting')}
-                style={{ height: v.getTotalSize(), ['--cols' as string]: cols } as CSSProperties}
-                onKeyDown={onKeyDown}
-                onContextMenuCapture={(ev) => {
-                  const cell = (ev.target as HTMLElement).closest<HTMLElement>('[data-movie-id]');
-                  const m = cell ? items.find((x) => x.id === Number(cell.dataset.movieId)) : undefined;
-                  setCtx(m ?? null);
-                  if (!m) ev.stopPropagation();
-                }}
-              />
-            }
+        <>
+          {/* biome-ignore lint/a11y/useSemanticElements: a virtualised poster grid cannot be a <table> */}
+          <div
+            ref={gridRef}
+            role="grid"
+            aria-label={label}
+            aria-rowcount={rows.length}
+            aria-colcount={cols}
+            aria-multiselectable="true"
+            id="library-panel"
+            className={cx('pg', selecting && 'selecting')}
+            style={{ height: v.getTotalSize(), ['--cols' as string]: cols } as CSSProperties}
+            onKeyDown={onKeyDown}
+            onContextMenu={ctxMenu.onContextMenu}
           >
             {vItems.map((vr) => {
               const row = rows[vr.index];
@@ -374,22 +362,18 @@ export function PosterGrid({
                 </div>
               );
             })}
-          </ContextMenu.Trigger>
-          <ContextMenu.Portal container={overlayRoot()}>
-            <ContextMenu.Positioner className="menu-positioner">
-              <ContextMenu.Popup className="menu" aria-label={ctx ? `Actions for ${ctx.title}` : 'Actions'}>
-                {ctx && (
-                  <>
-                    <div className="menu-heading" aria-hidden="true">
-                      {ctx.title}
-                    </div>
-                    {menu(ctx)}
-                  </>
-                )}
-              </ContextMenu.Popup>
-            </ContextMenu.Positioner>
-          </ContextMenu.Portal>
-        </ContextMenu.Root>
+          </div>
+          <ListMenu
+            open={ctxMenu.open}
+            onOpenChange={ctxMenu.setOpen}
+            point={ctxMenu.point}
+            returnFocus={ctxMenu.returnFocus}
+            label={ctx ? `Actions for ${ctx.title}` : 'Actions'}
+            heading={ctx?.title}
+          >
+            {ctx && menu(ctx)}
+          </ListMenu>
+        </>
       )}
     </div>
   );

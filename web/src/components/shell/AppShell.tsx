@@ -1,7 +1,10 @@
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { lazy, type ReactNode, Suspense, useEffect } from 'react';
+import { authStatusQuery } from '@/api/auth';
 import { useServerEvents } from '@/api/live';
 import { useDialogsUsed } from '@/components/movie/dialogStore';
+import { preloadMenusWhenIdle } from '@/components/ui/Menu';
 import { Toaster } from '@/components/ui/Toast';
 import { isTypingTarget } from '@/lib/keys';
 import { isPaletteShortcut, palette, usePalette } from '@/lib/palette';
@@ -60,10 +63,12 @@ function useAddShortcut() {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
-  useServerEvents();
+  // The guided setup and the sign-in page are full-screen pages of their own (no sidebar).
+  const bare = useRouterState({ select: (s) => s.location.pathname === '/setup' || s.location.pathname === '/login' });
+  const auth = useQuery(authStatusQuery);
+  useServerEvents(!!auth.data?.authenticated);
   useAddShortcut();
-  // The guided setup is a full-screen page of its own (no sidebar).
-  const bare = useRouterState({ select: (s) => s.location.pathname === '/setup' });
+  useEffect(preloadMenusWhenIdle, []);
   if (bare)
     return (
       <>

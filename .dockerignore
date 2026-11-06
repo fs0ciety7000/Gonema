@@ -1,0 +1,16 @@
+# Only what the image build needs: go.mod, go.sum, cmd/, internal/, web/.
+*
+!go.mod
+!go.sum
+!cmd/
+!internal/
+!web/
+# Generated or local content inside the kept folders.
+web/node_modules/
+web/dist/
+web/test-results/
+web/e2e/__screenshots__/
+internal/webui/dist/*
+!internal/webui/dist/.gitkeep
+**/*_test.go
+**/testdata/
