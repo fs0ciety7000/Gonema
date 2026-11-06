@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Import a folder · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: Add & discover › Import folder. ?step=folder (default) | scan | review | done · review: &match=open shows the Change match combobox */
+  .page { padding-top: var(--space-6); padding-bottom: var(--space-10); }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-5); }
+  .head h1 { font: var(--type-display-lg); letter-spacing: var(--type-display-lg-tracking); font-stretch: 125%; }
+  .head .tabs a { text-decoration: none; }
+  .pane[hidden] { display: none !important; }
+
+  /* Stepper */
+  .stepper { list-style: none; margin: 0 0 var(--space-6); padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); }
+  .stepper li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: center; padding: 8px 12px 8px 8px; border-radius: var(--radius-md); position: relative; }
+  .stepper li[aria-current="step"] { background: var(--bg-active); }
+  .stepper .n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--border-control); font: 600 12px/1 var(--font-ui); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .stepper .done .n { background: var(--status-available-bg); color: var(--status-available); border-color: transparent; }
+  .stepper .done .n .i { width: 15px; height: 15px; stroke-width: 2; }
+  .stepper [aria-current="step"] .n { border-color: var(--accent); color: var(--text-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
+  .stepper b { display: block; font: 500 14px/18px var(--font-ui); color: var(--text-primary); }
+  .stepper li:not(.done):not([aria-current]) b { color: var(--text-secondary); }
+  .stepper small { display: block; font: var(--type-caption); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  /* Step 1: folder */
+  .pick { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: var(--space-6); align-items: start; }
+  .pick .panel-bd { display: grid; gap: var(--space-5); }
+  .roots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+  .roots label { position: relative; display: grid; gap: 4px; padding: 12px 14px; border-radius: var(--radius-lg); border: 1px solid var(--border-strong); background: var(--bg-sunken); cursor: pointer; font: var(--type-caption); color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 0; }
+  .roots label b { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 500 14px/20px var(--font-mono); color: var(--text-primary); }
+  .roots label:has(input:checked) { border-color: var(--accent); background: var(--bg-selected); box-shadow: 0 0 0 1px var(--accent); }
+  .roots label:has(input:focus-visible) { box-shadow: var(--focus-ring); }
+  .roots label:has(input:checked) span { color: var(--text-secondary); }
+  .roots input { position: absolute; opacity: 0; pointer-events: none; }
+  .roots .radio { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--border-control); display: grid; place-items: center; flex: none; }
+  .roots label:has(input:checked) .radio { border-color: var(--accent); }
+  .roots label:has(input:checked) .radio::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .roots .progress { --c: var(--text-secondary); height: 3px; margin: 6px 0 2px; }
+  .inside { display: flex; align-items: center; }
+  .inside .pre { font: var(--type-mono-sm); color: var(--text-muted); white-space: nowrap; }
+  .inside input { font: var(--type-mono) !important; }
+  .tree { list-style: none; margin: 0; padding: 4px; display: grid; gap: 2px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-sunken); }
+  .tree button { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 18px minmax(0, 1fr) auto 16px; gap: 10px; align-items: center; width: 100%; height: 34px; padding: 0 10px; border-radius: 7px; font: var(--type-mono-sm); color: var(--text-primary); cursor: pointer; }
+  .tree button:hover { background: var(--bg-hover); }
+  .tree button:focus-visible { box-shadow: var(--focus-ring); }
+  .tree button[aria-pressed="true"] { background: var(--bg-selected); }
+  .tree .i { width: 16px; height: 16px; color: var(--text-muted); }
+  .tree .c { font: var(--type-caption); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .opts { display: grid; gap: 10px; }
+  .opts .check { font: var(--type-body-sm); color: var(--text-primary); }
+  .pick .foot { display: flex; align-items: center; gap: var(--space-3); padding-top: var(--space-5); border-top: 1px solid var(--border); }
+  .pick .foot .t-caption { color: var(--text-muted); margin-right: auto; }
+  .promise .panel-bd { display: grid; gap: var(--space-4); }
+  .promise ol { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-4); }
+  .promise li { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; font: var(--type-body-sm); color: var(--text-secondary); }
+  .promise li b { display: block; font: 500 14px/20px var(--font-ui); color: var(--text-primary); margin-bottom: 2px; }
+  .promise .ic { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: var(--bg-active); color: var(--text-secondary); }
+  .promise .ic .i { width: 16px; height: 16px; }
+  .safe { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--status-available-bg); font: var(--type-body-sm); color: var(--text-secondary); }
+  .safe .i { width: 18px; height: 18px; color: var(--status-available); margin-top: 1px; }
+  .safe b { color: var(--text-primary); font-weight: 600; }
+
+  /* Step 2: scan */
+  .scan { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--space-6); align-items: start; }
+  .scan .panel-bd { display: grid; gap: var(--space-5); }
+  .scan h2 .t-mono { font-size: 15px; }
+  .tally { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); }
+  .tally div { display: grid; gap: 4px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--bg-sunken); border: 1px solid var(--border); }
+  .tally b { font: 600 24px/28px var(--font-ui); font-variant-numeric: tabular-nums; }
+  .tally .status { font-size: 12.5px; }
+  .feed { list-style: none; margin: 0; padding: 0; display: grid; }
+  .feed li { display: grid; grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr) 116px; gap: var(--space-3); align-items: center; height: 52px; border-top: 1px solid var(--border); }
+  .feed li:first-child { border-top: 0; }
+  .feed .fold { font: var(--type-mono-sm); color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .feed .arrow { color: var(--text-muted); width: 16px; height: 16px; }
+  .feed .m { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .feed .m .th { width: 26px; flex: none; aspect-ratio: 2 / 3; border-radius: 4px; overflow: hidden; box-shadow: var(--elev-1); }
+  .feed .m .th svg { width: 100%; height: 100%; }
+  .feed .m span { font: 500 14px/18px var(--font-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .feed .m span em { font-style: normal; color: var(--text-muted); font-weight: 400; }
+  .feed li.reading .fold { color: var(--text-primary); }
+  .feed li.reading .m .sk-line { width: 60%; }
+  .feed .badge { justify-self: start; }
+  .scan .foot { display: flex; align-items: center; gap: var(--space-2); padding-top: var(--space-4); border-top: 1px solid var(--border); }
+  .scan .foot p { margin-right: auto; font: var(--type-body-sm); color: var(--text-secondary); max-width: 52ch; }
+
+  /* Step 3: review */
+  .rev-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); border-bottom: 1px solid var(--border); margin-bottom: var(--space-4); }
+  .rev-bar .tabs { border-bottom: 0; }
+  .rev-bar .tabs [role="tab"] { white-space: nowrap; }
+  .rev-bar .right { display: flex; align-items: center; gap: var(--space-2); }
+  .notice.keep { margin-bottom: var(--space-4); align-items: center; }
+  .notice.keep .i { color: var(--status-available); margin-top: 0; }
+  .notice.keep { --c: var(--status-available); }
+  .notice.keep .nbody { color: var(--text-secondary); }
+  .notice.keep .nbody b { color: var(--text-primary); font-weight: 600; }
+  .table-wrap { position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-raised); box-shadow: var(--elev-2); }
+  .imp { table-layout: fixed; }
+  .imp thead th { background: color-mix(in srgb, var(--bg-sunken) 60%, var(--bg-raised)); top: var(--topbar-h); }
+  .imp thead th:first-child { border-top-left-radius: var(--radius-lg); }
+  .imp thead th:last-child { border-top-right-radius: var(--radius-lg); }
+  .imp tbody tr:last-child td { border-bottom: 0; }
+  .imp tbody td { height: 68px; vertical-align: middle; }
+  .imp td, .imp th { padding: 0 10px; }
+  .imp td:first-child, .imp th:first-child { padding: 0 6px 0 16px; }
+  .imp td.c-files, .imp th.c-files { padding-right: 16px; }
+  .imp .fold { display: grid; gap: 3px; min-width: 0; }
+  .imp .fold > b { font: 500 13px/18px var(--font-mono); color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .imp .fold span { font: 400 11.5px/16px var(--font-mono); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .imp .fold .to { color: var(--text-secondary); }
+  .mt { position: relative; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: center; min-width: 0; }
+  .mt .th { aspect-ratio: 2 / 3; border-radius: 4px; overflow: hidden; box-shadow: var(--elev-1); }
+  .mt .th svg { width: 100%; height: 100%; }
+  .mt .th.none { box-shadow: none; border: 1px dashed var(--border-control); background: var(--bg-sunken); display: grid; place-items: center; color: var(--text-muted); }
+  .mt .th.none .i { width: 14px; height: 14px; }
+  .mt .nm { display: grid; gap: 3px; min-width: 0; }
+  .mt .nm b { font: 500 14px/18px var(--font-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mt .nm b em { font-style: normal; font-weight: 400; color: var(--text-muted); }
+  .mt .nm .why { display: flex; align-items: center; gap: 8px; font: var(--type-caption); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .mt .nm .why > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+  .mt .chg { height: 28px; padding: 0 8px; font-size: 12.5px; }
+  .mt .chg.icon { width: 28px; padding: 0; justify-content: center; }
+  .conf { display: inline-flex; align-items: center; gap: 2px; flex: none; color: var(--text-secondary); }
+  .conf i { width: 3px; border-radius: 1px; background: var(--border-strong); }
+  .conf i:nth-child(1) { height: 5px; } .conf i:nth-child(2) { height: 7px; } .conf i:nth-child(3) { height: 9px; } .conf i:nth-child(4) { height: 11px; }
+  .conf[data-l="4"] i, .conf[data-l="3"] i:nth-child(-n+3), .conf[data-l="2"] i:nth-child(-n+2), .conf[data-l="1"] i:nth-child(1) { background: currentColor; }
+  .conf[data-l="2"], .conf[data-l="1"] { color: var(--status-missing); }
+  .conf b { margin-left: 4px; font: 600 11.5px/1 var(--font-mono); font-variant-numeric: tabular-nums; }
+  .qc { display: grid; gap: 4px; justify-items: start; }
+  .qc .sz { font: var(--type-mono-sm); color: var(--text-muted); font-variant-numeric: tabular-nums; display: flex; gap: 6px; align-items: center; }
+  .qc .low { font: var(--type-caption); color: var(--status-missing); white-space: nowrap; }
+  .imp .select.sm { height: 30px; padding: 0 8px 0 10px; font: 500 13px/1 var(--font-ui); width: 100%; }
+  .imp .select.sm .i { width: 14px; height: 14px; }
+  .imp .segmented button { height: 24px; padding: 0 9px; font-size: 12.5px; }
+  .imp .segmented { padding: 2px; }
+  .imp .switch .track { width: 32px; height: 20px; } .imp .switch .track::after { width: 14px; height: 14px; }
+  .imp .switch[aria-checked="true"] .track::after { transform: translateX(12px); }
+  .imp tbody tr[aria-selected="true"] td { background: transparent; }
+  .imp tbody tr[aria-selected="true"] td:first-child { box-shadow: none; }
+  .imp tbody tr:hover td { background: var(--bg-hover); }
+  .imp .fold .ql { display: flex; align-items: center; gap: 6px; font: var(--type-mono-sm); color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 0; }
+  .imp .fold .ql .qbadge { height: 20px; line-height: 18px; font-size: 11px; }
+  .imp .fold .ql .hdr-flag { height: 18px; }
+  .imp tbody td { padding-top: 10px; padding-bottom: 10px; }
+  .imp tr.off td:not(:first-child) .fold > b, .imp tr.off .mt .nm b { color: var(--text-secondary); }
+  .imp tr.off .mt .th:not(.none) .poster-art { filter: saturate(.3) brightness(.85); }
+  .imp .na { font: var(--type-caption); color: var(--text-muted); }
+  .imp .c-sum { display: none; }
+  .imp col.w-fold { width: 23%; } .imp col.w-profile { width: 164px; } .imp col.w-mon { width: 68px; } .imp col.w-files { width: 132px; } .imp col.w-sum { width: 0; }
+  .imp .sum { display: grid; gap: 2px; font: var(--type-caption); color: var(--text-secondary); }
+  .imp .sumrow { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .imp .sum b { font: 500 13px/18px var(--font-ui); color: var(--text-primary); }
+  .matchbox { position: absolute; z-index: var(--z-popover); top: calc(100% + 8px); left: -4px; width: 420px; padding: 6px; --origin: top left; }
+  .matchbox .input { height: 34px; margin: 2px 2px 6px; width: auto; }
+  .matchbox .input input { font: var(--type-body-sm); }
+  .matchbox [role="option"] { height: auto !important; padding: 8px !important; display: grid !important; grid-template-columns: 26px minmax(0, 1fr) auto 16px; gap: 10px !important; align-items: center; white-space: normal; }
+  .matchbox [role="option"] .th { aspect-ratio: 2 / 3; border-radius: 4px; overflow: hidden; } .matchbox [role="option"] .th svg { width: 100%; height: 100%; }
+  .matchbox [role="option"] b { display: block; font: 500 14px/18px var(--font-ui); }
+  .matchbox [role="option"] b em { font-style: normal; font-weight: 400; color: var(--text-muted); }
+  .matchbox [role="option"] small { display: block; font: var(--type-caption); color: var(--text-secondary); }
+  .matchbox [role="option"][aria-selected="true"] { background: var(--bg-selected); }
+  .matchbox [role="option"]:is(:hover, .is-hover, [aria-selected="true"]) b em { color: var(--text-secondary); }
+  .matchbox .tag { height: 20px; font-size: 11.5px; margin-left: 6px; vertical-align: 1px; }
+  .matchbox .menu-heading { display: flex; justify-content: space-between; }
+  .commit { position: sticky; bottom: 16px; z-index: var(--z-bulkbar); margin-top: var(--space-5); display: flex; align-items: center; gap: var(--space-2); padding: 8px 8px 8px 14px; border-radius: var(--radius-lg); background: var(--glass-3); -webkit-backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); border: 1px solid var(--border-strong); box-shadow: inset 0 1px 0 var(--glass-edge), var(--elev-4); }
+  .commit .cnt { display: grid; font: 600 14px/18px var(--font-ui); font-variant-numeric: tabular-nums; margin-right: var(--space-2); white-space: nowrap; }
+  .commit .cnt small { font: var(--type-caption); color: var(--text-secondary); font-weight: 400; }
+  .commit .divider { width: 1px; height: 24px; background: var(--border-strong); margin: 0 4px; }
+  .commit .btn-ghost { --btn-bd: transparent; font-weight: 500; }
+  .commit .say { margin-left: auto; display: flex; align-items: center; gap: 6px; font: var(--type-caption); color: var(--text-secondary); white-space: nowrap; }
+  .commit .say .i { width: 14px; height: 14px; color: var(--status-available); }
+
+  /* Step 4: done */
+  .done-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: var(--space-8); align-items: start; }
+  .done-wrap h2.big { font: var(--type-display-lg); letter-spacing: var(--type-display-lg-tracking); font-stretch: 125%; }
+  .done-wrap .lead { color: var(--text-secondary); font: var(--type-body-lg); max-width: 62ch; margin-top: 10px; }
+  .strip { display: flex; gap: 10px; margin: var(--space-6) 0; }
+  .strip .poster-art { width: 76px; aspect-ratio: 2 / 3; border-radius: 8px; overflow: hidden; box-shadow: var(--elev-poster); flex: none; }
+  .strip svg { width: 100%; height: 100%; }
+  .strip .more { width: 76px; aspect-ratio: 2 / 3; border-radius: 8px; display: grid; place-items: center; background: var(--bg-raised); border: 1px solid var(--border); font: 600 15px/1 var(--font-ui); color: var(--text-secondary); flex: none; }
+  .results { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6); }
+  .results > div { display: grid; gap: 6px; padding: 14px 16px; border-radius: var(--radius-lg); background: var(--bg-raised); border: 1px solid var(--border); box-shadow: var(--elev-1); }
+  .results b { font: 600 28px/32px var(--font-ui); font-variant-numeric: tabular-nums; }
+  .results .t-caption { color: var(--text-secondary); }
+  .next { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-4); }
+  .next li { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; font: var(--type-body-sm); color: var(--text-secondary); }
+  .next li b { color: var(--text-primary); font-weight: 500; }
+  .next .ic { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: var(--bg-active); color: var(--text-secondary); }
+  .next .ic .i { width: 16px; height: 16px; }
+  .done-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+  @media (max-width: 1100px) {
+    .head { flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+    .stepper { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+    .stepper small { display: none; }
+    .pick, .scan, .done-wrap { grid-template-columns: minmax(0, 1fr); }
+    .roots { grid-template-columns: minmax(0, 1fr); }
+    .imp .c-profile, .imp .c-mon, .imp .c-files { display: none; }
+    .imp .c-sum { display: table-cell; }
+    .imp col.w-profile { width: 156px; } /* hosts the On import cell: hidden cells leave the column flow */
+    .imp col.w-mon, .imp col.w-files, .imp col.w-sum { width: 0; }
+    .commit .btn-primary { margin-left: auto; }
+    .imp col.w-fold { width: 30%; }
+    .rev-bar .right { display: none; }
+    .commit .say { display: none; }
+    .commit .hide-tablet { display: none; }
+    .matchbox { width: 360px; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar="discover"></nav>
+  <div class="main">
+    <header class="topbar">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="add-film.html">Add &amp; discover</a><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg><span aria-current="page">Import a folder</span></nav>
+      <div class="spacer"></div>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    </header>
+    <main id="main" class="page">
+      <div class="head">
+        <h1>Import a folder</h1>
+        <div class="tabs" role="tablist" aria-label="Add, discover or import" style="border:0">
+          <a role="tab" href="add-film.html" aria-selected="false">Search</a>
+          <a role="tab" href="add-film.html?tab=discover" aria-selected="false">Discover</a>
+          <a role="tab" href="library-import.html" aria-selected="true">Import folder</a>
+        </div>
+      </div>
+
+      <ol class="stepper" id="stepper" aria-label="Import steps"></ol>
+
+      <!-- STEP 1 · FOLDER -->
+      <div class="pane pick" data-step="folder">
+        <section class="panel" aria-labelledby="f-h">
+          <div class="panel-hd"><h2 id="f-h">Where are your films?</h2></div>
+          <div class="panel-bd">
+            <fieldset style="border:0;margin:0;padding:0;display:grid;gap:8px">
+              <legend class="field-label" style="margin-bottom:8px">Root folder</legend>
+              <div class="roots">
+                <label><input type="radio" name="root"><b>/data/movies<span class="radio" aria-hidden="true"></span></b><div class="progress" style="--p:.61" aria-hidden="true"><div class="fill"></div></div><span>1,198 films · 6.3 TB free</span></label>
+                <label><input type="radio" name="root"><b>/data/kids<span class="radio" aria-hidden="true"></span></b><div class="progress" style="--p:.91" aria-hidden="true"><div class="fill"></div></div><span>86 films · 180 GB free</span></label>
+                <label><input type="radio" name="root" checked><b>/data/archive<span class="radio" aria-hidden="true"></span></b><div class="progress" style="--p:.49" aria-hidden="true"><div class="fill"></div></div><span>Added today · no films yet · 4.1 TB free</span></label>
+              </div>
+              <div><button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Add a root folder</button></div>
+            </fieldset>
+            <div class="field">
+              <label class="field-label" for="inside">Only look inside <span class="t-muted" style="font-weight:400">optional</span></label>
+              <label class="input mono inside"><svg class="i" aria-hidden="true"><use href="#i-folder-open"/></svg><span class="pre">/data/archive/</span><input id="inside" placeholder="the whole folder" aria-describedby="inside-h"></label>
+              <span class="field-hint" id="inside-h">Pick a folder below, or type a path. Gonema only reads inside the root folder.</span>
+              <ul class="tree" aria-label="Folders in /data/archive">
+                <li><button type="button" aria-pressed="false"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg>Films A–M<span class="c">29 folders</span><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></li>
+                <li><button type="button" aria-pressed="false"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg>Films N–Z<span class="c">27 folders</span><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></li>
+                <li><button type="button" aria-pressed="false"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg>_incoming<span class="c">6 folders</span><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></li>
+                <li><button type="button" aria-pressed="false"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg>home videos<span class="c">12 files</span><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></li>
+              </ul>
+            </div>
+            <div class="opts">
+              <label class="check"><input type="checkbox" checked>Skip sample, extras and featurette folders</label>
+              <label class="check"><input type="checkbox" checked>Look one level deeper for sets, like <span class="t-mono-sm">The Drift Saga/</span></label>
+            </div>
+            <div class="foot">
+              <span class="t-caption">About a minute for 100 folders. Nothing is changed while scanning.</span>
+              <a class="btn btn-primary btn-lg" href="?step=scan"><svg class="i" aria-hidden="true"><use href="#i-scan-search"/></svg>Scan /data/archive</a>
+            </div>
+          </div>
+        </section>
+        <aside class="panel promise" aria-labelledby="how-h">
+          <div class="panel-hd"><h2 id="how-h">How it works</h2></div>
+          <div class="panel-bd">
+            <ol>
+              <li><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-scan-search"/></svg></span><span><b>Gonema reads the folder</b>Folder and file names, plus each video’s resolution and size. One film per folder.</span></li>
+              <li><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-list-checks"/></svg></span><span><b>You check every match</b>Each folder gets a TMDB match and a confidence. Nothing is added until you press Import.</span></li>
+              <li><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-film"/></svg></span><span><b>Films join your library</b>Pointed at their files, with the profile you choose. Gonema upgrades them later if you ask.</span></li>
+            </ol>
+            <div class="safe"><svg class="i" aria-hidden="true"><use href="#i-shield-check"/></svg><span><b>Nothing is deleted.</b> Files stay where they are, unless you choose to move a film into Gonema’s naming. Even then, nothing is removed.</span></div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- STEP 2 · SCAN -->
+      <div class="pane scan" data-step="scan" hidden>
+        <section class="panel" aria-labelledby="s-h">
+          <div class="panel-hd"><h2 id="s-h">Reading <span class="t-mono">/data/archive</span></h2><span class="t-caption t-muted tnum">Started 21:14 · 24 s</span></div>
+          <div class="panel-bd">
+            <div>
+              <div class="progress live lg" role="progressbar" aria-label="Scan progress" aria-valuemin="0" aria-valuemax="63" aria-valuenow="37" style="--p:.587"><div class="fill"></div></div>
+              <div class="progress-meta"><span>37 of 63 folders</span><span>About 20 s left</span></div>
+            </div>
+            <div class="tally" aria-label="Found so far">
+              <div><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>New</span><b>28</b></div>
+              <div><span class="status" data-status="missing"><svg class="i" aria-hidden="true"><use href="#i-scan-search"/></svg>Ambiguous</span><b>4</b></div>
+              <div><span class="status"><svg class="i" aria-hidden="true"><use href="#i-circle-x"/></svg>No match</span><b>3</b></div>
+              <div><span class="status" data-status="unmonitored"><svg class="i" aria-hidden="true"><use href="#i-library"/></svg>In library</span><b>2</b></div>
+            </div>
+            <div>
+              <div class="row" style="justify-content:space-between;margin-bottom:4px"><h3 class="t-title-md">Found so far</h3><span class="t-caption t-muted">Newest first</span></div>
+              <div role="log" aria-live="polite" aria-label="Folders found"><ul class="feed" id="feed"></ul></div>
+            </div>
+            <div class="foot">
+              <p>Nothing on disk changes during a scan. You can leave this page: Gonema keeps reading and tells you when the folders are ready to review.</p>
+              <button class="btn btn-ghost" type="button">Stop scan</button>
+              <a class="btn btn-secondary" href="?step=review">Review the 37 found so far</a>
+            </div>
+          </div>
+        </section>
+        <aside class="panel promise" aria-labelledby="how2-h">
+          <div class="panel-hd"><h2 id="how2-h">What Gonema looks at</h2></div>
+          <div class="panel-bd">
+            <ol>
+              <li><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg></span><span><b>The folder name</b>Title and year, like <span class="t-mono-sm">Marrow (2025)</span>. Release names work too.</span></li>
+              <li><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-file-video"/></svg></span><span><b>The largest video file</b>Resolution, source, HDR and size. Samples under 300 MB are ignored.</span></li>
+              <li><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-library"/></svg></span><span><b>Your library</b>A film you already have is flagged, never imported twice.</span></li>
+            </ol>
+          </div>
+        </aside>
+      </div>
+
+      <!-- STEP 3 · REVIEW -->
+      <div class="pane" data-step="review" hidden>
+        <div class="rev-bar">
+          <div class="tabs" role="tablist" aria-label="Show folders">
+            <button role="tab" aria-selected="true" type="button">All <span class="count">63</span></button>
+            <button role="tab" aria-selected="false" type="button">Needs a look <span class="count">12</span></button>
+            <button role="tab" aria-selected="false" type="button">New <span class="count">48</span></button>
+            <button role="tab" aria-selected="false" type="button">In library <span class="count">3</span></button>
+          </div>
+          <div class="right">
+            <button class="btn btn-ghost btn-sm" type="button" aria-haspopup="listbox"><svg class="i" aria-hidden="true"><use href="#i-arrow-up-down"/></svg><span class="t-muted" style="font-weight:500">Sort</span> <span style="font-weight:600">Needs a look first</span></button>
+            <button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-refresh-cw"/></svg>Scan again</button>
+          </div>
+        </div>
+        <div class="notice keep"><svg class="i" aria-hidden="true"><use href="#i-shield-check"/></svg><div class="nbody"><b>Nothing is deleted.</b> <i>Keep</i> leaves each file where it is. <i>Move</i> renames the file into a folder named by your template, inside <span class="t-mono-sm">/data/archive</span>; the old folder is left in place.</div></div>
+        <div class="table-wrap">
+          <table class="tbl imp" role="grid" aria-label="Folders found in /data/archive" aria-multiselectable="true" aria-rowcount="64">
+            <colgroup><col style="width:44px"><col class="w-fold"><col><col style="width:112px"><col class="w-profile"><col class="w-mon"><col class="w-files"><col class="w-sum"></colgroup>
+            <thead><tr>
+              <th scope="col"><label class="check"><input type="checkbox" aria-label="Select all importable folders" id="all"></label></th>
+              <th scope="col">Folder on disk</th>
+              <th scope="col">Match on TMDB</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="c-profile">Profile</th>
+              <th scope="col" class="c-mon">Monitor</th>
+              <th scope="col" class="c-files">Files</th>
+              <th scope="col" class="c-sum">On import</th>
+            </tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="commit" role="toolbar" aria-label="Import the selected folders">
+          <span class="cnt">49 of 63 selected<small>512 GB · 45 kept in place · 4 moved</small></span>
+          <span class="divider" aria-hidden="true"></span>
+          <button class="btn btn-ghost btn-sm" type="button" aria-haspopup="listbox"><svg class="i" aria-hidden="true"><use href="#i-sliders-horizontal"/></svg>Profile</button>
+          <button class="btn btn-ghost btn-sm" type="button" aria-haspopup="menu"><svg class="i" aria-hidden="true"><use href="#i-bookmark"/></svg>Monitor</button>
+          <button class="btn btn-ghost btn-sm" type="button" aria-haspopup="menu"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg>Keep or move</button>
+          <span class="say"><svg class="i" aria-hidden="true"><use href="#i-shield-check"/></svg>Nothing is deleted</span>
+          <a class="btn btn-primary" href="?step=done"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg>Import 49 films</a>
+        </div>
+      </div>
+
+      <!-- STEP 4 · DONE -->
+      <div class="pane done-wrap" data-step="done" hidden>
+        <div>
+          <span class="t-overline">Import finished · 1 min 12 s</span>
+          <h2 class="big" style="margin-top:8px">48 films are in the house.</h2>
+          <p class="lead">They’re in your library, pointed at their files. 44 stayed where they were and 4 were moved into Gonema’s naming. Nothing was deleted.</p>
+          <div class="strip" id="strip" aria-hidden="true"></div>
+          <div class="results">
+            <div><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>Imported</span><b>48</b><span class="t-caption">44 kept in place · 4 moved</span></div>
+            <div><span class="status" data-status="unmonitored"><svg class="i" aria-hidden="true"><use href="#i-minus"/></svg>Left for later</span><b>14</b><span class="t-caption">6 ambiguous · 5 no match · 3 in library</span></div>
+            <div><span class="status" data-status="failed"><svg class="i" aria-hidden="true"><use href="#i-triangle-alert"/></svg>Couldn’t import</span><b>1</b><span class="t-caption">Kessel · see below</span></div>
+          </div>
+          <div class="notice" data-tone="failed" style="margin-bottom:var(--space-6)"><svg class="i" aria-hidden="true"><use href="#i-triangle-alert"/></svg><div class="grow"><div class="ntitle">Kessel couldn’t be read</div><div class="nbody">Permission denied on <code class="t-mono-sm">/data/archive/Kessel/Paper.Lanterns.Over.Kessel.DVDRip.avi</code>. Gonema left it untouched. Give the Gonema user read access, then scan again.</div></div><button class="btn btn-secondary btn-sm" type="button">Scan Kessel again</button></div>
+          <div class="done-actions">
+            <a class="btn btn-primary btn-lg" href="library-grid.html">Open the library<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></a>
+            <a class="btn btn-secondary btn-lg" href="?step=review">Review the 14 left</a>
+            <a class="btn btn-ghost btn-lg" href="?step=folder">Import another folder</a>
+          </div>
+        </div>
+        <aside class="panel" aria-labelledby="next-h">
+          <div class="panel-hd"><h2 id="next-h">What Gonema does next</h2></div>
+          <div class="panel-bd">
+            <ul class="next">
+              <li><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-circle-arrow-up"/></svg></span><span><b>11 films are below their profile.</b> Gonema looks for better copies at the next RSS check, in 6 min. The files you have stay until a better one has arrived.</span></li>
+              <li><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-layers"/></svg></span><span><b>4 collections grew.</b> Greywater Noir, Gull Island Stories, Static House Trilogy and The Tidewater Cycle have more films on disk.</span></li>
+              <li><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-scan-search"/></svg></span><span><b>14 folders are kept for later.</b> Their matches are saved; come back to them anytime from this tab.</span></li>
+              <li><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-history"/></svg></span><span><b>48 entries in History,</b> one per film, with the folder it came from.</span></li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="../system/icons.js"></script>
+<script src="../system/posters.js"></script>
+<script src="../system/mock.js"></script>
+<script>
+  const ic = GN.ic, q = new URLSearchParams(location.search);
+  const STEPS = [['folder', 'Folder', '/data/archive'], ['scan', 'Scan', '63 folders'], ['review', 'Review', '49 selected'], ['done', 'Done', '48 imported']];
+  const cur = STEPS.some(s => s[0] === q.get('step')) ? q.get('step') : 'folder';
+  const idx = STEPS.findIndex(s => s[0] === cur);
+  document.getElementById('stepper').innerHTML = STEPS.map(([id, label, sub], i) => {
+    const done = i < idx || cur === 'done';
+    const subTxt = i === 1 && cur === 'scan' ? '37 of 63 folders' : i > idx ? ['', 'Streams as it reads', 'Check every match', 'Summary'][i] : sub;
+    return '<li class="' + (done ? 'done' : '') + '"' + (i === idx && cur !== 'done' ? ' aria-current="step"' : '') + '><span class="n">' + (done ? ic('check') : i + 1) + '</span><span><b>' + label + '</b><small>' + subTxt + '</small></span></li>';
+  }).join('');
+  document.querySelectorAll('.pane').forEach(p => p.hidden = p.dataset.step !== cur);
+
+  const conf = (pct) => { const l = pct >= 90 ? 4 : pct >= 75 ? 3 : pct >= 50 ? 2 : 1; const word = ['', 'low', 'low', 'medium', 'high'][l]; return '<span class="conf" data-l="' + l + '" role="img" aria-label="Confidence ' + pct + '%, ' + word + '"><i></i><i></i><i></i><i></i><b>' + pct + '%</b></span>'; };
+  const BADGE = {
+    new: '<span class="badge" data-status="available">' + ic('circle-check') + 'New</span>',
+    amb: '<span class="badge" data-status="missing">' + ic('scan-search') + 'Ambiguous</span>',
+    none: '<span class="badge">' + ic('circle-x') + 'No match</span>',
+    lib: '<span class="badge">' + ic('library') + 'In library</span>',
+  };
+
+  /* Scan feed (newest first) */
+  if (cur === 'scan') {
+    const F = [
+      ['Wolves of the Lower Sky (2018)', null, null, 'reading'],
+      ['Snowdrift.2011.DVDRip', 'snowdrift', 'new'],
+      ['Drift', 'drift-signal', 'amb'],
+      ['Halcyon Drift (2024)', 'halcyon-drift', 'lib'],
+      ['Ghost Frequency 2023 MULTi 2160p', 'ghost-frequency', 'new'],
+      ['home videos', null, 'none'],
+      ['fathom.2021.2160p.web-dl.hdr', 'fathom', 'new'],
+      ['Continental Drift 1998', 'continental-drift', 'new'],
+    ];
+    document.getElementById('feed').innerHTML = F.map(([fold, film, st, reading]) => {
+      if (reading) return '<li class="reading"><span class="fold">' + fold + '</span>' + ic('chevron-right', 'arrow') + '<span class="m"><span class="th skeleton" aria-hidden="true"></span><span class="skeleton sk-line" aria-hidden="true"></span><span class="sr-only">Reading</span></span><span class="t-caption t-muted">Reading…</span></li>';
+      const f = film && GN.films[film];
+      const m = f ? '<span class="th"><div class="poster-art" data-film="' + film + '"></div></span><span>' + f.title + ' <em>' + f.year + '</em></span>' : '<span class="t-muted" style="font-weight:400">No film found</span>';
+      return '<li><span class="fold">' + fold + '</span>' + ic('chevron-right', 'arrow') + '<span class="m">' + m + '</span>' + BADGE[st] + '</li>';
+    }).join('');
+  }
+
+  /* Review rows */
+  if (cur === 'review') {
+    const R = [
+      { fold: 'Drift', file: 'Drift.720p.HDTV.x264.mkv', size: '3.2 GB', q: '720p HDTV', st: 'amb', film: 'drift-signal', pct: 52, why: 'Title only, no year to compare', sel: false, open: q.get('match') === 'open' },
+      { fold: 'home videos', file: '12 files · IMG_2041.mov…', size: '21.6 GB', st: 'none', why: 'No film title in these names', sel: false },
+      { fold: 'Kessel', file: 'Paper.Lanterns.Over.Kessel.DVDRip.avi', size: '1.4 GB', q: '480p DVD', st: 'new', film: 'paper-lanterns-kessel', picked: true, sel: true, prof: 'Cinema HD', low: true },
+      { fold: 'Concrete Psalms (2017) [1080p]', file: 'Concrete.Psalms.2017.1080p.BluRay.x264-LUMEN.mkv', size: '10.6 GB', q: '1080p Bluray', st: 'new', film: 'concrete-psalms', pct: 96, why: 'Title and year', sel: true, prof: 'Cinema HD' },
+      { fold: 'Continental Drift 1998', file: 'Continental.Drift.1998.720p.BluRay.mkv', size: '6.1 GB', q: '720p Bluray', st: 'new', film: 'continental-drift', pct: 97, why: 'Title and year', sel: true, prof: 'Cinema HD', low: true },
+      { fold: 'fathom.2021.2160p.web-dl.hdr', file: 'Fathom.2021.2160p.WEB-DL.HDR10.mkv', size: '18.4 GB', q: '2160p WEB-DL', hdr: 'HDR10', st: 'new', film: 'fathom', pct: 95, why: 'Title and year from the release name', sel: true, prof: 'Cinema UHD', move: 'Fathom (2021)/Fathom (2021) [WEBDL-2160p][HDR10].mkv' },
+      { fold: 'Ghost Frequency 2023 MULTi 2160p', file: 'Ghost.Frequency.2023.MULTi.2160p.WEB-DL.DV.mkv', size: '16.0 GB', q: '2160p WEB-DL', hdr: 'DV', st: 'new', film: 'ghost-frequency', pct: 97, why: 'Title and year', sel: true, prof: 'Cinema UHD' },
+      { fold: 'marrow', file: 'Marrow.2025.1080p.WEB-DL.DDP5.1-FLUX.mkv', size: '5.8 GB', q: '1080p WEB-DL', st: 'new', film: 'marrow', pct: 88, why: 'Year from the file name', sel: true, prof: 'Cinema HD' },
+      { fold: 'Snowdrift.2011.DVDRip', file: 'Snowdrift.2011.DVDRip.XviD.avi', size: '1.4 GB', q: '480p DVD', st: 'new', film: 'snowdrift', pct: 93, why: 'Title and year', sel: true, prof: 'Space saver', mon: false },
+      { fold: 'The Drifters of Calder Bay 2005', file: 'The.Drifters.of.Calder.Bay.2005.720p.BluRay.mkv', size: '7.9 GB', q: '720p Bluray', st: 'new', film: 'drifters-calder', pct: 98, why: 'Title and year', sel: true, prof: 'Cinema HD', low: true },
+      { fold: 'Wolves of the Lower Sky (2018)', file: 'Wolves.of.the.Lower.Sky.2018.1080p.BluRay.x264-LUMEN.mkv', size: '11.2 GB', q: '1080p Bluray', st: 'new', film: 'wolves-lower-sky', pct: 99, why: 'Title and year', sel: true, prof: 'Cinema HD' },
+      { fold: 'Halcyon Drift (2024)', file: 'Halcyon.Drift.2024.1080p.WEB-DL.mkv', size: '8.9 GB', q: '1080p WEB-DL', st: 'lib', film: 'halcyon-drift', why: 'Already at /data/movies/Halcyon Drift (2024)', sel: false },
+    ];
+    const ALTS = [['drift-signal', 52, 'Title starts with “Drift” · no year in the folder', true, true], ['snowdrift', 38, 'Title contains “drift” · 1 h 41 min, file is 1 h 40 min'], ['drift-terminus', 21, 'Not released yet, so unlikely', false]];
+    const matchbox = '<div class="menu matchbox" role="dialog" aria-label="Change match for Drift">' +
+      '<label class="input"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" value="Drift" aria-label="Search TMDB for this folder" role="combobox" aria-expanded="true" aria-controls="alts" aria-activedescendant="alt-1"></label>' +
+      '<div class="menu-heading"><span>Candidates</span><span>Confidence</span></div>' +
+      '<div role="listbox" id="alts" aria-label="Candidates for Drift">' + ALTS.map(([id, pct, why, inl, curr], i) => { const f = GN.films[id]; return '<div role="option" id="alt-' + (i + 1) + '" aria-selected="' + !!curr + '"' + (i === 1 ? ' class="is-hover"' : '') + '><span class="th"><div class="poster-art" data-film="' + id + '"></div></span><span><b>' + f.title + ' <em>' + f.year + '</em>' + (inl ? '<span class="tag plain">In library</span>' : '') + '</b><small>' + why + '</small></span>' + conf(pct) + '<span class="check-mark">' + (curr ? ic('check', 'i-sm') : '') + '</span></div>'; }).join('') + '</div>' +
+      '<div role="separator"></div><div role="menu" aria-label="Other choices"><button role="menuitem" type="button"><svg class="i" aria-hidden="true"><use href="#i-ban"/></svg><span class="label">Not a film, skip this folder</span></button></div></div>';
+    document.getElementById('rows').innerHTML = R.map((r, i) => {
+      const f = r.film && GN.films[r.film];
+      const canSel = r.st !== 'lib';
+      const off = !r.sel;
+      const ql = '<span class="ql" title="' + r.file + '">' + (r.q ? GN.qbadge(r.q) : '<span>No video found</span>') + (r.hdr ? '<span class="hdr-flag">' + r.hdr + '</span>' : '') + '<span>' + r.size + '</span></span>';
+      const fold = '<div class="fold"><b title="' + r.fold + '">' + r.fold + '</b>' + ql + (r.move ? '<span class="to" title="/data/archive/' + r.move + '">→ ' + r.move + '</span>' : '') + '</div>';
+      let match;
+      if (!f) match = '<div class="mt"><span class="th none">' + ic('circle-x') + '</span><span class="nm"><b>No film found</b><span class="why"><span>' + r.why + '</span></span></span><button class="btn btn-secondary chg" type="button" aria-haspopup="dialog">' + ic('search', 'i-sm') + 'Search</button></div>';
+      else {
+        const meta = r.picked ? '<span class="status" style="font:inherit;--c:var(--text-secondary)">' + ic('hand') + 'Picked by you</span>' : r.st === 'lib' ? '<span>' + r.why + '</span>' : conf(r.pct) + '<span>' + r.why + '</span>';
+        const btn = r.st === 'amb' ? '<button class="btn btn-secondary chg" type="button" aria-haspopup="dialog" aria-expanded="' + !!r.open + '">Change<svg class="i i-sm" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button>'
+          : r.st === 'lib' ? '<a class="btn btn-ghost chg" href="movie-detail.html">Open</a>'
+          : '<button class="btn btn-ghost chg icon" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Change match for ' + r.fold + '" title="Change match">' + ic('chevrons-up-down', 'i-sm') + '</button>';
+        match = '<div class="mt"><span class="th"><div class="poster-art" data-film="' + r.film + '"></div></span><span class="nm"><b>' + f.title + ' <em>' + f.year + '</em></b><span class="why">' + meta + '</span></span>' + btn + (r.open ? matchbox : '') + '</div>';
+      }
+      const importable = r.st === 'new';
+      const prof = importable ? '<button class="input select sm" type="button" aria-haspopup="listbox" aria-label="Quality profile for ' + f.title + ': ' + r.prof + '"><span class="value">' + r.prof + '</span>' + ic('chevrons-up-down') + '</button>' : '<span class="na">—</span>';
+      const mon = importable ? '<button class="switch" role="switch" aria-checked="' + (r.mon !== false) + '" type="button" aria-label="Monitor ' + f.title + '"><span class="track" aria-hidden="true"></span></button>' : '<span class="na">—</span>';
+      const files = importable ? '<div class="segmented" role="radiogroup" aria-label="Files of ' + f.title + '"><button role="radio" aria-checked="' + !r.move + '" type="button">Keep</button><button role="radio" aria-checked="' + !!r.move + '" type="button">Move</button></div>' : '<span class="na">—</span>';
+      const sum = importable ? '<div class="sumrow"><div class="sum"><b>' + r.prof + '</b><span>' + (r.mon === false ? 'Not monitored' : 'Monitored') + ' · ' + (r.move ? 'Move' : 'Keep') + '</span></div><button class="icon-btn sm" type="button" aria-haspopup="dialog" aria-label="Change import options for ' + f.title + '">' + ic('pencil', 'i-sm') + '</button></div>' : '<span class="na">—</span>';
+      const status = BADGE[r.st] + (r.low ? '<div class="low" style="font:var(--type-caption);color:var(--status-missing);margin-top:4px" title="Below the profile cutoff: Gonema will look for a better copy">Below profile</div>' : '');
+      return '<tr' + (r.sel ? ' aria-selected="true"' : '') + (off ? ' class="off"' : '') + '>' +
+        '<td><label class="check"><input type="checkbox"' + (r.sel ? ' checked' : '') + (canSel ? '' : ' disabled') + ' aria-label="' + (canSel ? 'Import ' : 'Already in library: ') + r.fold + '"></label></td>' +
+        '<td>' + fold + '</td><td style="position:relative' + (r.open ? ';z-index:5' : '') + '">' + match + '</td><td>' + status + '</td>' +
+        '<td class="c-profile">' + prof + '</td><td class="c-mon">' + mon + '</td><td class="c-files">' + files + '</td><td class="c-sum">' + sum + '</td></tr>';
+    }).join('');
+    document.getElementById('all').indeterminate = true;
+  }
+
+  if (cur === 'done') {
+    document.getElementById('strip').innerHTML = ['wolves-lower-sky', 'concrete-psalms', 'continental-drift', 'fathom', 'ghost-frequency', 'marrow', 'snowdrift'].map(id => '<div class="poster-art" data-film="' + id + '"></div>').join('') + '<span class="more">+41</span>';
+  }
+  GN.renderPosters();
+</script>
+</body>
+</html>

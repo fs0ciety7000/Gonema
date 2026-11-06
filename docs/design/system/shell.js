@@ -24,7 +24,7 @@
     { h: 'Library', items: [
       ['home', 'gauge', 'Home', '', 'dashboard.html'],
       ['films', 'film', 'Films', '1,284', 'library-grid.html'],
-      ['collections', 'layers', 'Collections', '86'],
+      ['collections', 'layers', 'Collections', '86', 'collections.html'],
       ['calendar', 'calendar', 'Calendar', '', 'calendar.html'],
       ['discover', 'compass', 'Add &amp; discover', '', 'add-film.html'] ] },
     { h: 'Activity', items: [
