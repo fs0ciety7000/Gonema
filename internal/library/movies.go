@@ -54,6 +54,9 @@ type AddOptions struct {
 	Monitored           bool
 	Tags                []string
 	SearchOnAdd         bool
+	// Reason says why the movie is added when Gonema adds it by itself
+	// (a monitored collection...); written to history.
+	Reason string
 }
 
 // MovieEvent is the data of movie.* events.
@@ -372,7 +375,7 @@ func (s *Service) AddMovie(ctx context.Context, tmdbID int, opts AddOptions) (mo
 		Data: map[string]any{
 			"tmdbId": movie.TmdbID, "year": movie.Year, "path": movie.Path, "monitored": movie.Monitored,
 			"qualityProfileId": movie.QualityProfileID, "minimumAvailability": movie.MinimumAvailability,
-			"searchOnAdd": opts.SearchOnAdd && opts.Monitored,
+			"searchOnAdd": opts.SearchOnAdd && opts.Monitored, "reason": opts.Reason,
 		},
 	}})
 	s.enqueue(ctx, JobMovieImages, MoviePayload{MovieID: movie.ID}, jobs.EnqueueOptions{

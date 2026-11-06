@@ -210,6 +210,13 @@ Galerie : `docs/design/index.html`. Captures 1440 × 900 en sombre et en clair :
 | `docs/design/mockups/settings-backups.html` | Archives, restauration en attente, planification, clé maître | `?dialog=restore` |
 | `docs/design/mockups/settings-logs.html` | Journal en direct, niveaux, entrée dépliée, valeurs masquées | — |
 
+**Ajoutées le 2026-11-06, à valider par le PO** (textes compris) :
+
+| Fichier | Contenu | Variantes |
+|---|---|---|
+| `docs/design/mockups/collections.html` | Collections : grille (mosaïque, « 4 of 6 in library », manquants, à venir, surveillance), filtres, tri, recherche ; fiche d'une collection (films dans l'ordre de sortie, « Add the N missing », surveillance, profil) | `?id=night-market`, `?id=drift`, `?state=empty` |
+| `docs/design/mockups/library-import.html` | « Import a folder », onglet d'Add & discover : dossier, analyse en flux, revue des correspondances (confiance, « Change match », profil, surveillance, garder ou déplacer), résultat ; rien n'est supprimé | `?step=folder·scan·review·done`, `?step=review&match=open` |
+
 Paramètres communs : `?theme=light|dark`, `?density=compact`, `?motion=reduce`, `?freeze=1` (boucles figées pour les captures). Les films, personnes, groupes et indexeurs sont **fictifs** ; les posters sont générés en SVG (`docs/design/system/posters.js`).
 
 ## Écarts assumés

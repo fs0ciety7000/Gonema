@@ -50,6 +50,7 @@ func (s *Service) GetCollection(ctx context.Context, id int64) (CollectionDetail
 		return d, nil
 	}
 	d.Parts = c.Parts
+	s.saveParts(ctx, id, c.Parts)
 	return d, nil
 }
 
@@ -86,7 +87,7 @@ func (s *Service) MonitorCollection(ctx context.Context, id int64, opts MonitorO
 	if !validAvailability(opts.MinimumAvailability) {
 		return MonitorResult{}, invalid("minimumAvailability", "minimum availability must be announced, in_cinemas or released")
 	}
-	p := db.UpdateCollectionSettingsParams{ID: id, Monitored: opts.Monitored, MinimumAvailability: opts.MinimumAvailability}
+	p := db.UpdateCollectionSettingsParams{ID: id, Monitored: opts.Monitored, MinimumAvailability: opts.MinimumAvailability, SearchOnAdd: opts.Monitored && opts.SearchOnAdd}
 	if opts.Monitored {
 		if err := s.checkRefs(ctx, opts.RootFolderID, opts.QualityProfileID); err != nil {
 			return MonitorResult{}, err
@@ -113,6 +114,7 @@ func (s *Service) MonitorCollection(ctx context.Context, id int64, opts MonitorO
 	if err != nil {
 		return res, fmt.Errorf("library: collection %d parts: %w", id, err)
 	}
+	s.saveParts(ctx, id, c.Parts)
 	for i := range c.Parts {
 		part := &c.Parts[i]
 		excluded, err := s.st.Read().IsImportListExcluded(ctx, int64(part.TMDBID))
@@ -126,6 +128,7 @@ func (s *Service) MonitorCollection(ctx context.Context, id int64, opts MonitorO
 		m, created, err := s.AddMovie(ctx, part.TMDBID, AddOptions{
 			RootFolderID: opts.RootFolderID, QualityProfileID: opts.QualityProfileID,
 			MinimumAvailability: opts.MinimumAvailability, Monitored: true, SearchOnAdd: opts.SearchOnAdd,
+			Reason: fmt.Sprintf("Added with the collection %s, monitored by the user.", res.Collection.Name),
 		})
 		switch {
 		case err != nil:

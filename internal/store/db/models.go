@@ -35,6 +35,19 @@ type Blocklist struct {
 	CreatedAt    int64   `json:"createdAt"`
 }
 
+type CalendarFeed struct {
+	ID                 int64  `json:"id"`
+	UserID             int64  `json:"userId"`
+	KeyHash            []byte `json:"keyHash"`
+	Last4              string `json:"last4"`
+	CreatedAt          *int64 `json:"createdAt"`
+	LastUsedAt         *int64 `json:"lastUsedAt"`
+	PastDays           int64  `json:"pastDays"`
+	FutureDays         int64  `json:"futureDays"`
+	IncludeUnmonitored bool   `json:"includeUnmonitored"`
+	ReleaseTypes       string `json:"releaseTypes"`
+}
+
 type Collection struct {
 	ID                  int64   `json:"id"`
 	TmdbID              int64   `json:"tmdbId"`
@@ -47,6 +60,9 @@ type Collection struct {
 	RootFolderID        *int64  `json:"rootFolderId"`
 	MinimumAvailability string  `json:"minimumAvailability"`
 	RefreshedAt         *int64  `json:"refreshedAt"`
+	Parts               *string `json:"parts"`
+	PartsRefreshedAt    *int64  `json:"partsRefreshedAt"`
+	SearchOnAdd         bool    `json:"searchOnAdd"`
 }
 
 type Download struct {
@@ -75,6 +91,7 @@ type Download struct {
 	CompletedAt    *int64  `json:"completedAt"`
 	ImportedAt     *int64  `json:"importedAt"`
 	Manual         bool    `json:"manual"`
+	RetryStoppedAt *int64  `json:"retryStoppedAt"`
 }
 
 type DownloadClient struct {
@@ -389,6 +406,7 @@ type Session struct {
 	ExpiresAt  int64  `json:"expiresAt"`
 	Ip         string `json:"ip"`
 	UserAgent  string `json:"userAgent"`
+	Via        string `json:"via"`
 }
 
 type Setting struct {

@@ -13,6 +13,9 @@ type Querier interface {
 	AddMovieTag(ctx context.Context, arg AddMovieTagParams) error
 	AppendHistory(ctx context.Context, arg AppendHistoryParams) (History, error)
 	CancelJob(ctx context.Context, arg CancelJobParams) (int64, error)
+	// ----------------------------------------------------------------- jobs
+	// CancelRunningJob records that a running job was cancelled by the user.
+	CancelRunningJob(ctx context.Context, arg CancelRunningJobParams) (int64, error)
 	// ClaimJob atomically moves the next due pending job (highest priority, then oldest
 	// run_at) to running and returns it; sql.ErrNoRows when none is due.
 	ClaimJob(ctx context.Context, now int64) (Job, error)
@@ -87,6 +90,8 @@ type Querier interface {
 	DeleteUserAPIKey(ctx context.Context, userID int64) (int64, error)
 	DeleteUserSession(ctx context.Context, arg DeleteUserSessionParams) (int64, error)
 	DeleteUserSessionsExcept(ctx context.Context, arg DeleteUserSessionsExceptParams) (int64, error)
+	// DisableCalendarFeed forgets the key of the feed; the options are kept.
+	DisableCalendarFeed(ctx context.Context, userID int64) (int64, error)
 	// EnqueueJob inserts a pending job. With a dedupe_key that an active (pending or
 	// running) job already holds, nothing is inserted and sql.ErrNoRows is returned.
 	EnqueueJob(ctx context.Context, arg EnqueueJobParams) (Job, error)
@@ -97,6 +102,9 @@ type Querier interface {
 	FindImageOwner(ctx context.Context, imagePath string) (FindImageOwnerRow, error)
 	GetAPIKeyByHash(ctx context.Context, keyHash []byte) (GetAPIKeyByHashRow, error)
 	GetBlocklist(ctx context.Context, id int64) (Blocklist, error)
+	// ----------------------------------------------------------------- calendar feed
+	GetCalendarFeed(ctx context.Context, userID int64) (CalendarFeed, error)
+	GetCalendarFeedByKey(ctx context.Context, keyHash []byte) (CalendarFeed, error)
 	GetCollection(ctx context.Context, id int64) (Collection, error)
 	GetCollectionByTmdbID(ctx context.Context, tmdbID int64) (Collection, error)
 	GetCurrentMovieFile(ctx context.Context, movieID int64) (MovieFile, error)
@@ -170,6 +178,9 @@ type Querier interface {
 	ListCollectionMovieStates(ctx context.Context, collectionID int64) ([]ListCollectionMovieStatesRow, error)
 	ListCollectionMovies(ctx context.Context, collectionID int64) ([]Movie, error)
 	ListCollections(ctx context.Context) ([]Collection, error)
+	// ListCollectionsNeedingParts lists the collections with at least one library
+	// movie whose parts snapshot is missing or older than stale_before.
+	ListCollectionsNeedingParts(ctx context.Context, arg ListCollectionsNeedingPartsParams) ([]ListCollectionsNeedingPartsRow, error)
 	ListDownloadClients(ctx context.Context) ([]DownloadClient, error)
 	// ListDownloadLinks returns the retry links of downloads (ids: JSON array).
 	ListDownloadLinks(ctx context.Context, ids string) ([]ListDownloadLinksRow, error)
@@ -304,7 +315,23 @@ type Querier interface {
 	// SearchAlternateTitleMovies returns the movies with an alternate title that
 	// contains query (lower case; lower() folds ASCII only).
 	SearchAlternateTitleMovies(ctx context.Context, query string) ([]int64, error)
+	// SetCalendarFeedKey creates the feed of a user or replaces its key; the
+	// options are kept.
+	SetCalendarFeedKey(ctx context.Context, arg SetCalendarFeedKeyParams) (CalendarFeed, error)
+	// SetCalendarFeedOptions creates the feed row of a user (off) or changes its
+	// options.
+	SetCalendarFeedOptions(ctx context.Context, arg SetCalendarFeedOptionsParams) (CalendarFeed, error)
+	// Version 1.1 (migration 00009): collections page, iCal feed, stop retrying,
+	// session origin, cancellable jobs.
+	// ----------------------------------------------------------------- collections
+	// SetCollectionParts stores the snapshot of a collection's movies read from
+	// TMDB (JSON array).
+	SetCollectionParts(ctx context.Context, arg SetCollectionPartsParams) error
 	SetDownloadClientSecrets(ctx context.Context, arg SetDownloadClientSecretsParams) (int64, error)
+	// ----------------------------------------------------------------- downloads
+	// SetDownloadsRetryStopped sets (or clears, with NULL) the stop flag of the
+	// downloads of a retry chain (ids: JSON array).
+	SetDownloadsRetryStopped(ctx context.Context, arg SetDownloadsRetryStoppedParams) (int64, error)
 	SetImportJournalStatus(ctx context.Context, arg SetImportJournalStatusParams) (ImportJournal, error)
 	SetIndexerSecrets(ctx context.Context, arg SetIndexerSecretsParams) (int64, error)
 	SetMediaServerSecrets(ctx context.Context, arg SetMediaServerSecretsParams) (int64, error)
@@ -322,6 +349,7 @@ type Querier interface {
 	SetUserLastLogin(ctx context.Context, arg SetUserLastLoginParams) error
 	SetUserPassword(ctx context.Context, arg SetUserPasswordParams) (int64, error)
 	TouchAPIKey(ctx context.Context, arg TouchAPIKeyParams) error
+	TouchCalendarFeed(ctx context.Context, arg TouchCalendarFeedParams) error
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateCollectionSettings(ctx context.Context, arg UpdateCollectionSettingsParams) (Collection, error)
 	UpdateDownloadClient(ctx context.Context, arg UpdateDownloadClientParams) (DownloadClient, error)
@@ -343,6 +371,9 @@ type Querier interface {
 	UpdateRootFolderSpace(ctx context.Context, arg UpdateRootFolderSpaceParams) (int64, error)
 	UpdateSavedView(ctx context.Context, arg UpdateSavedViewParams) (SavedView, error)
 	UpdateScoringRule(ctx context.Context, arg UpdateScoringRuleParams) (ScoringRule, error)
+	// ----------------------------------------------------------------- sessions
+	// UpdateSessionClient records the last use of a session and how it connected.
+	UpdateSessionClient(ctx context.Context, arg UpdateSessionClientParams) error
 	// UpsertCollection refreshes TMDB fields; user settings are kept on conflict.
 	UpsertCollection(ctx context.Context, arg UpsertCollectionParams) (Collection, error)
 	// UpsertMovie inserts a movie or, when tmdb_id exists, refreshes its metadata

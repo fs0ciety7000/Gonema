@@ -22,7 +22,7 @@ func (q *Queries) DeleteCollection(ctx context.Context, id int64) (int64, error)
 }
 
 const getCollection = `-- name: GetCollection :one
-SELECT id, tmdb_id, name, overview, poster_path, backdrop_path, monitored, quality_profile_id, root_folder_id, minimum_availability, refreshed_at FROM collections WHERE id = ?
+SELECT id, tmdb_id, name, overview, poster_path, backdrop_path, monitored, quality_profile_id, root_folder_id, minimum_availability, refreshed_at, parts, parts_refreshed_at, search_on_add FROM collections WHERE id = ?
 `
 
 func (q *Queries) GetCollection(ctx context.Context, id int64) (Collection, error) {
@@ -40,12 +40,15 @@ func (q *Queries) GetCollection(ctx context.Context, id int64) (Collection, erro
 		&i.RootFolderID,
 		&i.MinimumAvailability,
 		&i.RefreshedAt,
+		&i.Parts,
+		&i.PartsRefreshedAt,
+		&i.SearchOnAdd,
 	)
 	return i, err
 }
 
 const getCollectionByTmdbID = `-- name: GetCollectionByTmdbID :one
-SELECT id, tmdb_id, name, overview, poster_path, backdrop_path, monitored, quality_profile_id, root_folder_id, minimum_availability, refreshed_at FROM collections WHERE tmdb_id = ?
+SELECT id, tmdb_id, name, overview, poster_path, backdrop_path, monitored, quality_profile_id, root_folder_id, minimum_availability, refreshed_at, parts, parts_refreshed_at, search_on_add FROM collections WHERE tmdb_id = ?
 `
 
 func (q *Queries) GetCollectionByTmdbID(ctx context.Context, tmdbID int64) (Collection, error) {
@@ -63,6 +66,9 @@ func (q *Queries) GetCollectionByTmdbID(ctx context.Context, tmdbID int64) (Coll
 		&i.RootFolderID,
 		&i.MinimumAvailability,
 		&i.RefreshedAt,
+		&i.Parts,
+		&i.PartsRefreshedAt,
+		&i.SearchOnAdd,
 	)
 	return i, err
 }
@@ -127,7 +133,7 @@ func (q *Queries) ListCollectionMovies(ctx context.Context, collectionID int64) 
 }
 
 const listCollections = `-- name: ListCollections :many
-SELECT id, tmdb_id, name, overview, poster_path, backdrop_path, monitored, quality_profile_id, root_folder_id, minimum_availability, refreshed_at FROM collections ORDER BY name, id
+SELECT id, tmdb_id, name, overview, poster_path, backdrop_path, monitored, quality_profile_id, root_folder_id, minimum_availability, refreshed_at, parts, parts_refreshed_at, search_on_add FROM collections ORDER BY name, id
 `
 
 func (q *Queries) ListCollections(ctx context.Context) ([]Collection, error) {
@@ -151,6 +157,9 @@ func (q *Queries) ListCollections(ctx context.Context) ([]Collection, error) {
 			&i.RootFolderID,
 			&i.MinimumAvailability,
 			&i.RefreshedAt,
+			&i.Parts,
+			&i.PartsRefreshedAt,
+			&i.SearchOnAdd,
 		); err != nil {
 			return nil, err
 		}
@@ -170,9 +179,10 @@ UPDATE collections SET
     monitored            = ?1,
     quality_profile_id   = ?2,
     root_folder_id       = ?3,
-    minimum_availability = ?4
-WHERE id = ?5
-RETURNING id, tmdb_id, name, overview, poster_path, backdrop_path, monitored, quality_profile_id, root_folder_id, minimum_availability, refreshed_at
+    minimum_availability = ?4,
+    search_on_add        = ?5
+WHERE id = ?6
+RETURNING id, tmdb_id, name, overview, poster_path, backdrop_path, monitored, quality_profile_id, root_folder_id, minimum_availability, refreshed_at, parts, parts_refreshed_at, search_on_add
 `
 
 type UpdateCollectionSettingsParams struct {
@@ -180,6 +190,7 @@ type UpdateCollectionSettingsParams struct {
 	QualityProfileID    *int64 `json:"qualityProfileId"`
 	RootFolderID        *int64 `json:"rootFolderId"`
 	MinimumAvailability string `json:"minimumAvailability"`
+	SearchOnAdd         bool   `json:"searchOnAdd"`
 	ID                  int64  `json:"id"`
 }
 
@@ -189,6 +200,7 @@ func (q *Queries) UpdateCollectionSettings(ctx context.Context, arg UpdateCollec
 		arg.QualityProfileID,
 		arg.RootFolderID,
 		arg.MinimumAvailability,
+		arg.SearchOnAdd,
 		arg.ID,
 	)
 	var i Collection
@@ -204,6 +216,9 @@ func (q *Queries) UpdateCollectionSettings(ctx context.Context, arg UpdateCollec
 		&i.RootFolderID,
 		&i.MinimumAvailability,
 		&i.RefreshedAt,
+		&i.Parts,
+		&i.PartsRefreshedAt,
+		&i.SearchOnAdd,
 	)
 	return i, err
 }
@@ -218,7 +233,7 @@ ON CONFLICT (tmdb_id) DO UPDATE SET
     poster_path   = excluded.poster_path,
     backdrop_path = excluded.backdrop_path,
     refreshed_at  = excluded.refreshed_at
-RETURNING id, tmdb_id, name, overview, poster_path, backdrop_path, monitored, quality_profile_id, root_folder_id, minimum_availability, refreshed_at
+RETURNING id, tmdb_id, name, overview, poster_path, backdrop_path, monitored, quality_profile_id, root_folder_id, minimum_availability, refreshed_at, parts, parts_refreshed_at, search_on_add
 `
 
 type UpsertCollectionParams struct {
@@ -253,6 +268,9 @@ func (q *Queries) UpsertCollection(ctx context.Context, arg UpsertCollectionPara
 		&i.RootFolderID,
 		&i.MinimumAvailability,
 		&i.RefreshedAt,
+		&i.Parts,
+		&i.PartsRefreshedAt,
+		&i.SearchOnAdd,
 	)
 	return i, err
 }

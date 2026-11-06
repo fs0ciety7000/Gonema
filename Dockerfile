@@ -24,6 +24,11 @@ WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY web/ ./
+# The SPA imports the brand tokens, logo, mascots and design system from docs/.
+COPY docs/brand/kit/tokens.css /src/docs/brand/kit/tokens.css
+COPY docs/brand/kit/logo/ /src/docs/brand/kit/logo/
+COPY docs/brand/kit/mascot/ /src/docs/brand/kit/mascot/
+COPY docs/design/system/gonema.css /src/docs/design/system/gonema.css
 RUN npm run build
 
 # ----------------------------------------------------------------- binary
@@ -49,7 +54,7 @@ ARG VERSION=dev
 LABEL org.opencontainers.image.title="Gonema" \
       org.opencontainers.image.description="Self-hosted movie collection manager" \
       org.opencontainers.image.licenses="GPL-3.0-only" \
-      org.opencontainers.image.source="https://github.com/fs0ciety7000/gonema" \
+      org.opencontainers.image.source="https://github.com/fs0ciety7000/Gonema" \
       org.opencontainers.image.version="${VERSION}"
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build /out/gonema /gonema

@@ -19,8 +19,8 @@ UPDATE users SET password_hash = @password_hash, password_changed_at = @changed_
 UPDATE users SET last_login_at = ? WHERE id = ?;
 
 -- name: CreateSession :one
-INSERT INTO sessions (token_hash, user_id, created_at, last_seen_at, expires_at, ip, user_agent)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO sessions (token_hash, user_id, created_at, last_seen_at, expires_at, ip, user_agent, via)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetSessionByToken :one

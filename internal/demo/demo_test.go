@@ -140,7 +140,7 @@ func TestSeedRefusesARealDatabase(t *testing.T) {
 }
 
 func TestRender(t *testing.T) {
-	for _, tc := range []struct{ w, h int }{{342, 513}, {780, 1170}, {1280, 720}, {185, 278}} {
+	for _, tc := range []struct{ w, h int }{{342, 513}, {780, 1170}, {1280, 720}, {185, 278}, {92, 138}} {
 		data, err := Render(Art{Title: "The Quiet Meridian: Part Two", Year: 2024, Hue: 20}, tc.w, tc.h)
 		if err != nil {
 			t.Fatal(err)

@@ -25,7 +25,8 @@ UPDATE collections SET
     monitored            = sqlc.arg(monitored),
     quality_profile_id   = sqlc.narg(quality_profile_id),
     root_folder_id       = sqlc.narg(root_folder_id),
-    minimum_availability = sqlc.arg(minimum_availability)
+    minimum_availability = sqlc.arg(minimum_availability),
+    search_on_add        = sqlc.arg(search_on_add)
 WHERE id = sqlc.arg(id)
 RETURNING *;
 

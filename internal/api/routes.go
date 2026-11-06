@@ -337,26 +337,13 @@ type TMDBSetting struct {
 }
 
 func (s *Server) libraryRoutes() {
-	huma.Register(s.api, huma.Operation{
-		OperationID: "get-collection", Method: http.MethodGet, Path: "/collections/{id}", Summary: "Get a collection",
-		Tags: []string{"Collections"},
-	}, func(ctx context.Context, in *IDParam) (*struct{ Body Collection }, error) {
-		d, err := s.d.Library.GetCollection(ctx, in.ID)
-		if err != nil {
-			return nil, s.problem(ctx, err, false)
-		}
-		c := collectionOf(&d.Collection)
-		for i := range d.Movies {
-			c.Movies = append(c.Movies, movieOf(&d.Movies[i]))
-		}
-		c.Parts, c.PartsError = d.Parts, d.PartsError
-		return &struct{ Body Collection }{c}, nil
-	})
+	s.collectionRoutes()
 
 	huma.Register(s.api, huma.Operation{
 		OperationID: "monitor-collection", Method: http.MethodPut, Path: "/collections/{id}/monitor",
 		Summary:     "Monitor a collection",
-		Description: "Saves the settings; when monitored, adds every movie of the collection that is not in the library (excluded movies are skipped).",
+		Description: "Saves the settings (searchOnAdd is kept for the films the collection adds later); when monitored, adds every movie " +
+			"of the collection that is not in the library (excluded movies are skipped). Turning it off keeps every movie.",
 		Tags:        []string{"Collections"},
 	}, func(ctx context.Context, in *monitorInput) (*struct{ Body MonitorResult }, error) {
 		b := in.Body

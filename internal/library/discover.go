@@ -183,6 +183,7 @@ func (s *Service) CollectionByTMDB(ctx context.Context, tmdbID int) (DiscoverCol
 	switch err = store.MapError(err); {
 	case err == nil:
 		out.CollectionID, out.Monitored = row.ID, row.Monitored
+		s.saveParts(ctx, row.ID, c.Parts)
 	case !errors.Is(err, store.ErrNotFound):
 		return DiscoverCollection{}, fmt.Errorf("library: collection %d: %w", tmdbID, err)
 	}
@@ -335,11 +336,12 @@ func (s *Service) AddCollection(ctx context.Context, tmdbID int, opts AddCollect
 	if err != nil {
 		return AddCollectionResult{}, store.MapError(fmt.Errorf("library: save collection %d: %w", tmdbID, err))
 	}
+	s.saveParts(ctx, res.Collection.ID, c.Parts)
 	if opts.MonitorCollection {
 		opts.Monitored = true
 		if res.Collection, err = s.st.Write().UpdateCollectionSettings(ctx, db.UpdateCollectionSettingsParams{
 			ID: res.Collection.ID, Monitored: true, QualityProfileID: &opts.QualityProfileID,
-			RootFolderID: &opts.RootFolderID, MinimumAvailability: opts.MinimumAvailability,
+			RootFolderID: &opts.RootFolderID, MinimumAvailability: opts.MinimumAvailability, SearchOnAdd: opts.SearchOnAdd,
 		}); err != nil {
 			return AddCollectionResult{}, store.MapError(fmt.Errorf("library: monitor collection %d: %w", tmdbID, err))
 		}

@@ -1,12 +1,18 @@
-# Only what the image build needs: go.mod, go.sum, cmd/, internal/, web/.
+# Only what the image build needs: go.mod, go.sum, cmd/, internal/, web/, and
+# the brand and design system files the SPA imports from docs/.
 *
 !go.mod
 !go.sum
 !cmd/
 !internal/
 !web/
+!docs/brand/kit/tokens.css
+!docs/brand/kit/logo/
+!docs/brand/kit/mascot/
+!docs/design/system/gonema.css
 # Generated or local content inside the kept folders.
 web/node_modules/
+web/**/node_modules/
 web/dist/
 web/test-results/
 web/e2e/__screenshots__/

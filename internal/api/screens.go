@@ -254,7 +254,7 @@ func (s *Server) moveOne(ctx context.Context, id, rootFolderID int64, moveFiles,
 
 // HistoryFilterParams are the filters of the history list and its export.
 type HistoryFilterParams struct {
-	Event      []string  `query:"event" maxItems:"17" enum:"grabbed,grab_failed,grab_overridden,download_failed,download_removed,imported,upgraded,import_failed,file_deleted,file_renamed,blocklisted,ignored,metadata_changed,movie_added,movie_deleted,retry_scheduled,retries_exhausted" doc:"Event kinds, comma-separated; all when absent"`
+	Event      []string  `query:"event" maxItems:"19" enum:"grabbed,grab_failed,grab_overridden,download_failed,download_removed,imported,upgraded,import_failed,file_deleted,file_renamed,blocklisted,ignored,metadata_changed,movie_added,movie_deleted,retry_scheduled,retries_exhausted,retries_stopped,retries_resumed" doc:"Event kinds, comma-separated; all when absent"`
 	MovieID    int64     `query:"movieId" minimum:"0" doc:"Only this movie (also after its removal)"`
 	DownloadID int64     `query:"downloadId" minimum:"0" doc:"Only the entries of this download"`
 	Since      time.Time `query:"since" doc:"Entries at or after this time (RFC 3339)"`

@@ -243,7 +243,7 @@ func TestRegisterJobs(t *testing.T) {
 	r := &recordingRunner{recurring: map[string]func() time.Duration{}}
 	e.svc.RegisterJobs(e.ctx, r)
 	slices.Sort(r.handled)
-	if !slices.Equal(r.handled, []string{JobDownloadRetry, JobMovieSearch, JobSearchMissing, JobRSSSync}) {
+	if !slices.Equal(r.handled, []string{JobDownloadRetry, JobMovieSearch, JobBulkSearch, JobSearchMissing, JobRSSSync}) {
 		t.Errorf("handled = %v", r.handled)
 	}
 	if rss, missing := r.recurring[JobRSSSync](), r.recurring[JobSearchMissing](); rss != 10*time.Minute || missing != 24*time.Hour {

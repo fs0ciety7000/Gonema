@@ -62,6 +62,14 @@ type Options struct {
 // ErrNoHandler is the error recorded for a job whose kind has no handler.
 var ErrNoHandler = errors.New("jobs: no handler registered for this kind")
 
+// ErrCancelled is the cause of the context of a job cancelled by Cancel.
+// Handlers that loop should return when their context is done.
+var ErrCancelled = errors.New("jobs: cancelled by the user")
+
+// ErrNotCancellable is returned by Cancel for a job that is not pending or
+// running (finished, or running in another process).
+var ErrNotCancellable = errors.New("jobs: the job is not pending or running")
+
 type handler struct {
 	fn      Handler
 	timeout time.Duration
@@ -93,6 +101,7 @@ type Runner struct {
 	handlers  map[string]handler
 	schedules []schedule
 	started   bool
+	running   map[int64]context.CancelCauseFunc // jobs running in this process
 
 	wake   chan struct{}
 	cancel context.CancelFunc
@@ -110,6 +119,7 @@ func New(st *store.Store, opts Options) *Runner {
 		now:      opts.Now,
 		rand:     opts.Rand,
 		handlers: make(map[string]handler),
+		running:  make(map[int64]context.CancelCauseFunc),
 		wake:     make(chan struct{}, 1),
 	}
 	if r.log == nil {
@@ -324,13 +334,36 @@ func (r *Runner) run(ctx context.Context, job db.Job) {
 	r.publish(events.JobStarted, job, 0, "")
 	log.Debug("job started")
 
+	jctx, jcancel := context.WithCancelCause(ctx)
+	r.mu.Lock()
+	r.running[job.ID] = jcancel
+	r.mu.Unlock()
+	defer func() {
+		r.mu.Lock()
+		delete(r.running, job.ID)
+		r.mu.Unlock()
+		jcancel(nil)
+	}()
+
 	var err error
 	if !ok {
 		err = ErrNoHandler
 	} else {
-		err = r.call(ctx, h, job)
+		err = r.call(jctx, h, job)
 	}
 	elapsed := r.now().Sub(start)
+
+	if errors.Is(context.Cause(jctx), ErrCancelled) && ctx.Err() == nil {
+		octx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+		defer cancel()
+		if _, cerr := r.st.Write().CancelRunningJob(octx, db.CancelRunningJobParams{ID: job.ID, Now: store.Millis(r.now())}); cerr != nil {
+			log.Error("jobs: record cancellation", slog.Any("error", cerr))
+		}
+		log.Info("job cancelled", slog.Duration("elapsed", elapsed))
+		job.Status = "cancelled"
+		r.publish(events.JobCancelled, job, elapsed, "")
+		return
+	}
 
 	if err != nil && ctx.Err() != nil {
 		// Shutdown: leave the job running; Start requeues it next time.
@@ -397,6 +430,8 @@ func (r *Runner) publish(t events.Type, job db.Job, elapsed time.Duration, msg s
 		status = "done"
 	case events.JobStarted:
 		status = "running"
+	case events.JobCancelled:
+		status = "cancelled"
 	}
 	r.bus.Publish(events.Event{Type: t, Data: JobEvent{
 		ID: job.ID, Kind: job.Kind, Status: status, Attempt: job.Attempts,
@@ -468,6 +503,49 @@ func (r *Runner) jitter(upTo time.Duration) time.Duration {
 		return 0
 	}
 	return time.Duration(r.rand() * float64(upTo))
+}
+
+// NextRun returns the next due time of a recurring job (Every, EveryFunc), as
+// last saved by its scheduler; ok is false before the first schedule.
+func (r *Runner) NextRun(ctx context.Context, kind string) (time.Time, bool) {
+	ms, err := store.GetSetting[int64](ctx, r.st, scheduleKey(kind))
+	if err != nil {
+		if !errors.Is(err, store.ErrNotFound) {
+			r.log.Warn("jobs: read schedule", slog.String("kind", kind), slog.Any("error", err))
+		}
+		return time.Time{}, false
+	}
+	return store.FromMillis(ms), true
+}
+
+// Cancel cancels a job: a pending job is marked cancelled at once; a job
+// running in this process has its context canceled (cause ErrCancelled) and is
+// marked cancelled when its handler returns. It returns ErrNotCancellable for a
+// finished job and store.ErrNotFound for an unknown one.
+func (r *Runner) Cancel(ctx context.Context, id int64) error {
+	n, err := r.st.Write().CancelJob(ctx, db.CancelJobParams{ID: id, Now: store.Millis(r.now())})
+	if err != nil {
+		return store.MapError(fmt.Errorf("jobs: cancel %d: %w", id, err))
+	}
+	if n > 0 {
+		job, err := r.st.Read().GetJob(ctx, id)
+		if err == nil {
+			r.log.Info("pending job cancelled", slog.Int64("job_id", id), slog.String("kind", job.Kind))
+			r.publish(events.JobCancelled, job, 0, "")
+		}
+		return nil
+	}
+	r.mu.RLock()
+	cancel, ok := r.running[id]
+	r.mu.RUnlock()
+	if ok {
+		cancel(ErrCancelled)
+		return nil
+	}
+	if _, err := r.st.Read().GetJob(ctx, id); err != nil {
+		return store.MapError(fmt.Errorf("jobs: cancel %d: %w", id, err))
+	}
+	return ErrNotCancellable
 }
 
 // ListRecent returns the most recent jobs, newest first.

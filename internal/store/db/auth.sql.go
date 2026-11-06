@@ -52,9 +52,9 @@ func (q *Queries) CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (Api
 }
 
 const createSession = `-- name: CreateSession :one
-INSERT INTO sessions (token_hash, user_id, created_at, last_seen_at, expires_at, ip, user_agent)
-VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING id, token_hash, user_id, created_at, last_seen_at, expires_at, ip, user_agent
+INSERT INTO sessions (token_hash, user_id, created_at, last_seen_at, expires_at, ip, user_agent, via)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, token_hash, user_id, created_at, last_seen_at, expires_at, ip, user_agent, via
 `
 
 type CreateSessionParams struct {
@@ -65,6 +65,7 @@ type CreateSessionParams struct {
 	ExpiresAt  int64  `json:"expiresAt"`
 	Ip         string `json:"ip"`
 	UserAgent  string `json:"userAgent"`
+	Via        string `json:"via"`
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error) {
@@ -76,6 +77,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 		arg.ExpiresAt,
 		arg.Ip,
 		arg.UserAgent,
+		arg.Via,
 	)
 	var i Session
 	err := row.Scan(
@@ -87,6 +89,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 		&i.ExpiresAt,
 		&i.Ip,
 		&i.UserAgent,
+		&i.Via,
 	)
 	return i, err
 }
@@ -251,7 +254,7 @@ func (q *Queries) GetFirstUser(ctx context.Context) (User, error) {
 }
 
 const getSessionByToken = `-- name: GetSessionByToken :one
-SELECT sessions.id, sessions.token_hash, sessions.user_id, sessions.created_at, sessions.last_seen_at, sessions.expires_at, sessions.ip, sessions.user_agent, users.id, users.username, users.password_hash, users.role, users.created_at, users.last_login_at, users.password_changed_at
+SELECT sessions.id, sessions.token_hash, sessions.user_id, sessions.created_at, sessions.last_seen_at, sessions.expires_at, sessions.ip, sessions.user_agent, sessions.via, users.id, users.username, users.password_hash, users.role, users.created_at, users.last_login_at, users.password_changed_at
 FROM sessions JOIN users ON users.id = sessions.user_id
 WHERE sessions.token_hash = ?
 `
@@ -273,6 +276,7 @@ func (q *Queries) GetSessionByToken(ctx context.Context, tokenHash []byte) (GetS
 		&i.Session.ExpiresAt,
 		&i.Session.Ip,
 		&i.Session.UserAgent,
+		&i.Session.Via,
 		&i.User.ID,
 		&i.User.Username,
 		&i.User.PasswordHash,
@@ -341,7 +345,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 }
 
 const listUserSessions = `-- name: ListUserSessions :many
-SELECT id, token_hash, user_id, created_at, last_seen_at, expires_at, ip, user_agent FROM sessions WHERE user_id = ?1 AND expires_at > ?2 ORDER BY last_seen_at DESC, id DESC
+SELECT id, token_hash, user_id, created_at, last_seen_at, expires_at, ip, user_agent, via FROM sessions WHERE user_id = ?1 AND expires_at > ?2 ORDER BY last_seen_at DESC, id DESC
 `
 
 type ListUserSessionsParams struct {
@@ -367,6 +371,7 @@ func (q *Queries) ListUserSessions(ctx context.Context, arg ListUserSessionsPara
 			&i.ExpiresAt,
 			&i.Ip,
 			&i.UserAgent,
+			&i.Via,
 		); err != nil {
 			return nil, err
 		}

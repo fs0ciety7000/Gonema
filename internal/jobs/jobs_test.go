@@ -342,3 +342,69 @@ func TestReschedule(t *testing.T) {
 	r.Reschedule("busy")
 	waitNextRun(t, st, "busy", start0.Add(48*time.Hour))
 }
+
+func TestCancel(t *testing.T) {
+	st := storetest.New(t)
+	c := newClock()
+	bus := events.New(events.Options{})
+	sub := bus.Subscribe(64, func(e *events.Event) bool { return e.Type == events.JobCancelled })
+	r := newRunner(t, st, c, bus)
+	started := make(chan struct{})
+	var sawCause atomic.Bool
+	r.Handle("long", func(ctx context.Context, _ db.Job) error {
+		close(started)
+		<-ctx.Done()
+		sawCause.Store(errors.Is(context.Cause(ctx), ErrCancelled))
+		return ctx.Err()
+	}, HandlerOptions{})
+	ctx := context.Background()
+
+	// A pending job (due later) is cancelled at once.
+	later, _, err := r.Enqueue(ctx, "long", nil, EnqueueOptions{RunAt: c.Now().Add(time.Hour)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	start(t, r)
+	if err := r.Cancel(ctx, later.ID); err != nil {
+		t.Fatal(err)
+	}
+	if j, _ := st.Read().GetJob(ctx, later.ID); j.Status != "cancelled" || j.FinishedAt == nil {
+		t.Errorf("pending job after cancel = %+v", j)
+	}
+
+	// A running job is interrupted and recorded as cancelled, not failed.
+	job, _, err := r.Enqueue(ctx, "long", nil, EnqueueOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("job did not start")
+	}
+	if err := r.Cancel(ctx, job.ID); err != nil {
+		t.Fatal(err)
+	}
+	j := waitJob(t, st, job.ID, func(j db.Job) bool { return j.Status != "running" })
+	if j.Status != "cancelled" || j.LastError != nil || !sawCause.Load() {
+		t.Errorf("running job after cancel = %+v (cause seen %v)", j, sawCause.Load())
+	}
+	for range 2 {
+		select {
+		case e := <-sub.C():
+			if d, ok := e.Data.(JobEvent); !ok || d.Status != "cancelled" {
+				t.Errorf("event data = %+v", e.Data)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatal("missing job.cancelled event")
+		}
+	}
+
+	// Finished and unknown jobs.
+	if err := r.Cancel(ctx, job.ID); !errors.Is(err, ErrNotCancellable) {
+		t.Errorf("cancel finished job = %v", err)
+	}
+	if err := r.Cancel(ctx, 9999); !errors.Is(err, store.ErrNotFound) {
+		t.Errorf("cancel unknown job = %v", err)
+	}
+}

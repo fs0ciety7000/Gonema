@@ -34,6 +34,9 @@ type QueueActions struct {
 	Resume      bool `json:"resume"`
 	Remove      bool `json:"remove" doc:"Remove (optionally blocklist and retry)"`
 	RetryImport bool `json:"retryImport" doc:"The import failed: POST /queue/{id}/import"`
+	// StopRetrying and ResumeRetrying: exactly one is true.
+	StopRetrying   bool `json:"stopRetrying" doc:"POST /queue/{id}/stop-retrying: no automatic next release if this chain fails"`
+	ResumeRetrying bool `json:"resumeRetrying" doc:"POST /queue/{id}/resume-retrying: the user stopped the retries of this chain"`
 }
 
 // QueueEntry is a row of the queue screen.
@@ -91,10 +94,11 @@ func (s *Server) queueEntryOf(it *acquire.QueueItem, c *db.ListQueueContextRow, 
 	}
 	hasClient := it.ClientID != nil
 	e.Actions = QueueActions{
-		Pause:       hasClient && !e.ImportFailed && (it.Status == "queued" || it.Status == "downloading" || it.Status == "warning"),
-		Resume:      hasClient && it.Status == "paused",
-		Remove:      it.Status != "importing",
-		RetryImport: e.ImportFailed,
+		Pause:        hasClient && !e.ImportFailed && (it.Status == "queued" || it.Status == "downloading" || it.Status == "warning"),
+		Resume:       hasClient && it.Status == "paused",
+		Remove:       it.Status != "importing",
+		RetryImport:  e.ImportFailed,
+		StopRetrying: !it.RetryStopped, ResumeRetrying: it.RetryStopped,
 	}
 	if c == nil {
 		return e

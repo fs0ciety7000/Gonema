@@ -77,6 +77,7 @@ func (s *Service) RegisterJobs(_ context.Context, r JobRunner) {
 	r.Handle(JobRSSSync, func(ctx context.Context, _ db.Job) error { return s.SyncRSS(ctx) },
 		jobs.HandlerOptions{Timeout: 10 * time.Minute})
 	r.Handle(JobDownloadRetry, s.handleRetry, jobs.HandlerOptions{Timeout: 5 * time.Minute})
+	r.Handle(JobBulkSearch, s.handleBulkSearch, jobs.HandlerOptions{Timeout: bulkSearchTimeout})
 	r.EveryFunc(JobSearchMissing, s.intervalReader(func(a *AcquisitionSettings) time.Duration {
 		return time.Duration(a.SearchMissingIntervalHours) * time.Hour
 	}), time.Hour, nil)
@@ -549,6 +550,11 @@ func (s *Service) Retry(ctx context.Context, downloadID int64) error {
 	dl, err := s.st.Read().GetDownload(ctx, downloadID)
 	if err != nil {
 		return mapNotFound(err, "Download %d does not exist.", downloadID)
+	}
+	if dl.RetryStoppedAt != nil {
+		// The user stopped the retries of this chain (history retries_stopped).
+		s.searchLog.Info("automatic retry skipped: stopped by the user", slog.Int64("download_id", dl.ID), slog.Int64("movie_id", dl.MovieID))
+		return nil
 	}
 	maxAttempts := max(s.settingInt(ctx, SettingMaxAttempts, DefaultMaxAttempts), 1)
 	used, err := s.st.Read().CountGrabsSince(ctx, db.CountGrabsSinceParams{

@@ -42,6 +42,8 @@ const (
 	JobStarted   Type = "job.started"
 	JobCompleted Type = "job.completed"
 	JobFailed    Type = "job.failed"
+	// JobCancelled: a job was cancelled by the user (jobs.Runner.Cancel).
+	JobCancelled Type = "job.cancelled"
 
 	HealthChanged Type = "health.changed"
 
