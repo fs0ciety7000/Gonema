@@ -210,7 +210,7 @@ Galerie : `docs/design/index.html`. Captures 1440 × 900 en sombre et en clair :
 | `docs/design/mockups/settings-backups.html` | Archives, restauration en attente, planification, clé maître | `?dialog=restore` |
 | `docs/design/mockups/settings-logs.html` | Journal en direct, niveaux, entrée dépliée, valeurs masquées | — |
 
-**Ajoutées le 2026-11-06, à valider par le PO** (textes compris) :
+**Ajoutées le 2026-11-06, validées par le PO le 2026-11-06, avec la règle de surveillance des collections (films sortis ajoutés tout de suite, films annoncés le jour de leur sortie)** (textes compris) :
 
 | Fichier | Contenu | Variantes |
 |---|---|---|
