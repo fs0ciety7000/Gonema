@@ -1,0 +1,42 @@
+{
+  "_fixture": "handwritten-from-docs",
+  "page": 1,
+  "results": [
+    {
+      "adult": false,
+      "gender": 2,
+      "id": 31,
+      "known_for_department": "Acting",
+      "name": "Tom Hanks",
+      "original_name": "Tom Hanks",
+      "popularity": 63.3,
+      "profile_path": "/xndWFsBlClOJFRdhSt4NBwiPq2o.jpg",
+      "known_for": [
+        {"adult": false, "backdrop_path": "/3h1JZGDhZ8nzxdgvkxha0qBqi05.jpg", "id": 13, "title": "Forrest Gump",
+         "original_language": "en", "original_title": "Forrest Gump", "overview": "A man with a low IQ...",
+         "poster_path": "/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg", "media_type": "movie", "genre_ids": [35, 18, 10749],
+         "popularity": 81.2, "release_date": "1994-06-23", "video": false, "vote_average": 8.5, "vote_count": 26000},
+        {"adult": false, "backdrop_path": null, "id": 4614, "name": "NCIS", "original_language": "en",
+         "original_name": "NCIS", "overview": "", "poster_path": null, "media_type": "tv", "genre_ids": [80],
+         "popularity": 10.0, "first_air_date": "2003-09-23", "vote_average": 7.6, "vote_count": 2000},
+        {"adult": false, "backdrop_path": null, "id": 862, "title": "Toy Story", "original_language": "en",
+         "original_title": "Toy Story", "overview": "", "poster_path": "/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg",
+         "media_type": "movie", "genre_ids": [16], "popularity": 100.1, "release_date": "1995-10-30",
+         "video": false, "vote_average": 8.0, "vote_count": 18000}
+      ]
+    },
+    {
+      "adult": false,
+      "gender": 2,
+      "id": 1234567,
+      "known_for_department": "Directing",
+      "name": "Tom Hanks Jr.",
+      "original_name": "Tom Hanks Jr.",
+      "popularity": 0.6,
+      "profile_path": null,
+      "known_for": []
+    }
+  ],
+  "total_pages": 1,
+  "total_results": 2
+}

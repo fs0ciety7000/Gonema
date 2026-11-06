@@ -102,16 +102,20 @@ Le statut de bibliothèque (`missing`, `downloading`, `available`, `upgradable`)
 
 **quality_sizes** — `quality PK, min_mb_per_min, preferred_mb_per_min, max_mb_per_min`.
 
-**quality_profiles** — `id, name UNIQUE, upgrade_allowed, cutoff_quality, min_score, cutoff_score, min_upgrade_step, languages JSON`.
+**quality_profiles** — `id, name UNIQUE, upgrade_allowed, cutoff_quality, min_score, cutoff_score, min_upgrade_step, languages JSON, preferred_protocol`. `preferred_protocol` (`''` · `usenet` · `torrent`, migration 00006) départage les releases des films du profil ; `''` suit le réglage global (Settings > Acquisition). Un profil utilisé (films, collections, listes d'import) ou le dernier profil ne peut pas être supprimé (409).
+
+**quality_profile_sizes** (migration 00006) — `(profile_id FK CASCADE, quality) PK, min_mb_per_min, preferred_mb_per_min, max_mb_per_min` (`max` 0 = sans borne). Bornes de taille propres à un profil pour certaines qualités ; les autres qualités suivent `quality_sizes` puis les valeurs par défaut du paquet `quality`.
 
 **quality_profile_items** — `profile_id, position, quality, group_name, allowed`. L'ordre définit la préférence ; un groupe (« HD-1080p ») rend plusieurs qualités équivalentes.
 
 **scoring_rules** — `id, name UNIQUE, include_in_rename, description`. Une règle = une condition composée (« HDR10+ », « Groupe de confiance », « Mauvais encodeur »).
 
 **scoring_conditions** — `id, rule_id FK CASCADE, kind, negate, required, value JSON`.
-`kind` ∈ `title_regex`, `release_group`, `source`, `resolution`, `codec`, `hdr`, `audio`, `edition`, `language`, `indexer_flag`, `size_range`, `year_range`. Sémantique : toutes les conditions `required` doivent être vraies et au moins une non-`required` de chaque `kind`.
+`kind` ∈ `title_regex`, `release_group`, `source`, `resolution`, `codec`, `hdr`, `audio`, `edition`, `language`, `indexer_flag`, `indexer` (nom de l'indexeur, migration 00006), `size_range`, `year_range`. Sémantique : toutes les conditions `required` doivent être vraies et au moins une non-`required` de chaque `kind`.
 
-**profile_scores** — `(profile_id, rule_id) PK, score INTEGER` (positif ou négatif).
+**profile_scores** — `(profile_id, rule_id) PK, score INTEGER` (positif ou négatif ; un score 0 n'est pas stocké).
+
+Toute modification d'un profil ou d'une règle recalcule, dans la même transaction, `movie_files.custom_score` des fichiers dont le score change (l'état « upgradable » et les décisions d'amélioration le lisent).
 
 ### Recherche et téléchargement
 
@@ -181,7 +185,7 @@ Le statut de bibliothèque (`missing`, `downloading`, `available`, `upgradable`)
 
 **library_version** — compteur unique incrémenté par triggers sur les colonnes visibles de la bibliothèque ; invalide l'index en mémoire des listes (migration 00004).
 
-**settings** — `key PK, value JSON`. Nommage (gabarits), mode d'import (hardlink/copy/move), rétention, port, URL de base, clé TMDB (chiffrée), etc.
+**settings** — `key PK, value JSON`. Nommage (gabarits), mode d'import (hardlink/copy/move), rétention, clé TMDB (chiffrée), etc. Lot 3 de la phase 7 : `ui.preferences` (thème, densité, profil / dossier / disponibilité par défaut de l'ajout de film, calendrier, premier jour de la semaine) et `ui.onboarding_dismissed`. Port, adresse d'écoute, URL de base et niveau de log restent des options de démarrage (drapeaux et variables `GONEMA_*`), affichées en lecture seule.
 
 ## Types du moteur pur (Go, hors base)
 

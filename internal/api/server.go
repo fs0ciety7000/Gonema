@@ -19,6 +19,7 @@ import (
 
 	"github.com/fs0ciety7000/gonema/internal/acquire"
 	"github.com/fs0ciety7000/gonema/internal/events"
+	"github.com/fs0ciety7000/gonema/internal/health"
 	"github.com/fs0ciety7000/gonema/internal/importer"
 	"github.com/fs0ciety7000/gonema/internal/jobs"
 	"github.com/fs0ciety7000/gonema/internal/library"
@@ -41,6 +42,8 @@ type Deps struct {
 	StartedAt time.Time
 	DataDir   string
 	BaseURL   string // "" or "/path"
+	Bind      string // listening address, shown in Settings > General
+	LogLevel  string // shown in Settings > General
 
 	// Queue gives the live download progress of the lists; default Acquire.
 	Queue QueueReader
@@ -58,6 +61,7 @@ type Deps struct {
 type Server struct {
 	d       Deps
 	files   *importer.Service // file operations; set by RegisterImportRoutes
+	health  *health.Scheduler // health issues of the dashboard; set by RegisterHealthRoutes
 	log     *slog.Logger
 	handler http.Handler
 	api     huma.API

@@ -252,14 +252,51 @@ func (s *Server) moveOne(ctx context.Context, id, rootFolderID int64, moveFiles,
 
 // ----------------------------------------------------------------- history
 
-type historyListInput struct {
+// HistoryFilterParams are the filters of the history list and its export.
+type HistoryFilterParams struct {
 	Event      []string  `query:"event" maxItems:"17" enum:"grabbed,grab_failed,grab_overridden,download_failed,download_removed,imported,upgraded,import_failed,file_deleted,file_renamed,blocklisted,ignored,metadata_changed,movie_added,movie_deleted,retry_scheduled,retries_exhausted" doc:"Event kinds, comma-separated; all when absent"`
 	MovieID    int64     `query:"movieId" minimum:"0" doc:"Only this movie (also after its removal)"`
 	DownloadID int64     `query:"downloadId" minimum:"0" doc:"Only the entries of this download"`
 	Since      time.Time `query:"since" doc:"Entries at or after this time (RFC 3339)"`
 	Until      time.Time `query:"until" doc:"Entries before this time (RFC 3339)"`
-	Cursor     string    `query:"cursor" maxLength:"20" doc:"nextCursor of the previous page"`
-	Limit      int64     `query:"limit" minimum:"1" maximum:"500" default:"50"`
+}
+
+// params returns the query parameters of the filters, newest first from
+// beforeID; errors are API errors.
+func (f *HistoryFilterParams) params(beforeID, limit int64) (db.ListHistoryFilteredParams, error) {
+	p := db.ListHistoryFilteredParams{BeforeID: beforeID, Limit: limit}
+	if len(f.Event) > 0 {
+		raw, err := json.Marshal(f.Event)
+		if err != nil {
+			return p, huma.Error422UnprocessableEntity("The event filter is invalid.")
+		}
+		ev := string(raw)
+		p.Events = &ev
+	}
+	if f.MovieID > 0 {
+		p.MovieID = &f.MovieID
+	}
+	if f.DownloadID > 0 {
+		p.DownloadID = &f.DownloadID
+	}
+	if !f.Since.IsZero() {
+		v := store.Millis(f.Since)
+		p.Since = &v
+	}
+	if !f.Until.IsZero() {
+		v := store.Millis(f.Until)
+		p.Until = &v
+	}
+	if p.Since != nil && p.Until != nil && *p.Since >= *p.Until {
+		return p, huma.Error422UnprocessableEntity("The date range is empty: since must be before until.")
+	}
+	return p, nil
+}
+
+type historyListInput struct {
+	HistoryFilterParams
+	Cursor string `query:"cursor" maxLength:"20" doc:"nextCursor of the previous page"`
+	Limit  int64  `query:"limit" minimum:"1" maximum:"500" default:"50"`
 }
 
 // HistoryMovie is the movie of a history row.
@@ -294,38 +331,17 @@ func (s *Server) historyRoutes() {
 			"Rows of one download chain (grab, failure, retry, import, upgrade) share chainId.",
 		Tags: []string{"History"},
 	}, func(ctx context.Context, in *historyListInput) (*struct{ Body HistoryPage }, error) {
-		p := db.ListHistoryFilteredParams{BeforeID: math.MaxInt64, Limit: in.Limit + 1}
+		before := int64(math.MaxInt64)
 		if in.Cursor != "" {
 			id, err := strconv.ParseInt(in.Cursor, 10, 64)
 			if err != nil || id <= 0 {
 				return nil, huma.Error422UnprocessableEntity("The page cursor is invalid; start again from the first page.")
 			}
-			p.BeforeID = id
+			before = id
 		}
-		if len(in.Event) > 0 {
-			raw, err := json.Marshal(in.Event)
-			if err != nil {
-				return nil, s.problem(ctx, err, false)
-			}
-			ev := string(raw)
-			p.Events = &ev
-		}
-		if in.MovieID > 0 {
-			p.MovieID = &in.MovieID
-		}
-		if in.DownloadID > 0 {
-			p.DownloadID = &in.DownloadID
-		}
-		if !in.Since.IsZero() {
-			v := store.Millis(in.Since)
-			p.Since = &v
-		}
-		if !in.Until.IsZero() {
-			v := store.Millis(in.Until)
-			p.Until = &v
-		}
-		if p.Since != nil && p.Until != nil && *p.Since >= *p.Until {
-			return nil, huma.Error422UnprocessableEntity("The date range is empty: since must be before until.")
+		p, err := in.params(before, in.Limit+1)
+		if err != nil {
+			return nil, err
 		}
 		rows, err := s.d.Store.Read().ListHistoryFiltered(ctx, p)
 		if err != nil {
@@ -518,6 +534,7 @@ type PersonCredit struct {
 // Filmography is the movies of a person.
 type Filmography struct {
 	TmdbID int            `json:"tmdbId"`
+	Person *PersonProfile `json:"person" doc:"Name, portrait and biography; null when TMDB could not give them (the movies are still listed)"`
 	Movies []PersonCredit `json:"movies" doc:"Cast and crew merged by movie, deduplicated; upcoming (undated) first, then newest first"`
 }
 
@@ -594,17 +611,31 @@ func (s *Server) discoverRoutes() {
 	})
 	huma.Register(s.api, huma.Operation{
 		OperationID: "discover-person", Method: http.MethodGet, Path: "/discover/person/{tmdbId}",
-		Summary:     "Filmography of a person",
-		Description: "Cast and crew credits merged by movie, flagged when in the library. TMDB does not return the person's name here: use the cast or crew entry it came from.",
-		Tags:        tags,
+		Summary: "Filmography of a person",
+		Description: "Cast and crew credits merged by movie, flagged when in the library, with the person's profile (name, portrait, biography) " +
+			"from a second cached TMDB call made in parallel; person is null when only that call failed.",
+		Tags: tags,
 	}, func(ctx context.Context, in *struct {
 		TmdbID int `path:"tmdbId" minimum:"1" doc:"TMDB person id"`
 	}) (*struct{ Body Filmography }, error) {
+		var person *metadata.PersonDetails
+		var personErr error
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			person, personErr = s.d.Library.Person(ctx, in.TmdbID)
+		}()
 		movies, err := s.d.Library.Filmography(ctx, in.TmdbID)
+		<-done
 		if err != nil {
 			return nil, s.problem(ctx, err, true)
 		}
 		out := Filmography{TmdbID: in.TmdbID, Movies: make([]PersonCredit, 0, len(movies))}
+		if personErr == nil {
+			out.Person = s.personProfileOf(person)
+		} else {
+			s.log.Warn("person profile unavailable", slog.String("request_id", RequestID(ctx)), slog.Int("tmdb_id", in.TmdbID), slog.Any("error", personErr))
+		}
 		for i := range movies {
 			m := &movies[i]
 			out.Movies = append(out.Movies, PersonCredit{

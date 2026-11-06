@@ -886,3 +886,44 @@ func TestLastServerClock(t *testing.T) {
 		t.Errorf("an invalid Date replaced the clock: %+v", got)
 	}
 }
+
+func TestSearchPeopleAndPerson(t *testing.T) {
+	t.Parallel()
+	fs := newFixtureServer(t)
+	c, _ := newTestClient(t, fs, testToken, Options{})
+	page, err := c.SearchPeople(t.Context(), "  tom hanks ", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if page.TotalResults != 2 || len(page.Results) != 2 {
+		t.Fatalf("page = %+v", page)
+	}
+	p := page.Results[0]
+	if p.TMDBID != 31 || p.Name != "Tom Hanks" || p.KnownForDepartment != "Acting" || p.ProfilePath == "" {
+		t.Errorf("person = %+v", p)
+	}
+	if len(p.KnownFor) != 2 || p.KnownFor[0].Title != "Forrest Gump" || p.KnownFor[0].Year != 1994 || p.KnownFor[1].TMDBID != 862 {
+		t.Errorf("known for (TV dropped) = %+v", p.KnownFor)
+	}
+	if len(page.Results[1].KnownFor) != 0 {
+		t.Errorf("second known for = %+v", page.Results[1].KnownFor)
+	}
+	req := fs.last()
+	if got := req.URL.Query().Get("query"); got != "tom hanks" || req.URL.Query().Get("include_adult") != "false" {
+		t.Errorf("query = %q", req.URL.RawQuery)
+	}
+	if _, err := c.SearchPeople(t.Context(), " ", 1); !errors.Is(err, ErrInvalidArgument) {
+		t.Errorf("empty query: %v", err)
+	}
+
+	d, err := c.Person(t.Context(), 31)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.Name != "Tom Hanks" || d.IMDbID != "nm0000158" || d.Birthday.Year != 1956 || !d.Deathday.IsZero() || d.PlaceOfBirth == "" {
+		t.Errorf("details = %+v", d)
+	}
+	if _, err := c.Person(t.Context(), 0); !errors.Is(err, ErrInvalidArgument) {
+		t.Errorf("id 0: %v", err)
+	}
+}

@@ -124,6 +124,7 @@ type session struct {
 	started time.Time
 
 	mu       sync.Mutex
+	running  int // runs in progress: the search, then per-indexer retries
 	status   string
 	errMsg   string
 	finished time.Time
@@ -210,7 +211,7 @@ func (s *Service) StartInteractive(ctx context.Context, movieID int64) (SearchSn
 		return SearchSnapshot{}, newError(ErrUnavailable, nil, "No enabled indexer can search for this movie: add one in Settings > Indexers.")
 	}
 	sess := &session{
-		id: newSearchID(), movieID: movieID, started: s.now(), status: "running",
+		id: newSearchID(), movieID: movieID, started: s.now(), status: "running", running: 1,
 		results: make(map[string]*sessionResult), byCand: make(map[string]string),
 	}
 	for i := range used {
@@ -247,17 +248,21 @@ func (s *Service) runInteractive(ctx context.Context, sess *session, mc *movieCo
 			st = sess.indexerDone(e.Indexer.ID, st)
 			s.publish(events.Event{Type: EventSearchIndexerFailed, MovieID: sess.movieID, Data: SearchIndexerEvent{SearchID: sess.id, MovieID: sess.movieID, Indexer: st}})
 		case *search.Finished:
-			fin := sess.finish(s.now(), "finished", "")
+			fin, last := sess.finish(s.now(), "finished", "")
 			fin.Succeeded, fin.Failed, fin.DurationMS = e.Succeeded, e.Failed, time.Since(start).Milliseconds()
-			s.publish(events.Event{Type: EventSearchFinished, MovieID: sess.movieID, Data: fin})
+			if last {
+				s.publish(events.Event{Type: EventSearchFinished, MovieID: sess.movieID, Data: fin})
+			}
 			s.log.Info("interactive search finished", slog.String("search_id", sess.id), slog.Int("results", fin.Total),
 				slog.Int("accepted", fin.Accepted), slog.Int("failed_indexers", e.Failed))
 			return
 		}
 	}
-	fin := sess.finish(s.now(), "failed", "The search was interrupted before every indexer answered.")
+	fin, last := sess.finish(s.now(), "failed", "The search was interrupted before every indexer answered.")
 	fin.DurationMS = time.Since(start).Milliseconds()
-	s.publish(events.Event{Type: EventSearchFinished, MovieID: sess.movieID, Data: fin})
+	if last {
+		s.publish(events.Event{Type: EventSearchFinished, MovieID: sess.movieID, Data: fin})
+	}
 }
 
 func (sess *session) addBatch(b *search.ResultBatch, mc *movieContext, ev *decision.Evaluator) SearchBatchEvent {
@@ -326,17 +331,23 @@ func (sess *session) indexerDone(id int64, st IndexerStatus) IndexerStatus {
 	return st
 }
 
-func (sess *session) finish(now time.Time, status, msg string) SearchFinishedEvent {
+// finish ends one run of the search (the search itself or an indexer retry).
+// The search takes the status only when no other run is in progress: last
+// tells whether this was the last run (search.finished is then published).
+func (sess *session) finish(now time.Time, status, msg string) (fin SearchFinishedEvent, last bool) {
 	sess.mu.Lock()
 	defer sess.mu.Unlock()
-	sess.status, sess.errMsg, sess.finished = status, msg, now
-	fin := SearchFinishedEvent{SearchID: sess.id, MovieID: sess.movieID, Status: status, Total: len(sess.results)}
+	sess.running = max(sess.running-1, 0)
+	if sess.running == 0 {
+		sess.status, sess.errMsg, sess.finished = status, msg, now
+	}
+	fin = SearchFinishedEvent{SearchID: sess.id, MovieID: sess.movieID, Status: status, Total: len(sess.results)}
 	for _, r := range sess.results {
 		if r.ev.Decision.Accepted {
 			fin.Accepted++
 		}
 	}
-	return fin
+	return fin, sess.running == 0
 }
 
 func (sess *session) snapshot() SearchSnapshot {

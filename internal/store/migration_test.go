@@ -107,3 +107,80 @@ func checkHistorySchema(t *testing.T, s *Store, wantIndexes []string) {
 		t.Errorf("DELETE history err = %v, want ErrImmutable", err)
 	}
 }
+
+// TestMigration6QualityEditor checks migration 00006: the indexer condition
+// kind, profile sizes and preferred protocol after up; down keeps the other
+// conditions and drops what the previous schema cannot hold.
+func TestMigration6QualityEditor(t *testing.T) {
+	ctx := context.Background()
+	s := openTest(t)
+	if err := s.MigrateDownTo(ctx, 5); err != nil {
+		t.Fatal(err)
+	}
+	stmts := []string{
+		`INSERT INTO quality_profiles (id, name, cutoff_quality) VALUES (1, 'P', 'webdl-1080p')`,
+		`INSERT INTO scoring_rules (id, name) VALUES (1, 'Keep'), (2, 'Indexer only')`,
+		`INSERT INTO scoring_conditions (id, rule_id, kind, value) VALUES (1, 1, 'codec', '{"value":"h265"}')`,
+	}
+	for _, q := range stmts {
+		if err := s.exec(t, q); err != nil {
+			t.Fatalf("%s: %v", q, err)
+		}
+	}
+	if err := s.exec(t, `INSERT INTO scoring_conditions (rule_id, kind, value) VALUES (2, 'indexer', '{"value":"X"}')`); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("version 5 accepts indexer: %v", err)
+	}
+	if err := s.MigrateUp(ctx); err != nil {
+		t.Fatal(err)
+	}
+	for _, q := range []string{
+		`INSERT INTO scoring_conditions (id, rule_id, kind, value) VALUES (2, 2, 'indexer', '{"value":"X"}')`,
+		`INSERT INTO scoring_conditions (id, rule_id, kind, value) VALUES (3, 1, 'indexer', '{"value":"Y"}')`,
+		`UPDATE quality_profiles SET preferred_protocol = 'torrent' WHERE id = 1`,
+		`INSERT INTO quality_profile_sizes (profile_id, quality, min_mb_per_min, preferred_mb_per_min, max_mb_per_min) VALUES (1, 'webdl-1080p', 1, 2, 0)`,
+	} {
+		if err := s.exec(t, q); err != nil {
+			t.Fatalf("%s: %v", q, err)
+		}
+	}
+	for _, q := range []string{
+		`UPDATE quality_profiles SET preferred_protocol = 'ftp' WHERE id = 1`,
+		`INSERT INTO quality_profile_sizes (profile_id, quality, min_mb_per_min, preferred_mb_per_min, max_mb_per_min) VALUES (1, 'dvd', 5, 2, 0)`,
+		`INSERT INTO quality_profile_sizes (profile_id, quality, min_mb_per_min, preferred_mb_per_min, max_mb_per_min) VALUES (1, 'sdtv', 1, 5, 2)`,
+	} {
+		if err := s.exec(t, q); !errors.Is(err, ErrInvalid) {
+			t.Errorf("%s accepted: %v", q, err)
+		}
+	}
+	var n int
+	if err := s.reader.QueryRowContext(ctx, `SELECT count(*) FROM sqlite_schema WHERE name = 'scoring_conditions_rule_id'`).Scan(&n); err != nil || n != 1 {
+		t.Errorf("rule_id index = %d, %v", n, err)
+	}
+	// Deleting a profile cascades to its sizes.
+	if err := s.exec(t, `INSERT INTO quality_profiles (id, name, cutoff_quality) VALUES (2, 'Q', 'dvd')`); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.exec(t, `INSERT INTO quality_profile_sizes (profile_id, quality, min_mb_per_min, preferred_mb_per_min, max_mb_per_min) VALUES (2, 'dvd', 0, 0, 0)`); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.exec(t, `DELETE FROM quality_profiles WHERE id = 2`); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := s.MigrateDownTo(ctx, 5); err != nil {
+		t.Fatal(err)
+	}
+	var conds, rules int
+	if err := s.reader.QueryRowContext(ctx, `SELECT (SELECT count(*) FROM scoring_conditions), (SELECT count(*) FROM scoring_rules)`).Scan(&conds, &rules); err != nil {
+		t.Fatal(err)
+	}
+	if conds != 1 || rules != 1 {
+		t.Errorf("after down: %d conditions, %d rules; want the codec condition of rule Keep", conds, rules)
+	}
+	if err := s.exec(t, `SELECT preferred_protocol FROM quality_profiles`); err == nil {
+		t.Error("preferred_protocol survives down")
+	}
+	if err := s.MigrateUp(ctx); err != nil {
+		t.Fatal(err)
+	}
+}

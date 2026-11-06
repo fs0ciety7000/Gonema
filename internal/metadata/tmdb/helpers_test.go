@@ -40,6 +40,8 @@ func newFixtureServer(t *testing.T) *fixtureServer {
 		"/find/tt9999999":          "find_empty.json",
 		"/collection/10":           "collection_10.json",
 		"/person/31/movie_credits": "person_31_movie_credits.json",
+		"/person/31":               "person_31.json",
+		"/search/person":           "search_person.json",
 		"/movie/popular":           "popular.json",
 		"/movie/now_playing":       "now_playing.json",
 		"/movie/upcoming":          "upcoming.json",

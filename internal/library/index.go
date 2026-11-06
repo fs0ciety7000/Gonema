@@ -377,8 +377,12 @@ type libraryIndex struct {
 	rows    []MovieSummary    // id order; shared, never modified
 	tags    map[int64][]int64 // movie id -> tag ids
 
-	mu     sync.Mutex         // guards orders
+	mu     sync.Mutex         // guards orders, folded and foldedOrig
 	orders map[string][]int32 // sort+order -> every row index, sorted; computed on first use
+
+	// folded and foldedOrig are the titles and original titles of rows, folded
+	// for the palette search (see foldedTitles); nil until first used.
+	folded, foldedOrig [][]rune
 }
 
 // ordered returns the indexes of every row in the sort order, computing it

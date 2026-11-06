@@ -144,6 +144,28 @@ type wirePersonCredits struct {
 	Crew []wireFilmCredit `json:"crew"`
 }
 
+type wirePerson struct {
+	ID                 int           `json:"id"`
+	IMDbID             string        `json:"imdb_id"`
+	Name               string        `json:"name"`
+	ProfilePath        string        `json:"profile_path"`
+	KnownForDepartment string        `json:"known_for_department"`
+	Biography          string        `json:"biography"`
+	Birthday           string        `json:"birthday"`
+	Deathday           string        `json:"deathday"`
+	PlaceOfBirth       string        `json:"place_of_birth"`
+	Popularity         float64       `json:"popularity"`
+	Adult              bool          `json:"adult"`
+	KnownFor           []wireSummary `json:"known_for"`
+}
+
+type wirePeoplePage struct {
+	Page         int          `json:"page"`
+	TotalPages   int          `json:"total_pages"`
+	TotalResults int          `json:"total_results"`
+	Results      []wirePerson `json:"results"`
+}
+
 type wireFind struct {
 	MovieResults []wireSummary `json:"movie_results"`
 }
@@ -391,4 +413,33 @@ func filmCredits(in []wireFilmCredit) []metadata.FilmCredit {
 		return a.Movie.TMDBID - b.Movie.TMDBID
 	})
 	return out
+}
+
+func (p *wirePeoplePage) toPage() metadata.Page[metadata.PersonSummary] {
+	out := metadata.Page[metadata.PersonSummary]{
+		Page: p.Page, TotalPages: p.TotalPages, TotalResults: p.TotalResults,
+		Results: make([]metadata.PersonSummary, 0, len(p.Results)),
+	}
+	for i := range p.Results {
+		w := &p.Results[i]
+		ps := metadata.PersonSummary{
+			TMDBID: w.ID, Name: w.Name, ProfilePath: w.ProfilePath, KnownForDepartment: w.KnownForDepartment,
+			Popularity: w.Popularity, Adult: w.Adult,
+		}
+		for j := range w.KnownFor {
+			if k := &w.KnownFor[j]; k.MediaType == "" || k.MediaType == "movie" {
+				ps.KnownFor = append(ps.KnownFor, k.toSummary())
+			}
+		}
+		out.Results = append(out.Results, ps)
+	}
+	return out
+}
+
+func (w *wirePerson) toDetails() *metadata.PersonDetails {
+	return &metadata.PersonDetails{
+		TMDBID: w.ID, IMDbID: w.IMDbID, Name: w.Name, ProfilePath: w.ProfilePath,
+		KnownForDepartment: w.KnownForDepartment, Biography: w.Biography, Birthday: date(w.Birthday),
+		Deathday: date(w.Deathday), PlaceOfBirth: w.PlaceOfBirth, Adult: w.Adult,
+	}
 }

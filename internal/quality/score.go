@@ -7,6 +7,7 @@ type Release struct {
 	Title        string                // raw release title, for title_regex
 	Parsed       *parser.ParsedRelease // must not be nil
 	Size         int64                 // bytes; 0 if unknown
+	Indexer      string                // name of the indexer offering it; "" if unknown
 	IndexerFlags []string              // e.g. "freeleech", "internal"
 }
 

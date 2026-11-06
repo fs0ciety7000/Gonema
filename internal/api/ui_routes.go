@@ -272,6 +272,13 @@ func (s *Server) uiRoutes() {
 	s.historyRoutes()
 	s.discoverRoutes()
 	s.wantedRoute()
+	s.qualityRoutes()
+	s.calendarRoute()
+	s.dashboardRoute()
+	s.setupRoutes()
+	s.peopleRoute()
+	s.paletteRoute()
+	s.historyExportRoute()
 }
 
 // liveIfDownloading reads the live queue only when a row is downloading.

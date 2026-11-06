@@ -439,3 +439,31 @@ func marshal(s string, err error) ([]byte, error) {
 	}
 	return []byte(s), nil
 }
+
+// Known values of the enums, in their text form and declaration order, without
+// the zero value ("unknown", "none" or ""). User interfaces offer them as
+// choices (scoring rule editor); each returns a fresh slice.
+
+// ResolutionValues returns the known resolutions.
+func ResolutionValues() []string { return append([]string(nil), resolutionNames[1:]...) }
+
+// SourceValues returns the known sources.
+func SourceValues() []string { return append([]string(nil), sourceNames[1:]...) }
+
+// ModifierValues returns the known source modifiers.
+func ModifierValues() []string { return append([]string(nil), modifierNames[1:]...) }
+
+// CodecValues returns the known video codecs.
+func CodecValues() []string { return append([]string(nil), codecNames[1:]...) }
+
+// HDRValues returns the known HDR formats.
+func HDRValues() []string { return append([]string(nil), hdrNames[1:]...) }
+
+// AudioValues returns the known audio formats.
+func AudioValues() []string { return append([]string(nil), audioNames[1:]...) }
+
+// LanguageValues returns the known language codes.
+func LanguageValues() []string { return append([]string(nil), languageNames[1:]...) }
+
+// EditionValues returns the known edition flags.
+func EditionValues() []string { return append([]string(nil), editionNames...) }

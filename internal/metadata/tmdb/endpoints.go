@@ -196,6 +196,38 @@ func (c *Client) PersonFilmography(ctx context.Context, personID int) (*metadata
 	return w.toFilmography(personID), nil
 }
 
+// SearchPeople implements metadata.Provider. Adult profiles are excluded.
+func (c *Client) SearchPeople(ctx context.Context, query string, page int) (metadata.Page[metadata.PersonSummary], error) {
+	query = strings.TrimSpace(query)
+	if query == "" || utf8.RuneCountInString(query) > 200 {
+		return metadata.Page[metadata.PersonSummary]{}, fmt.Errorf("%w: search query must be 1 to 200 characters", ErrInvalidArgument)
+	}
+	q := c.langQuery()
+	q.Set("query", query)
+	q.Set("include_adult", "false")
+	q, err := pageQuery(q, page)
+	if err != nil {
+		return metadata.Page[metadata.PersonSummary]{}, err
+	}
+	var w wirePeoplePage
+	if err := c.get(ctx, "/search/person", q, c.cacheTTL, &w); err != nil {
+		return metadata.Page[metadata.PersonSummary]{}, err
+	}
+	return w.toPage(), nil
+}
+
+// Person implements metadata.Provider.
+func (c *Client) Person(ctx context.Context, personID int) (*metadata.PersonDetails, error) {
+	if err := validID("person", personID); err != nil {
+		return nil, err
+	}
+	var w wirePerson
+	if err := c.get(ctx, "/person/"+strconv.Itoa(personID), c.langQuery(), c.cacheTTL, &w); err != nil {
+		return nil, err
+	}
+	return w.toDetails(), nil
+}
+
 // Popular implements metadata.Provider.
 func (c *Client) Popular(ctx context.Context, page int) (metadata.Page[metadata.MovieSummary], error) {
 	return c.list(ctx, "/movie/popular", c.langQuery(), page)

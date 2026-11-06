@@ -9,20 +9,33 @@ import (
 	"context"
 )
 
+const countQualityProfiles = `-- name: CountQualityProfiles :one
+SELECT count(*) FROM quality_profiles
+`
+
+func (q *Queries) CountQualityProfiles(ctx context.Context) (int64, error) {
+	row := q.queryRow(ctx, q.countQualityProfilesStmt, countQualityProfiles)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createQualityProfile = `-- name: CreateQualityProfile :one
-INSERT INTO quality_profiles (name, upgrade_allowed, cutoff_quality, min_score, cutoff_score, min_upgrade_step, languages)
-VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING id, name, upgrade_allowed, cutoff_quality, min_score, cutoff_score, min_upgrade_step, languages
+INSERT INTO quality_profiles (name, upgrade_allowed, cutoff_quality, min_score, cutoff_score, min_upgrade_step, languages, preferred_protocol)
+VALUES (?1, ?2, ?3, ?4, ?5,
+        ?6, ?7, ?8)
+RETURNING id, name, upgrade_allowed, cutoff_quality, min_score, cutoff_score, min_upgrade_step, languages, preferred_protocol
 `
 
 type CreateQualityProfileParams struct {
-	Name           string `json:"name"`
-	UpgradeAllowed bool   `json:"upgradeAllowed"`
-	CutoffQuality  string `json:"cutoffQuality"`
-	MinScore       int64  `json:"minScore"`
-	CutoffScore    int64  `json:"cutoffScore"`
-	MinUpgradeStep int64  `json:"minUpgradeStep"`
-	Languages      string `json:"languages"`
+	Name              string `json:"name"`
+	UpgradeAllowed    bool   `json:"upgradeAllowed"`
+	CutoffQuality     string `json:"cutoffQuality"`
+	MinScore          int64  `json:"minScore"`
+	CutoffScore       int64  `json:"cutoffScore"`
+	MinUpgradeStep    int64  `json:"minUpgradeStep"`
+	Languages         string `json:"languages"`
+	PreferredProtocol string `json:"preferredProtocol"`
 }
 
 func (q *Queries) CreateQualityProfile(ctx context.Context, arg CreateQualityProfileParams) (QualityProfile, error) {
@@ -34,6 +47,7 @@ func (q *Queries) CreateQualityProfile(ctx context.Context, arg CreateQualityPro
 		arg.CutoffScore,
 		arg.MinUpgradeStep,
 		arg.Languages,
+		arg.PreferredProtocol,
 	)
 	var i QualityProfile
 	err := row.Scan(
@@ -45,6 +59,7 @@ func (q *Queries) CreateQualityProfile(ctx context.Context, arg CreateQualityPro
 		&i.CutoffScore,
 		&i.MinUpgradeStep,
 		&i.Languages,
+		&i.PreferredProtocol,
 	)
 	return i, err
 }
@@ -70,8 +85,17 @@ func (q *Queries) DeleteQualityProfileItems(ctx context.Context, profileID int64
 	return err
 }
 
+const deleteQualityProfileSizes = `-- name: DeleteQualityProfileSizes :exec
+DELETE FROM quality_profile_sizes WHERE profile_id = ?
+`
+
+func (q *Queries) DeleteQualityProfileSizes(ctx context.Context, profileID int64) error {
+	_, err := q.exec(ctx, q.deleteQualityProfileSizesStmt, deleteQualityProfileSizes, profileID)
+	return err
+}
+
 const getQualityProfile = `-- name: GetQualityProfile :one
-SELECT id, name, upgrade_allowed, cutoff_quality, min_score, cutoff_score, min_upgrade_step, languages FROM quality_profiles WHERE id = ?
+SELECT id, name, upgrade_allowed, cutoff_quality, min_score, cutoff_score, min_upgrade_step, languages, preferred_protocol FROM quality_profiles WHERE id = ?
 `
 
 func (q *Queries) GetQualityProfile(ctx context.Context, id int64) (QualityProfile, error) {
@@ -86,12 +110,13 @@ func (q *Queries) GetQualityProfile(ctx context.Context, id int64) (QualityProfi
 		&i.CutoffScore,
 		&i.MinUpgradeStep,
 		&i.Languages,
+		&i.PreferredProtocol,
 	)
 	return i, err
 }
 
 const getQualityProfileByName = `-- name: GetQualityProfileByName :one
-SELECT id, name, upgrade_allowed, cutoff_quality, min_score, cutoff_score, min_upgrade_step, languages FROM quality_profiles WHERE name = ?
+SELECT id, name, upgrade_allowed, cutoff_quality, min_score, cutoff_score, min_upgrade_step, languages, preferred_protocol FROM quality_profiles WHERE name = ?
 `
 
 func (q *Queries) GetQualityProfileByName(ctx context.Context, name string) (QualityProfile, error) {
@@ -106,7 +131,30 @@ func (q *Queries) GetQualityProfileByName(ctx context.Context, name string) (Qua
 		&i.CutoffScore,
 		&i.MinUpgradeStep,
 		&i.Languages,
+		&i.PreferredProtocol,
 	)
+	return i, err
+}
+
+const getQualityProfileUsage = `-- name: GetQualityProfileUsage :one
+SELECT
+    (SELECT count(*) FROM movies m WHERE m.quality_profile_id = ?1) AS movies,
+    (SELECT count(*) FROM collections c WHERE c.quality_profile_id = ?1) AS collections,
+    (SELECT count(*) FROM import_lists l WHERE l.quality_profile_id = ?1) AS import_lists
+`
+
+type GetQualityProfileUsageRow struct {
+	Movies      int64 `json:"movies"`
+	Collections int64 `json:"collections"`
+	ImportLists int64 `json:"importLists"`
+}
+
+// GetQualityProfileUsage counts what refers to a profile: a profile in use
+// cannot be deleted.
+func (q *Queries) GetQualityProfileUsage(ctx context.Context, id int64) (GetQualityProfileUsageRow, error) {
+	row := q.queryRow(ctx, q.getQualityProfileUsageStmt, getQualityProfileUsage, id)
+	var i GetQualityProfileUsageRow
+	err := row.Scan(&i.Movies, &i.Collections, &i.ImportLists)
 	return i, err
 }
 
@@ -130,6 +178,30 @@ func (q *Queries) InsertQualityProfileItem(ctx context.Context, arg InsertQualit
 		arg.Position,
 		arg.GroupName,
 		arg.Allowed,
+	)
+	return err
+}
+
+const insertQualityProfileSize = `-- name: InsertQualityProfileSize :exec
+INSERT INTO quality_profile_sizes (profile_id, quality, min_mb_per_min, preferred_mb_per_min, max_mb_per_min)
+VALUES (?1, ?2, ?3, ?4, ?5)
+`
+
+type InsertQualityProfileSizeParams struct {
+	ProfileID         int64   `json:"profileId"`
+	Quality           string  `json:"quality"`
+	MinMbPerMin       float64 `json:"minMbPerMin"`
+	PreferredMbPerMin float64 `json:"preferredMbPerMin"`
+	MaxMbPerMin       float64 `json:"maxMbPerMin"`
+}
+
+func (q *Queries) InsertQualityProfileSize(ctx context.Context, arg InsertQualityProfileSizeParams) error {
+	_, err := q.exec(ctx, q.insertQualityProfileSizeStmt, insertQualityProfileSize,
+		arg.ProfileID,
+		arg.Quality,
+		arg.MinMbPerMin,
+		arg.PreferredMbPerMin,
+		arg.MaxMbPerMin,
 	)
 	return err
 }
@@ -167,8 +239,41 @@ func (q *Queries) ListQualityProfileItems(ctx context.Context, profileID int64) 
 	return items, nil
 }
 
+const listQualityProfileSizes = `-- name: ListQualityProfileSizes :many
+SELECT profile_id, quality, min_mb_per_min, preferred_mb_per_min, max_mb_per_min FROM quality_profile_sizes WHERE profile_id = ? ORDER BY quality
+`
+
+func (q *Queries) ListQualityProfileSizes(ctx context.Context, profileID int64) ([]QualityProfileSize, error) {
+	rows, err := q.query(ctx, q.listQualityProfileSizesStmt, listQualityProfileSizes, profileID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []QualityProfileSize{}
+	for rows.Next() {
+		var i QualityProfileSize
+		if err := rows.Scan(
+			&i.ProfileID,
+			&i.Quality,
+			&i.MinMbPerMin,
+			&i.PreferredMbPerMin,
+			&i.MaxMbPerMin,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listQualityProfiles = `-- name: ListQualityProfiles :many
-SELECT id, name, upgrade_allowed, cutoff_quality, min_score, cutoff_score, min_upgrade_step, languages FROM quality_profiles ORDER BY name
+SELECT id, name, upgrade_allowed, cutoff_quality, min_score, cutoff_score, min_upgrade_step, languages, preferred_protocol FROM quality_profiles ORDER BY name
 `
 
 func (q *Queries) ListQualityProfiles(ctx context.Context) ([]QualityProfile, error) {
@@ -189,6 +294,7 @@ func (q *Queries) ListQualityProfiles(ctx context.Context) ([]QualityProfile, er
 			&i.CutoffScore,
 			&i.MinUpgradeStep,
 			&i.Languages,
+			&i.PreferredProtocol,
 		); err != nil {
 			return nil, err
 		}
@@ -211,20 +317,22 @@ UPDATE quality_profiles SET
     min_score        = ?4,
     cutoff_score     = ?5,
     min_upgrade_step = ?6,
-    languages        = ?7
-WHERE id = ?8
-RETURNING id, name, upgrade_allowed, cutoff_quality, min_score, cutoff_score, min_upgrade_step, languages
+    languages        = ?7,
+    preferred_protocol = ?8
+WHERE id = ?9
+RETURNING id, name, upgrade_allowed, cutoff_quality, min_score, cutoff_score, min_upgrade_step, languages, preferred_protocol
 `
 
 type UpdateQualityProfileParams struct {
-	Name           string `json:"name"`
-	UpgradeAllowed bool   `json:"upgradeAllowed"`
-	CutoffQuality  string `json:"cutoffQuality"`
-	MinScore       int64  `json:"minScore"`
-	CutoffScore    int64  `json:"cutoffScore"`
-	MinUpgradeStep int64  `json:"minUpgradeStep"`
-	Languages      string `json:"languages"`
-	ID             int64  `json:"id"`
+	Name              string `json:"name"`
+	UpgradeAllowed    bool   `json:"upgradeAllowed"`
+	CutoffQuality     string `json:"cutoffQuality"`
+	MinScore          int64  `json:"minScore"`
+	CutoffScore       int64  `json:"cutoffScore"`
+	MinUpgradeStep    int64  `json:"minUpgradeStep"`
+	Languages         string `json:"languages"`
+	PreferredProtocol string `json:"preferredProtocol"`
+	ID                int64  `json:"id"`
 }
 
 func (q *Queries) UpdateQualityProfile(ctx context.Context, arg UpdateQualityProfileParams) (QualityProfile, error) {
@@ -236,6 +344,7 @@ func (q *Queries) UpdateQualityProfile(ctx context.Context, arg UpdateQualityPro
 		arg.CutoffScore,
 		arg.MinUpgradeStep,
 		arg.Languages,
+		arg.PreferredProtocol,
 		arg.ID,
 	)
 	var i QualityProfile
@@ -248,6 +357,7 @@ func (q *Queries) UpdateQualityProfile(ctx context.Context, arg UpdateQualityPro
 		&i.CutoffScore,
 		&i.MinUpgradeStep,
 		&i.Languages,
+		&i.PreferredProtocol,
 	)
 	return i, err
 }

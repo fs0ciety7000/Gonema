@@ -418,21 +418,6 @@ func (s *Server) libraryRoutes() {
 		return nil, nil
 	})
 
-	huma.Register(s.api, huma.Operation{
-		OperationID: "list-quality-profiles", Method: http.MethodGet, Path: "/quality-profiles",
-		Summary: "List quality profiles", Tags: []string{"Quality"},
-	}, func(ctx context.Context, _ *struct{}) (*struct{ Body []QualityProfile }, error) {
-		list, err := s.d.Library.ListQualityProfiles(ctx)
-		if err != nil {
-			return nil, s.problem(ctx, err, false)
-		}
-		out := &struct{ Body []QualityProfile }{make([]QualityProfile, 0, len(list))}
-		for i := range list {
-			out.Body = append(out.Body, qualityProfileOf(&list[i]))
-		}
-		return out, nil
-	})
-
 	setTags := []string{"Settings"}
 	huma.Register(s.api, huma.Operation{
 		OperationID: "get-tmdb-setting", Method: http.MethodGet, Path: "/settings/tmdb",

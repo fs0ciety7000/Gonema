@@ -276,14 +276,15 @@ type ProfileScore struct {
 }
 
 type QualityProfile struct {
-	ID             int64  `json:"id"`
-	Name           string `json:"name"`
-	UpgradeAllowed bool   `json:"upgradeAllowed"`
-	CutoffQuality  string `json:"cutoffQuality"`
-	MinScore       int64  `json:"minScore"`
-	CutoffScore    int64  `json:"cutoffScore"`
-	MinUpgradeStep int64  `json:"minUpgradeStep"`
-	Languages      string `json:"languages"`
+	ID                int64  `json:"id"`
+	Name              string `json:"name"`
+	UpgradeAllowed    bool   `json:"upgradeAllowed"`
+	CutoffQuality     string `json:"cutoffQuality"`
+	MinScore          int64  `json:"minScore"`
+	CutoffScore       int64  `json:"cutoffScore"`
+	MinUpgradeStep    int64  `json:"minUpgradeStep"`
+	Languages         string `json:"languages"`
+	PreferredProtocol string `json:"preferredProtocol"`
 }
 
 type QualityProfileItem struct {
@@ -292,6 +293,14 @@ type QualityProfileItem struct {
 	Position  int64   `json:"position"`
 	GroupName *string `json:"groupName"`
 	Allowed   bool    `json:"allowed"`
+}
+
+type QualityProfileSize struct {
+	ProfileID         int64   `json:"profileId"`
+	Quality           string  `json:"quality"`
+	MinMbPerMin       float64 `json:"minMbPerMin"`
+	PreferredMbPerMin float64 `json:"preferredMbPerMin"`
+	MaxMbPerMin       float64 `json:"maxMbPerMin"`
 }
 
 type QualitySize struct {

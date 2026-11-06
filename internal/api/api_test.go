@@ -7,8 +7,10 @@ import (
 	"encoding/json"
 	"io"
 	"log/slog"
+	"maps"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -32,6 +34,38 @@ type provider struct {
 	popular           []metadata.MovieSummary
 	collections       map[int]*metadata.Collection
 	people            map[int]*metadata.Filmography
+	persons           map[int]*metadata.PersonDetails
+	personsErr        error
+}
+
+func (p *provider) Person(_ context.Context, id int) (*metadata.PersonDetails, error) {
+	if p.personsErr != nil {
+		return nil, p.personsErr
+	}
+	if d, ok := p.persons[id]; ok {
+		return d, nil
+	}
+	return nil, metadata.ErrNotFound
+}
+
+func (p *provider) SearchPeople(_ context.Context, query string, page int) (metadata.Page[metadata.PersonSummary], error) {
+	if p.personsErr != nil {
+		return metadata.Page[metadata.PersonSummary]{}, p.personsErr
+	}
+	var out []metadata.PersonSummary
+	for _, id := range slices.Sorted(maps.Keys(p.persons)) {
+		d := p.persons[id]
+		if strings.Contains(strings.ToLower(d.Name), strings.ToLower(query)) {
+			var known []metadata.MovieSummary
+			for _, m := range p.movies {
+				known = append(known, metadata.MovieSummary{TMDBID: m.TMDBID, Title: m.Title, Year: m.Year})
+			}
+			slices.SortFunc(known, func(a, b metadata.MovieSummary) int { return a.TMDBID - b.TMDBID })
+			out = append(out, metadata.PersonSummary{TMDBID: d.TMDBID, Name: d.Name, ProfilePath: d.ProfilePath,
+				KnownForDepartment: d.KnownForDepartment, KnownFor: known})
+		}
+	}
+	return metadata.Page[metadata.PersonSummary]{Page: max(page, 1), TotalPages: 1, TotalResults: len(out), Results: out}, nil
 }
 
 func (p *provider) Popular(context.Context, int) (metadata.Page[metadata.MovieSummary], error) {

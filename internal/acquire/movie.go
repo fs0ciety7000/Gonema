@@ -22,11 +22,19 @@ type shared struct {
 	sizes    quality.Sizes
 	indexers []db.Indexer
 	profiles map[int64]quality.Profile
-	opts     decision.Options // automatic search options from the settings
+	// overrides are the size limits and preferred protocol of each profile.
+	overrides map[int64]profileOverrides
+	opts      decision.Options // automatic search options from the settings
+}
+
+// profileOverrides are the settings a quality profile overrides.
+type profileOverrides struct {
+	sizes    quality.Sizes // merged with the global limits
+	protocol string        // "" = the global setting
 }
 
 func (s *Service) loadShared(ctx context.Context) (*shared, error) {
-	sh := &shared{profiles: make(map[int64]quality.Profile), opts: s.searchOptions(ctx, false)}
+	sh := &shared{profiles: make(map[int64]quality.Profile), overrides: make(map[int64]profileOverrides), opts: s.searchOptions(ctx, false)}
 	err := s.st.ReadTx(ctx, func(q *db.Queries) error {
 		var err error
 		if sh.rules, err = library.LoadScoringRules(ctx, q); err != nil {
@@ -101,6 +109,15 @@ func (s *Service) loadMovie(ctx context.Context, movieID int64, sh *shared, opts
 				return err
 			}
 			sh.profiles[mc.row.QualityProfileID] = p
+			sizes, proto, err := library.LoadProfileOverrides(ctx, q, mc.row.QualityProfileID)
+			if err != nil {
+				return err
+			}
+			ov := profileOverrides{sizes: sh.sizes, protocol: proto}
+			if len(sizes) > 0 {
+				ov.sizes = library.EffectiveSizes(sh.sizes, sizes)
+			}
+			sh.overrides[mc.row.QualityProfileID] = ov
 		}
 		return nil
 	})
@@ -128,7 +145,8 @@ func (s *Service) loadMovie(ctx context.Context, movieID int64, sh *shared, opts
 	mc.cfg.Movie.PhysicalRelease = date(m.ReleasePhysical)
 
 	mc.cfg.Profile = sh.profiles[m.QualityProfileID]
-	mc.cfg.Rules, mc.cfg.Sizes = sh.rules, sh.sizes
+	ov := sh.overrides[m.QualityProfileID]
+	mc.cfg.Rules, mc.cfg.Sizes = sh.rules, ov.sizes
 	if file != nil {
 		cur := &decision.CurrentFile{FileQuality: decision.FileQuality{
 			Quality: quality.ID(file.Quality), Revision: parser.Revision{Version: int(file.Revision)},
@@ -155,6 +173,9 @@ func (s *Service) loadMovie(ctx context.Context, movieID int64, sh *shared, opts
 		}
 	}
 	mc.cfg.Options = opts
+	if ov.protocol != "" {
+		mc.cfg.Options.PreferredProtocol = decision.Protocol(ov.protocol)
+	}
 	if mc.cfg.Options.Now.IsZero() {
 		mc.cfg.Options.Now = s.now()
 	}

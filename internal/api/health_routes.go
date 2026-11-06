@@ -14,6 +14,7 @@ import (
 // RegisterHealthRoutes adds the health endpoints: current issues, checks run
 // on demand, and the thresholds. Call it once, after New and before serving.
 func (s *Server) RegisterHealthRoutes(h *health.Scheduler, settings health.SettingsStore) {
+	s.health = h
 	tags := []string{"Health"}
 	huma.Register(s.api, huma.Operation{
 		OperationID: "list-health-issues", Method: http.MethodGet, Path: "/health/issues", Summary: "Current health issues",

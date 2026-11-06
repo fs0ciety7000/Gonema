@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -202,7 +203,8 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, getenv fun
 	registerIntegrationChecks(checks, notes, media)
 	srv := newAPI(api.Deps{
 		Library: lib, Acquire: acq, Jobs: runner, Bus: bus, Store: st, Logger: log, Version: version,
-		StartedAt: start, DataDir: cfg.DataDir, BaseURL: cfg.BaseURL, Images: imageStore, UI: ui,
+		StartedAt: start, DataDir: cfg.DataDir, BaseURL: cfg.BaseURL, Bind: cfg.Bind, LogLevel: strings.ToLower(cfg.LogLevel.String()),
+		Images: imageStore, UI: ui,
 	}, imp, notes, media, checks, healthSettings)
 	httpSrv := &http.Server{
 		Handler:           srv.Handler(),

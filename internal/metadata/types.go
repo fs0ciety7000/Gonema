@@ -136,6 +136,31 @@ type Person struct {
 	KnownForDepartment string `json:"knownForDepartment,omitempty"`
 }
 
+// PersonSummary is a person as returned by a people search.
+type PersonSummary struct {
+	TMDBID             int            `json:"tmdbId"`
+	Name               string         `json:"name"`
+	ProfilePath        string         `json:"profilePath,omitempty"` // provider path
+	KnownForDepartment string         `json:"knownForDepartment,omitempty"`
+	Popularity         float64        `json:"popularity,omitempty"`
+	Adult              bool           `json:"adult,omitempty"`
+	KnownFor           []MovieSummary `json:"knownFor,omitempty"` // movies only, provider order
+}
+
+// PersonDetails is the profile of a person.
+type PersonDetails struct {
+	TMDBID             int    `json:"tmdbId"`
+	IMDbID             string `json:"imdbId,omitempty"`
+	Name               string `json:"name"`
+	ProfilePath        string `json:"profilePath,omitempty"`
+	KnownForDepartment string `json:"knownForDepartment,omitempty"`
+	Biography          string `json:"biography,omitempty"`
+	Birthday           Date   `json:"birthday,omitzero"`
+	Deathday           Date   `json:"deathday,omitzero"`
+	PlaceOfBirth       string `json:"placeOfBirth,omitempty"`
+	Adult              bool   `json:"adult,omitempty"`
+}
+
 // Credit is a person's part in a movie: Character for cast, Job and Department
 // for crew.
 type Credit struct {
@@ -230,6 +255,10 @@ type Provider interface {
 	Collection(ctx context.Context, tmdbID int) (*Collection, error)
 	// PersonFilmography returns the movies a person played in or worked on.
 	PersonFilmography(ctx context.Context, personID int) (*Filmography, error)
+	// SearchPeople looks people up by name.
+	SearchPeople(ctx context.Context, query string, page int) (Page[PersonSummary], error)
+	// Person returns the profile of a person.
+	Person(ctx context.Context, personID int) (*PersonDetails, error)
 
 	Popular(ctx context.Context, page int) (Page[MovieSummary], error)
 	Trending(ctx context.Context, window TrendingWindow, page int) (Page[MovieSummary], error)

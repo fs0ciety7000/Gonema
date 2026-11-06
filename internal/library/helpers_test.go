@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"maps"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"testing/fstest"
@@ -29,6 +30,8 @@ type fakeProvider struct {
 	collections map[int]*metadata.Collection
 	lists       map[string][]metadata.MovieSummary // discover lists: popular, trending-day, trending-week, upcoming, now_playing
 	people      map[int]*metadata.Filmography
+	persons     map[int]*metadata.PersonDetails
+	knownFor    map[int][]metadata.MovieSummary
 	calls       map[string]int
 	validateErr error
 }
@@ -37,6 +40,7 @@ func newFakeProvider() *fakeProvider {
 	return &fakeProvider{
 		movies: map[int]*metadata.Movie{}, collections: map[int]*metadata.Collection{}, calls: map[string]int{},
 		lists: map[string][]metadata.MovieSummary{}, people: map[int]*metadata.Filmography{},
+		persons: map[int]*metadata.PersonDetails{}, knownFor: map[int][]metadata.MovieSummary{},
 	}
 }
 
@@ -107,6 +111,32 @@ func (p *fakeProvider) PersonFilmography(_ context.Context, id int) (*metadata.F
 		return nil, metadata.ErrNotFound
 	}
 	return f, nil
+}
+
+func (p *fakeProvider) SearchPeople(_ context.Context, query string, page int) (metadata.Page[metadata.PersonSummary], error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.calls["SearchPeople"]++
+	var out []metadata.PersonSummary
+	for _, id := range slices.Sorted(maps.Keys(p.persons)) {
+		if d := p.persons[id]; strings.Contains(strings.ToLower(d.Name), strings.ToLower(query)) {
+			out = append(out, metadata.PersonSummary{TMDBID: d.TMDBID, Name: d.Name, ProfilePath: d.ProfilePath,
+				KnownForDepartment: d.KnownForDepartment, Adult: d.Adult, KnownFor: p.knownFor[id]})
+		}
+	}
+	return metadata.Page[metadata.PersonSummary]{Page: max(page, 1), TotalPages: 1, TotalResults: len(out), Results: out}, nil
+}
+
+func (p *fakeProvider) Person(_ context.Context, id int) (*metadata.PersonDetails, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.calls["Person"]++
+	d, ok := p.persons[id]
+	if !ok {
+		return nil, metadata.ErrNotFound
+	}
+	c := *d
+	return &c, nil
 }
 
 func (p *fakeProvider) list(name string, page int) (metadata.Page[metadata.MovieSummary], error) {
@@ -220,7 +250,7 @@ type env struct {
 	now  *time.Time
 }
 
-func newEnv(t *testing.T) *env {
+func newEnv(t testing.TB) *env {
 	t.Helper()
 	st := storetest.New(t)
 	key, err := secretbox.NewKey()

@@ -25,8 +25,13 @@ type Querier interface {
 	// CountGrabsSince counts the grabs of a movie since a time: the daily budget of
 	// attempts (automatic retries stop once it is spent).
 	CountGrabsSince(ctx context.Context, arg CountGrabsSinceParams) (int64, error)
+	// ----------------------------------------------------------------- dashboard
+	// CountHistoryEventsSince counts the history rows of some events (a JSON
+	// array) at or after a time.
+	CountHistoryEventsSince(ctx context.Context, arg CountHistoryEventsSinceParams) ([]CountHistoryEventsSinceRow, error)
 	CountMovies(ctx context.Context) (int64, error)
 	CountMoviesInRootFolder(ctx context.Context, rootFolderID int64) (int64, error)
+	CountQualityProfiles(ctx context.Context) (int64, error)
 	// Queries of the acquisition service (internal/acquire) and of the scoring
 	// rules seeding (internal/library).
 	// ----------------------------------------------------------------- scoring
@@ -58,11 +63,15 @@ type Querier interface {
 	DeleteMovie(ctx context.Context, id int64) (int64, error)
 	DeleteMovieFile(ctx context.Context, movieID int64) (int64, error)
 	DeleteNotification(ctx context.Context, id int64) (int64, error)
+	DeleteProfileScore(ctx context.Context, arg DeleteProfileScoreParams) error
 	DeleteQualityProfile(ctx context.Context, id int64) (int64, error)
 	DeleteQualityProfileItems(ctx context.Context, profileID int64) error
+	DeleteQualityProfileSizes(ctx context.Context, profileID int64) error
 	DeleteRemotePathMapping(ctx context.Context, id int64) (int64, error)
 	DeleteRootFolder(ctx context.Context, id int64) (int64, error)
 	DeleteSavedView(ctx context.Context, id int64) (int64, error)
+	DeleteScoringConditions(ctx context.Context, ruleID int64) error
+	DeleteScoringRule(ctx context.Context, id int64) (int64, error)
 	DeleteSetting(ctx context.Context, key string) (int64, error)
 	DeleteTag(ctx context.Context, id int64) (int64, error)
 	// EnqueueJob inserts a pending job. With a dedupe_key that an active (pending or
@@ -81,6 +90,7 @@ type Querier interface {
 	GetDownloadClient(ctx context.Context, id int64) (DownloadClient, error)
 	GetIndexer(ctx context.Context, id int64) (Indexer, error)
 	GetJob(ctx context.Context, id int64) (Job, error)
+	GetLastRSSSync(ctx context.Context) (int64, error)
 	// GetLibraryVersion is bumped by triggers on every change ListLibraryIndex
 	// can see (migration 00004).
 	GetLibraryVersion(ctx context.Context) (int64, error)
@@ -93,11 +103,20 @@ type Querier interface {
 	GetNotification(ctx context.Context, id int64) (Notification, error)
 	GetQualityProfile(ctx context.Context, id int64) (QualityProfile, error)
 	GetQualityProfileByName(ctx context.Context, name string) (QualityProfile, error)
+	// GetQualityProfileUsage counts what refers to a profile: a profile in use
+	// cannot be deleted.
+	GetQualityProfileUsage(ctx context.Context, id int64) (GetQualityProfileUsageRow, error)
 	GetRSSState(ctx context.Context, indexerID int64) (RssState, error)
 	GetRemotePathMapping(ctx context.Context, id int64) (RemotePathMapping, error)
 	GetRootFolder(ctx context.Context, id int64) (RootFolder, error)
 	GetSavedView(ctx context.Context, id int64) (SavedView, error)
+	// Queries of the web UI lot 3: scoring rule editor, file rescoring, home
+	// dashboard and onboarding.
+	// ----------------------------------------------------------------- scoring rules
+	GetScoringRule(ctx context.Context, id int64) (ScoringRule, error)
 	GetSetting(ctx context.Context, key string) (string, error)
+	// ----------------------------------------------------------------- onboarding
+	GetSetupCounts(ctx context.Context) (GetSetupCountsRow, error)
 	GetTag(ctx context.Context, id int64) (Tag, error)
 	GetTagByLabel(ctx context.Context, label string) (Tag, error)
 	InsertAlternateTitle(ctx context.Context, arg InsertAlternateTitleParams) (AlternateTitle, error)
@@ -107,6 +126,7 @@ type Querier interface {
 	InsertDownload(ctx context.Context, arg InsertDownloadParams) (Download, error)
 	InsertMovie(ctx context.Context, arg InsertMovieParams) (Movie, error)
 	InsertQualityProfileItem(ctx context.Context, arg InsertQualityProfileItemParams) error
+	InsertQualityProfileSize(ctx context.Context, arg InsertQualityProfileSizeParams) error
 	InsertScoringCondition(ctx context.Context, arg InsertScoringConditionParams) error
 	IsImportListExcluded(ctx context.Context, tmdbID int64) (bool, error)
 	// ----------------------------------------------------------------- event context
@@ -116,6 +136,7 @@ type Querier interface {
 	// ListActiveDownloads returns the downloads the queue tracker follows.
 	ListActiveDownloads(ctx context.Context) ([]Download, error)
 	ListAllMovieTags(ctx context.Context) ([]MovieTag, error)
+	ListAllProfileScores(ctx context.Context) ([]ProfileScore, error)
 	ListAlternateTitles(ctx context.Context, movieID int64) ([]AlternateTitle, error)
 	// ListBlocklist is keyset-paginated, newest first: pass the last id of the
 	// previous page, or math.MaxInt64 first. NULL filters are ignored.
@@ -169,6 +190,9 @@ type Querier interface {
 	ListMatcherTitles(ctx context.Context) ([]ListMatcherTitlesRow, error)
 	ListMediaServers(ctx context.Context) ([]MediaServer, error)
 	ListMovieDownloads(ctx context.Context, movieID int64) ([]Download, error)
+	// ListMovieFilesForScoring returns what scoring a file needs: its release
+	// name, parsed release, size and the profile of its movie.
+	ListMovieFilesForScoring(ctx context.Context) ([]ListMovieFilesForScoringRow, error)
 	// ListMovieHistory is keyset-paginated, newest first: pass the last id of the
 	// previous page, or math.MaxInt64 first.
 	ListMovieHistory(ctx context.Context, arg ListMovieHistoryParams) ([]History, error)
@@ -190,6 +214,7 @@ type Querier interface {
 	ListNotifications(ctx context.Context) ([]Notification, error)
 	ListProfileScores(ctx context.Context, profileID int64) ([]ListProfileScoresRow, error)
 	ListQualityProfileItems(ctx context.Context, profileID int64) ([]QualityProfileItem, error)
+	ListQualityProfileSizes(ctx context.Context, profileID int64) ([]QualityProfileSize, error)
 	ListQualityProfiles(ctx context.Context) ([]QualityProfile, error)
 	ListQualitySizes(ctx context.Context) ([]QualitySize, error)
 	// ----------------------------------------------------------------- queue
@@ -268,6 +293,7 @@ type Querier interface {
 	UpdateIndexer(ctx context.Context, arg UpdateIndexerParams) (Indexer, error)
 	UpdateIndexerHealth(ctx context.Context, arg UpdateIndexerHealthParams) (int64, error)
 	UpdateMediaServer(ctx context.Context, arg UpdateMediaServerParams) (MediaServer, error)
+	UpdateMovieFileScore(ctx context.Context, arg UpdateMovieFileScoreParams) (int64, error)
 	UpdateMovieMetadata(ctx context.Context, arg UpdateMovieMetadataParams) (Movie, error)
 	UpdateMovieSettings(ctx context.Context, arg UpdateMovieSettingsParams) (Movie, error)
 	UpdateNotification(ctx context.Context, arg UpdateNotificationParams) (Notification, error)
@@ -276,6 +302,7 @@ type Querier interface {
 	UpdateRootFolderPath(ctx context.Context, arg UpdateRootFolderPathParams) (RootFolder, error)
 	UpdateRootFolderSpace(ctx context.Context, arg UpdateRootFolderSpaceParams) (int64, error)
 	UpdateSavedView(ctx context.Context, arg UpdateSavedViewParams) (SavedView, error)
+	UpdateScoringRule(ctx context.Context, arg UpdateScoringRuleParams) (ScoringRule, error)
 	// UpsertCollection refreshes TMDB fields; user settings are kept on conflict.
 	UpsertCollection(ctx context.Context, arg UpsertCollectionParams) (Collection, error)
 	// UpsertMovie inserts a movie or, when tmdb_id exists, refreshes its metadata

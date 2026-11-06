@@ -547,6 +547,165 @@
         },
         "type": "object"
       },
+      "CalendarEvent": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD",
+            "type": "string"
+          },
+          "movie": {
+            "$ref": "#/components/schemas/CalendarMovie"
+          },
+          "note": {
+            "description": "What Gonema does about it, in plain language",
+            "type": "string"
+          },
+          "searchable": {
+            "description": "This release meets the movie's minimum availability: Gonema searches from this date (monitored movies)",
+            "type": "boolean"
+          },
+          "type": {
+            "enum": [
+              "cinema",
+              "digital",
+              "physical"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "type",
+          "searchable",
+          "note",
+          "movie"
+        ],
+        "type": "object"
+      },
+      "CalendarMovie": {
+        "additionalProperties": false,
+        "properties": {
+          "dominantColor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hasFile": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "minimumAvailability": {
+            "enum": [
+              "announced",
+              "in_cinemas",
+              "released"
+            ],
+            "type": "string"
+          },
+          "monitored": {
+            "type": "boolean"
+          },
+          "posterUrl": {
+            "description": "w342",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quality": {
+            "description": "Quality id of the file; null without a file",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "qualityName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "description": "Library state",
+            "enum": [
+              "available",
+              "missing",
+              "downloading",
+              "upgradable"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "description": "Release stage",
+            "enum": [
+              "announced",
+              "in_cinemas",
+              "released",
+              "deleted"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "tmdbId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "year": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "tmdbId",
+          "title",
+          "year",
+          "posterUrl",
+          "dominantColor",
+          "monitored",
+          "hasFile",
+          "state",
+          "status",
+          "minimumAvailability",
+          "quality",
+          "qualityName"
+        ],
+        "type": "object"
+      },
+      "CalendarPage": {
+        "additionalProperties": false,
+        "properties": {
+          "end": {
+            "type": "string"
+          },
+          "events": {
+            "description": "By date, then cinema, digital, physical, then title",
+            "items": {
+              "$ref": "#/components/schemas/CalendarEvent"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "start": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "events"
+        ],
+        "type": "object"
+      },
       "Candidate": {
         "additionalProperties": false,
         "properties": {
@@ -649,6 +808,61 @@
         },
         "required": [
           "failureCount"
+        ],
+        "type": "object"
+      },
+      "ClientPauseResult": {
+        "additionalProperties": false,
+        "properties": {
+          "changed": {
+            "description": "Downloads paused or resumed",
+            "format": "int64",
+            "type": "integer"
+          },
+          "clientId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "errors": {
+            "description": "Why downloads failed, at most 5",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "failed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "sabnzbd",
+              "nzbget",
+              "qbittorrent",
+              "deluge",
+              "transmission"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "supported": {
+            "description": "The client can pause and resume single downloads; only Gonema's downloads are touched",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "clientId",
+          "name",
+          "kind",
+          "supported",
+          "changed",
+          "failed",
+          "errors"
         ],
         "type": "object"
       },
@@ -840,6 +1054,455 @@
           "monitored",
           "posterUrl",
           "inLibrary"
+        ],
+        "type": "object"
+      },
+      "ConditionKindInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "input": {
+            "enum": [
+              "choice",
+              "text",
+              "regex",
+              "range"
+            ],
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "unit": {
+            "description": "range only: GB or year",
+            "type": "string"
+          },
+          "values": {
+            "description": "Choices of a choice input",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "label",
+          "input",
+          "values"
+        ],
+        "type": "object"
+      },
+      "Dashboard": {
+        "additionalProperties": false,
+        "properties": {
+          "clients": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceStatus"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "disks": {
+            "items": {
+              "$ref": "#/components/schemas/DiskUsage"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "generatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "health": {
+            "$ref": "#/components/schemas/DashboardHealth"
+          },
+          "indexers": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceStatus"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "lastRssSync": {
+            "description": "null before the first sync",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "library": {
+            "$ref": "#/components/schemas/LibraryStats"
+          },
+          "queue": {
+            "$ref": "#/components/schemas/DashboardQueue"
+          },
+          "recentActivity": {
+            "description": "Latest grabs, imports, upgrades and failures (8)",
+            "items": {
+              "$ref": "#/components/schemas/HistoryRow"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "recentlyAdded": {
+            "description": "Latest additions (12)",
+            "items": {
+              "$ref": "#/components/schemas/DashboardMovie"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "thisMonth": {
+            "$ref": "#/components/schemas/DashboardMonth"
+          },
+          "upcoming": {
+            "description": "Next releases of monitored movies (60 days, at most 6)",
+            "items": {
+              "$ref": "#/components/schemas/CalendarEvent"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "wanted": {
+            "$ref": "#/components/schemas/DashboardWanted"
+          }
+        },
+        "required": [
+          "generatedAt",
+          "library",
+          "wanted",
+          "thisMonth",
+          "queue",
+          "upcoming",
+          "disks",
+          "recentActivity",
+          "recentlyAdded",
+          "health",
+          "indexers",
+          "clients",
+          "lastRssSync"
+        ],
+        "type": "object"
+      },
+      "DashboardHealth": {
+        "additionalProperties": false,
+        "properties": {
+          "errors": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "issues": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "top": {
+            "description": "The 3 most urgent issues",
+            "items": {
+              "$ref": "#/components/schemas/HealthIssue"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "warnings": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "issues",
+          "errors",
+          "warnings",
+          "top"
+        ],
+        "type": "object"
+      },
+      "DashboardMonth": {
+        "additionalProperties": false,
+        "properties": {
+          "added": {
+            "description": "Movies added to the library",
+            "format": "int64",
+            "type": "integer"
+          },
+          "imported": {
+            "description": "Files imported (first file of a movie)",
+            "format": "int64",
+            "type": "integer"
+          },
+          "since": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "upgraded": {
+            "description": "Files replaced by a better one",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "since",
+          "added",
+          "imported",
+          "upgraded"
+        ],
+        "type": "object"
+      },
+      "DashboardMovie": {
+        "additionalProperties": false,
+        "properties": {
+          "addedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "dominantColor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "monitored": {
+            "type": "boolean"
+          },
+          "posterUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "year",
+          "posterUrl",
+          "dominantColor",
+          "state",
+          "monitored",
+          "addedAt"
+        ],
+        "type": "object"
+      },
+      "DashboardQueue": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "description": "Active queue entries",
+            "format": "int64",
+            "type": "integer"
+          },
+          "downloading": {
+            "description": "Entries transferring now",
+            "format": "int64",
+            "type": "integer"
+          },
+          "etaSeconds": {
+            "description": "Longest remaining time among the downloading entries",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "items": {
+            "description": "Up to 5: downloading first, then importing, queued, paused, warnings",
+            "items": {
+              "$ref": "#/components/schemas/DashboardQueueItem"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "paused": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "remainingBytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalSpeedBps": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "warnings": {
+            "description": "Entries with a warning",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "remainingBytes",
+          "items",
+          "count",
+          "downloading",
+          "paused",
+          "warnings",
+          "totalSpeedBps",
+          "etaSeconds"
+        ],
+        "type": "object"
+      },
+      "DashboardQueueItem": {
+        "additionalProperties": false,
+        "properties": {
+          "client": {
+            "type": "string"
+          },
+          "dominantColor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "etaSeconds": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "Queue entry id",
+            "format": "int64",
+            "type": "integer"
+          },
+          "movieId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "posterUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "progress": {
+            "format": "double",
+            "type": "number"
+          },
+          "release": {
+            "type": "string"
+          },
+          "size": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "speedBps": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "downloading",
+              "paused",
+              "completed",
+              "importing",
+              "imported",
+              "failed",
+              "warning",
+              "removed"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "description": "Movie title",
+            "type": "string"
+          },
+          "year": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "movieId",
+          "title",
+          "year",
+          "posterUrl",
+          "dominantColor",
+          "release",
+          "status",
+          "progress",
+          "speedBps",
+          "etaSeconds",
+          "client",
+          "size"
+        ],
+        "type": "object"
+      },
+      "DashboardWanted": {
+        "additionalProperties": false,
+        "properties": {
+          "cutoffUnmet": {
+            "description": "Have a file below the profile's cutoff",
+            "format": "int64",
+            "type": "integer"
+          },
+          "notYetReleased": {
+            "description": "Waiting for their release",
+            "format": "int64",
+            "type": "integer"
+          },
+          "released": {
+            "description": "Released enough for their minimum availability: Gonema searches for them",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "released",
+          "notYetReleased",
+          "cutoffUnmet"
+        ],
+        "type": "object"
+      },
+      "Delete-scoring-ruleResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "rescoredFiles": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rescoredFiles"
         ],
         "type": "object"
       },
@@ -1148,6 +1811,80 @@
           "totalPages",
           "totalResults",
           "results"
+        ],
+        "type": "object"
+      },
+      "DiskUsage": {
+        "additionalProperties": false,
+        "properties": {
+          "accessible": {
+            "type": "boolean"
+          },
+          "averageFileSize": {
+            "description": "null without files",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "error": {
+            "type": "string"
+          },
+          "files": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "freeSpace": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "movies": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "path": {
+            "type": "string"
+          },
+          "roomForFilms": {
+            "description": "Free space / average file size; null when unknown",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "rootFolderId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sizeOnDisk": {
+            "description": "Bytes of the library files in this folder",
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalSpace": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "rootFolderId",
+          "path",
+          "freeSpace",
+          "totalSpace",
+          "accessible",
+          "movies",
+          "files",
+          "sizeOnDisk",
+          "averageFileSize",
+          "roomForFilms"
         ],
         "type": "object"
       },
@@ -1607,6 +2344,10 @@
               "null"
             ]
           },
+          "person": {
+            "$ref": "#/components/schemas/PersonProfile",
+            "description": "Name, portrait and biography; null when TMDB could not give them (the movies are still listed)"
+          },
           "tmdbId": {
             "format": "int64",
             "type": "integer"
@@ -1614,7 +2355,56 @@
         },
         "required": [
           "tmdbId",
+          "person",
           "movies"
+        ],
+        "type": "object"
+      },
+      "GeneralSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "server": {
+            "$ref": "#/components/schemas/GeneralSettingsServerStruct",
+            "description": "Read-only here: change them in the environment and restart"
+          },
+          "ui": {
+            "$ref": "#/components/schemas/UIPreferences"
+          }
+        },
+        "required": [
+          "server",
+          "ui"
+        ],
+        "type": "object"
+      },
+      "GeneralSettingsServerStruct": {
+        "additionalProperties": false,
+        "properties": {
+          "baseUrl": {
+            "description": "URL base path (GONEMA_BASE_URL)",
+            "type": "string"
+          },
+          "bind": {
+            "description": "Listening address (GONEMA_BIND)",
+            "type": "string"
+          },
+          "dataDir": {
+            "type": "string"
+          },
+          "logLevel": {
+            "description": "GONEMA_LOG_LEVEL",
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bind",
+          "baseUrl",
+          "dataDir",
+          "logLevel",
+          "version"
         ],
         "type": "object"
       },
@@ -2794,6 +3584,34 @@
           "imported",
           "upgraded",
           "reason"
+        ],
+        "type": "object"
+      },
+      "Match-scoring-ruleRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/ScoringCondition"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "limit": {
+            "default": 12,
+            "description": "Movies returned",
+            "format": "int64",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "conditions"
         ],
         "type": "object"
       },
@@ -4840,6 +5658,192 @@
         ],
         "type": "object"
       },
+      "PaletteFilm": {
+        "additionalProperties": false,
+        "properties": {
+          "dominantColor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "field": {
+            "description": "Field that matched",
+            "enum": [
+              "title",
+              "originalTitle"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "match": {
+            "description": "How it matched, best first",
+            "enum": [
+              "prefix",
+              "word",
+              "substring",
+              "words",
+              "fuzzy"
+            ],
+            "type": "string"
+          },
+          "monitored": {
+            "type": "boolean"
+          },
+          "originalTitle": {
+            "type": "string"
+          },
+          "posterUrl": {
+            "description": "w342",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quality": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "qualityName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ranges": {
+            "description": "Matched characters of field as [start, end) pairs in Unicode code points, to highlight",
+            "items": {
+              "items": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "state": {
+            "enum": [
+              "available",
+              "missing",
+              "downloading",
+              "upgradable"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "tmdbId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "year": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "tmdbId",
+          "title",
+          "originalTitle",
+          "year",
+          "posterUrl",
+          "dominantColor",
+          "state",
+          "monitored",
+          "quality",
+          "qualityName",
+          "field",
+          "match",
+          "ranges"
+        ],
+        "type": "object"
+      },
+      "PaletteRemote": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "description": "Why TMDB results are missing (no key, timeout...); library hits are still returned",
+            "type": "string"
+          },
+          "movies": {
+            "description": "TMDB movies, flagged when in the library",
+            "items": {
+              "$ref": "#/components/schemas/DiscoverMovie"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/PersonResult"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "movies",
+          "people"
+        ],
+        "type": "object"
+      },
+      "PaletteResult": {
+        "additionalProperties": false,
+        "properties": {
+          "films": {
+            "description": "Library movies, best match first",
+            "items": {
+              "$ref": "#/components/schemas/PaletteFilm"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "filmsTotal": {
+            "description": "Library movies matching, beyond the limit",
+            "format": "int64",
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          },
+          "remote": {
+            "$ref": "#/components/schemas/PaletteRemote",
+            "description": "TMDB results; null unless remote=true and the query has 3 characters or more"
+          },
+          "tookMicros": {
+            "description": "Time spent on the library hits",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "query",
+          "films",
+          "filmsTotal",
+          "remote",
+          "tookMicros"
+        ],
+        "type": "object"
+      },
       "ParsedRelease": {
         "additionalProperties": false,
         "properties": {
@@ -4951,6 +5955,79 @@
         },
         "required": [
           "revision"
+        ],
+        "type": "object"
+      },
+      "PauseAllResult": {
+        "additionalProperties": false,
+        "properties": {
+          "changed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "clients": {
+            "description": "Per download client with active downloads, by name",
+            "items": {
+              "$ref": "#/components/schemas/ClientPauseResult"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "failed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "paused": {
+            "description": "true for pause, false for resume",
+            "type": "boolean"
+          },
+          "skipped": {
+            "description": "Downloads already in that state, importing, failed to import, or without a client",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "paused",
+          "changed",
+          "failed",
+          "skipped",
+          "clients"
+        ],
+        "type": "object"
+      },
+      "PeoplePage": {
+        "additionalProperties": false,
+        "properties": {
+          "page": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/PersonResult"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "totalPages": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalResults": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "page",
+          "totalPages",
+          "totalResults",
+          "results"
         ],
         "type": "object"
       },
@@ -5123,6 +6200,103 @@
         ],
         "type": "object"
       },
+      "PersonProfile": {
+        "additionalProperties": false,
+        "properties": {
+          "biography": {
+            "type": "string"
+          },
+          "birthday": {
+            "description": "YYYY-MM-DD",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "deathday": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "imdbId": {
+            "type": "string"
+          },
+          "knownForDepartment": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "placeOfBirth": {
+            "type": "string"
+          },
+          "profileUrl": {
+            "description": "w185",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tmdbId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tmdbId",
+          "name",
+          "profileUrl",
+          "birthday",
+          "deathday"
+        ],
+        "type": "object"
+      },
+      "PersonResult": {
+        "additionalProperties": false,
+        "properties": {
+          "knownFor": {
+            "description": "Movies they are known for, flagged when in the library",
+            "items": {
+              "$ref": "#/components/schemas/DiscoverMovie"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "knownForDepartment": {
+            "description": "Acting, Directing...",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "popularity": {
+            "format": "double",
+            "type": "number"
+          },
+          "profileUrl": {
+            "description": "Portrait at w185, through the image cache",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tmdbId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tmdbId",
+          "name",
+          "profileUrl",
+          "popularity",
+          "knownFor"
+        ],
+        "type": "object"
+      },
       "Plan": {
         "additionalProperties": false,
         "properties": {
@@ -5221,6 +6395,216 @@
         ],
         "type": "object"
       },
+      "Preview": {
+        "additionalProperties": false,
+        "properties": {
+          "cutoffLabel": {
+            "type": "string"
+          },
+          "cutoffRank": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "cutoffScore": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "decision": {
+            "$ref": "#/components/schemas/PreviewDecision",
+            "description": "Only with movieId"
+          },
+          "meetsCutoff": {
+            "description": "A file like this one would end the upgrades: cutoff quality and cutoff score reached",
+            "type": "boolean"
+          },
+          "minScore": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "parseMicros": {
+            "description": "Time the parser took, in microseconds",
+            "format": "double",
+            "type": "number"
+          },
+          "parsed": {
+            "$ref": "#/components/schemas/ParsedRelease"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "profileId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "quality": {
+            "type": "string"
+          },
+          "qualityAllowed": {
+            "description": "The profile allows this quality",
+            "type": "boolean"
+          },
+          "qualityName": {
+            "type": "string"
+          },
+          "qualityRank": {
+            "description": "Rank in the profile, higher is better; 0 when absent",
+            "format": "int64",
+            "type": "integer"
+          },
+          "score": {
+            "$ref": "#/components/schemas/Breakdown",
+            "description": "Matched rules and their scores in this profile"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "parsed",
+          "parseMicros",
+          "quality",
+          "qualityName",
+          "profileId",
+          "profile",
+          "qualityAllowed",
+          "qualityRank",
+          "cutoffRank",
+          "cutoffLabel",
+          "meetsCutoff",
+          "minScore",
+          "cutoffScore",
+          "score",
+          "decision"
+        ],
+        "type": "object"
+      },
+      "PreviewDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "currentFile": {
+            "$ref": "#/components/schemas/PreviewFile",
+            "description": "null when the movie has no file"
+          },
+          "movieId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "movieTitle": {
+            "type": "string"
+          },
+          "notes": {
+            "description": "Checks that were skipped (size unknown...)",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "rejections": {
+            "items": {
+              "$ref": "#/components/schemas/Rejection"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "upgrade": {
+            "$ref": "#/components/schemas/UpgradeInfo",
+            "description": "Set when the release would replace the file on disk"
+          }
+        },
+        "required": [
+          "movieId",
+          "movieTitle",
+          "accepted",
+          "rejections",
+          "currentFile"
+        ],
+        "type": "object"
+      },
+      "PreviewFile": {
+        "additionalProperties": false,
+        "properties": {
+          "customScore": {
+            "description": "Stored score of the file",
+            "format": "int64",
+            "type": "integer"
+          },
+          "quality": {
+            "type": "string"
+          },
+          "qualityName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "quality",
+          "qualityName",
+          "customScore"
+        ],
+        "type": "object"
+      },
+      "PreviewInput": {
+        "additionalProperties": false,
+        "properties": {
+          "indexer": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "indexerFlags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "movieId": {
+            "description": "Also decide against this movie and its file",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "profileId": {
+            "description": "Profile to score with; default the movie's",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "protocol": {
+            "default": "usenet",
+            "enum": [
+              "usenet",
+              "torrent"
+            ],
+            "type": "string"
+          },
+          "size": {
+            "description": "Bytes, for size rules and limits",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "type": "object"
+      },
       "PreviewInputBody": {
         "additionalProperties": false,
         "properties": {
@@ -5252,6 +6636,197 @@
         ],
         "type": "object"
       },
+      "ProfileEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "allowed": {
+            "type": "boolean"
+          },
+          "group": {
+            "description": "Group name; empty for a single quality",
+            "maxLength": 100,
+            "type": "string"
+          },
+          "qualities": {
+            "description": "Quality ids",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 30,
+            "minItems": 1,
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "qualities",
+          "allowed"
+        ],
+        "type": "object"
+      },
+      "ProfileRuleScore": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "type": "string"
+          },
+          "profileId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "score": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "profileId",
+          "profile",
+          "score"
+        ],
+        "type": "object"
+      },
+      "ProfileScore": {
+        "additionalProperties": false,
+        "properties": {
+          "rule": {
+            "type": "string"
+          },
+          "ruleId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "score": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ruleId",
+          "rule",
+          "score"
+        ],
+        "type": "object"
+      },
+      "ProfileScoreInput": {
+        "additionalProperties": false,
+        "properties": {
+          "ruleId": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "score": {
+            "format": "int64",
+            "maximum": 100000,
+            "minimum": -100000,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ruleId",
+          "score"
+        ],
+        "type": "object"
+      },
+      "ProfileSize": {
+        "additionalProperties": false,
+        "properties": {
+          "custom": {
+            "description": "The profile overrides the global limits",
+            "type": "boolean"
+          },
+          "maxMbPerMin": {
+            "description": "0 = no upper bound",
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "minMbPerMin": {
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "preferredMbPerMin": {
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "quality": {
+            "type": "string"
+          },
+          "qualityName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "quality",
+          "qualityName",
+          "custom",
+          "minMbPerMin",
+          "preferredMbPerMin",
+          "maxMbPerMin"
+        ],
+        "type": "object"
+      },
+      "ProfileSizeInput": {
+        "additionalProperties": false,
+        "properties": {
+          "maxMbPerMin": {
+            "description": "0 = no upper bound",
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "minMbPerMin": {
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "preferredMbPerMin": {
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "quality": {
+            "maxLength": 32,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "quality",
+          "minMbPerMin",
+          "preferredMbPerMin",
+          "maxMbPerMin"
+        ],
+        "type": "object"
+      },
+      "ProfileUsage": {
+        "additionalProperties": false,
+        "properties": {
+          "collections": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "importLists": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "movies": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "movies",
+          "collections",
+          "importLists"
+        ],
+        "type": "object"
+      },
       "PurgeOutputBody": {
         "additionalProperties": false,
         "properties": {
@@ -5270,15 +6845,70 @@
         ],
         "type": "object"
       },
-      "QualityProfile": {
+      "QualityDefinition": {
         "additionalProperties": false,
         "properties": {
+          "id": {
+            "description": "Stable id, e.g. bluray-1080p",
+            "type": "string"
+          },
+          "modifier": {
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name, e.g. Bluray-1080p",
+            "type": "string"
+          },
+          "rank": {
+            "description": "Intrinsic rank, higher is better",
+            "format": "int64",
+            "type": "integer"
+          },
+          "resolution": {
+            "type": "string"
+          },
+          "sizes": {
+            "$ref": "#/components/schemas/SizeRange",
+            "description": "Global size limits (profiles may override them)"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "source",
+          "modifier",
+          "resolution",
+          "rank",
+          "sizes"
+        ],
+        "type": "object"
+      },
+      "QualityProfileDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "cutoffLabel": {
+            "description": "Display name of the cutoff item",
+            "type": "string"
+          },
           "cutoffQuality": {
             "type": "string"
           },
           "cutoffScore": {
             "format": "int64",
             "type": "integer"
+          },
+          "entries": {
+            "description": "Best first; the editor's rows",
+            "items": {
+              "$ref": "#/components/schemas/ProfileEntry"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "id": {
             "format": "int64",
@@ -5305,11 +6935,49 @@
           "name": {
             "type": "string"
           },
+          "preferredProtocol": {
+            "description": "Empty: the global setting (Settings \u003e Acquisition)",
+            "enum": [
+              "",
+              "usenet",
+              "torrent"
+            ],
+            "type": "string"
+          },
+          "scores": {
+            "description": "Every scoring rule with this profile's score (0 when unscored), in rule order",
+            "items": {
+              "$ref": "#/components/schemas/ProfileScore"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "sizes": {
+            "description": "Effective size range of every quality of the profile, in entry order",
+            "items": {
+              "$ref": "#/components/schemas/ProfileSize"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "upgradeAllowed": {
             "type": "boolean"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/ProfileUsage"
           }
         },
         "required": [
+          "cutoffLabel",
+          "preferredProtocol",
+          "entries",
+          "sizes",
+          "scores",
+          "usage",
           "id",
           "name",
           "upgradeAllowed",
@@ -5319,6 +6987,103 @@
           "minUpgradeStep",
           "languages",
           "items"
+        ],
+        "type": "object"
+      },
+      "QualityProfileInput": {
+        "additionalProperties": false,
+        "properties": {
+          "cutoff": {
+            "description": "Group name or quality id at which quality upgrades stop",
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "cutoffScore": {
+            "description": "Upgrade until: once the file reaches the cutoff quality and this score, upgrades stop",
+            "format": "int64",
+            "maximum": 100000,
+            "minimum": -100000,
+            "type": "integer"
+          },
+          "entries": {
+            "description": "Best first",
+            "items": {
+              "$ref": "#/components/schemas/ProfileEntry"
+            },
+            "maxItems": 40,
+            "minItems": 1,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "languages": {
+            "description": "Wanted audio languages (en, fr, pt-BR...), original, or any; empty = any",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "minScore": {
+            "description": "Releases scoring lower are rejected",
+            "format": "int64",
+            "maximum": 100000,
+            "minimum": -100000,
+            "type": "integer"
+          },
+          "minUpgradeStep": {
+            "description": "Minimum score gain of an upgrade at the same quality",
+            "format": "int64",
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "preferredProtocol": {
+            "enum": [
+              "",
+              "usenet",
+              "torrent"
+            ],
+            "type": "string"
+          },
+          "scores": {
+            "description": "Scores by rule; absent keeps the stored ones; rules left out score 0",
+            "items": {
+              "$ref": "#/components/schemas/ProfileScoreInput"
+            },
+            "maxItems": 500,
+            "type": "array"
+          },
+          "sizes": {
+            "description": "Size overrides; absent keeps the stored ones (none on create); qualities left out use the global limits",
+            "items": {
+              "$ref": "#/components/schemas/ProfileSizeInput"
+            },
+            "maxItems": 40,
+            "type": "array"
+          },
+          "upgradeAllowed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "entries",
+          "cutoff",
+          "upgradeAllowed",
+          "minScore",
+          "cutoffScore",
+          "minUpgradeStep"
         ],
         "type": "object"
       },
@@ -5347,6 +7112,24 @@
           "position",
           "groupName",
           "allowed"
+        ],
+        "type": "object"
+      },
+      "QualityProfileSaved": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "$ref": "#/components/schemas/QualityProfileDetail"
+          },
+          "rescoredFiles": {
+            "description": "Files whose custom score changed with this edit",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "profile",
+          "rescoredFiles"
         ],
         "type": "object"
       },
@@ -6333,6 +8116,67 @@
         ],
         "type": "object"
       },
+      "RuleMatchMovie": {
+        "additionalProperties": false,
+        "properties": {
+          "dominantColor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "posterUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "year",
+          "posterUrl",
+          "dominantColor"
+        ],
+        "type": "object"
+      },
+      "RuleMatches": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "description": "Files of the library the conditions match",
+            "format": "int64",
+            "type": "integer"
+          },
+          "movies": {
+            "description": "The first matching movies",
+            "items": {
+              "$ref": "#/components/schemas/RuleMatchMovie"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "count",
+          "movies"
+        ],
+        "type": "object"
+      },
       "RuleScore": {
         "additionalProperties": false,
         "properties": {
@@ -6346,6 +8190,27 @@
         },
         "required": [
           "rule",
+          "score"
+        ],
+        "type": "object"
+      },
+      "RuleScoreInput": {
+        "additionalProperties": false,
+        "properties": {
+          "profileId": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "score": {
+            "format": "int64",
+            "maximum": 100000,
+            "minimum": -100000,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "profileId",
           "score"
         ],
         "type": "object"
@@ -6555,6 +8420,169 @@
         "required": [
           "rule",
           "score"
+        ],
+        "type": "object"
+      },
+      "ScoringCondition": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "title_regex",
+              "release_group",
+              "source",
+              "resolution",
+              "codec",
+              "hdr",
+              "audio",
+              "edition",
+              "language",
+              "indexer_flag",
+              "indexer",
+              "size_range",
+              "year_range"
+            ],
+            "type": "string"
+          },
+          "max": {
+            "description": "0 = no upper bound",
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "min": {
+            "description": "size_range (GB) and year_range",
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "negate": {
+            "description": "The condition must not match",
+            "type": "boolean"
+          },
+          "required": {
+            "description": "Must match; conditions of one kind that are not required are alternatives (or)",
+            "type": "boolean"
+          },
+          "value": {
+            "description": "Every kind but size_range and year_range; see GET /scoring-rules/kinds",
+            "maxLength": 1000,
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "ScoringRule": {
+        "additionalProperties": false,
+        "properties": {
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/ScoringCondition"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "includeInRename": {
+            "description": "Available to the {Score:rules} naming token",
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "readsAs": {
+            "description": "The conditions in plain English, e.g. \"the release is dv and is not from MiNiPiX\"",
+            "type": "string"
+          },
+          "scores": {
+            "description": "Every profile, by name, with its score (0 when unscored)",
+            "items": {
+              "$ref": "#/components/schemas/ProfileRuleScore"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "includeInRename",
+          "conditions",
+          "readsAs",
+          "scores"
+        ],
+        "type": "object"
+      },
+      "ScoringRuleInput": {
+        "additionalProperties": false,
+        "properties": {
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/ScoringCondition"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "description": {
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "includeInRename": {
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "scores": {
+            "description": "Scores by profile; absent keeps the stored ones; profiles left out score 0",
+            "items": {
+              "$ref": "#/components/schemas/RuleScoreInput"
+            },
+            "maxItems": 200,
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "conditions"
+        ],
+        "type": "object"
+      },
+      "ScoringRuleSaved": {
+        "additionalProperties": false,
+        "properties": {
+          "rescoredFiles": {
+            "description": "Files whose custom score changed with this edit",
+            "format": "int64",
+            "type": "integer"
+          },
+          "rule": {
+            "$ref": "#/components/schemas/ScoringRule"
+          }
+        },
+        "required": [
+          "rule",
+          "rescoredFiles"
         ],
         "type": "object"
       },
@@ -6975,6 +9003,71 @@
         },
         "type": "object"
       },
+      "ServiceStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "description": "Indexers: used by at least one of RSS, automatic and interactive searches",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "message": {
+            "description": "Last error",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "protocol": {
+            "enum": [
+              "usenet",
+              "torrent"
+            ],
+            "type": "string"
+          },
+          "state": {
+            "description": "paused: an indexer skipped after repeated failures until 'until'; off: disabled by the user",
+            "enum": [
+              "ok",
+              "failing",
+              "paused",
+              "off"
+            ],
+            "type": "string"
+          },
+          "until": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "protocol",
+          "enabled",
+          "state"
+        ],
+        "type": "object"
+      },
+      "Set-onboardingRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "dismissed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "dismissed"
+        ],
+        "type": "object"
+      },
       "Set-tmdb-keyRequest": {
         "additionalProperties": false,
         "properties": {
@@ -7011,6 +9104,103 @@
           "lowSpacePercent",
           "lowSpaceGb",
           "recycleBinMaxGb"
+        ],
+        "type": "object"
+      },
+      "SetupStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "complete": {
+            "description": "Every available step is done",
+            "type": "boolean"
+          },
+          "dismissed": {
+            "description": "The user chose to skip the onboarding",
+            "type": "boolean"
+          },
+          "next": {
+            "description": "First step to do; empty when complete",
+            "type": "string"
+          },
+          "steps": {
+            "description": "In the order of the onboarding screens",
+            "items": {
+              "$ref": "#/components/schemas/SetupStep"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "complete",
+          "dismissed",
+          "next",
+          "steps"
+        ],
+        "type": "object"
+      },
+      "SetupStep": {
+        "additionalProperties": false,
+        "properties": {
+          "available": {
+            "description": "false: arrives in a later version (the admin account comes with authentication)",
+            "type": "boolean"
+          },
+          "count": {
+            "description": "Items configured (folders, clients, indexers, profiles, films)",
+            "format": "int64",
+            "type": "integer"
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "id": {
+            "enum": [
+              "account",
+              "tmdb",
+              "root_folder",
+              "download_client",
+              "indexer",
+              "quality_profile",
+              "first_movie"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "done",
+          "available",
+          "count"
+        ],
+        "type": "object"
+      },
+      "SizeRange": {
+        "additionalProperties": false,
+        "properties": {
+          "maxMbPerMin": {
+            "description": "0 = no upper bound",
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "minMbPerMin": {
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "preferredMbPerMin": {
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "minMbPerMin",
+          "preferredMbPerMin",
+          "maxMbPerMin"
         ],
         "type": "object"
       },
@@ -7202,6 +9392,73 @@
           "name",
           "description",
           "example"
+        ],
+        "type": "object"
+      },
+      "UIPreferences": {
+        "additionalProperties": false,
+        "properties": {
+          "calendarShowUnmonitored": {
+            "description": "The calendar shows announced unmonitored films by default",
+            "type": "boolean"
+          },
+          "defaultMinimumAvailability": {
+            "enum": [
+              "announced",
+              "in_cinemas",
+              "released"
+            ],
+            "type": "string"
+          },
+          "defaultQualityProfileId": {
+            "description": "Preselected profile when adding a film; null for none",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "defaultRootFolderId": {
+            "description": "Preselected root folder; null for none",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "density": {
+            "description": "Default density of lists",
+            "enum": [
+              "airy",
+              "compact"
+            ],
+            "type": "string"
+          },
+          "theme": {
+            "description": "Color theme",
+            "enum": [
+              "system",
+              "light",
+              "dark"
+            ],
+            "type": "string"
+          },
+          "weekStartsOn": {
+            "description": "0 Sunday, 1 Monday",
+            "format": "int64",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "theme",
+          "density",
+          "defaultQualityProfileId",
+          "defaultRootFolderId",
+          "defaultMinimumAvailability",
+          "calendarShowUnmonitored",
+          "weekStartsOn"
         ],
         "type": "object"
       },
@@ -7513,6 +9770,95 @@
         ]
       }
     },
+    "/calendar": {
+      "get": {
+        "description": "Cinema, digital and physical release dates of the library movies in a range (both ends included, at most 400 days). Monitored movies only by default; unmonitored=true adds the unmonitored movies not released yet. Served from the in-memory index.",
+        "operationId": "get-calendar",
+        "parameters": [
+          {
+            "description": "YYYY-MM-DD; default the first day of the current month",
+            "explode": false,
+            "in": "query",
+            "name": "start",
+            "schema": {
+              "description": "YYYY-MM-DD; default the first day of the current month",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "YYYY-MM-DD, included; default start + 41 days (a 6-week grid)",
+            "explode": false,
+            "in": "query",
+            "name": "end",
+            "schema": {
+              "description": "YYYY-MM-DD, included; default start + 41 days (a 6-week grid)",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Add the announced unmonitored movies",
+            "explode": false,
+            "in": "query",
+            "name": "unmonitored",
+            "schema": {
+              "default": false,
+              "description": "Add the announced unmonitored movies",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Release types, comma-separated; all when absent",
+            "explode": false,
+            "in": "query",
+            "name": "types",
+            "schema": {
+              "description": "Release types, comma-separated; all when absent",
+              "items": {
+                "enum": [
+                  "cinema",
+                  "digital",
+                  "physical"
+                ],
+                "type": "string"
+              },
+              "maxItems": 3,
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarPage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Release calendar",
+        "tags": [
+          "Calendar"
+        ]
+      }
+    },
     "/collections/{id}": {
       "get": {
         "operationId": "get-collection",
@@ -7670,6 +10016,38 @@
         ]
       }
     },
+    "/dashboard": {
+      "get": {
+        "description": "Library counts, wanted and upgradable, this month's activity, the queue, upcoming releases, disk space per root folder, recent activity, recently added films, health issues and the state of indexers and download clients. One call, no network access (free space is measured on the local disks).",
+        "operationId": "get-dashboard",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Home dashboard",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
     "/discover/collection/{tmdbId}": {
       "get": {
         "description": "Every part, flagged when already in the library.",
@@ -7714,9 +10092,66 @@
         ]
       }
     },
+    "/discover/people": {
+      "get": {
+        "description": "By name, with the movies they are known for (flagged when in the library). Cached and rate limited like every TMDB call. The filmography is at /discover/person/{tmdbId}.",
+        "operationId": "discover-people",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "query",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeoplePage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Search people on TMDB",
+        "tags": [
+          "Discover"
+        ]
+      }
+    },
     "/discover/person/{tmdbId}": {
       "get": {
-        "description": "Cast and crew credits merged by movie, flagged when in the library. TMDB does not return the person's name here: use the cast or crew entry it came from.",
+        "description": "Cast and crew credits merged by movie, flagged when in the library, with the person's profile (name, portrait, biography) from a second cached TMDB call made in parallel; person is null when only that call failed.",
         "operationId": "discover-person",
         "parameters": [
           {
@@ -8439,6 +10874,143 @@
           }
         },
         "summary": "History",
+        "tags": [
+          "History"
+        ]
+      }
+    },
+    "/history/export": {
+      "get": {
+        "description": "Every entry matching the filters of GET /history, newest first, streamed as CSV (one header row; cells that a spreadsheet would read as a formula are prefixed with ') or as a JSON array of history rows.",
+        "operationId": "export-history",
+        "parameters": [
+          {
+            "description": "Event kinds, comma-separated; all when absent",
+            "explode": false,
+            "in": "query",
+            "name": "event",
+            "schema": {
+              "description": "Event kinds, comma-separated; all when absent",
+              "items": {
+                "enum": [
+                  "grabbed",
+                  "grab_failed",
+                  "grab_overridden",
+                  "download_failed",
+                  "download_removed",
+                  "imported",
+                  "upgraded",
+                  "import_failed",
+                  "file_deleted",
+                  "file_renamed",
+                  "blocklisted",
+                  "ignored",
+                  "metadata_changed",
+                  "movie_added",
+                  "movie_deleted",
+                  "retry_scheduled",
+                  "retries_exhausted"
+                ],
+                "type": "string"
+              },
+              "maxItems": 17,
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Only this movie (also after its removal)",
+            "explode": false,
+            "in": "query",
+            "name": "movieId",
+            "schema": {
+              "description": "Only this movie (also after its removal)",
+              "format": "int64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Only the entries of this download",
+            "explode": false,
+            "in": "query",
+            "name": "downloadId",
+            "schema": {
+              "description": "Only the entries of this download",
+              "format": "int64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Entries at or after this time (RFC 3339)",
+            "explode": false,
+            "in": "query",
+            "name": "since",
+            "schema": {
+              "description": "Entries at or after this time (RFC 3339)",
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Entries before this time (RFC 3339)",
+            "explode": false,
+            "in": "query",
+            "name": "until",
+            "schema": {
+              "description": "Entries before this time (RFC 3339)",
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "format",
+            "schema": {
+              "default": "csv",
+              "enum": [
+                "csv",
+                "json"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HistoryRow"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The export"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Export the history",
         "tags": [
           "History"
         ]
@@ -11322,8 +13894,118 @@
         ]
       }
     },
+    "/onboarding": {
+      "get": {
+        "description": "Each setup step (TMDB key, root folder, download client, indexer, default quality profile, first film) with done or not, so the interface can guide and resume. No network access.",
+        "operationId": "get-onboarding",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupStatus"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Onboarding progress",
+        "tags": [
+          "Onboarding"
+        ]
+      },
+      "put": {
+        "operationId": "set-onboarding",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Set-onboardingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupStatus"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Skip or resume the onboarding",
+        "tags": [
+          "Onboarding"
+        ]
+      }
+    },
+    "/qualities": {
+      "get": {
+        "description": "Every quality, worst first, with the global size limits.",
+        "operationId": "list-qualities",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QualityDefinition"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "The quality catalog",
+        "tags": [
+          "Quality"
+        ]
+      }
+    },
     "/quality-profiles": {
       "get": {
+        "description": "By name, with the editor's details (entries, sizes, scores, usage).",
         "operationId": "list-quality-profiles",
         "responses": {
           "200": {
@@ -11331,7 +14013,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/QualityProfile"
+                    "$ref": "#/components/schemas/QualityProfileDetail"
                   },
                   "type": [
                     "array",
@@ -11354,6 +14036,224 @@
           }
         },
         "summary": "List quality profiles",
+        "tags": [
+          "Quality"
+        ]
+      },
+      "post": {
+        "description": "Validated by the quality engine: every problem is reported at once (422). A duplicate name is a conflict (409).",
+        "operationId": "create-quality-profile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QualityProfileInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityProfileSaved"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Create a quality profile",
+        "tags": [
+          "Quality"
+        ]
+      }
+    },
+    "/quality-profiles/{id}": {
+      "delete": {
+        "description": "Refused with 409 while movies, collections or import lists use it, or when it is the last profile.",
+        "operationId": "delete-quality-profile",
+        "parameters": [
+          {
+            "description": "Identifier",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Identifier",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete an unused quality profile",
+        "tags": [
+          "Quality"
+        ]
+      },
+      "get": {
+        "operationId": "get-quality-profile",
+        "parameters": [
+          {
+            "description": "Identifier",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Identifier",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityProfileDetail"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get a quality profile",
+        "tags": [
+          "Quality"
+        ]
+      },
+      "put": {
+        "description": "The files of the library are rescored with the new scores (rescoredFiles).",
+        "operationId": "update-quality-profile",
+        "parameters": [
+          {
+            "description": "Identifier",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Identifier",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QualityProfileInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityProfileSaved"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Replace a quality profile",
+        "tags": [
+          "Quality"
+        ]
+      }
+    },
+    "/quality/preview": {
+      "post": {
+        "description": "Parses the name, maps it to a quality and scores it with a profile: the matched rules and their scores. With movieId, also the decision a search would take now (accepted, rejections, upgrade of the file on disk). Pure engine, no network access.",
+        "operationId": "preview-release",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preview"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Test a release name",
         "tags": [
           "Quality"
         ]
@@ -11392,6 +14292,70 @@
           }
         },
         "summary": "Downloads in progress",
+        "tags": [
+          "Queue"
+        ]
+      }
+    },
+    "/queue/pause": {
+      "post": {
+        "description": "Pauses (or resumes) each of Gonema's active downloads in its client; the clients' other downloads are not touched. The result says per client what it supports and what was done; a failing client does not stop the others.",
+        "operationId": "pause-queue",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PauseAllResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Pause every download",
+        "tags": [
+          "Queue"
+        ]
+      }
+    },
+    "/queue/resume": {
+      "post": {
+        "description": "Pauses (or resumes) each of Gonema's active downloads in its client; the clients' other downloads are not touched. The result says per client what it supports and what was done; a failing client does not stop the others.",
+        "operationId": "resume-queue",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PauseAllResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Resume every paused download",
         "tags": [
           "Queue"
         ]
@@ -12067,6 +15031,375 @@
         ]
       }
     },
+    "/scoring-rules": {
+      "get": {
+        "description": "In creation order (the order of score breakdowns), with conditions, a plain-English reading and the score of every profile.",
+        "operationId": "list-scoring-rules",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ScoringRule"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List scoring rules",
+        "tags": [
+          "Scoring rules"
+        ]
+      },
+      "post": {
+        "description": "Conditions are validated (and regular expressions compiled) by the quality engine; errors name the condition (422).",
+        "operationId": "create-scoring-rule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScoringRuleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoringRuleSaved"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Create a scoring rule",
+        "tags": [
+          "Scoring rules"
+        ]
+      }
+    },
+    "/scoring-rules/kinds": {
+      "get": {
+        "description": "Each kind with its input type and, for choices, the values the parser knows.",
+        "operationId": "list-condition-kinds",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConditionKindInfo"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Condition kinds of the rule editor",
+        "tags": [
+          "Scoring rules"
+        ]
+      }
+    },
+    "/scoring-rules/matches": {
+      "post": {
+        "description": "Tests conditions (saved or not) against the release names of the library files: \"matched 41 films\".",
+        "operationId": "match-scoring-rule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Match-scoring-ruleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleMatches"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Library files a draft rule matches",
+        "tags": [
+          "Scoring rules"
+        ]
+      }
+    },
+    "/scoring-rules/{id}": {
+      "delete": {
+        "description": "Its scores go with it; the files of the library are rescored.",
+        "operationId": "delete-scoring-rule",
+        "parameters": [
+          {
+            "description": "Identifier",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Identifier",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Delete-scoring-ruleResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Delete a scoring rule",
+        "tags": [
+          "Scoring rules"
+        ]
+      },
+      "get": {
+        "operationId": "get-scoring-rule",
+        "parameters": [
+          {
+            "description": "Identifier",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Identifier",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoringRule"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get a scoring rule",
+        "tags": [
+          "Scoring rules"
+        ]
+      },
+      "put": {
+        "description": "The files of the library are rescored (rescoredFiles).",
+        "operationId": "update-scoring-rule",
+        "parameters": [
+          {
+            "description": "Identifier",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Identifier",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScoringRuleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoringRuleSaved"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Replace a scoring rule",
+        "tags": [
+          "Scoring rules"
+        ]
+      }
+    },
+    "/search": {
+      "get": {
+        "description": "Library films matched fuzzily from the in-memory index (prefix, word start, substring, all words, letters in order; a 4-digit word selects the year), in about a millisecond. With remote=true and a query of 3 characters or more, also TMDB movies and people (at most 4 s; a TMDB failure is reported in remote.error, never as an error status). Call it without remote on each keystroke and with remote=true debounced. Actions are defined by the interface.",
+        "operationId": "search-everything",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Per group",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 8,
+              "description": "Per group",
+              "format": "int64",
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Also search TMDB (q of 3 characters or more)",
+            "explode": false,
+            "in": "query",
+            "name": "remote",
+            "schema": {
+              "default": false,
+              "description": "Also search TMDB (q of 3 characters or more)",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaletteResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Command palette search",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
     "/searches/{searchId}": {
       "get": {
         "operationId": "get-search",
@@ -12166,6 +15499,72 @@
         ]
       }
     },
+    "/searches/{searchId}/indexers/{indexerId}/retry": {
+      "post": {
+        "description": "Typically after it failed or timed out. Returns at once (202) with the indexer pending; its results join the same search and stream as search.batch, search.indexer_done or search.indexer_failed, then search.finished, on /events. force=true first clears the indexer's pause after repeated failures. 409 while the indexer has not answered yet.",
+        "operationId": "retry-search-indexer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "searchId",
+            "required": true,
+            "schema": {
+              "maxLength": 32,
+              "minLength": 32,
+              "pattern": "^[0-9a-f]+$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "indexerId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Try even if the indexer is paused after repeated failures",
+            "explode": false,
+            "in": "query",
+            "name": "force",
+            "schema": {
+              "default": false,
+              "description": "Try even if the indexer is paused after repeated failures",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchSnapshot"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Ask one indexer of an interactive search again",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
     "/settings/acquisition": {
       "get": {
         "description": "Usenet retention and minimum age, preferred protocol, automatic retries, RSS and missing search intervals.",
@@ -12233,6 +15632,37 @@
           }
         },
         "summary": "Change search and download settings",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/settings/general": {
+      "get": {
+        "operationId": "get-general-settings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Server settings and interface preferences",
         "tags": [
           "Settings"
         ]
@@ -12489,6 +15919,48 @@
           }
         },
         "summary": "Set the TMDB key",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/settings/ui": {
+      "put": {
+        "description": "Theme, density, defaults of the add-film dialog, calendar and week start. Shared by every browser until users arrive.",
+        "operationId": "set-ui-preferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UIPreferences"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UIPreferences"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Change the interface preferences",
         "tags": [
           "Settings"
         ]

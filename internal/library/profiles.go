@@ -67,13 +67,17 @@ func (s *Service) SeedQualityProfiles(ctx context.Context) (int, error) {
 	return created, nil
 }
 
-// QualityProfile is a profile with its items.
+// QualityProfile is a profile with its items, size overrides, scores and usage.
 type QualityProfile struct {
 	db.QualityProfile
-	Items []db.QualityProfileItem
+	Items   []db.QualityProfileItem
+	Profile quality.Profile // items grouped best first, scores by rule name
+	Sizes   []db.QualityProfileSize
+	Scores  map[int64]int // by scoring rule id
+	Usage   db.GetQualityProfileUsageRow
 }
 
-// ListQualityProfiles returns the quality profiles with their items.
+// ListQualityProfiles returns the quality profiles with their details, by name.
 func (s *Service) ListQualityProfiles(ctx context.Context) ([]QualityProfile, error) {
 	var out []QualityProfile
 	err := s.st.ReadTx(ctx, func(q *db.Queries) error {
@@ -83,11 +87,11 @@ func (s *Service) ListQualityProfiles(ctx context.Context) ([]QualityProfile, er
 		}
 		out = make([]QualityProfile, 0, len(rows))
 		for _, r := range rows {
-			items, err := q.ListQualityProfileItems(ctx, r.ID)
+			d, err := loadProfileDetail(ctx, q, r)
 			if err != nil {
 				return err
 			}
-			out = append(out, QualityProfile{QualityProfile: r, Items: items})
+			out = append(out, d)
 		}
 		return nil
 	})

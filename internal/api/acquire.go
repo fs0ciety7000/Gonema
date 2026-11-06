@@ -462,4 +462,6 @@ func (s *Server) acquireRoutes() {
 		}
 		return &struct{ Body acquire.BlocklistItem }{item}, nil
 	})
+
+	s.lot3AcquireRoutes(a)
 }

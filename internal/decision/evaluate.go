@@ -265,7 +265,7 @@ func (x *decider) checkHardcodedSubs() {
 
 func (x *decider) checkScore() {
 	x.d.Score = quality.Score(x.e.profile, x.e.cfg.Rules, &quality.Release{
-		Title: x.c.Title, Parsed: &x.c.Parsed, Size: x.c.Size, IndexerFlags: x.c.IndexerFlags,
+		Title: x.c.Title, Parsed: &x.c.Parsed, Size: x.c.Size, Indexer: x.c.IndexerName, IndexerFlags: x.c.IndexerFlags,
 	})
 	if minScore := x.e.profile.MinScore; x.d.Score.Total < minScore {
 		x.reject(CodeBelowMinScore, true, "Custom score %d is below the minimum of %d for profile %s",

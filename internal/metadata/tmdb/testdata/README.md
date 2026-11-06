@@ -20,6 +20,8 @@ example responses published in the official reference
 | `find_empty.json` | find-by-id shape, empty result |
 | `collection_10.json` | collection-details (parts use `name`/`original_name` as documented) |
 | `person_31_movie_credits.json` | person-movie-credits (first 8 cast, 6 crew) |
+| `person_31.json` | person-details (Tom Hanks, trimmed) |
+| `search_person.json` | search-person shape: Tom Hanks with movie and TV `known_for` entries, plus a hand-written second result without known movies |
 | `popular.json`, `now_playing.json`, `upcoming.json`, `trending_week.json` | the list examples (first 4 results) |
 | `error_401.json`, `error_404.json`, `error_429.json` | status codes 7, 34 and 25 of the errors page |
 

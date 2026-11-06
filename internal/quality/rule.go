@@ -27,6 +27,7 @@ const (
 	KindEdition      ConditionKind = "edition"
 	KindLanguage     ConditionKind = "language"
 	KindIndexerFlag  ConditionKind = "indexer_flag"
+	KindIndexer      ConditionKind = "indexer"
 	KindSizeRange    ConditionKind = "size_range"
 	KindYearRange    ConditionKind = "year_range"
 )
@@ -53,6 +54,8 @@ const maxRegexLen = 1000
 //     "multi" (MULTi, DL, DUAL).
 //   - indexer_flag: a flag reported by the indexer ("freeleech", "internal"...),
 //     compared case-insensitively.
+//   - indexer: the name of the indexer offering the release, compared
+//     case-insensitively (a renamed indexer no longer matches).
 //
 // size_range uses Min and Max in GB, year_range in years, both inclusive; Max 0
 // means no upper bound. A release of unknown size or year never matches a range
@@ -70,7 +73,7 @@ type Condition struct {
 type condition struct {
 	Condition
 	re       *regexp.Regexp
-	lower    string // release_group, indexer_flag
+	lower    string // release_group, indexer_flag, indexer
 	source   parser.Source
 	modifier parser.Modifier // source condition on a modifier when != ModifierNone
 	res      parser.Resolution
@@ -213,7 +216,7 @@ func compile(c Condition) (condition, error) {
 			}
 			return cc, fmt.Errorf("invalid regular expression %q: %w", c.Value, err)
 		}
-	case KindReleaseGroup, KindIndexerFlag:
+	case KindReleaseGroup, KindIndexerFlag, KindIndexer:
 		cc.lower = strings.ToLower(v)
 	case KindSource:
 		if cc.source.UnmarshalText([]byte(v)) != nil {
@@ -322,6 +325,8 @@ func (c *condition) match(rel *Release) bool {
 			}
 		}
 		return false
+	case KindIndexer:
+		return rel.Indexer != "" && strings.EqualFold(rel.Indexer, c.lower)
 	case KindSizeRange:
 		return rel.Size > 0 && inRange(float64(rel.Size), c.min, c.max)
 	case KindYearRange:
