@@ -3762,6 +3762,10 @@
             "description": "Attributes, redacted; groups are joined with dots",
             "type": "object"
           },
+          "component": {
+            "description": "Part of Gonema that logged (indexer, download, import...); empty when unknown",
+            "type": "string"
+          },
           "id": {
             "format": "int64",
             "minimum": 0,
@@ -3788,6 +3792,7 @@
           "id",
           "time",
           "level",
+          "component",
           "message"
         ],
         "type": "object"
@@ -13499,6 +13504,23 @@
             }
           },
           {
+            "description": "Components, comma-separated (indexer,download...); all when absent",
+            "explode": false,
+            "in": "query",
+            "name": "component",
+            "schema": {
+              "description": "Components, comma-separated (indexer,download...); all when absent",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 32,
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          {
             "explode": false,
             "in": "query",
             "name": "limit",
@@ -13591,6 +13613,23 @@
                 "error"
               ],
               "type": "string"
+            }
+          },
+          {
+            "description": "Components, comma-separated (indexer,download...); all when absent",
+            "explode": false,
+            "in": "query",
+            "name": "component",
+            "schema": {
+              "description": "Components, comma-separated (indexer,download...); all when absent",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 32,
+              "type": [
+                "array",
+                "null"
+              ]
             }
           },
           {

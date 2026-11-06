@@ -38,6 +38,7 @@ import (
 	"github.com/fs0ciety7000/gonema/internal/importer"
 	"github.com/fs0ciety7000/gonema/internal/jobs"
 	"github.com/fs0ciety7000/gonema/internal/library"
+	"github.com/fs0ciety7000/gonema/internal/logbuf"
 	"github.com/fs0ciety7000/gonema/internal/metadata/tmdb"
 	"github.com/fs0ciety7000/gonema/internal/netx"
 	"github.com/fs0ciety7000/gonema/internal/secretbox"
@@ -96,7 +97,7 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer, getenv fu
 	}
 	defer outs.close()
 	if err := serve(ctx, &cfg, log, outs, getenv); err != nil {
-		log.Error("gonema stopped with an error", slog.Any("error", err))
+		log.Error("gonema stopped with an error", slog.String(logbuf.ComponentKey, "server"), slog.Any("error", err))
 		return 1
 	}
 	return 0
@@ -116,8 +117,10 @@ func inContainer() bool {
 // in order: stop accepting and end event streams, stop the queue tracker and
 // the health checks, the jobs and the background searches and imports, drain
 // the history writer, close the database.
-func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, outs *logOutputs, getenv func(string) string) (err error) {
+func serve(ctx context.Context, cfg *config.Config, base *slog.Logger, outs *logOutputs, getenv func(string) string) (err error) {
 	start := time.Now()
+	logFor := func(name string) *slog.Logger { return base.With(slog.String(logbuf.ComponentKey, name)) }
+	log := logFor("server")
 	log.Info("starting gonema", append([]any{slog.String("version", version)}, cfg.LogAttrs()...)...)
 	netx.Configure(cfg.Security.Outbound)
 	if cfg.Security.AuthMode == config.AuthDisabledForLocal {
@@ -144,7 +147,7 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, outs *logO
 		return fmt.Errorf("master key: %w", err)
 	}
 
-	if _, err := backup.ApplyPending(cfg.DataDir, time.Now(), log); err != nil {
+	if _, err := backup.ApplyPending(cfg.DataDir, time.Now(), logFor("backup")); err != nil {
 		return fmt.Errorf("apply the staged restore: %w", err)
 	}
 	st, err := store.Open(ctx, filepath.Join(cfg.DataDir, "gonema.db"))
@@ -158,13 +161,13 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, outs *logO
 	}()
 
 	bus := events.New(events.Options{})
-	history := events.NewHistoryWriter(bus, st, log)
-	runner := jobs.New(st, jobs.Options{Workers: cfg.Workers, Logger: log, Bus: bus})
+	history := events.NewHistoryWriter(bus, st, logFor("history"))
+	runner := jobs.New(st, jobs.Options{Workers: cfg.Workers, Logger: logFor("jobs"), Bus: bus})
 
 	lib, err := library.New(library.Options{
-		Store: st, Box: box, Jobs: runner, Bus: bus, Logger: log, DataDir: cfg.DataDir,
+		Store: st, Box: box, Jobs: runner, Bus: bus, Logger: logFor("library"), DataDir: cfg.DataDir,
 		NewProvider: func(key string) (library.KeyedProvider, error) {
-			c, err := tmdb.New(key, tmdb.Options{Version: version, Logger: log})
+			c, err := tmdb.New(key, tmdb.Options{Version: version, Logger: logFor("metadata")})
 			if err != nil {
 				return nil, err
 			}
@@ -200,7 +203,7 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, outs *logO
 		log.Warn("this binary has no web interface (built without `make web`): a placeholder page is served")
 	}
 
-	imp, err := importer.New(importer.Options{Store: st, Matcher: lib, Library: lib, Bus: bus, Logger: log, DataDir: cfg.DataDir})
+	imp, err := importer.New(importer.Options{Store: st, Matcher: lib, Library: lib, Bus: bus, Logger: logFor("import"), DataDir: cfg.DataDir})
 	if err != nil {
 		return err
 	}
@@ -213,12 +216,12 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, outs *logO
 	if _, err := imp.Recover(ctx); err != nil { // before the queue tracker resumes imports
 		return err
 	}
-	ops, err := newOps(ctx, cfg, st, key, src, runner, imp, outs, log)
+	ops, err := newOps(ctx, cfg, st, key, src, runner, imp, outs, logFor("backup"))
 	if err != nil {
 		return err
 	}
 	acq, err := acquire.New(acquire.Options{
-		Store: st, Box: box, Matcher: lib, Jobs: runner, Bus: bus, Logger: log, Version: version,
+		Store: st, Box: box, Matcher: lib, Jobs: runner, Bus: bus, Logger: logFor("acquire"), Version: version,
 		Importer: importAdapter{imp}, ImporterWritesHistory: true,
 	})
 	if err != nil {
@@ -228,15 +231,15 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, outs *logO
 		return err
 	}
 	acq.RegisterJobs(ctx, runner)
-	notes, media, err := startIntegrations(st, box, bus, lib, log)
+	notes, media, err := startIntegrations(st, box, bus, lib, logFor)
 	if err != nil {
 		return err
 	}
 
-	checks, healthSettings := newHealth(st, bus, log, lib, acq, imp)
+	checks, healthSettings := newHealth(st, bus, logFor("health"), lib, acq, imp)
 	registerOpsChecks(checks, imp, ops.Backups)
 	registerIntegrationChecks(checks, notes, media)
-	authSvc, err := auth.New(auth.Options{Store: st, Logger: log})
+	authSvc, err := auth.New(auth.Options{Store: st, Logger: logFor("auth")})
 	if err != nil {
 		return err
 	}
@@ -254,7 +257,7 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, outs *logO
 			slog.String("setup", tok), slog.String("bind", cfg.Bind))
 	}
 	srv := newAPI(api.Deps{
-		Library: lib, Acquire: acq, Jobs: runner, Bus: bus, Store: st, Logger: log, Version: version,
+		Library: lib, Acquire: acq, Jobs: runner, Bus: bus, Store: st, Logger: logFor("api"), Version: version,
 		StartedAt: start, DataDir: cfg.DataDir, BaseURL: cfg.BaseURL, Bind: cfg.Bind, LogLevel: strings.ToLower(cfg.LogLevel.String()),
 		Images: imageStore, UI: ui, Auth: authSvc, Security: cfg.Security,
 	}, imp, notes, media, checks, healthSettings, ops)
@@ -264,7 +267,7 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, outs *logO
 		ReadTimeout:       60 * time.Second,
 		IdleTimeout:       120 * time.Second,
 		MaxHeaderBytes:    64 << 10,
-		ErrorLog:          slog.NewLogLogger(log.Handler(), slog.LevelWarn),
+		ErrorLog:          slog.NewLogLogger(logFor("http").Handler(), slog.LevelWarn),
 		BaseContext:       func(net.Listener) context.Context { return context.WithoutCancel(ctx) },
 	}
 	httpSrv.RegisterOnShutdown(srv.Shutdown)

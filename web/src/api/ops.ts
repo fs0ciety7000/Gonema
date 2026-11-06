@@ -112,7 +112,8 @@ export function parseLogEntry(raw: unknown): LogEntry | null {
   const attrs: Record<string, string> = {};
   if (e.attrs && typeof e.attrs === 'object')
     for (const [k, v] of Object.entries(e.attrs as Record<string, unknown>)) attrs[k] = String(v);
-  return { id: e.id, time: e.time, level: e.level as LogLevel, message: e.message, attrs };
+  const component = typeof e.component === 'string' ? e.component.slice(0, 64) : '';
+  return { id: e.id, time: e.time, level: e.level as LogLevel, component, message: e.message, attrs };
 }
 
 // ----------------------------------------------------------------- import journal

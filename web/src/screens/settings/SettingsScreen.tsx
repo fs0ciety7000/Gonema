@@ -38,6 +38,7 @@ import { buttonClass } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Feedback';
 import { formatBytes } from '@/lib/format';
 import { ClientsSection, EVENTS, IndexersSection, MediaServersSection, NotificationsSection } from './Connections';
+import { HeaderSlot } from './headerSlot';
 import { AcquisitionSection, LibrarySection, MetadataSection, TagsSection } from './Sections';
 
 const QualitySection = lazy(() => import('./QualitySection'));
@@ -158,7 +159,8 @@ export const SECTIONS: ReadonlyArray<{ heading: string; items: readonly SectionD
         label: 'Security',
         icon: Lock,
         title: 'Security',
-        intro: 'Who can sign in, the browsers signed in now, the API key, and where Gonema may connect.',
+        intro:
+          'Who can sign in, the browsers signed in right now, the API key, and where Gonema is allowed to connect.',
         keywords: 'password sign in login session api key logout ssrf outbound network auth',
       },
       {
@@ -167,7 +169,7 @@ export const SECTIONS: ReadonlyArray<{ heading: string; items: readonly SectionD
         icon: HardDrive,
         title: 'Backups',
         intro:
-          'Copies of the database, made on a schedule or by hand. Restoring one replaces the current state at the next restart.',
+          'Copies of the database, made on a schedule or by hand while Gonema keeps running. A restore takes effect at the next restart.',
         keywords: 'backup restore archive schedule retention master key download upload',
       },
       {
@@ -175,7 +177,8 @@ export const SECTIONS: ReadonlyArray<{ heading: string; items: readonly SectionD
         label: 'Logs',
         icon: FileVideo,
         title: 'Logs',
-        intro: 'What Gonema did and why, as it happens. Secrets are removed before anything is written.',
+        intro:
+          'What Gonema did and why, as it happens. Passwords, keys and tokens are removed before anything is written.',
         keywords: 'log level debug error warning tail download',
       },
       {
@@ -507,6 +510,7 @@ export function SettingsScreen() {
   const id = params.section ?? 'overview';
   const def = ALL.find((s) => s.id === id);
   const [find, setFind] = useState('');
+  const [slot, setSlot] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
     document.title = def ? `${def.id === 'overview' ? 'Settings' : `${def.label} · Settings`} · Gonema` : 'Gonema';
   }, [def]);
@@ -586,8 +590,11 @@ export function SettingsScreen() {
                 <h1>{def.title}</h1>
                 <p>{def.intro}</p>
               </div>
+              <div className="shead-actions" ref={setSlot} />
             </div>
-            <Body id={def.id} />
+            <HeaderSlot.Provider value={slot}>
+              <Body id={def.id} />
+            </HeaderSlot.Provider>
           </div>
         </div>
       </main>

@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings · Security · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: settings › security. ?dialog=apikey shows the "make a new key" confirmation. */
+  /* Settings frame: same as settings-quality.html */
+  .page { padding-top: var(--space-6); max-width: none; }
+  .set { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: var(--space-8); }
+  .snav { position: sticky; top: calc(var(--topbar-h) + 24px); align-self: start; display: grid; gap: 2px; }
+  .snav h2 { font: var(--type-overline); letter-spacing: var(--type-overline-tracking); font-stretch: 125%; text-transform: uppercase; color: var(--text-muted); padding: 0 10px 6px; margin-top: var(--space-4); }
+  .snav h2:first-child { margin-top: 0; }
+  .snav a { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: var(--radius-sm); color: var(--text-secondary); font: 500 13.5px/1 var(--font-ui); }
+  .snav a:hover { background: var(--bg-hover); color: var(--text-primary); text-decoration: none; }
+  .snav a[aria-current="page"] { background: var(--bg-active); color: var(--text-primary); }
+  .snav a .i { width: 16px; height: 16px; color: var(--text-muted); }
+  .shead { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-5); }
+  .shead h1 { font: var(--type-display-md); letter-spacing: var(--type-display-md-tracking); font-stretch: 125%; }
+  .shead p { color: var(--text-secondary); margin-top: 6px; max-width: 70ch; }
+  @media (max-width: 1100px) {
+    .set { grid-template-columns: minmax(0, 1fr); }
+    .snav { display: none; }
+    .topbar .search { display: none; }
+  }
+
+  /* Shared bits of the system pages */
+  .stack-l { display: grid; gap: var(--space-5); }
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+  .ro { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: var(--radius-pill); border: 1px solid var(--border-strong); color: var(--text-secondary); font: 500 12px/1 var(--font-ui); white-space: nowrap; }
+  .ro .i { width: 13px; height: 13px; color: var(--text-muted); }
+  .explain { font: var(--type-body-sm); color: var(--text-secondary); max-width: 72ch; }
+  .explain code, .env { font: var(--type-mono-sm); color: var(--text-primary); }
+  .env { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: var(--radius-xs); background: var(--bg-sunken); border: 1px solid var(--border); white-space: nowrap; }
+  .panel-hd .sub { font: var(--type-caption); color: var(--text-muted); font-weight: 400; }
+  .panel-hd h2 .i { color: var(--text-muted); width: 18px; height: 18px; }
+  .ok { color: var(--status-available); }
+
+  /* Sign-in mode: two read-only cards, the active one marked */
+  .modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+  .mode { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; padding: 14px 16px; border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--bg-sunken); color: var(--text-secondary); font: var(--type-body-sm); }
+  .mode .ic { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--bg-active); color: var(--text-muted); }
+  .mode .ic .i { width: 18px; height: 18px; }
+  .mode b { display: flex; align-items: center; gap: 8px; font: 600 14px/20px var(--font-ui); color: var(--text-primary); margin-bottom: 2px; }
+  .mode .env { margin-top: 8px; }
+  .mode.on { border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: var(--bg-selected); }
+  .mode.on .ic { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--text-primary); }
+  .mode .now { margin-left: auto; font: 600 11px/1 var(--font-ui); letter-spacing: .04em; text-transform: uppercase; color: var(--text-primary); display: inline-flex; gap: 5px; align-items: center; }
+  .mode .now::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .acct { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; padding-top: var(--space-4); margin-top: var(--space-4); border-top: 1px solid var(--border); }
+  .acct .who { font: 500 14px/20px var(--font-ui); }
+  .acct .who small { display: block; font: var(--type-caption); color: var(--text-muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+
+  /* Password */
+  .form { display: grid; gap: var(--space-4); }
+  .meter { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .meter span { height: 4px; border-radius: 2px; background: var(--bg-active); }
+  .meter[data-level="3"] span { background: var(--status-available); }
+  .field-label .lvl { font-weight: 500; color: var(--status-available); }
+  .check.wrap { align-items: flex-start; font: var(--type-body-sm); color: var(--text-primary); }
+  .check.wrap input { margin-top: 1px; }
+  .check.wrap small { display: block; color: var(--text-muted); font: var(--type-caption); margin-top: 2px; }
+
+  /* API key */
+  .keycard { display: grid; gap: 14px; padding: 18px; border-radius: var(--radius-lg); background: var(--bg-sunken); border: 1px solid var(--border); }
+  .keycard .k { display: flex; align-items: center; gap: 12px; }
+  .keycard .k .i { width: 20px; height: 20px; color: var(--text-muted); }
+  .keycard .val { font: 500 17px/24px var(--font-mono); letter-spacing: .02em; color: var(--text-primary); }
+  .keycard .val .dots { color: var(--text-muted); letter-spacing: .12em; }
+  .kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 16px; font: var(--type-body-sm); margin: 0; }
+  .kv dt { color: var(--text-muted); }
+  .kv dd { margin: 0; color: var(--text-primary); font-variant-numeric: tabular-nums; min-width: 0; }
+  .hdr { display: grid; gap: 6px; }
+  .hdr pre { margin: 0; padding: 10px 12px; border-radius: var(--radius-md); background: var(--bg-sunken); border: 1px dashed var(--border-strong); font: var(--type-mono-sm); color: var(--text-secondary); white-space: pre; overflow: hidden; }
+  .hdr pre b { color: var(--text-primary); font-weight: 500; }
+  .hdr .no { display: flex; gap: 8px; align-items: flex-start; font: var(--type-caption); color: var(--text-muted); }
+  .hdr .no .i { width: 14px; height: 14px; color: var(--text-muted); flex: none; margin-top: 1px; }
+
+  /* Sessions */
+  .sess { list-style: none; margin: 0; padding: 0; display: grid; }
+  .sess li { display: grid; grid-template-columns: 40px minmax(0, 1.3fr) minmax(0, .9fr) minmax(0, 1fr) 96px; gap: 14px; align-items: center; padding: 12px 0; font: var(--type-body-sm); }
+  .sess li + li { border-top: 1px solid var(--border); }
+  .sess .dev { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; background: var(--bg-active); color: var(--text-secondary); }
+  .sess .dev .i { width: 18px; height: 18px; }
+  .sess .nm { font: 500 14px/20px var(--font-ui); color: var(--text-primary); display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .sess .nm small { display: block; }
+  .sess .meta { font: var(--type-caption); color: var(--text-muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+  .sess .ip { font: var(--type-mono-sm); color: var(--text-secondary); }
+  .sess .ip small { display: block; font: var(--type-caption); color: var(--text-muted); margin-top: 2px; font-family: var(--font-ui); }
+  .sess .seen { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .sess .seen .live { display: inline-flex; align-items: center; gap: 6px; color: var(--status-available); font-weight: 500; }
+  .sess .seen .live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .sess .act { justify-self: end; }
+  .this { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: var(--radius-pill); background: var(--bg-selected); color: var(--text-primary); font: 500 11.5px/1 var(--font-ui); white-space: nowrap; }
+  .sess-hd { display: grid; grid-template-columns: 40px minmax(0, 1.3fr) minmax(0, .9fr) minmax(0, 1fr) 96px; gap: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); font: 500 12px/1 var(--font-ui); color: var(--text-muted); }
+
+  /* Outbound policy matrix */
+  .policy { width: 100%; border-collapse: separate; border-spacing: 0; font: var(--type-body-sm); }
+  .policy th, .policy td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .policy thead th { font: 500 12px/16px var(--font-ui); color: var(--text-muted); padding-top: 0; white-space: nowrap; }
+  .policy td { vertical-align: top; } .policy tbody th { vertical-align: top; }
+  .policy thead th .i { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px; }
+  .policy tbody th { font: 500 14px/20px var(--font-ui); color: var(--text-primary); width: 34%; }
+  .policy tbody th small { display: block; font: var(--type-caption); color: var(--text-muted); font-weight: 400; margin-top: 2px; }
+  .policy tbody tr:last-child > * { border-bottom: 0; }
+  .policy td .status { font-size: 13px; }
+  .policy td .env { margin-top: 6px; font-size: 11px; height: 18px; }
+  .policy td .fixed { display: block; margin-top: 6px; font: var(--type-caption); color: var(--text-muted); font-weight: 400; }
+  .never { display: flex; flex-wrap: wrap; gap: 6px; }
+  .never .tag { font-family: var(--font-mono); font-size: 11.5px; font-weight: 400; }
+  .why { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--bg-sunken); border: 1px solid var(--border); font: var(--type-body-sm); color: var(--text-secondary); }
+  .why .i { width: 18px; height: 18px; color: var(--status-available); margin-top: 1px; }
+  .why b { color: var(--text-primary); font-weight: 500; }
+
+  /* Hosts, proxies, origins */
+  .netlist { list-style: none; margin: 0; padding: 0; display: grid; }
+  .netlist li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: var(--space-4); padding: 12px 0; align-items: start; }
+  .netlist li + li { border-top: 1px solid var(--border); }
+  .netlist .nm { font: 500 14px/20px var(--font-ui); }
+  .netlist .nm small { display: block; font: var(--type-caption); color: var(--text-muted); font-weight: 400; margin-top: 2px; max-width: 46ch; }
+  .netlist .vals { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
+  .netlist .vals .v { display: inline-flex; align-items: center; height: 26px; padding: 0 9px; border-radius: var(--radius-sm); background: var(--bg-active); color: var(--text-primary); font: var(--type-mono-sm); }
+  .netlist .vals .none { font: var(--type-body-sm); color: var(--text-muted); }
+  .netlist .vals .env { margin-left: auto; }
+
+  /* Dialog state */
+  .dlg-wrap { position: fixed; inset: 0; z-index: var(--z-dialog); display: grid; place-items: center; }
+  .dialog .icon-head.key { background: var(--status-missing-bg); color: var(--status-missing); }
+  .dialog ul { margin: var(--space-4) 0 0; padding-left: 18px; display: grid; gap: 6px; color: var(--text-secondary); font: var(--type-body-sm); }
+  .dialog ul b { color: var(--text-primary); font-weight: 500; }
+  .dialog .now-key { margin-top: var(--space-4); display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--bg-sunken); border: 1px solid var(--border); font: var(--type-body-sm); color: var(--text-secondary); }
+  .dialog .now-key .t-mono-sm { color: var(--text-primary); }
+  [data-dialog="none"] .only-dialog { display: none !important; }
+
+  @media (max-width: 1100px) {
+    .cols { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app" id="app" data-dialog="none">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar="settings"></nav>
+  <div class="main">
+    <header class="topbar">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="settings-quality.html?section=index">Settings</a><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg><span aria-current="page">Security</span></nav>
+      <div class="spacer"></div>
+      <label class="input search" aria-label="Search settings" style="width:260px"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" placeholder="Find a setting…" aria-label="Find a setting"></label>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    </header>
+    <main id="main" class="page">
+      <div class="set">
+        <nav class="snav" aria-label="Settings sections" id="snav"></nav>
+        <div class="stack-l">
+          <div class="shead" style="margin-bottom:0"><div><h1>Security</h1><p>Who can sign in, the browsers signed in right now, the API key, and where Gonema is allowed to connect.</p></div></div>
+
+          <!-- Sign-in mode + account -->
+          <section class="panel" aria-labelledby="h-signin">
+            <div class="panel-hd"><h2 id="h-signin"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>Sign-in</h2><span class="ro"><svg class="i" aria-hidden="true"><use href="#i-terminal"/></svg>Set where Gonema starts</span></div>
+            <div class="panel-bd">
+              <div class="modes" role="list" aria-label="Sign-in modes">
+                <div class="mode on" role="listitem" aria-current="true"><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-shield-check"/></svg></span><div><b>Login page on every network <span class="now">In use</span></b>Every browser and app signs in, on the internet and on your LAN alike. Recommended.<div><span class="env">GONEMA_AUTH=enabled</span></div></div></div>
+                <div class="mode" role="listitem"><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-router"/></svg></span><div><b>Skip it on the local network</b>Direct connections from this machine or your LAN get in without signing in. Unsafe with published Docker ports.<div><span class="env">GONEMA_AUTH=disabled_for_local</span></div></div></div>
+              </div>
+              <div class="acct">
+                <span class="avatar" aria-hidden="true">MA</span>
+                <span class="who">margaux<small>The admin account · created 4 Oct 2026 · last sign-in today at 08:12</small></span>
+                <span class="t-caption t-muted">One account, no roles</span>
+              </div>
+            </div>
+          </section>
+
+          <div class="cols">
+            <!-- Password -->
+            <section class="panel" aria-labelledby="h-pw">
+              <div class="panel-hd"><h2 id="h-pw">Change the password</h2></div>
+              <form class="panel-bd form" onsubmit="return false">
+                <div class="field"><label class="field-label" for="cur">Current password</label><label class="input"><input id="cur" type="password" value="correct-horse-battery" autocomplete="current-password"><button class="icon-btn sm" type="button" aria-label="Show password"><svg class="i i-sm" aria-hidden="true"><use href="#i-eye"/></svg></button></label></div>
+                <div class="field"><label class="field-label" for="nxt">New password <span class="lvl">strong</span></label><label class="input is-focus"><input id="nxt" type="password" value="velvet-static-in-the-booth" autocomplete="new-password" aria-describedby="nxt-h"><button class="icon-btn sm" type="button" aria-label="Show password"><svg class="i i-sm" aria-hidden="true"><use href="#i-eye"/></svg></button></label><div class="meter" data-level="3" aria-hidden="true"><span></span><span></span><span></span></div><span class="field-hint" id="nxt-h">At least 10 characters. Every other browser is signed out when it changes.</span></div>
+                <label class="check wrap"><input type="checkbox" checked><span>Also make a new API key<small>Wise if the password may have leaked. The new key is shown once; apps using the old one must be updated.</small></span></label>
+                <div class="row"><button class="btn btn-secondary" type="submit">Change password</button></div>
+              </form>
+            </section>
+
+            <!-- API key -->
+            <section class="panel" aria-labelledby="h-key">
+              <div class="panel-hd"><h2 id="h-key">API key</h2><span class="sub">for apps and scripts</span></div>
+              <div class="panel-bd" style="display:grid;gap:var(--space-4)">
+                <div class="keycard">
+                  <div class="k"><svg class="i" aria-hidden="true"><use href="#i-key-round"/></svg><span class="val" aria-label="API key ending in 3f9a">gnm_<span class="dots">••••••••</span>3f9a</span><button class="btn btn-ghost btn-sm" type="button" style="margin-left:auto"><svg class="i" aria-hidden="true"><use href="#i-refresh-cw"/></svg>Regenerate…</button></div>
+                  <dl class="kv"><dt>Made</dt><dd>4 Oct 2026, with the account</dd><dt>Last used</dt><dd>2 min ago</dd></dl>
+                </div>
+                <div class="hdr">
+                  <span class="field-label">Apps send it in a header</span>
+                  <pre>curl https://media.example.org/api/v1/movies \
+     -H "<b>X-Api-Key: gnm_…</b>"</pre>
+                  <span class="no"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><span>Never in the address (<span class="t-mono-sm">?apikey=</span> is refused): it would end up in proxy logs and browser history. Gonema keeps only a fingerprint, so the full key is shown once, when it is made.</span></span>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Sessions -->
+          <section class="panel" aria-labelledby="h-sess">
+            <div class="panel-hd"><h2 id="h-sess">Signed-in browsers <span class="sub">3</span></h2><span class="t-caption t-muted">A session ends after 14 days unused, 30 days at most</span></div>
+            <div class="panel-bd">
+              <div class="sess-hd" aria-hidden="true"><span></span><span>Device</span><span>Address</span><span>Last seen</span><span></span></div>
+              <ul class="sess" aria-label="Signed-in browsers">
+                <li><span class="dev"><svg class="i" aria-hidden="true"><use href="#i-laptop"/></svg></span><span><span class="nm">Firefox on Linux <span class="this">This browser</span></span><span class="meta">Signed in today at 08:12</span></span><span class="ip">192.168.1.24<small>Local network</small></span><span class="seen"><span class="live">Active now</span></span><span class="act"><button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-log-out"/></svg>Sign out</button></span></li>
+                <li><span class="dev"><svg class="i" aria-hidden="true"><use href="#i-smartphone"/></svg></span><span><span class="nm">Safari on iOS</span><span class="meta">Signed in 2 Nov 2026</span></span><span class="ip">192.168.1.51<small>Local network</small></span><span class="seen">Today at 07:40</span><span class="act"><button class="btn btn-ghost btn-sm" type="button" aria-label="Revoke Safari on iOS, 192.168.1.51">Revoke</button></span></li>
+                <li><span class="dev"><svg class="i" aria-hidden="true"><use href="#i-monitor-play"/></svg></span><span><span class="nm">Chrome on Windows</span><span class="meta">Signed in 21 Oct 2026</span></span><span class="ip">203.0.113.42<small>Through your reverse proxy</small></span><span class="seen">3 days ago</span><span class="act"><button class="btn btn-ghost btn-sm" type="button" aria-label="Revoke Chrome on Windows, 203.0.113.42">Revoke</button></span></li>
+              </ul>
+              <p class="explain" style="margin-top:var(--space-3)">Revoke signs that browser out at once (Undo for 8 s). Changing the password signs out every browser but this one.</p>
+            </div>
+          </section>
+
+          <!-- Outbound -->
+          <section class="panel" aria-labelledby="h-out">
+            <div class="panel-hd"><h2 id="h-out"><svg class="i" aria-hidden="true"><use href="#i-shield-check"/></svg>Outbound connections</h2><span class="ro"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>Read only</span></div>
+            <div class="panel-bd" style="display:grid;gap:var(--space-4)">
+              <div class="why"><svg class="i" aria-hidden="true"><use href="#i-shield-check"/></svg><span><b>Gonema checks every address it connects to, after the name is resolved.</b> A URL typed into a connection, or a link handed over by an indexer, cannot reach a place on your network it has no business with.</span></div>
+              <table class="policy">
+                <caption class="sr-only">Where each kind of connection may go</caption>
+                <thead><tr><th scope="col">Connection</th><th scope="col"><svg class="i" aria-hidden="true"><use href="#i-globe"/></svg>Internet</th><th scope="col"><svg class="i" aria-hidden="true"><use href="#i-router"/></svg>Local network</th><th scope="col"><svg class="i" aria-hidden="true"><use href="#i-server"/></svg>This machine</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">Integrations<small>Indexers, download clients, media servers, ntfy, Gotify, Telegram, e-mail</small></th>
+                    <td><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>Allowed</span></td>
+                    <td><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>Allowed</span><div><span class="env">GONEMA_OUTBOUND_ALLOW_PRIVATE</span></div></td>
+                    <td><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>Allowed</span><div><span class="env">GONEMA_OUTBOUND_ALLOW_LOOPBACK</span></div></td></tr>
+                  <tr><th scope="row">Webhooks<small>Generic webhook, Discord, Slack</small></th>
+                    <td><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>Allowed</span></td>
+                    <td><span class="status" data-status="unmonitored"><svg class="i" aria-hidden="true"><use href="#i-ban"/></svg>Blocked</span><div><span class="env">GONEMA_WEBHOOK_ALLOW_PRIVATE</span></div></td>
+                    <td><span class="status" data-status="unmonitored"><svg class="i" aria-hidden="true"><use href="#i-ban"/></svg>Blocked</span><span class="fixed">Same switch as the local network</span></td></tr>
+                  <tr><th scope="row">TMDB and images<small>Film data, posters and backdrops</small></th>
+                    <td><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>Allowed</span></td>
+                    <td><span class="status" data-status="unmonitored"><svg class="i" aria-hidden="true"><use href="#i-ban"/></svg>Blocked</span><span class="fixed">Always: public only</span></td>
+                    <td><span class="status" data-status="unmonitored"><svg class="i" aria-hidden="true"><use href="#i-ban"/></svg>Blocked</span><span class="fixed">Always: public only</span></td></tr>
+                </tbody>
+              </table>
+              <div style="display:grid;gap:8px">
+                <span class="field-label">Never contacted, whatever the settings</span>
+                <div class="never"><span class="tag plain">cloud metadata · 169.254.169.254</span><span class="tag plain">link-local · 169.254.0.0/16, fe80::/10</span><span class="tag plain">0.0.0.0/8, ::</span><span class="tag plain">multicast, broadcast</span><span class="tag plain">reserved and documentation ranges</span></div>
+              </div>
+              <p class="explain">Your download client on <span class="t-mono-sm">127.0.0.1</span> or a NAS at <span class="t-mono-sm">192.168.x</span> is fine. A webhook has no reason to aim at your network, so it may only reach the internet. Links from a public indexer may only lead to public addresses.</p>
+            </div>
+          </section>
+
+          <!-- Hosts, proxies, origins -->
+          <section class="panel" aria-labelledby="h-net">
+            <div class="panel-hd"><h2 id="h-net"><svg class="i" aria-hidden="true"><use href="#i-network"/></svg>Reverse proxy and host names</h2><span class="ro"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>Read only</span></div>
+            <div class="panel-bd">
+              <ul class="netlist">
+                <li><span class="nm">Allowed host names<small>Names a browser may use to reach Gonema, besides IP addresses and localhost.</small></span><span class="vals"><span class="v">media.example.org</span><span class="v">gonema.lan</span><span class="env">GONEMA_ALLOWED_HOSTS</span></span></li>
+                <li><span class="nm">Trusted proxies<small>Their forwarded headers are believed, so the real client address shows above.</small></span><span class="vals"><span class="v">172.18.0.2</span><span class="env">GONEMA_TRUSTED_PROXIES</span></span></li>
+                <li><span class="nm">Trusted origins<small>Public addresses allowed to send changes, when the proxy rewrites the host.</small></span><span class="vals"><span class="v">https://media.example.org</span><span class="env">GONEMA_TRUSTED_ORIGINS</span></span></li>
+                <li><span class="nm">Secure cookie<small>Sent over HTTPS only.</small></span><span class="vals"><span class="v">auto · on over HTTPS</span><span class="env">GONEMA_COOKIE_SECURE</span></span></li>
+              </ul>
+              <p class="explain" style="margin-top:var(--space-2)">Set these where Gonema starts (environment variables or flags), then restart it.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Dialog state: ?dialog=apikey -->
+  <div class="scrim only-dialog"></div>
+  <div class="dlg-wrap only-dialog">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dk-h" aria-describedby="dk-d">
+      <div class="icon-head key"><svg class="i i-lg" aria-hidden="true"><use href="#i-key-round"/></svg></div>
+      <h2 id="dk-h">Make a new API key?</h2>
+      <p id="dk-d">The current key stops working at once. Every app that uses it needs the new one.</p>
+      <div class="now-key"><svg class="i i-sm" aria-hidden="true"><use href="#i-key-round"/></svg>Current key <span class="t-mono-sm">gnm_••••••••3f9a</span><span class="t-caption t-muted" style="margin-left:auto">used 2 min ago</span></div>
+      <ul><li>The new key is shown <b>once</b>, right after it is made. Copy it before closing.</li><li>Browsers stay signed in: sessions don’t use the key.</li></ul>
+      <div class="actions"><button class="btn btn-ghost" type="button">Cancel</button><button class="btn btn-danger" type="button"><svg class="i" aria-hidden="true"><use href="#i-refresh-cw"/></svg>Replace the key</button></div>
+    </div>
+  </div>
+</div>
+<script src="../system/icons.js"></script>
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get('dialog') === 'apikey') document.getElementById('app').dataset.dialog = 'apikey';
+  const ic = (n) => '<svg class="i" aria-hidden="true"><use href="#i-' + n + '"/></svg>';
+  const cur = 'security';
+  const HREF = { index: 'settings-quality.html?section=index', quality: 'settings-quality.html', security: 'settings-security.html', backups: 'settings-backups.html', logs: 'settings-logs.html' };
+  const S = [['General', [['index', 'gauge', 'Overview'], ['', 'film', 'Library &amp; naming'], ['quality', 'sliders-horizontal', 'Quality &amp; scoring'], ['', 'list-checks', 'Import lists']]], ['Connections', [['', 'globe', 'Indexers'], ['', 'arrow-down-to-line', 'Download clients'], ['', 'monitor-play', 'Media servers'], ['', 'bell', 'Notifications']]], ['System', [['security', 'lock', 'Security'], ['backups', 'hard-drive', 'Backups'], ['logs', 'file-video', 'Logs'], ['', 'info', 'About']]]];
+  document.getElementById('snav').innerHTML = S.map(([h, items]) => '<h2>' + h + '</h2>' + items.map(([id, i, l]) => '<a href="' + (HREF[id] || '#') + '"' + (id === cur ? ' aria-current="page"' : '') + '>' + ic(i) + l + '</a>').join('')).join('');
+</script>
+</body>
+</html>

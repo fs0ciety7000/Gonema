@@ -91,6 +91,99 @@ func TestHandlerRedactsEveryOutput(t *testing.T) {
 	}
 }
 
+// TestHandlerComponent: the top-level component attribute becomes the entry
+// field (not an attribute), a later With replaces it in every output, and an
+// entry without one has an empty component.
+func TestHandlerComponent(t *testing.T) {
+	var out bytes.Buffer
+	lv := new(slog.LevelVar)
+	buf := NewBuffer(10)
+	base := slog.New(NewHandler(slog.NewTextHandler(&out, &slog.HandlerOptions{Level: lv}), buf, lv))
+	acq := base.With(slog.String(ComponentKey, "acquire"), slog.String("api_key", "TOPSECRET1"))
+	cases := []struct {
+		log       func()
+		component string
+		text      string // expected in the text output
+		attrs     map[string]string
+	}{
+		{func() { base.Info("plain", slog.Int("n", 1)) }, "", "msg=plain n=1", map[string]string{"n": "1"}},
+		{func() { acq.Info("grab") }, "acquire", "msg=grab api_key=[redacted] component=acquire", map[string]string{"api_key": Redacted}},
+		{func() {
+			acq.With(ComponentKey, "indexer").Warn("call", slog.String("url", "https://x/?apikey=TOPSECRET2"))
+		}, "indexer",
+			"component=indexer", map[string]string{"api_key": Redacted, "url": "https://x/?apikey=" + Redacted}},
+		{func() { base.Info("own", slog.String(ComponentKey, "import")) }, "import", "component=import", nil},
+		{func() { acq.Info("record wins", slog.String(ComponentKey, "download")) }, "download", "component=download", map[string]string{"api_key": Redacted}},
+		{func() { acq.WithGroup("g").Info("grouped", slog.String(ComponentKey, "nested")) }, "acquire",
+			"component=acquire", map[string]string{"api_key": Redacted, "g.component": "nested"}},
+		{func() { base.With(ComponentKey, "  ").Info("blank") }, "", "msg=blank", nil},
+	}
+	for i, c := range cases {
+		out.Reset()
+		c.log()
+		es := buf.Entries(Query{Limit: 1})
+		e := es[0]
+		if e.Component != c.component {
+			t.Errorf("%d: component = %q, want %q", i, e.Component, c.component)
+		}
+		if _, ok := e.Attrs[ComponentKey]; ok {
+			t.Errorf("%d: component left in attrs: %v", i, e.Attrs)
+		}
+		if len(e.Attrs) != len(c.attrs) {
+			t.Errorf("%d: attrs = %v, want %v", i, e.Attrs, c.attrs)
+		}
+		for k, v := range c.attrs {
+			if e.Attrs[k] != v {
+				t.Errorf("%d: attrs[%s] = %q, want %q", i, k, e.Attrs[k], v)
+			}
+		}
+		text := out.String()
+		if !strings.Contains(text, c.text) || strings.Count(text, " component=") > 1 || strings.Contains(text, "TOPSECRET") {
+			t.Errorf("%d: text output = %q", i, text)
+		}
+	}
+	var sb strings.Builder
+	if err := buf.WriteText(&sb); err != nil || !strings.Contains(sb.String(), "INFO component=acquire grab") {
+		t.Errorf("WriteText = %q, %v", sb.String(), err)
+	}
+}
+
+func TestQueryComponents(t *testing.T) {
+	lv := new(slog.LevelVar)
+	buf := NewBuffer(10)
+	log := slog.New(NewHandler(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{Level: lv}), buf, lv))
+	log.With(ComponentKey, "indexer").Warn("a")
+	log.With(ComponentKey, "download").Info("b")
+	log.Info("c")
+	cases := []struct {
+		q    Query
+		want string
+	}{
+		{Query{}, "abc"},
+		{Query{Components: []string{"INDEXER"}}, "a"},
+		{Query{Components: []string{"indexer", "download"}}, "ab"},
+		{Query{Components: []string{"download"}, MinLevel: "warn"}, ""},
+		{Query{Components: []string{"import"}}, ""},
+		{Query{Components: []string{"indexer"}, Text: "A"}, "a"},
+	}
+	for _, c := range cases {
+		var got string
+		for _, e := range buf.Entries(c.q) {
+			got += e.Message
+		}
+		if got != c.want {
+			t.Errorf("%+v = %q, want %q", c.q, got, c.want)
+		}
+	}
+	e := Entry{Level: "info", Component: "download", Message: "x"}
+	if q := (Query{MinLevel: "info", Components: []string{"download"}}); !q.Match(&e) {
+		t.Error("Match refused a matching entry")
+	}
+	if q := (Query{MinLevel: "warn"}); q.Match(&e) {
+		t.Error("Match accepted a lower level")
+	}
+}
+
 func TestBufferRingQueryAndLevel(t *testing.T) {
 	lv := new(slog.LevelVar)
 	lv.Set(slog.LevelInfo)

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: sign-in. Derived from onboarding.html (same atmosphere and chrome).
+     ?state=default | error (wrong password, help open) | throttled (calm countdown) */
+  body { min-height: 100vh; overflow-x: hidden; display: flex; flex-direction: column; }
+  .atmos { position: fixed; inset: 0; z-index: -1; overflow: hidden; }
+  .atmos .wall { position: absolute; inset: -40px; display: grid; grid-template-columns: repeat(10, 1fr); gap: 18px; transform: rotate(-8deg) scale(1.2); filter: blur(28px) saturate(1.1); opacity: .5; }
+  .atmos .wall .poster-art { aspect-ratio: 2/3; border-radius: 12px; overflow: hidden; }
+  .atmos .wall svg { width: 100%; height: 100%; }
+  .atmos::after { content: ""; position: absolute; inset: 0; background: radial-gradient(60% 70% at 50% 45%, color-mix(in srgb, var(--bg-base) 50%, transparent), var(--bg-base) 88%); }
+  [data-theme="light"] .atmos .wall { opacity: .35; }
+
+  .ob-top { display: flex; align-items: center; gap: var(--space-4); height: 72px; padding: 0 40px; flex: none; }
+  .ob-top .brand { display: flex; align-items: center; gap: 10px; color: var(--text-primary); }
+  .ob-top .brand svg { height: 26px; width: auto; } .ob-top .brand .wm { height: 13px; }
+  .ob-top .spacer { flex: 1; }
+
+  .stage { flex: 1; display: grid; place-items: center; padding: 16px 24px 56px; }
+  .login { width: 500px; max-width: 100%; border-radius: var(--radius-xl); padding: var(--space-10) var(--space-10) var(--space-8); display: grid; gap: var(--space-5); }
+  .login .t-overline { display: block; margin-bottom: 8px; }
+  .login h1 { font: var(--type-display-lg); letter-spacing: var(--type-display-lg-tracking); font-stretch: 125%; }
+  .login .intro { color: var(--text-secondary); margin-top: 8px; }
+  .login .host { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; height: 24px; padding: 0 9px 0 7px; border-radius: var(--radius-pill); background: color-mix(in srgb, var(--bg-sunken) 70%, transparent); border: 1px solid var(--border); font: var(--type-mono-sm); color: var(--text-secondary); }
+  .login .host .i { width: 13px; height: 13px; color: var(--text-muted); }
+  .login .form { display: grid; gap: var(--space-4); }
+  .login .btn-lg { width: 100%; }
+  .notice .nbody .t-mono-sm { color: var(--text-primary); }
+
+  /* Calm countdown: a slow ring, the time in mono, no red */
+  .wait { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px; align-items: center; padding: 14px 16px; border-radius: var(--radius-lg); background: color-mix(in srgb, var(--bg-sunken) 75%, transparent); border: 1px solid var(--border); }
+  .ring { position: relative; width: 56px; height: 56px; }
+  .ring svg { width: 56px; height: 56px; transform: rotate(-90deg); }
+  .ring circle { fill: none; stroke-width: 3; }
+  .ring .bg { stroke: var(--bg-active); }
+  .ring .fg { stroke: var(--status-missing); stroke-linecap: round; stroke-dasharray: 163.4; stroke-dashoffset: calc(163.4 * (1 - var(--p))); }
+  .ring .t { position: absolute; inset: 0; display: grid; place-items: center; font: 600 13px/1 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .wait b { display: block; font: 500 14px/20px var(--font-ui); }
+  .wait span.d { font: var(--type-body-sm); color: var(--text-secondary); }
+
+  details.help { border-top: 1px solid var(--border); padding-top: var(--space-4); }
+  details.help summary { list-style: none; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font: 500 13px/20px var(--font-ui); color: var(--text-secondary); border-radius: var(--radius-xs); }
+  details.help summary::-webkit-details-marker { display: none; }
+  details.help summary .i { width: 15px; height: 15px; color: var(--text-muted); transition: transform var(--dur-fast) var(--ease-out); }
+  details.help[open] summary .i { transform: rotate(90deg); }
+  details.help summary:hover { color: var(--text-primary); }
+  .help-bd { margin-top: var(--space-3); display: grid; gap: 10px; font: var(--type-body-sm); color: var(--text-secondary); }
+  .help-bd ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+  .help-bd code { font: var(--type-mono-sm); color: var(--text-primary); }
+  .help-bd .keep { display: flex; gap: 8px; align-items: flex-start; font: var(--type-caption); color: var(--text-muted); font-weight: 400; }
+  .help-bd .keep .i { width: 14px; height: 14px; flex: none; margin-top: 1px; }
+
+  [data-state="default"] .s-error, [data-state="default"] .s-throttled,
+  [data-state="error"] .s-default, [data-state="error"] .s-throttled,
+  [data-state="throttled"] .s-default, [data-state="throttled"] .s-error { display: none !important; }
+</style>
+</head>
+<body data-state="default" id="body">
+<div class="atmos" aria-hidden="true"><div class="wall" id="wall"></div></div>
+<header class="ob-top">
+  <span class="brand" id="brand" role="img" aria-label="Gonema"></span>
+  <div class="spacer"></div>
+  <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+</header>
+
+<div class="stage">
+  <main id="main" class="login glass-2" aria-labelledby="h">
+    <div>
+      <span class="t-overline">Sign in</span>
+      <h1 id="h">Back to the booth</h1>
+      <p class="intro">Sign in to run your collection on this server.</p>
+    </div>
+
+    <div class="notice s-error" data-tone="failed" role="alert"><svg class="i" aria-hidden="true"><use href="#i-triangle-alert"/></svg><div><div class="ntitle">That username and password don’t match.</div><div class="nbody">Check both, then try again. The password field was cleared.</div></div></div>
+
+    <div class="wait s-throttled" role="status">
+      <div class="ring" style="--p:.7" aria-hidden="true"><svg viewBox="0 0 56 56"><circle class="bg" cx="28" cy="28" r="26"/><circle class="fg" cx="28" cy="28" r="26"/></svg><span class="t">4:32</span></div>
+      <div><b>Sign-in is paused for a few minutes.</b><span class="d">Too many wrong attempts, so Gonema slows guessers down. Nothing is locked: the form comes back on its own.</span><span class="sr-only">You can try again in about 5 minutes.</span></div>
+    </div>
+
+    <form class="form" onsubmit="return false">
+      <div class="field"><label class="field-label" for="u">Username</label><label class="input"><input id="u" value="margaux" autocomplete="username" autocapitalize="none" spellcheck="false"></label></div>
+      <div class="field"><label class="field-label" for="pw">Password</label>
+        <label class="input s-default is-focus"><input id="pw" type="password" value="correct-horse-batt" autocomplete="current-password"><button class="icon-btn sm" type="button" aria-label="Show password"><svg class="i i-sm" aria-hidden="true"><use href="#i-eye"/></svg></button></label>
+        <label class="input s-error is-focus"><input id="pw2" type="password" value="" autocomplete="current-password" aria-label="Password"><button class="icon-btn sm" type="button" aria-label="Show password"><svg class="i i-sm" aria-hidden="true"><use href="#i-eye"/></svg></button></label>
+        <label class="input s-throttled is-disabled"><input id="pw3" type="password" value="" disabled aria-label="Password"><button class="icon-btn sm" type="button" aria-label="Show password" disabled><svg class="i i-sm" aria-hidden="true"><use href="#i-eye"/></svg></button></label>
+      </div>
+      <button class="btn btn-primary btn-lg s-default" type="submit"><svg class="i" aria-hidden="true"><use href="#i-log-in"/></svg>Sign in</button>
+      <button class="btn btn-primary btn-lg s-error" type="submit"><svg class="i" aria-hidden="true"><use href="#i-log-in"/></svg>Sign in</button>
+      <button class="btn btn-primary btn-lg s-throttled" type="submit" disabled><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>Try again in 4:32</button>
+    </form>
+
+    <details class="help" id="help">
+      <summary><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg>Forgot the password?</summary>
+      <div class="help-bd">
+        <p>Gonema has one admin account and no reset by e-mail. Whoever runs the server can make a new one:</p>
+        <ol>
+          <li>Stop Gonema.</li>
+          <li>Remove the account from the <code>users</code> table of <code>gonema.db</code>.</li>
+          <li>Start it again: this page offers to create the account anew.</li>
+        </ol>
+        <span class="keep"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg>Films, settings and connections are kept. The API key goes with the account: put the new one in the apps that use it.</span>
+      </div>
+    </details>
+  </main>
+</div>
+
+<script src="../system/icons.js"></script>
+<script src="../system/posters.js"></script>
+<script src="../system/mock.js"></script>
+<script>
+  const st = new URLSearchParams(location.search).get('state');
+  const state = ['error', 'throttled'].includes(st) ? st : 'default';
+  document.getElementById('body').dataset.state = state;
+  if (state === 'error') document.getElementById('help').open = true;
+  document.getElementById('brand').innerHTML = GN.MARK + GN.WORDMARK;
+  document.getElementById('wall').innerHTML = Object.keys(GN.films).slice(0, 30).map(id => '<div class="poster-art" data-film="' + id + '"></div>').join('');
+  GN.renderPosters();
+</script>
+</body>
+</html>

@@ -43,7 +43,7 @@ import {
   MAX_PASSWORD,
   MIN_PASSWORD,
   PasswordInput,
-  passwordStrength,
+  StrengthLabel,
   StrengthMeter,
 } from '@/components/auth/AuthParts';
 import { Mark, Wordmark } from '@/components/shell/Logo';
@@ -231,10 +231,13 @@ function AccountStep({
   signedIn,
   username,
   needsToken,
+  localMode,
 }: {
   go: (s: StepId) => void;
   signedIn: boolean;
   username?: string;
+  /** GONEMA_AUTH=disabled_for_local: this machine and the LAN get in without signing in. */
+  localMode: boolean;
   /** From another machine, the server asks for the one-time token it printed in its logs. */
   needsToken: boolean;
 }) {
@@ -246,7 +249,6 @@ function AccountStep({
   const [busy, setBusy] = useState(false);
   // The key of the account just created: shown once, kept only in this component's state.
   const [apiKey, setApiKey] = useState<string | null>(null);
-  const strength = passwordStrength(password);
   const submit = async (ev: FormEvent) => {
     ev.preventDefault();
     if (apiKey || (signedIn && !name && !password)) return go('tmdb');
@@ -303,7 +305,7 @@ function AccountStep({
     <form onSubmit={submit} noValidate className="contents">
       <Pane
         id="account"
-        overline="Step 1 · Security"
+        overline="Step 2 · Security"
         title="Secure the booth"
         intro="One admin account protects the web interface and the API. Create it before this server is reachable from other machines."
         nav={
@@ -350,31 +352,33 @@ function AccountStep({
               </Notice>
             )}
             {needsToken && (
-              <Field
-                label="Setup token"
-                error={errors.token}
-                hint={
-                  <>
-                    You are not on the server itself, so Gonema asks for proof that you run it. The token is in its log,
-                    on the line “no account exists yet” (<span className="t-mono-sm">setup=XXXX-XXXX-…</span>); in
-                    Docker: <span className="t-mono-sm">docker logs gonema</span>. Case, spaces and dashes don’t matter.
-                  </>
-                }
-              >
+              <Field label="Setup token" error={errors.token}>
                 {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    mono
-                    autoComplete="off"
-                    spellCheck={false}
-                    icon={<Lock className="i" aria-hidden="true" />}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={token}
-                    maxLength={64}
-                    placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"
-                    onChange={(ev) => setToken(ev.target.value)}
-                  />
+                  <>
+                    <Input
+                      id={id}
+                      mono
+                      autoComplete="off"
+                      spellCheck={false}
+                      icon={<Lock className="i" aria-hidden="true" />}
+                      aria-describedby={[describedBy, `${id}-tok`].filter(Boolean).join(' ')}
+                      invalid={invalid}
+                      value={token}
+                      maxLength={64}
+                      onChange={(ev) => setToken(ev.target.value)}
+                    />
+                    <div className="tok-help" id={`${id}-tok`}>
+                      <span>
+                        You are not on the server itself, so Gonema asks for proof that you run it. The token is in its
+                        log, on the line “no account exists yet”:
+                      </span>
+                      <code>setup=XXXX-XXXX-XXXX-XXXX-XXXX-XXXX</code>
+                      <span>
+                        In Docker: <code className="inl">docker logs gonema</code>. Case, spaces and dashes don’t
+                        matter; a new one is made at each start.
+                      </span>
+                    </div>
+                  </>
                 )}
               </Field>
             )}
@@ -394,7 +398,7 @@ function AccountStep({
             </Field>
             <Field
               label="Password"
-              aside={strength.label ? <span className="t-muted field-aside">{strength.label}</span> : undefined}
+              aside={<StrengthLabel password={password} />}
               error={errors.password}
               hint="At least 10 characters. A passphrase is easiest."
             >
@@ -412,10 +416,17 @@ function AccountStep({
                 </>
               )}
             </Field>
-            <p className="t-caption t-muted">
-              Signing in is required on every network. To skip it on a trusted LAN, start Gonema with{' '}
-              <span className="t-mono-sm">GONEMA_AUTH=disabled_for_local</span>.
-            </p>
+            {localMode ? (
+              <p className="t-caption t-muted">
+                Gonema runs with <span className="t-mono-sm">GONEMA_AUTH=disabled_for_local</span>: this machine and
+                your LAN get in without signing in, other networks sign in with this account. You can skip this step.
+              </p>
+            ) : (
+              <p className="t-caption t-muted">
+                Signing in is required on every network. To skip it on a trusted LAN, start Gonema with{' '}
+                <span className="t-mono-sm">GONEMA_AUTH=disabled_for_local</span>.
+              </p>
+            )}
           </div>
         )}
       </Pane>
@@ -452,7 +463,7 @@ function Tmdb({ go, done }: { go: (s: StepId) => void; done: boolean }) {
     <form onSubmit={submit} noValidate className="contents">
       <Pane
         id="tmdb"
-        overline="Step 2 · Metadata"
+        overline="Step 3 · Metadata"
         title="Connect film metadata"
         intro="Gonema uses The Movie Database for posters, cast, collections and release dates. The key is yours, free, and stays encrypted on this server."
         nav={
@@ -549,7 +560,7 @@ function FolderStep({ go }: { go: (s: StepId) => void }) {
     <form onSubmit={submit} noValidate className="contents">
       <Pane
         id="folder"
-        overline="Step 3 · Library"
+        overline="Step 4 · Library"
         title="Choose where films live"
         intro="Each film gets its own folder here. Gonema hardlinks finished torrents into it when it can, so nothing is stored twice."
         nav={
@@ -647,7 +658,7 @@ function QualityStep({ go }: { go: (s: StepId) => void }) {
   return (
     <Pane
       id="quality"
-      overline="Step 4 · Quality"
+      overline="Step 5 · Quality"
       title="How should your films look?"
       intro="Pick a starting point. Gonema grabs the first good copy, then keeps upgrading until it reaches the target. You can fine-tune everything in Settings."
       nav={
@@ -760,7 +771,7 @@ function IndexerStep({ go }: { go: (s: StepId) => void }) {
     <form onSubmit={(ev) => void submit(ev)} noValidate className="contents">
       <Pane
         id="indexer"
-        overline="Step 5 · Indexer"
+        overline="Step 6 · Indexer"
         title="Add an indexer"
         intro="Where Gonema looks for releases: any Newznab (Usenet) or Torznab (torrent) indexer. Paste its API URL and key."
         nav={
@@ -881,7 +892,7 @@ function ClientStep({ go }: { go: (s: StepId) => void }) {
     <form onSubmit={(ev) => void submit(ev)} noValidate className="contents">
       <Pane
         id="client"
-        overline="Step 6 · Download client"
+        overline="Step 7 · Download client"
         title="Connect your download client"
         intro="Gonema sends releases here and watches them until they’re ready to import."
         nav={
@@ -989,7 +1000,7 @@ function FilmStep({ go, finish }: { go: (s: StepId) => void; finish: () => void 
     return (
       <Pane
         id="film"
-        overline="Step 7 · First screening"
+        overline="Step 8 · First screening"
         title={dl ? 'The first print is on its way.' : 'Your first film is in the programme.'}
         intro={
           dl
@@ -1062,7 +1073,7 @@ function FilmStep({ go, finish }: { go: (s: StepId) => void; finish: () => void 
   return (
     <Pane
       id="film"
-      overline="Step 7 · First screening"
+      overline="Step 8 · First screening"
       title="Add your first film"
       intro="Search TMDB for a film you want. Gonema adds it with the quality you picked and starts looking right away."
       nav={<Nav back={() => go('client')} next={finish} nextLabel="Skip and open my cinema" />}
@@ -1215,7 +1226,13 @@ export function OnboardingScreen() {
                       <span className="sr-only"> (after the account)</span>
                     </span>
                   ) : (
-                    <Link to="/setup" search={{ step: s.id }} aria-current={s.id === step ? 'step' : undefined}>
+                    <Link
+                      to="/setup"
+                      search={{ step: s.id }}
+                      // the router marks its active link "page": a setup step is a "step"
+                      activeProps={{ 'aria-current': s.id === step ? 'step' : undefined }}
+                      aria-current={s.id === step ? 'step' : undefined}
+                    >
                       {body}
                     </Link>
                   )}
@@ -1246,6 +1263,7 @@ export function OnboardingScreen() {
             signedIn={signedIn && !auth?.setupRequired}
             username={auth?.username}
             needsToken={!!auth?.setupTokenRequired}
+            localMode={auth?.authMode === 'disabled_for_local'}
           />
         ) : step === 'tmdb' ? (
           <Tmdb go={go} done={done.tmdb!} />

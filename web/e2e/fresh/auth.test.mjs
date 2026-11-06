@@ -107,6 +107,12 @@ describe('sign-in: first account, API key once, sign out, sign in, protected rou
     await page.getByRole('button', { name: 'Sign in' }).click();
     await page.getByRole('alert').getByText('That username and password don’t match.', { exact: false }).waitFor();
     assert.equal(await page.getByLabel('Password', { exact: true }).inputValue(), '', 'password cleared');
+    assert.equal(
+      await page.evaluate(() => document.activeElement?.getAttribute('autocomplete')),
+      'current-password',
+      'password focused',
+    );
+    assert.equal(await page.locator('details.login-help').getAttribute('open'), '', 'the help is open');
     const a11y = await axe(page);
     assert.deepEqual(a11y, [], 'sign-in page with an error: no axe violation');
     await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
@@ -146,10 +152,13 @@ describe('sign-in: first account, API key once, sign out, sign in, protected rou
     await page.getByLabel('Username').fill(USER);
     await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByText('Too many attempts.').waitFor();
+    await page.getByText('Sign-in is paused for a few minutes.').waitFor();
     await page.locator('.countdown').waitFor();
     assert.match(await page.locator('.countdown').textContent(), /^\d+:\d\d$/);
-    assert.equal(await page.getByRole('button', { name: 'Sign in' }).isDisabled(), true);
+    const wait = page.getByRole('button', { name: /^Try again in \d+:\d\d$/ });
+    assert.equal(await wait.isDisabled(), true, 'the button waits');
+    assert.equal(await page.getByLabel('Password', { exact: true }).isDisabled(), true, 'the password field waits');
+    assert.equal(await page.locator('.login-wait .ring').count(), 1, 'calm countdown ring');
     assert.deepEqual(errors, []);
   });
 });

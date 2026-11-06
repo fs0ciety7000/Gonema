@@ -1,6 +1,6 @@
 {
   "base": "http://127.0.0.1:7676",
-  "date": "2026-11-06T12:13:35.388Z",
+  "date": "2026-11-06T13:28:02.672Z",
   "tags": "wcag2a, wcag2aa, wcag21a, wcag21aa, best-practice",
   "screens": [
     {
@@ -544,6 +544,34 @@
       ]
     },
     {
+      "screen": "onboarding-account",
+      "theme": "dark",
+      "url": "/setup?step=account",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-account",
+      "theme": "light",
+      "url": "/setup?step=account",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-account-key",
+      "theme": "dark",
+      "url": "/setup?step=account",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-account-key",
+      "theme": "light",
+      "url": "/setup?step=account",
+      "violations": [],
+      "errors": []
+    },
+    {
       "screen": "settings-security",
       "theme": "dark",
       "url": "/settings/security",
@@ -566,6 +594,20 @@
     },
     {
       "screen": "settings-security-account",
+      "theme": "light",
+      "url": "/settings/security",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-security-apikey",
+      "theme": "dark",
+      "url": "/settings/security",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-security-apikey",
       "theme": "light",
       "url": "/settings/security",
       "violations": [],

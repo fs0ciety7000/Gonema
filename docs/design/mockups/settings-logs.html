@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings · Logs · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: settings › logs. Live tail, scrolled up to read one entry (expanded), new lines waiting. */
+  /* Settings frame: same as settings-quality.html */
+  .page { padding-top: var(--space-6); padding-bottom: var(--space-8); max-width: none; }
+  .set { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: var(--space-8); }
+  .snav { position: sticky; top: calc(var(--topbar-h) + 24px); align-self: start; display: grid; gap: 2px; }
+  .snav h2 { font: var(--type-overline); letter-spacing: var(--type-overline-tracking); font-stretch: 125%; text-transform: uppercase; color: var(--text-muted); padding: 0 10px 6px; margin-top: var(--space-4); }
+  .snav h2:first-child { margin-top: 0; }
+  .snav a { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: var(--radius-sm); color: var(--text-secondary); font: 500 13.5px/1 var(--font-ui); }
+  .snav a:hover { background: var(--bg-hover); color: var(--text-primary); text-decoration: none; }
+  .snav a[aria-current="page"] { background: var(--bg-active); color: var(--text-primary); }
+  .snav a .i { width: 16px; height: 16px; color: var(--text-muted); }
+  .shead { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); }
+  .shead h1 { font: var(--type-display-md); letter-spacing: var(--type-display-md-tracking); font-stretch: 125%; }
+  .shead p { color: var(--text-secondary); margin-top: 6px; max-width: 64ch; }
+  @media (max-width: 1100px) {
+    .set { grid-template-columns: minmax(0, 1fr); }
+    .snav { display: none; }
+    .topbar .search { display: none; }
+  }
+  .stack-l { display: grid; gap: var(--space-4); min-width: 0; }
+
+  /* Server level */
+  .lvlbox { display: flex; align-items: center; gap: 10px; flex: none; }
+  .lvlbox .field-label { white-space: nowrap; }
+  .lvlbox .select { width: 132px; height: 32px; }
+  .lvlbox .select .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-secondary); flex: none; }
+  .facts { display: flex; flex-wrap: wrap; gap: 6px 18px; font: var(--type-caption); color: var(--text-muted); font-weight: 400; }
+  .facts > span { display: inline-flex; align-items: center; gap: 6px; }
+  .facts .i { width: 14px; height: 14px; }
+  .facts b { font-weight: 500; color: var(--text-secondary); }
+  .facts .t-mono-sm { color: var(--text-secondary); }
+
+  /* Viewer */
+  .viewer { display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; }
+  .vt { display: flex; align-items: center; gap: var(--space-3); padding: 12px 14px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .vt .chips { display: flex; gap: 6px; }
+  .vt .chip .lv { width: 7px; height: 7px; border-radius: 50%; background: var(--c, var(--text-muted)); }
+  .vt .search { width: 240px; height: 32px; }
+  .vt .spacer { flex: 1; }
+  .vt .switch { font: 500 13px/1 var(--font-ui); gap: 8px; }
+  .vt .live-dot { display: inline-flex; align-items: center; gap: 6px; font: var(--type-caption); color: var(--status-downloading); }
+  .vt .live-dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: live-dot 2.4s var(--ease-in-out) infinite; }
+  .vt .divider { width: 1px; height: 20px; background: var(--border); }
+  [data-lv="debug"] { --c: var(--text-muted); } [data-lv="info"] { --c: var(--text-secondary); }
+  [data-lv="warn"] { --c: var(--status-missing); } [data-lv="error"] { --c: var(--status-failed); }
+
+  .logwrap { position: relative; background: var(--bg-sunken); min-height: 0; }
+  .log { list-style: none; margin: 0; padding: 6px 0; height: 528px; overflow: hidden; font: 400 12.5px/24px var(--font-mono); font-variant-numeric: tabular-nums; }
+  .ln { display: grid; grid-template-columns: 74px 46px 100px minmax(0, 1fr); gap: 12px; align-items: center; padding: 0 16px 0 14px; height: 24px; color: var(--text-primary); border-left: 2px solid transparent; }
+  .ln:hover { background: var(--bg-hover); }
+  .ln time { color: var(--text-muted); }
+  .ln .lvl { display: inline-flex; align-items: center; justify-content: center; height: 18px; border-radius: 4px; font: 600 10.5px/1 var(--font-mono); letter-spacing: .04em; color: var(--c); }
+  .ln[data-lv="warn"] .lvl, .ln[data-lv="error"] .lvl { background: var(--bg-raised); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent); }
+  .ln[data-lv="error"] time, .ln[data-lv="error"] .msg .a { color: var(--text-secondary); }
+  .ln[data-lv="error"] { background: color-mix(in srgb, var(--status-failed) 6%, transparent); border-left-color: var(--status-failed); }
+  .ln .comp { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ln .msg { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .ln .msg .a { color: var(--text-muted); }
+  .ln .msg .a b { font-weight: 400; color: var(--text-secondary); }
+  .red { display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 6px; border-radius: 4px; background: var(--bg-active); color: var(--text-secondary); font: 500 11px/1 var(--font-ui); vertical-align: 1px; white-space: nowrap; }
+  .red .i { width: 11px; height: 11px; }
+  .ln.open { background: var(--bg-selected); border-left-color: var(--accent); }
+  .ln.open time, .ln.open .msg .a { color: var(--text-secondary); }
+  .ln.open .lvl { background: var(--bg-raised) !important; }
+  .ln .chev { display: none; }
+
+  .detail { margin: 0 12px 6px 14px; padding: 12px 14px 14px 16px; border-radius: 0 0 var(--radius-md) var(--radius-md); background: var(--bg-raised); border: 1px solid var(--border); border-top: 0; border-left: 2px solid var(--accent); font: var(--type-body-sm); display: grid; gap: 10px; }
+  .detail .dh { display: flex; align-items: center; gap: 12px; color: var(--text-muted); font: var(--type-caption); font-weight: 400; }
+  .detail .dh .t-mono-sm { color: var(--text-secondary); }
+  .detail .dh .row { margin-left: auto; gap: 4px; }
+  .attrs { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 18px; margin: 0; font: 400 12.5px/20px var(--font-mono); }
+  .attrs dt { color: var(--text-muted); }
+  .attrs dd { margin: 0; color: var(--text-primary); overflow-wrap: anywhere; }
+  .attrs dd .q { color: var(--text-muted); }
+
+  .newpill { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px 0 12px; border-radius: var(--radius-pill); border: 1px solid var(--border-strong); background: var(--glass-3); -webkit-backdrop-filter: blur(var(--glass-blur-3)); backdrop-filter: blur(var(--glass-blur-3)); box-shadow: inset 0 1px 0 var(--glass-edge), var(--elev-3); color: var(--text-primary); font: 500 13px/1 var(--font-ui); font-variant-numeric: tabular-nums; }
+  .newpill .i { width: 15px; height: 15px; color: var(--status-downloading); }
+  .newpill .kbd { margin-left: 2px; }
+  .scrollbar { position: absolute; right: 4px; top: 8px; bottom: 8px; width: 6px; }
+  .scrollbar span { position: absolute; right: 0; width: 6px; height: 64px; top: 64%; border-radius: 3px; background: var(--border-strong); }
+
+  .vf { display: flex; align-items: center; gap: var(--space-4); padding: 10px 14px; border-top: 1px solid var(--border); font: var(--type-caption); color: var(--text-muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+  .vf .spacer { flex: 1; }
+  .vf > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .vf .i { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px; }
+
+  @media (max-width: 1100px) {
+    .vt .search { width: 200px; }
+    .ln { grid-template-columns: 70px 40px 92px minmax(0, 1fr); gap: 10px; }
+    .log { height: 480px; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar="settings"></nav>
+  <div class="main">
+    <header class="topbar">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="settings-quality.html?section=index">Settings</a><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg><span aria-current="page">Logs</span></nav>
+      <div class="spacer"></div>
+      <label class="input search" aria-label="Search settings" style="width:260px"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" placeholder="Find a setting…" aria-label="Find a setting"></label>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    </header>
+    <main id="main" class="page">
+      <div class="set">
+        <nav class="snav" aria-label="Settings sections" id="snav"></nav>
+        <div class="stack-l">
+          <div class="shead">
+            <div><h1>Logs</h1><p>What Gonema did and why, as it happens. Passwords, keys and tokens are removed before anything is written.</p></div>
+            <div class="lvlbox"><span class="field-label" id="lvl-l">Server writes from</span><button class="input select" type="button" aria-haspopup="listbox" aria-labelledby="lvl-l lvl-v"><span class="dot" aria-hidden="true"></span><span class="value" id="lvl-v">Info</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button></div>
+          </div>
+          <div class="facts">
+            <span><svg class="i" aria-hidden="true"><use href="#i-refresh-cw"/></svg><span>Level applies at once, until the next restart (<span class="t-mono-sm">GONEMA_LOG_LEVEL</span> wins then)</span></span>
+            <span><svg class="i" aria-hidden="true"><use href="#i-database"/></svg><span>In memory: <b>last 2,000 entries</b></span></span>
+            <span><svg class="i" aria-hidden="true"><use href="#i-file-video"/></svg><span>File: <span class="t-mono-sm">/config/logs/gonema.log</span> · rotated at 10 MB, 5 kept</span></span>
+          </div>
+
+          <section class="panel viewer" aria-labelledby="h-v">
+            <h2 id="h-v" class="sr-only">Log entries</h2>
+            <div class="vt">
+              <div class="chips" role="group" aria-label="Levels shown">
+                <button class="chip" type="button" aria-pressed="false" data-lv="debug"><span class="lv" aria-hidden="true"></span>Debug <span class="k">0</span></button>
+                <button class="chip is-on" type="button" aria-pressed="true" data-lv="info"><span class="lv" aria-hidden="true"></span>Info <span class="k">1,912</span></button>
+                <button class="chip is-on" type="button" aria-pressed="true" data-lv="warn"><span class="lv" aria-hidden="true"></span>Warn <span class="k">74</span></button>
+                <button class="chip is-on" type="button" aria-pressed="true" data-lv="error"><span class="lv" aria-hidden="true"></span>Error <span class="k">14</span></button>
+              </div>
+              <label class="input search"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" placeholder="Search the logs…" aria-label="Search the logs"></label>
+              <div class="spacer"></div>
+              <button class="switch" role="switch" aria-checked="true" type="button"><span class="track" aria-hidden="true"></span>Live</button>
+              <span class="divider" aria-hidden="true"></span>
+              <button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg>Download</button>
+            </div>
+            <div class="logwrap">
+              <ol class="log" id="log" tabindex="0" aria-label="Log entries, 2,000 in memory"></ol>
+              <div class="scrollbar" aria-hidden="true"><span></span></div>
+              <button class="newpill" type="button"><svg class="i" aria-hidden="true"><use href="#i-arrow-down-to-line"/></svg>12 new <span class="kbd">End</span></button>
+            </div>
+            <div class="vf"><span><svg class="i" aria-hidden="true"><use href="#i-radio"/></svg> Live, following paused while you read: new entries wait below.</span><span class="spacer"></span><span>2,000 of the last 2,000 entries · oldest 14:02:11</span></div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="../system/icons.js"></script>
+<script>
+  const ic = (n, c) => '<svg class="i ' + (c || '') + '" aria-hidden="true"><use href="#i-' + n + '"/></svg>';
+  const cur = 'logs';
+  const HREF = { index: 'settings-quality.html?section=index', quality: 'settings-quality.html', security: 'settings-security.html', backups: 'settings-backups.html', logs: 'settings-logs.html' };
+  const S = [['General', [['index', 'gauge', 'Overview'], ['', 'film', 'Library &amp; naming'], ['quality', 'sliders-horizontal', 'Quality &amp; scoring'], ['', 'list-checks', 'Import lists']]], ['Connections', [['', 'globe', 'Indexers'], ['', 'arrow-down-to-line', 'Download clients'], ['', 'monitor-play', 'Media servers'], ['', 'bell', 'Notifications']]], ['System', [['security', 'lock', 'Security'], ['backups', 'hard-drive', 'Backups'], ['logs', 'file-video', 'Logs'], ['', 'info', 'About']]]];
+  document.getElementById('snav').innerHTML = S.map(([h, items]) => '<h2>' + h + '</h2>' + items.map(([id, i, l]) => '<a href="' + (HREF[id] || '#') + '"' + (id === cur ? ' aria-current="page"' : '') + '>' + ic(i) + l + '</a>').join('')).join('');
+
+  const SHORT = { debug: 'DBG', info: 'INF', warn: 'WRN', error: 'ERR' };
+  const LABEL = { debug: 'Debug', info: 'Info', warn: 'Warning', error: 'Error' };
+  const RED = '<span class="red">' + ic('lock') + '••• redacted</span>';
+  // [time, level, component, message, attrs]
+  const L = [
+    ['20:41:07', 'info', 'rss', 'RSS sync done', 'indexers=3 new=46 accepted=2 took=1.8s'],
+    ['20:41:07', 'info', 'decision', 'RSS release rejected', 'film="Ninefold (2023)" reason="720p is below the profile floor (1080p)"'],
+    ['20:44:30', 'info', 'http', 'signed in', 'user=1 session=41'],
+    ['20:52:11', 'warn', 'indexer', 'indexer unreachable', 'name=Cinémathèque err="timeout after 15s" failures=3 paused_until=21:30', true],
+    ['20:52:12', 'info', 'search', 'automatic search: nothing to grab', 'film="The Quiet Meridian (2019)" results=31 rejected=31'],
+    ['20:58:40', 'info', 'grab', 'release grabbed', 'film="Saltwater Hymn (2022)" release=Saltwater.Hymn.2022.1080p.BluRay.x264-BOBiNE score=+60 client=SABnzbd'],
+    ['21:02:03', 'warn', 'download', 'download client refused a release', 'client=qBittorrent status=403 url=http://192.168.1.20:8080/api/v2/torrents/add?token=§R'],
+    ['21:02:04', 'info', 'grab', 'release grabbed', 'film="Coldharbour (2021)" release=Coldharbour.2021.2160p.WEB-DL.DV.HDR10.DDP5.1-PELLiCULE score=+70 client=SABnzbd'],
+    ['21:05:52', 'error', 'import', 'download failed, release blocklisted', 'film="Ninefold (2023)" release=Ninefold.2023.1080p.WEB-DL-MiNiPiX reason="archive is damaged: CRC error in part 14" next=retry 2/6'],
+    ['21:05:53', 'info', 'search', 'searching the next release', 'film="Ninefold (2023)" attempt=2'],
+    ['21:08:19', 'info', 'notify', 'notification sent', 'channel="ntfy · phone" event=failure'],
+    ['21:10:44', 'info', 'mediaserver', 'library refresh scheduled', 'server=Jellyfin film="Coldharbour (2021)"'],
+    ['21:13:58', 'info', 'grab', 'release grabbed', 'film="Halcyon Drift (2024)" release=Halcyon.Drift.2024.2160p.WEB-DL.DV.HDR10.EAC3.Atmos-PELLiCULE indexer="Nebula NZB" score=+70'],
+    ['21:14:02', 'info', 'import', 'download imported', 'film="Halcyon Drift (2024)" quality=WEBDL-2160p mode=hardlink size=21.7GB'],
+    ['21:14:02', 'info', 'mediaserver', 'library refresh scheduled', 'server=Jellyfin film="Halcyon Drift (2024)"'],
+    ['21:14:40', 'warn', 'indexer', 'calling indexer', 'name=AltReel url=https://altreel.example/api?t=movie&imdbid=tt0000000&apikey=§R status=429 retry_after=60s'],
+  ];
+  const fmtA = (a) => a.replace(/([a-z_]+)=("[^"]*"|\S+)/g, (m, k, v) => '<span class="a">' + k + '=<b>' + v + '</b></span>').replace(/§R/g, RED);
+  let html = '';
+  L.forEach(([t, lv, comp, msg, attrs, open], i) => {
+    html += '<li class="ln' + (open ? ' open' : '') + '" data-lv="' + lv + '"' + (open ? ' aria-expanded="true"' : '') + '><time datetime="2026-11-06T' + t + 'Z">' + t + '</time><span class="lvl"><span aria-hidden="true">' + SHORT[lv] + '</span><span class="sr-only">' + LABEL[lv] + '</span></span><span class="comp">' + comp + '</span><span class="msg">' + msg + ' ' + fmtA(attrs) + '</span></li>';
+    if (open) html += '<li class="detail" aria-label="Details of this entry">' +
+      '<div class="dh"><span class="t-mono-sm">2026-11-06T20:52:11.418Z</span><span>entry #18,342</span><span class="row"><button class="btn btn-ghost btn-sm" type="button">' + ic('copy') + 'Copy as JSON</button><button class="icon-btn sm" type="button" aria-label="Collapse entry">' + ic('chevron-up', 'i-sm') + '</button></span></div>' +
+      '<dl class="attrs"><dt>message</dt><dd>indexer unreachable</dd><dt>name</dt><dd>Cinémathèque</dd><dt>url</dt><dd>https://cinematheque.example/api?t=movie&amp;tmdbid=58213&amp;apikey=' + RED + '</dd><dt>err</dt><dd>timeout after 15s</dd><dt>failures</dt><dd>3</dd><dt>paused_until</dt><dd>21:30</dd></dl></li>';
+  });
+  document.getElementById('log').innerHTML = html;
+</script>
+</body>
+</html>

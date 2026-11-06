@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -356,8 +357,9 @@ func (r *opsRoutes) logSettings() LogSettings {
 }
 
 type logStreamInput struct {
-	Level       string `query:"level" enum:"debug,info,warn,error" default:"debug" doc:"Minimum level"`
-	LastEventID string `header:"Last-Event-ID" maxLength:"20" doc:"Id of the last entry received; newer entries still in memory are replayed"`
+	Level       string   `query:"level" enum:"debug,info,warn,error" default:"debug" doc:"Minimum level"`
+	Component   []string `query:"component" maxItems:"32" doc:"Components, comma-separated (indexer,download...); all when absent"`
+	LastEventID string   `header:"Last-Event-ID" maxLength:"20" doc:"Id of the last entry received; newer entries still in memory are replayed"`
 }
 
 func (r *opsRoutes) logs() {
@@ -367,12 +369,14 @@ func (r *opsRoutes) logs() {
 		Description: "From the in-memory ring (the last GONEMA_LOG_BUFFER entries). Secrets are redacted.",
 		Tags:        tags,
 	}, func(_ context.Context, in *struct {
-		Level string    `query:"level" enum:"debug,info,warn,error" default:"debug" doc:"Minimum level"`
-		Since time.Time `query:"since" doc:"Entries at or after this time (RFC 3339)"`
-		Q     string    `query:"q" maxLength:"200" doc:"Case-insensitive text in the message or the attributes"`
-		Limit int       `query:"limit" minimum:"1" maximum:"5000" default:"500"`
+		Level     string    `query:"level" enum:"debug,info,warn,error" default:"debug" doc:"Minimum level"`
+		Since     time.Time `query:"since" doc:"Entries at or after this time (RFC 3339)"`
+		Q         string    `query:"q" maxLength:"200" doc:"Case-insensitive text in the message or the attributes"`
+		Component []string  `query:"component" maxItems:"32" doc:"Components, comma-separated (indexer,download...); all when absent"`
+		Limit     int       `query:"limit" minimum:"1" maximum:"5000" default:"500"`
 	}) (*struct{ Body LogList }, error) {
-		entries := r.d.Logs.Entries(logbuf.Query{MinLevel: in.Level, Since: in.Since, Text: in.Q, Limit: in.Limit})
+		entries := r.d.Logs.Entries(logbuf.Query{MinLevel: in.Level, Since: in.Since, Text: in.Q,
+			Components: logComponents(in.Component), Limit: in.Limit})
 		out := make([]LogEntry, len(entries))
 		for i := range entries {
 			out[i] = LogEntry(entries[i])
@@ -491,14 +495,14 @@ func (r *opsRoutes) streamLogs(req *http.Request, w http.ResponseWriter, in *log
 		}
 		return err == nil
 	}
-	minLevel := in.Level
+	filter := logbuf.Query{MinLevel: in.Level, Components: logComponents(in.Component)}
 	var last uint64
 	send := func(e *logbuf.Entry) bool {
 		if e.ID <= last {
 			return true
 		}
 		last = e.ID
-		if !atLeast(e.Level, minLevel) {
+		if !filter.Match(e) {
 			return true
 		}
 		data, err := json.Marshal(e)
@@ -555,9 +559,19 @@ func (r *opsRoutes) streamLogs(req *http.Request, w http.ResponseWriter, in *log
 	}
 }
 
-func atLeast(level, minLevel string) bool {
-	rank := map[string]int{"debug": 0, "info": 1, "warn": 2, "error": 3}
-	return rank[level] >= rank[minLevel]
+// logComponents normalizes the component filter: trimmed, lower case, no
+// empty or duplicate name.
+func logComponents(in []string) []string {
+	var out []string
+	for _, v := range in {
+		for c := range strings.SplitSeq(v, ",") {
+			c = strings.ToLower(strings.TrimSpace(c))
+			if c != "" && len(c) <= 64 && !slices.Contains(out, c) {
+				out = append(out, c)
+			}
+		}
+	}
+	return out
 }
 
 // ----------------------------------------------------------------- import journal

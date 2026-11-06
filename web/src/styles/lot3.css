@@ -545,6 +545,15 @@
     gap: var(--space-4);
     margin-bottom: var(--space-5);
   }
+  .shead-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex: none;
+  }
+  .shead-actions:empty {
+    display: none;
+  }
   .shead h1 {
     font: var(--type-display-md);
     letter-spacing: var(--type-display-md-tracking);

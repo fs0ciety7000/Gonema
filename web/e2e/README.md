@@ -7,7 +7,8 @@ make release                                            # SPA built and embedded
 bin/gonema demo seed -films 10000 -data-dir /tmp/gonema-demo
 GONEMA_AUTH=disabled_for_local bin/gonema serve -data-dir /tmp/gonema-demo &   # http://127.0.0.1:7676, no sign-in from 127.0.0.1
 cd web
-npm run e2e        # lot 1: library, filter, select, film, Undo, J/K · lot 2: add (TMDB mocked), interactive search
+npm run e2e        # system.test.mjs: sign-in states, Security, Backups (restore staged then canceled, delete), Logs
+                   # lot 1: library, filter, select, film, Undo, J/K · lot 2: add (TMDB mocked), interactive search
                    # (stream mocked), queue pause/remove + Undo, history filter, bulk tags + Undo, delete file confirm
 npm run perf       # bundle sizes, first poster, CLS, scroll frame times (grid, table, CPU 1x/4x) -> e2e/perf.json
 npm run fidelity   # screenshots + side-by-side with docs/design/renders + axe-core -> e2e/__screenshots__/
@@ -68,3 +69,8 @@ The demo has no TMDB key, no network and no indexer, so these are mocked in e2e 
   Backups, the restore dialog (not confirmed), Logs (live stream) and About are the real server. The lot 3 setup test now
   lands on the Account step (the demo has no account).
 
+- Phase 8 bis (approved mockups): `onboarding-account*` answer `GET /auth/status` as a browser on another machine
+  (`setupTokenRequired`) and, for the key state, `POST /auth/setup` with a fictional key; `settings-security-apikey` uses
+  the same completed security answer as `settings-security-account` (three sessions). `settings-backups*` and
+  `e2e/system.test.mjs` make real archives on the demo, stage a real restore and cancel it; the system suite also deletes
+  the archive it made and puts the backup schedule back as it found it.

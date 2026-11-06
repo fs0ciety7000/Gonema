@@ -269,6 +269,85 @@ func TestLogRoutes(t *testing.T) {
 	}
 }
 
+// TestLogRoutesComponent: the component is a field of each entry and filters
+// /logs and /logs/stream (a comma list, case-insensitive).
+func TestLogRoutesComponent(t *testing.T) {
+	e := newOpsEnv(t)
+	e.log.With("component", "indexer").Warn("indexer unreachable", slog.String("url", "https://idx.example/api?apikey=SECRET123"))
+	e.log.With("component", "download").Info("download imported")
+	e.log.Info("no component")
+
+	r := e.do(t, "GET", "/api/v1/logs", "")
+	all := decode[LogList](t, r)
+	if r.status != 200 || len(all.Entries) != 3 || all.Entries[0].Component != "indexer" || all.Entries[2].Component != "" ||
+		all.Entries[0].Attrs["component"] != "" || strings.Contains(r.body, "SECRET123") {
+		t.Fatalf("logs = %d %s", r.status, r.body)
+	}
+	if !strings.Contains(r.body, `"component":""`) {
+		t.Errorf("an entry without a component must carry an empty component: %s", r.body)
+	}
+	l := decode[LogList](t, e.do(t, "GET", "/api/v1/logs?component=Indexer,%20download", ""))
+	if len(l.Entries) != 2 || l.Entries[0].Component != "indexer" || l.Entries[1].Component != "download" {
+		t.Errorf("component filter = %+v", l)
+	}
+	if l := decode[LogList](t, e.do(t, "GET", "/api/v1/logs?component=import", "")); len(l.Entries) != 0 {
+		t.Errorf("unknown component = %+v", l)
+	}
+	if l := decode[LogList](t, e.do(t, "GET", "/api/v1/logs?component=indexer&level=error", "")); len(l.Entries) != 0 {
+		t.Errorf("component and level = %+v", l)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, "GET", e.ts.URL+"/api/v1/logs/stream?component=download", http.NoBody)
+	req.Header.Set(APIKeyHeader, e.apiKey)
+	req.Header.Set("Last-Event-ID", "0")
+	resp, err := e.ts.Client().Do(req) //nolint:bodyclose // closed by the defer below
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		t.Fatalf("stream = %d", resp.StatusCode)
+	}
+	lines := make(chan string, 64)
+	go func() {
+		sc := bufio.NewScanner(resp.Body)
+		for sc.Scan() {
+			lines <- sc.Text()
+		}
+		close(lines)
+	}()
+	var got []string
+	deadline := time.After(5 * time.Second)
+	logged := false
+	for {
+		select {
+		case l, ok := <-lines:
+			if !ok {
+				t.Fatalf("stream closed; read %q", got)
+			}
+			got = append(got, l)
+			if l == ": connected" && !logged {
+				logged = true
+				e.log.With("component", "indexer").Error("other component")
+				e.log.Error("no component either")
+				e.log.With("component", "download").Info("live download")
+			}
+		case <-deadline:
+			t.Fatalf("no live entry; read %q", got)
+		}
+		if len(got) > 0 && strings.Contains(got[len(got)-1], "live download") {
+			break
+		}
+	}
+	text := strings.Join(got, "\n")
+	if !strings.Contains(text, "download imported") || !strings.Contains(text, `"component":"download"`) ||
+		strings.Contains(text, "other component") || strings.Contains(text, "no component") || strings.Contains(text, "SECRET123") {
+		t.Errorf("stream = %s", text)
+	}
+}
+
 func TestImportJournalRoutes(t *testing.T) {
 	e := newOpsEnv(t)
 	r := e.do(t, "GET", "/api/v1/imports/journal", "")
