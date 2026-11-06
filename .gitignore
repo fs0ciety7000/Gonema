@@ -34,6 +34,11 @@ target/
 # Go
 bin/
 
+# SPA copied by `make web` and embedded by internal/webui (only the keep file is tracked)
+!internal/webui/dist/
+internal/webui/dist/*
+!internal/webui/dist/.gitkeep
+
 # Heavy third-party skills (~54 MB of assets): reinstall with `kit project add design-ui brand`
 .claude/skills/design-taste-frontend/
 .claude/skills/logo-design/

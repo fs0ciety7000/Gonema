@@ -43,6 +43,7 @@ type Querier interface {
 	// ----------------------------------------------------------------- remote path mappings
 	CreateRemotePathMapping(ctx context.Context, arg CreateRemotePathMappingParams) (RemotePathMapping, error)
 	CreateRootFolder(ctx context.Context, path string) (RootFolder, error)
+	CreateSavedView(ctx context.Context, arg CreateSavedViewParams) (SavedView, error)
 	CreateScoringRule(ctx context.Context, arg CreateScoringRuleParams) (ScoringRule, error)
 	CreateTag(ctx context.Context, label string) (Tag, error)
 	DeleteAlternateTitles(ctx context.Context, arg DeleteAlternateTitlesParams) error
@@ -59,6 +60,7 @@ type Querier interface {
 	DeleteQualityProfileItems(ctx context.Context, profileID int64) error
 	DeleteRemotePathMapping(ctx context.Context, id int64) (int64, error)
 	DeleteRootFolder(ctx context.Context, id int64) (int64, error)
+	DeleteSavedView(ctx context.Context, id int64) (int64, error)
 	DeleteSetting(ctx context.Context, key string) (int64, error)
 	DeleteTag(ctx context.Context, id int64) (int64, error)
 	// EnqueueJob inserts a pending job. With a dedupe_key that an active (pending or
@@ -67,6 +69,8 @@ type Querier interface {
 	// FailJob records an error: the job goes back to pending at retry_at, or to failed
 	// once max_attempts is reached.
 	FailJob(ctx context.Context, arg FailJobParams) (Job, error)
+	// FindImageOwner finds the movie an image belongs to (demo image rendering).
+	FindImageOwner(ctx context.Context, imagePath string) (FindImageOwnerRow, error)
 	GetBlocklist(ctx context.Context, id int64) (Blocklist, error)
 	GetCollection(ctx context.Context, id int64) (Collection, error)
 	GetCollectionByTmdbID(ctx context.Context, tmdbID int64) (Collection, error)
@@ -75,6 +79,9 @@ type Querier interface {
 	GetDownloadClient(ctx context.Context, id int64) (DownloadClient, error)
 	GetIndexer(ctx context.Context, id int64) (Indexer, error)
 	GetJob(ctx context.Context, id int64) (Job, error)
+	// GetLibraryVersion is bumped by triggers on every change ListLibraryIndex
+	// can see (migration 00004).
+	GetLibraryVersion(ctx context.Context) (int64, error)
 	GetMediaServer(ctx context.Context, id int64) (MediaServer, error)
 	GetMovie(ctx context.Context, id int64) (Movie, error)
 	GetMovieByImdbID(ctx context.Context, imdbID string) (Movie, error)
@@ -86,6 +93,7 @@ type Querier interface {
 	GetRSSState(ctx context.Context, indexerID int64) (RssState, error)
 	GetRemotePathMapping(ctx context.Context, id int64) (RemotePathMapping, error)
 	GetRootFolder(ctx context.Context, id int64) (RootFolder, error)
+	GetSavedView(ctx context.Context, id int64) (SavedView, error)
 	GetSetting(ctx context.Context, key string) (string, error)
 	GetTagByLabel(ctx context.Context, label string) (Tag, error)
 	InsertAlternateTitle(ctx context.Context, arg InsertAlternateTitleParams) (AlternateTitle, error)
@@ -103,6 +111,7 @@ type Querier interface {
 	LatestMovieHistory(ctx context.Context, arg LatestMovieHistoryParams) (History, error)
 	// ListActiveDownloads returns the downloads the queue tracker follows.
 	ListActiveDownloads(ctx context.Context) ([]Download, error)
+	ListAllMovieTags(ctx context.Context) ([]MovieTag, error)
 	ListAlternateTitles(ctx context.Context, movieID int64) ([]AlternateTitle, error)
 	// ListBlocklist is keyset-paginated, newest first: pass the last id of the
 	// previous page, or math.MaxInt64 first. NULL filters are ignored.
@@ -110,6 +119,7 @@ type Querier interface {
 	// ListBlocklistForMovie returns the entries that apply to a movie: its own and
 	// the global ones (movie_id NULL).
 	ListBlocklistForMovie(ctx context.Context, movieID *int64) ([]Blocklist, error)
+	ListCollectionMovieStates(ctx context.Context, collectionID int64) ([]ListCollectionMovieStatesRow, error)
 	ListCollectionMovies(ctx context.Context, collectionID int64) ([]Movie, error)
 	ListCollections(ctx context.Context) ([]Collection, error)
 	ListDownloadClients(ctx context.Context) ([]DownloadClient, error)
@@ -126,8 +136,19 @@ type Querier interface {
 	ListImportListExclusions(ctx context.Context) ([]ImportListExclusion, error)
 	ListIndexers(ctx context.Context) ([]Indexer, error)
 	ListJobsByStatus(ctx context.Context, arg ListJobsByStatusParams) ([]Job, error)
+	// ListLastFailedDownloads returns the movies whose newest download failed,
+	// with its grab time (the library index compares it with the file import).
+	ListLastFailedDownloads(ctx context.Context) ([]ListLastFailedDownloadsRow, error)
+	// Queries of the web UI screens (library grid and table, header, saved views).
+	// ListLibraryIndex returns the compact row of every movie, in id order. The
+	// library service keeps it in memory (rebuilt when GetLibraryVersion changes)
+	// and filters and sorts it in Go. rating_tmdb is -1 without a TMDB rating.
+	// download_progress is the persisted progress
+	// of the newest active download (0 when not downloading).
+	ListLibraryIndex(ctx context.Context) ([]ListLibraryIndexRow, error)
 	ListMatcherAlternateTitleRows(ctx context.Context) ([]ListMatcherAlternateTitleRowsRow, error)
 	ListMatcherAlternateTitles(ctx context.Context) ([]ListMatcherAlternateTitlesRow, error)
+	// Queries of the library service (internal/library) and the API.
 	// ListMatcherMovies feeds the in-memory release matcher (internal/match).
 	ListMatcherMovies(ctx context.Context) ([]ListMatcherMoviesRow, error)
 	ListMatcherTitles(ctx context.Context) ([]ListMatcherTitlesRow, error)
@@ -144,18 +165,6 @@ type Querier interface {
 	// ListMoviesBySortTitle is keyset-paginated: pass the last (sort_title, id) of the
 	// previous page, or ('', 0) for the first page.
 	ListMoviesBySortTitle(ctx context.Context, arg ListMoviesBySortTitleParams) ([]ListMoviesBySortTitleRow, error)
-	// ListMoviesFilteredByAdded is keyset-paginated by (added_at, id) descending
-	// (newest first): pass the last (added_at, id), or (MaxInt64, MaxInt64) first.
-	ListMoviesFilteredByAdded(ctx context.Context, arg ListMoviesFilteredByAddedParams) ([]ListMoviesFilteredByAddedRow, error)
-	// Queries of the library service (internal/library) and the API.
-	// ListMoviesFilteredByTitle is keyset-paginated by (sort_title, id) ascending: pass
-	// the last (sort_title, id) of the previous page, or ('', 0) first. Every filter is
-	// optional: NULL disables it. year_min / year_max are always applied (0 / 9999 to
-	// disable).
-	ListMoviesFilteredByTitle(ctx context.Context, arg ListMoviesFilteredByTitleParams) ([]ListMoviesFilteredByTitleRow, error)
-	// ListMoviesFilteredByYear is keyset-paginated by (year, id) descending (newest
-	// first): pass the last (year, id) of the previous page, or (9999, MaxInt64) first.
-	ListMoviesFilteredByYear(ctx context.Context, arg ListMoviesFilteredByYearParams) ([]ListMoviesFilteredByYearRow, error)
 	// ListMoviesForRefresh is read by the daily metadata refresh to pick the movies
 	// whose metadata is due (see library.RefreshDue).
 	ListMoviesForRefresh(ctx context.Context) ([]ListMoviesForRefreshRow, error)
@@ -171,6 +180,9 @@ type Querier interface {
 	// the existing library import.
 	ListRootFolderMovies(ctx context.Context, rootFolderID int64) ([]ListRootFolderMoviesRow, error)
 	ListRootFolders(ctx context.Context) ([]RootFolder, error)
+	// ----------------------------------------------------------------- saved views
+	// Views are shared (user_id NULL) until users exist (phase 8).
+	ListSavedViews(ctx context.Context, page *string) ([]SavedView, error)
 	ListScoringConditions(ctx context.Context) ([]ScoringCondition, error)
 	// ListScoringRules returns the rules in creation order: the order of the score
 	// breakdown.
@@ -198,6 +210,9 @@ type Querier interface {
 	ResetNotificationHealth(ctx context.Context, id int64) (int64, error)
 	// ResetRunningJobs requeues jobs left running by a previous process (startup only).
 	ResetRunningJobs(ctx context.Context) (int64, error)
+	// SearchAlternateTitleMovies returns the movies with an alternate title that
+	// contains query (lower case; lower() folds ASCII only).
+	SearchAlternateTitleMovies(ctx context.Context, query string) ([]int64, error)
 	SetDownloadClientSecrets(ctx context.Context, arg SetDownloadClientSecretsParams) (int64, error)
 	SetIndexerSecrets(ctx context.Context, arg SetIndexerSecretsParams) (int64, error)
 	SetMediaServerSecrets(ctx context.Context, arg SetMediaServerSecretsParams) (int64, error)
@@ -226,6 +241,7 @@ type Querier interface {
 	UpdateRemotePathMapping(ctx context.Context, arg UpdateRemotePathMappingParams) (RemotePathMapping, error)
 	UpdateRootFolderPath(ctx context.Context, arg UpdateRootFolderPathParams) (RootFolder, error)
 	UpdateRootFolderSpace(ctx context.Context, arg UpdateRootFolderSpaceParams) (int64, error)
+	UpdateSavedView(ctx context.Context, arg UpdateSavedViewParams) (SavedView, error)
 	// UpsertCollection refreshes TMDB fields; user settings are kept on conflict.
 	UpsertCollection(ctx context.Context, arg UpsertCollectionParams) (Collection, error)
 	// UpsertMovie inserts a movie or, when tmdb_id exists, refreshes its metadata

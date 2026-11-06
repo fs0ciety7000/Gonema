@@ -177,7 +177,9 @@ Le statut de bibliothèque (`missing`, `downloading`, `available`, `upgradable`)
 **sessions** — `token_hash PK, user_id FK, expires_at, user_agent, ip, created_at`.
 **api_keys** — `id, user_id FK, name, key_hash, prefix, created_at, last_used_at`. La clé n'est montrée qu'une fois.
 
-**saved_views** — `id, user_id FK, page, name, filters JSON, sort JSON, columns JSON, density ('airy'|'compact'), position`.
+**saved_views** — `id, user_id FK NULL, page, name, filters JSON, sort JSON, columns JSON, density ('airy'|'compact'), position`. `user_id` NULL = vue partagée (avant l'authentification de la phase 8) ; nom unique par `(page, name)` pour les vues partagées (migration 00004).
+
+**library_version** — compteur unique incrémenté par triggers sur les colonnes visibles de la bibliothèque ; invalide l'index en mémoire des listes (migration 00004).
 
 **settings** — `key PK, value JSON`. Nommage (gabarits), mode d'import (hardlink/copy/move), rétention, port, URL de base, clé TMDB (chiffrée), etc.
 

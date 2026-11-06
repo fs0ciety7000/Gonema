@@ -171,6 +171,11 @@ type Job struct {
 	CreatedAt   int64   `json:"createdAt"`
 }
 
+type LibraryVersion struct {
+	ID int64 `json:"id"`
+	V  int64 `json:"v"`
+}
+
 type MediaServer struct {
 	ID           int64   `json:"id"`
 	Name         string  `json:"name"`
@@ -320,7 +325,7 @@ type RssState struct {
 
 type SavedView struct {
 	ID       int64  `json:"id"`
-	UserID   int64  `json:"userId"`
+	UserID   *int64 `json:"userId"`
 	Page     string `json:"page"`
 	Name     string `json:"name"`
 	Filters  string `json:"filters"`

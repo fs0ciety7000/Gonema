@@ -41,6 +41,7 @@ func (s *Server) routes() {
 	s.systemRoutes()
 	s.movieRoutes()
 	s.libraryRoutes()
+	s.uiRoutes()
 	if s.d.Acquire != nil {
 		s.acquireRoutes()
 	}
@@ -62,6 +63,7 @@ type SystemStatus struct {
 	Arch           string    `json:"arch"`
 	TMDBConfigured bool      `json:"tmdbConfigured"`
 	Movies         int       `json:"movies" doc:"Movies known to the release matcher"`
+	Demo           bool      `json:"demo" doc:"The database holds fictional demo data (gonema demo seed): show a permanent banner"`
 }
 
 type jobsOutput struct {
@@ -81,11 +83,15 @@ func (s *Server) systemRoutes() {
 		if err != nil {
 			return nil, s.problem(ctx, err, false)
 		}
+		demo, err := s.d.Library.IsDemo(ctx)
+		if err != nil {
+			return nil, s.problem(ctx, err, false)
+		}
 		return &struct{ Body SystemStatus }{SystemStatus{
 			Version: s.d.Version, StartedAt: s.d.StartedAt.UTC(), UptimeSeconds: int64(time.Since(s.d.StartedAt).Seconds()),
 			SchemaVersion: v, DataDir: s.d.DataDir, BaseURL: s.d.BaseURL, GoVersion: runtime.Version(),
 			OS: runtime.GOOS, Arch: runtime.GOARCH, TMDBConfigured: s.d.Library.TMDBConfigured(),
-			Movies: s.d.Library.MatcherSize(),
+			Movies: s.d.Library.MatcherSize(), Demo: demo,
 		}}, nil
 	})
 
@@ -128,24 +134,6 @@ func historyPage(rows []db.History) *historyOutput {
 
 // ----------------------------------------------------------------- movies
 
-type movieListInput struct {
-	Cursor       string `query:"cursor" maxLength:"512" doc:"nextCursor of the previous page"`
-	Limit        int    `query:"limit" minimum:"1" maximum:"500" default:"100"`
-	Sort         string `query:"sort" enum:"title,year,added" default:"title" doc:"title: A to Z; year: newest first; added: most recent first"`
-	Monitored    string `query:"monitored" enum:"true,false" doc:"Only monitored (true) or unmonitored (false) movies"`
-	Status       string `query:"status" enum:"announced,in_cinemas,released,deleted"`
-	YearFrom     int    `query:"yearFrom" minimum:"0" maximum:"2200"`
-	YearTo       int    `query:"yearTo" minimum:"0" maximum:"2200"`
-	Genre        string `query:"genre" maxLength:"100"`
-	RootFolderID int64  `query:"rootFolderId" minimum:"0"`
-}
-
-// MoviePage is a page of movies.
-type MoviePage struct {
-	Movies     []MovieListItem `json:"movies"`
-	NextCursor string          `json:"nextCursor,omitempty" doc:"Pass as cursor to get the next page; absent on the last page"`
-}
-
 type addMovieInput struct {
 	Body struct {
 		TmdbID              int      `json:"tmdbId" minimum:"1"`
@@ -161,7 +149,7 @@ type addMovieInput struct {
 type movieOutput struct {
 	Status   int
 	Location string `header:"Location"`
-	Body     Movie
+	Body     MovieDetail
 }
 
 type updateMovieInput struct {
@@ -187,34 +175,13 @@ type refreshOutput struct {
 func (s *Server) movieRoutes() {
 	tags := []string{"Movies"}
 	huma.Register(s.api, huma.Operation{
-		OperationID: "list-movies", Method: http.MethodGet, Path: "/movies", Summary: "List movies", Tags: tags,
-	}, func(ctx context.Context, in *movieListInput) (*struct{ Body MoviePage }, error) {
-		q := library.ListQuery{Sort: in.Sort, Cursor: in.Cursor, Limit: in.Limit, Filter: library.ListFilter{
-			Status: in.Status, YearFrom: in.YearFrom, YearTo: in.YearTo, Genre: in.Genre, RootFolderID: in.RootFolderID,
-		}}
-		if in.Monitored != "" {
-			v := in.Monitored == "true"
-			q.Filter.Monitored = &v
-		}
-		page, err := s.d.Library.ListMovies(ctx, q)
-		if err != nil {
-			return nil, s.problem(ctx, err, false)
-		}
-		out := &struct{ Body MoviePage }{MoviePage{Movies: make([]MovieListItem, 0, len(page.Movies)), NextCursor: page.NextCursor}}
-		for i := range page.Movies {
-			out.Body.Movies = append(out.Body.Movies, movieListItemOf(&page.Movies[i]))
-		}
-		return out, nil
-	})
-
-	huma.Register(s.api, huma.Operation{
 		OperationID: "get-movie", Method: http.MethodGet, Path: "/movies/{id}", Summary: "Get a movie", Tags: tags,
-	}, func(ctx context.Context, in *IDParam) (*struct{ Body Movie }, error) {
-		d, err := s.d.Library.GetMovie(ctx, in.ID)
+	}, func(ctx context.Context, in *IDParam) (*struct{ Body MovieDetail }, error) {
+		d, err := s.movieDetail(ctx, in.ID)
 		if err != nil {
-			return nil, s.problem(ctx, err, false)
+			return nil, err
 		}
-		return &struct{ Body Movie }{movieDetailsOf(&d)}, nil
+		return &struct{ Body MovieDetail }{d}, nil
 	})
 
 	huma.Register(s.api, huma.Operation{
@@ -231,11 +198,11 @@ func (s *Server) movieRoutes() {
 		if err != nil {
 			return nil, s.problem(ctx, err, true)
 		}
-		d, err := s.d.Library.GetMovie(ctx, m.ID)
+		d, err := s.movieDetail(ctx, m.ID)
 		if err != nil {
-			return nil, s.problem(ctx, err, false)
+			return nil, err
 		}
-		out := &movieOutput{Status: http.StatusOK, Body: movieDetailsOf(&d)}
+		out := &movieOutput{Status: http.StatusOK, Body: d}
 		if created {
 			out.Status = http.StatusCreated
 			out.Location = fmt.Sprintf("%s%s/movies/%d", s.d.BaseURL, Prefix, m.ID)
@@ -246,7 +213,7 @@ func (s *Server) movieRoutes() {
 	huma.Register(s.api, huma.Operation{
 		OperationID: "update-movie", Method: http.MethodPatch, Path: "/movies/{id}", Summary: "Change movie settings",
 		Description: "Only the fields present are changed.", Tags: tags,
-	}, func(ctx context.Context, in *updateMovieInput) (*struct{ Body Movie }, error) {
+	}, func(ctx context.Context, in *updateMovieInput) (*struct{ Body MovieDetail }, error) {
 		b := in.Body
 		if _, err := s.d.Library.UpdateMovie(ctx, in.ID, library.UpdateOptions{
 			Monitored: b.Monitored, QualityProfileID: b.QualityProfileID, MinimumAvailability: b.MinimumAvailability,
@@ -254,11 +221,11 @@ func (s *Server) movieRoutes() {
 		}); err != nil {
 			return nil, s.problem(ctx, err, false)
 		}
-		d, err := s.d.Library.GetMovie(ctx, in.ID)
+		d, err := s.movieDetail(ctx, in.ID)
 		if err != nil {
-			return nil, s.problem(ctx, err, false)
+			return nil, err
 		}
-		return &struct{ Body Movie }{movieDetailsOf(&d)}, nil
+		return &struct{ Body MovieDetail }{d}, nil
 	})
 
 	huma.Register(s.api, huma.Operation{

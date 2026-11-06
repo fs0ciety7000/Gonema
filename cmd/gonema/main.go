@@ -4,6 +4,8 @@
 //
 //	gonema [serve] [flags]   run the server (default)
 //	gonema version           print the version
+//	gonema openapi           print the OpenAPI document of the API
+//	gonema demo seed [flags] create a demo database of fictional movies
 //
 // Configuration comes from flags and GONEMA_* environment variables; see
 // package config or `gonema serve -h`.
@@ -27,6 +29,7 @@ import (
 	"github.com/fs0ciety7000/gonema/internal/acquire"
 	"github.com/fs0ciety7000/gonema/internal/api"
 	"github.com/fs0ciety7000/gonema/internal/config"
+	"github.com/fs0ciety7000/gonema/internal/demo"
 	"github.com/fs0ciety7000/gonema/internal/events"
 	"github.com/fs0ciety7000/gonema/internal/imagecache"
 	"github.com/fs0ciety7000/gonema/internal/importer"
@@ -35,6 +38,7 @@ import (
 	"github.com/fs0ciety7000/gonema/internal/metadata/tmdb"
 	"github.com/fs0ciety7000/gonema/internal/secretbox"
 	"github.com/fs0ciety7000/gonema/internal/store"
+	"github.com/fs0ciety7000/gonema/internal/webui"
 )
 
 // version is set at build time with -ldflags "-X main.version=...".
@@ -53,7 +57,7 @@ func main() {
 // run executes a subcommand and returns the process exit code.
 func run(ctx context.Context, args []string, stdout, stderr io.Writer, getenv func(string) string) int {
 	cmd := "serve"
-	if len(args) > 0 && (args[0] == "serve" || args[0] == "version" || args[0] == "help") {
+	if len(args) > 0 && (args[0] == "serve" || args[0] == "version" || args[0] == "help" || args[0] == "openapi" || args[0] == "demo") {
 		cmd, args = args[0], args[1:]
 	}
 	switch cmd {
@@ -61,8 +65,12 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer, getenv fu
 		_, _ = fmt.Fprintln(stdout, "gonema", version)
 		return 0
 	case "help":
-		_, _ = fmt.Fprintln(stdout, "usage: gonema [serve] [flags] | gonema version\nrun `gonema serve -h` for the flags")
+		_, _ = fmt.Fprintln(stdout, "usage: gonema [serve] [flags] | gonema version | gonema openapi | gonema demo seed [flags]\nrun `gonema serve -h` or `gonema demo seed -h` for the flags")
 		return 0
+	case "openapi":
+		return runOpenAPI(stdout, stderr)
+	case "demo":
+		return runDemo(ctx, args, stdout, stderr, getenv)
 	}
 	cfg, err := config.Load(args, config.Env{Getenv: getenv, InContainer: inContainer()}, stderr)
 	if errors.Is(err, flag.ErrHelp) {
@@ -155,6 +163,20 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, getenv fun
 		return err
 	}
 	lib.RegisterJobs(runner)
+	var imageStore api.ImageStore = images
+	if isDemo, err := lib.IsDemo(ctx); err != nil {
+		return err
+	} else if isDemo {
+		log.Warn("this data directory holds DEMO data: fictional movies created by `gonema demo seed`")
+		imageStore = demo.NewImages(images, st)
+	}
+	ui, err := webui.New(webui.Options{BaseURL: cfg.BaseURL})
+	if err != nil {
+		return err
+	}
+	if !ui.Built() {
+		log.Warn("this binary has no web interface (built without `make web`): a placeholder page is served")
+	}
 
 	imp, err := importer.New(importer.Options{Store: st, Matcher: lib, Library: lib, Bus: bus, Logger: log})
 	if err != nil {
@@ -176,15 +198,12 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, getenv fun
 		return err
 	}
 
-	srv := api.New(api.Deps{
-		Library: lib, Acquire: acq, Jobs: runner, Bus: bus, Store: st, Logger: log, Version: version,
-		StartedAt: start, DataDir: cfg.DataDir, BaseURL: cfg.BaseURL,
-	})
-	srv.RegisterImportRoutes(imp)
-	srv.RegisterIntegrationRoutes(notes, media)
 	checks, healthSettings := newHealth(st, bus, log, lib, acq, imp)
 	registerIntegrationChecks(checks, notes, media)
-	srv.RegisterHealthRoutes(checks, healthSettings)
+	srv := newAPI(api.Deps{
+		Library: lib, Acquire: acq, Jobs: runner, Bus: bus, Store: st, Logger: log, Version: version,
+		StartedAt: start, DataDir: cfg.DataDir, BaseURL: cfg.BaseURL, Images: imageStore, UI: ui,
+	}, imp, notes, media, checks, healthSettings)
 	httpSrv := &http.Server{
 		Handler:           srv.Handler(),
 		ReadHeaderTimeout: 5 * time.Second,

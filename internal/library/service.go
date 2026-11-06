@@ -116,6 +116,9 @@ type Service struct {
 
 	healthMu sync.Mutex
 	health   map[int64]string // root folder id -> last error ("" = ok)
+
+	indexMu sync.Mutex // guards idx; held while the index reloads
+	idx     *libraryIndex
 }
 
 // New returns a service. Call Init before use.

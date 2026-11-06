@@ -387,13 +387,28 @@ func (s *Service) checkRefs(ctx context.Context, rootFolderID, profileID int64) 
 	return nil
 }
 
-// MovieDetails is a movie with its derived state, tags and alternate titles.
+// MovieDetails is a movie with its derived state, tags, alternate titles,
+// current file, collection, settings references and recent history: everything
+// the movie page shows, read in one snapshot without network access.
 type MovieDetails struct {
 	Movie           db.Movie
 	State           string
 	Tags            []string
 	AlternateTitles []db.AlternateTitle
+
+	File             *db.MovieFile // nil without a file
+	Collection       *db.Collection
+	CollectionMovies []db.ListCollectionMovieStatesRow // library movies of the collection
+	ProfileName      string
+	RootFolderPath   string
+	History          []db.History // newest first, at most RecentHistory entries
+	// LastDownloadFailed: the newest download failed after the current file
+	// (if any) was imported, and none is active.
+	LastDownloadFailed bool
 }
+
+// RecentHistory is the number of history entries GetMovie returns.
+const RecentHistory = 20
 
 // GetMovie returns a movie and its details.
 func (s *Service) GetMovie(ctx context.Context, id int64) (MovieDetails, error) {
@@ -419,13 +434,64 @@ func (s *Service) GetMovie(ctx context.Context, id int64) (MovieDetails, error) 
 		for _, t := range tags {
 			d.Tags = append(d.Tags, t.Label)
 		}
-		d.AlternateTitles, err = q.ListAlternateTitles(ctx, id)
-		return err
+		if d.AlternateTitles, err = q.ListAlternateTitles(ctx, id); err != nil {
+			return fmt.Errorf("alternate titles: %w", err)
+		}
+		return d.loadPageData(ctx, q)
 	})
 	if err != nil {
 		return MovieDetails{}, fmt.Errorf("library: get movie %d: %w", id, err)
 	}
 	return d, nil
+}
+
+// loadPageData reads the file, collection, settings references and recent
+// history of d.Movie.
+func (d *MovieDetails) loadPageData(ctx context.Context, q *db.Queries) error {
+	m := &d.Movie
+	f, err := q.GetCurrentMovieFile(ctx, m.ID)
+	switch err = store.MapError(err); {
+	case err == nil:
+		d.File = &f
+	case !errors.Is(err, store.ErrNotFound):
+		return fmt.Errorf("file: %w", err)
+	}
+	if m.CollectionID != nil {
+		c, err := q.GetCollection(ctx, *m.CollectionID)
+		if err != nil {
+			return fmt.Errorf("collection: %w", err)
+		}
+		d.Collection = &c
+		if d.CollectionMovies, err = q.ListCollectionMovieStates(ctx, c.ID); err != nil {
+			return fmt.Errorf("collection movies: %w", err)
+		}
+	}
+	p, err := q.GetQualityProfile(ctx, m.QualityProfileID)
+	if err != nil {
+		return fmt.Errorf("quality profile: %w", err)
+	}
+	d.ProfileName = p.Name
+	rf, err := q.GetRootFolder(ctx, m.RootFolderID)
+	if err != nil {
+		return fmt.Errorf("root folder: %w", err)
+	}
+	d.RootFolderPath = rf.Path
+	d.History, err = q.ListMovieHistory(ctx, db.ListMovieHistoryParams{MovieID: m.ID, BeforeID: math.MaxInt64, Limit: RecentHistory})
+	if err != nil {
+		return fmt.Errorf("history: %w", err)
+	}
+	if d.State != StateDownloading {
+		dls, err := q.ListMovieDownloads(ctx, m.ID) // newest first
+		if err != nil {
+			return fmt.Errorf("downloads: %w", err)
+		}
+		var importedAt int64
+		if d.File != nil {
+			importedAt = d.File.ImportedAt
+		}
+		d.LastDownloadFailed = len(dls) > 0 && dls[0].Status == "failed" && dls[0].GrabbedAt > importedAt
+	}
+	return nil
 }
 
 // UpdateOptions changes movie settings; nil fields are left unchanged.
@@ -706,151 +772,4 @@ func diffMovie(cur *db.Movie, f *metaFields, collectionID *int64) []string {
 	add(!eqPtr(cur.BackdropPath, f.BackdropPath), "backdrop")
 	add(!eqPtr(cur.CollectionID, collectionID), "collection")
 	return c
-}
-
-// Sort orders of ListMovies.
-const (
-	SortTitleAsc = "title" // A to Z
-	SortYearDesc = "year"  // newest first
-	SortAdded    = "added" // most recently added first
-)
-
-// ListFilter selects movies; zero fields do not filter.
-type ListFilter struct {
-	Monitored    *bool
-	Status       string
-	YearFrom     int
-	YearTo       int
-	Genre        string
-	RootFolderID int64
-}
-
-// ListQuery is a page request. Cursor is the opaque NextCursor of the previous
-// page ("" for the first page).
-type ListQuery struct {
-	Filter ListFilter
-	Sort   string // SortTitleAsc (default), SortYearDesc, SortAdded
-	Cursor string
-	Limit  int // 1-500, default 100
-}
-
-// MovieSummary is a movie row of a list.
-type MovieSummary = db.ListMoviesFilteredByTitleRow
-
-// MoviePage is one page of movies.
-type MoviePage struct {
-	Movies     []MovieSummary
-	NextCursor string // "" on the last page
-}
-
-// cursor is the keyset position, encoded as JSON then base64 (opaque to clients).
-type cursor struct {
-	Sort  string `json:"s"`
-	Title string `json:"t,omitempty"`
-	Num   int64  `json:"n,omitempty"` // year or added_at
-	ID    int64  `json:"i"`
-}
-
-// ListMovies returns one page of movies (keyset pagination: stable under inserts
-// and fast at any depth).
-func (s *Service) ListMovies(ctx context.Context, lq ListQuery) (MoviePage, error) {
-	if lq.Sort == "" {
-		lq.Sort = SortTitleAsc
-	}
-	if lq.Sort != SortTitleAsc && lq.Sort != SortYearDesc && lq.Sort != SortAdded {
-		return MoviePage{}, invalid("sort", "sort must be title, year or added")
-	}
-	if lq.Limit <= 0 {
-		lq.Limit = 100
-	}
-	if lq.Limit > 500 {
-		return MoviePage{}, invalid("limit", "limit must be 500 or less")
-	}
-	fl := lq.Filter
-	if fl.Status != "" && fl.Status != "announced" && fl.Status != "in_cinemas" && fl.Status != "released" && fl.Status != "deleted" {
-		return MoviePage{}, invalid("status", "status must be announced, in_cinemas, released or deleted")
-	}
-	yearMin, yearMax := int64(0), int64(9999)
-	if fl.YearFrom > 0 {
-		yearMin = int64(fl.YearFrom)
-	}
-	if fl.YearTo > 0 {
-		yearMax = int64(fl.YearTo)
-	}
-	if yearMin > yearMax {
-		return MoviePage{}, invalid("yearFrom", "the year range is empty: yearFrom is after yearTo")
-	}
-	c, err := decodeCursor(lq.Cursor, lq.Sort)
-	if err != nil {
-		return MoviePage{}, err
-	}
-	var status, genre *string
-	if fl.Status != "" {
-		status = &fl.Status
-	}
-	if fl.Genre != "" {
-		genre = &fl.Genre
-	}
-	var root *int64
-	if fl.RootFolderID > 0 {
-		root = &fl.RootFolderID
-	}
-	limit := int64(lq.Limit) + 1 // one more to know whether a next page exists
-	var rows []MovieSummary
-	switch lq.Sort {
-	case SortTitleAsc:
-		rows, err = s.st.Read().ListMoviesFilteredByTitle(ctx, db.ListMoviesFilteredByTitleParams{
-			Monitored: fl.Monitored, Status: status, RootFolderID: root, Genre: genre,
-			YearMin: yearMin, YearMax: yearMax, AfterSortTitle: c.Title, AfterID: c.ID, Limit: limit,
-		})
-	case SortYearDesc:
-		if lq.Cursor == "" {
-			c.Num, c.ID = 9999, math.MaxInt64
-		}
-		var r []db.ListMoviesFilteredByYearRow
-		r, err = s.st.Read().ListMoviesFilteredByYear(ctx, db.ListMoviesFilteredByYearParams{
-			Monitored: fl.Monitored, Status: status, RootFolderID: root, Genre: genre,
-			YearMin: yearMin, YearMax: yearMax, BeforeYear: c.Num, BeforeID: c.ID, Limit: limit,
-		})
-		rows = convertRows(r)
-	case SortAdded:
-		if lq.Cursor == "" {
-			c.Num, c.ID = math.MaxInt64, math.MaxInt64
-		}
-		var r []db.ListMoviesFilteredByAddedRow
-		r, err = s.st.Read().ListMoviesFilteredByAdded(ctx, db.ListMoviesFilteredByAddedParams{
-			Monitored: fl.Monitored, Status: status, RootFolderID: root, Genre: genre,
-			YearMin: yearMin, YearMax: yearMax, BeforeAddedAt: c.Num, BeforeID: c.ID, Limit: limit,
-		})
-		rows = convertRows(r)
-	}
-	if err != nil {
-		return MoviePage{}, store.MapError(fmt.Errorf("library: list movies: %w", err))
-	}
-	page := MoviePage{Movies: rows}
-	if len(rows) > lq.Limit {
-		page.Movies = rows[:lq.Limit]
-		last := page.Movies[lq.Limit-1]
-		next := cursor{Sort: lq.Sort, ID: last.ID}
-		switch lq.Sort {
-		case SortTitleAsc:
-			next.Title = last.SortTitle
-		case SortYearDesc:
-			next.Num = last.Year
-		case SortAdded:
-			next.Num = last.AddedAt
-		}
-		page.NextCursor = encodeCursor(next)
-	}
-	return page, nil
-}
-
-// convertRows converts rows of the year/added queries, which have the same
-// columns as the title query.
-func convertRows[R db.ListMoviesFilteredByYearRow | db.ListMoviesFilteredByAddedRow](in []R) []MovieSummary {
-	out := make([]MovieSummary, len(in))
-	for i := range in {
-		out[i] = MovieSummary(in[i])
-	}
-	return out
 }

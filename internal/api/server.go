@@ -41,6 +41,14 @@ type Deps struct {
 	DataDir   string
 	BaseURL   string // "" or "/path"
 
+	// Queue gives the live download progress of the lists; default Acquire.
+	Queue QueueReader
+	// Images serves /images; optional (404 without it).
+	Images ImageStore
+	// UI serves the web interface on every path outside /api and /health;
+	// optional.
+	UI http.Handler
+
 	// SSEHeartbeat is the period of SSE keep-alive comments; default 15 s.
 	SSEHeartbeat time.Duration
 }
@@ -84,6 +92,9 @@ func New(d Deps) *Server {
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		writeProblem(w, r, http.StatusNotFound, "There is no API endpoint at "+r.URL.Path+"; see "+d.BaseURL+Prefix+"/openapi.json.")
 	})
+	if d.UI != nil {
+		mux.Handle("/", d.UI)
+	}
 
 	// TODO(phase8): auth. Every route below is unauthenticated until phase 8
 	// (users, sessions, API keys); the server binds to localhost by default.

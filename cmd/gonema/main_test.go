@@ -123,6 +123,16 @@ func TestColdStart(t *testing.T) {
 	if ready > coldStartBudget {
 		t.Errorf("cold start took %s, budget %s", ready, coldStartBudget)
 	}
+	// The web interface (or its placeholder) is served at the root.
+	if resp, err := client.Get(base + "/movies"); err != nil {
+		t.Errorf("GET /movies: %v", err)
+	} else {
+		_ = resp.Body.Close()
+		if resp.StatusCode != http.StatusOK || !strings.HasPrefix(resp.Header.Get("Content-Type"), "text/html") ||
+			!strings.Contains(resp.Header.Get("Content-Security-Policy"), "frame-ancestors 'none'") {
+			t.Errorf("GET /movies = %d %v", resp.StatusCode, resp.Header)
+		}
+	}
 	for _, f := range []string{"gonema.db", "gonema.key"} {
 		if _, err := os.Stat(filepath.Join(dataDir, f)); err != nil {
 			t.Errorf("%s not created: %v", f, err)

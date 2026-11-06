@@ -107,39 +107,6 @@ func movieDetailsOf(d *library.MovieDetails) Movie {
 	return m
 }
 
-// MovieListItem is a movie in a list.
-type MovieListItem struct {
-	ID                  int64     `json:"id"`
-	TmdbID              int64     `json:"tmdbId"`
-	ImdbID              *string   `json:"imdbId"`
-	Title               string    `json:"title"`
-	SortTitle           string    `json:"sortTitle"`
-	Year                int64     `json:"year"`
-	Status              string    `json:"status"`
-	State               string    `json:"state"`
-	RuntimeMin          int64     `json:"runtimeMin"`
-	Genres              []string  `json:"genres"`
-	PosterPath          *string   `json:"posterPath"`
-	DominantColor       *string   `json:"dominantColor"`
-	Monitored           bool      `json:"monitored"`
-	QualityProfileID    int64     `json:"qualityProfileId"`
-	MinimumAvailability string    `json:"minimumAvailability"`
-	RootFolderID        int64     `json:"rootFolderId"`
-	CollectionID        *int64    `json:"collectionId"`
-	Path                string    `json:"path"`
-	AddedAt             time.Time `json:"addedAt"`
-}
-
-func movieListItemOf(m *library.MovieSummary) MovieListItem {
-	return MovieListItem{
-		ID: m.ID, TmdbID: m.TmdbID, ImdbID: m.ImdbID, Title: m.Title, SortTitle: m.SortTitle, Year: m.Year,
-		Status: m.Status, State: m.State, RuntimeMin: m.RuntimeMin, Genres: genresOf(m.Genres),
-		PosterPath: m.PosterPath, DominantColor: m.DominantColor, Monitored: m.Monitored,
-		QualityProfileID: m.QualityProfileID, MinimumAvailability: m.MinimumAvailability,
-		RootFolderID: m.RootFolderID, CollectionID: m.CollectionID, Path: m.Path, AddedAt: ts(m.AddedAt),
-	}
-}
-
 // LookupResult is a TMDB search result.
 type LookupResult struct {
 	metadata.MovieSummary
