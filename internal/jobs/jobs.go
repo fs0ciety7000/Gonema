@@ -338,12 +338,7 @@ func (r *Runner) run(ctx context.Context, job db.Job) {
 	r.mu.Lock()
 	r.running[job.ID] = jcancel
 	r.mu.Unlock()
-	defer func() {
-		r.mu.Lock()
-		delete(r.running, job.ID)
-		r.mu.Unlock()
-		jcancel(nil)
-	}()
+	defer jcancel(nil)
 
 	var err error
 	if !ok {
@@ -351,6 +346,12 @@ func (r *Runner) run(ctx context.Context, job db.Job) {
 	} else {
 		err = r.call(jctx, h, job)
 	}
+	// Leave the running set before recording the outcome: once the job reads
+	// as finished, Cancel must answer ErrNotCancellable, not cancel a context
+	// that no longer runs anything.
+	r.mu.Lock()
+	delete(r.running, job.ID)
+	r.mu.Unlock()
 	elapsed := r.now().Sub(start)
 
 	if errors.Is(context.Cause(jctx), ErrCancelled) && ctx.Err() == nil {
