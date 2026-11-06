@@ -256,6 +256,14 @@ func TestSmokeOperations(t *testing.T) {
 	if b := s.call("GET", "/api/v1/logs?q=backup+created", "", 200); !strings.Contains(string(b), "backup created") {
 		t.Errorf("logs = %s", b)
 	}
+	// Each service logs under its component (wired in serve).
+	if b := s.call("GET", "/api/v1/logs?component=backup&q=backup+created", "", 200); !strings.Contains(string(b), `"component":"backup"`) {
+		t.Errorf("backup component = %s", b)
+	}
+	if b := s.call("GET", "/api/v1/logs?component=server", "", 200); !strings.Contains(string(b), "gonema is ready") ||
+		strings.Contains(string(b), "backup created") {
+		t.Errorf("server component = %s", b)
+	}
 	s.stop()
 
 	// Crash between the file move and the database commit, then restart.

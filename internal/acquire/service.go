@@ -26,6 +26,7 @@ import (
 	"github.com/fs0ciety7000/gonema/internal/decision"
 	"github.com/fs0ciety7000/gonema/internal/events"
 	"github.com/fs0ciety7000/gonema/internal/jobs"
+	"github.com/fs0ciety7000/gonema/internal/logbuf"
 	"github.com/fs0ciety7000/gonema/internal/match"
 	"github.com/fs0ciety7000/gonema/internal/netx"
 	"github.com/fs0ciety7000/gonema/internal/parser"
@@ -160,20 +161,22 @@ type Options struct {
 
 // Service is the acquisition service. It is safe for concurrent use.
 type Service struct {
-	st       *store.Store
-	box      *secretbox.Box
-	matcher  Matcher
-	orch     *search.Orchestrator
-	jobs     JobQueue
-	bus      *events.Bus
-	importer ImportFunc
-	impHist  bool
-	log      *slog.Logger
-	now      func() time.Time
-	http     *http.Client
-	newIx    IndexerFactory
-	newCl    ClientFactory
-	version  string
+	st        *store.Store
+	box       *secretbox.Box
+	matcher   Matcher
+	orch      *search.Orchestrator
+	jobs      JobQueue
+	bus       *events.Bus
+	importer  ImportFunc
+	impHist   bool
+	log       *slog.Logger
+	dlog      *slog.Logger // component "download": queue tracking and imports of downloads
+	searchLog *slog.Logger // component "search": automatic searches and RSS sync
+	now       func() time.Time
+	http      *http.Client
+	newIx     IndexerFactory
+	newCl     ClientFactory
+	version   string
 
 	// base is canceled by Close: background searches and imports stop.
 	base   context.Context
@@ -212,11 +215,13 @@ func New(opts Options) (*Service, error) {
 	if s.log == nil {
 		s.log = slog.New(slog.DiscardHandler)
 	}
+	s.dlog = s.log.With(slog.String(logbuf.ComponentKey, "download"))
+	s.searchLog = s.log.With(slog.String(logbuf.ComponentKey, "search"))
 	if s.now == nil {
 		s.now = time.Now
 	}
 	if s.orch == nil {
-		s.orch = search.New(search.Options{Logger: s.log, Now: s.now})
+		s.orch = search.New(search.Options{Logger: s.searchLog, Now: s.now})
 	}
 	if s.http == nil {
 		// Release downloads follow the links indexers return: destinations
@@ -228,7 +233,7 @@ func New(opts Options) (*Service, error) {
 		s.http = &http.Client{Transport: netx.Wrap(tr), CheckRedirect: netx.CheckRedirect}
 	}
 	if s.newIx == nil {
-		s.newIx = defaultIndexerFactory(s.version, s.log)
+		s.newIx = defaultIndexerFactory(s.version, s.log.With(slog.String(logbuf.ComponentKey, "indexer")))
 	}
 	if s.newCl == nil {
 		s.newCl = defaultClientFactory

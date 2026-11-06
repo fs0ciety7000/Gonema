@@ -100,7 +100,7 @@ func (s *Service) handleMovieSearch(ctx context.Context, job db.Job) error {
 	case errors.Is(err, ErrUnavailable), errors.Is(err, ErrInvalid):
 		// Settings problem (no indexer, no client, invalid profile): retrying
 		// the job cannot help; the reason is in the log and the history.
-		s.log.Warn("automatic search not possible", slog.Int64("movie_id", p.MovieID), slog.String("reason", err.Error()))
+		s.searchLog.Warn("automatic search not possible", slog.Int64("movie_id", p.MovieID), slog.String("reason", err.Error()))
 		return nil
 	}
 	return err
@@ -139,7 +139,7 @@ func (s *Service) autoSearch(ctx context.Context, movieID, retryOf int64, reason
 	if err != nil {
 		return out, err
 	}
-	log := s.log.With(slog.Int64("movie_id", movieID), slog.String("movie", mc.row.Title))
+	log := s.searchLog.With(slog.Int64("movie_id", movieID), slog.String("movie", mc.row.Title))
 	if !mc.row.Monitored {
 		out.Reason = "The movie is not monitored."
 		return out, nil
@@ -201,7 +201,7 @@ func (s *Service) markSearched(ctx context.Context, movieID int64) {
 	if _, err := s.st.Write().SetMovieLastSearched(context.WithoutCancel(ctx), db.SetMovieLastSearchedParams{
 		ID: movieID, LastSearchedAt: store.Millis(s.now()),
 	}); err != nil {
-		s.log.Error("record last search", slog.Int64("movie_id", movieID), slog.Any("error", err))
+		s.searchLog.Error("record last search", slog.Int64("movie_id", movieID), slog.Any("error", err))
 	}
 }
 
@@ -222,7 +222,7 @@ func (s *Service) indexersFor(rows []db.Indexer, p purpose, movieTags []string, 
 		}
 		ix, err := s.indexerClient(r)
 		if err != nil {
-			s.log.Error("indexer unusable", slog.String("indexer", r.Name), slog.Any("error", err))
+			s.searchLog.Error("indexer unusable", slog.String("indexer", r.Name), slog.Any("error", err))
 			continue
 		}
 		ixs = append(ixs, ix)
@@ -249,7 +249,7 @@ func (s *Service) collect(ctx context.Context, mc *movieContext, p purpose) ([]i
 	for ev := range s.orch.Search(sctx, mc.query(), ixs) {
 		switch e := ev.(type) {
 		case *search.IndexerFailed:
-			s.log.Warn("indexer search failed", slog.String("indexer", e.Indexer.Name), slog.String("error", e.Err.Error()))
+			s.searchLog.Warn("indexer search failed", slog.String("indexer", e.Indexer.Name), slog.String("error", e.Err.Error()))
 		case *search.Finished:
 			fin = e
 		}
@@ -299,7 +299,7 @@ func (s *Service) SearchMissing(ctx context.Context) error {
 		return store.MapError(fmt.Errorf("acquire: list indexers: %w", err))
 	}
 	if !slices.ContainsFunc(ixRows, func(r db.Indexer) bool { return r.EnableAutoSearch }) {
-		s.log.Info("missing search skipped: no indexer is enabled for automatic search")
+		s.searchLog.Info("missing search skipped: no indexer is enabled for automatic search")
 		return nil
 	}
 	rows, err := s.st.Read().ListSearchableMovies(ctx)
@@ -323,12 +323,12 @@ func (s *Service) SearchMissing(ctx context.Context) error {
 				return fmt.Errorf("acquire: enqueue search of movie %d: %w", r.ID, err)
 			}
 		} else if _, err := s.SearchMovie(ctx, r.ID); err != nil && !errors.Is(err, ErrUnavailable) {
-			s.log.Warn("missing search failed", slog.Int64("movie_id", r.ID), slog.Any("error", err))
+			s.searchLog.Warn("missing search failed", slog.Int64("movie_id", r.ID), slog.Any("error", err))
 		}
 		n++
 	}
 	if n > 0 {
-		s.log.Info("missing and upgradable movies queued for search", slog.Int("count", n))
+		s.searchLog.Info("missing and upgradable movies queued for search", slog.Int("count", n))
 	}
 	return nil
 }
@@ -390,7 +390,7 @@ func (s *Service) SyncRSS(ctx context.Context) error {
 	}
 	ixs, used := s.indexersFor(sh.indexers, forRSS, nil, true)
 	if len(ixs) == 0 {
-		s.log.Debug("RSS sync skipped: no RSS-enabled indexer")
+		s.searchLog.Debug("RSS sync skipped: no RSS-enabled indexer")
 		return nil
 	}
 	type feedState struct {
@@ -408,11 +408,11 @@ func (s *Service) SyncRSS(ctx context.Context) error {
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			s.log.Warn("RSS sync failed", slog.String("indexer", r.Name), slog.String("error", err.Error()))
+			s.searchLog.Warn("RSS sync failed", slog.String("indexer", r.Name), slog.String("error", err.Error()))
 			continue
 		}
 		if res.Gap {
-			s.log.Warn("RSS feed shorter than the sync interval: releases may have been missed", slog.String("indexer", r.Name))
+			s.searchLog.Warn("RSS feed shorter than the sync interval: releases may have been missed", slog.String("indexer", r.Name))
 		}
 		states = append(states, feedState{id: r.ID, state: res.State})
 		for j := range res.Releases {
@@ -430,7 +430,7 @@ func (s *Service) SyncRSS(ctx context.Context) error {
 		}
 		ok, err := s.rssDecide(ctx, sh, movieID, rels)
 		if err != nil {
-			s.log.Warn("RSS decision failed", slog.Int64("movie_id", movieID), slog.Any("error", err))
+			s.searchLog.Warn("RSS decision failed", slog.Int64("movie_id", movieID), slog.Any("error", err))
 			continue
 		}
 		if ok {
@@ -440,7 +440,7 @@ func (s *Service) SyncRSS(ctx context.Context) error {
 	for _, f := range states {
 		s.saveRSSState(ctx, f.id, f.state)
 	}
-	s.log.Info("RSS sync done", slog.Int("indexers", len(ixs)), slog.Int("matched", matched), slog.Int("grabbed", grabbed))
+	s.searchLog.Info("RSS sync done", slog.Int("indexers", len(ixs)), slog.Int("matched", matched), slog.Int("grabbed", grabbed))
 	return nil
 }
 
@@ -474,7 +474,7 @@ func (s *Service) rssDecide(ctx context.Context, sh *shared, movieID int64, rels
 	}
 	for i := range ranked {
 		if !ranked[i].Decision.Accepted {
-			s.log.Debug("RSS release rejected", slog.Int64("movie_id", movieID), slog.String("release", ranked[i].Candidate.Title),
+			s.searchLog.Debug("RSS release rejected", slog.Int64("movie_id", movieID), slog.String("release", ranked[i].Candidate.Title),
 				slog.String("reasons", rejectionText(ranked[i].Decision.Rejections)))
 		}
 	}
@@ -498,7 +498,7 @@ func (s *Service) rssState(ctx context.Context, indexerID int64) search.RSSState
 	r, err := s.st.Read().GetRSSState(ctx, indexerID)
 	if err != nil {
 		if !errors.Is(store.MapError(err), store.ErrNotFound) {
-			s.log.Error("read RSS state", slog.Int64("indexer_id", indexerID), slog.Any("error", err))
+			s.searchLog.Error("read RSS state", slog.Int64("indexer_id", indexerID), slog.Any("error", err))
 		}
 		return search.RSSState{}
 	}
@@ -519,7 +519,7 @@ func (s *Service) saveRSSState(ctx context.Context, indexerID int64, st search.R
 		p.LastGuid = &g
 	}
 	if err := s.st.Write().UpsertRSSState(context.WithoutCancel(ctx), p); err != nil {
-		s.log.Error("save RSS state", slog.Int64("indexer_id", indexerID), slog.Any("error", err))
+		s.searchLog.Error("save RSS state", slog.Int64("indexer_id", indexerID), slog.Any("error", err))
 	}
 }
 
@@ -532,12 +532,12 @@ func (s *Service) scheduleRetry(ctx context.Context, dl *db.Download) {
 		if _, _, err := s.jobs.Enqueue(ctx, JobDownloadRetry, DownloadPayload{DownloadID: dl.ID}, jobs.EnqueueOptions{
 			DedupeKey: fmt.Sprintf("%s:%d", JobDownloadRetry, dl.ID), Priority: 5, MaxAttempts: 3,
 		}); err != nil {
-			s.log.Error("enqueue retry", slog.Int64("download_id", dl.ID), slog.Any("error", err))
+			s.searchLog.Error("enqueue retry", slog.Int64("download_id", dl.ID), slog.Any("error", err))
 		}
 		return
 	}
 	if err := s.Retry(ctx, dl.ID); err != nil {
-		s.log.Warn("retry failed", slog.Int64("download_id", dl.ID), slog.Any("error", err))
+		s.searchLog.Warn("retry failed", slog.Int64("download_id", dl.ID), slog.Any("error", err))
 	}
 }
 
@@ -570,7 +570,7 @@ func (s *Service) Retry(ctx context.Context, downloadID int64) error {
 		return err
 	}
 	if !mc.row.Monitored {
-		s.log.Info("movie not monitored: no retry", slog.Int64("movie_id", dl.MovieID))
+		s.searchLog.Info("movie not monitored: no retry", slog.Int64("movie_id", dl.MovieID))
 		return nil
 	}
 	msg := fmt.Sprintf("Trying release #%d of %d", attempt, maxAttempts)

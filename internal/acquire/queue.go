@@ -156,7 +156,7 @@ func (s *Service) RunTracker(ctx context.Context) {
 		}
 		n, err := s.TrackOnce(ctx)
 		if err != nil && ctx.Err() == nil {
-			s.log.Error("queue tracking failed", slog.Any("error", err))
+			s.dlog.Error("queue tracking failed", slog.Any("error", err))
 		}
 		d := TrackIdleInterval
 		if n > 0 {
@@ -245,7 +245,7 @@ func (s *Service) trackClient(ctx context.Context, c *db.DownloadClient, dls []d
 	// Unreachable: keep the downloads as they are, with a warning.
 	s.recordClientHealth(ctx, c, err)
 	msg := fmt.Sprintf("%s cannot be reached: %s", c.Name, err.Error())
-	s.log.Warn("download client unreachable", slog.String("client", c.Name), slog.Any("error", err))
+	s.dlog.Warn("download client unreachable", slog.String("client", c.Name), slog.Any("error", err))
 	for i := range dls {
 		l := s.track.get(dls[i].ID)
 		s.track.mu.Lock()
@@ -352,10 +352,10 @@ func (s *Service) persistState(ctx context.Context, d *db.Download, status strin
 	row, err := s.st.Write().UpdateDownloadState(context.WithoutCancel(ctx), p)
 	if err != nil {
 		if err = store.MapError(err); errors.Is(err, store.ErrNotFound) {
-			s.log.Debug("download left the queue meanwhile", slog.Int64("download_id", d.ID))
+			s.dlog.Debug("download left the queue meanwhile", slog.Int64("download_id", d.ID))
 			return
 		}
-		s.log.Error("persist download state", slog.Int64("download_id", d.ID), slog.Any("error", err))
+		s.dlog.Error("persist download state", slog.Int64("download_id", d.ID), slog.Any("error", err))
 		return
 	}
 	*d = row
@@ -404,11 +404,11 @@ func (s *Service) markRemoved(ctx context.Context, d *db.Download, reason string
 		})
 	})
 	if err != nil {
-		s.log.Error("mark download removed", slog.Int64("download_id", d.ID), slog.Any("error", err))
+		s.dlog.Error("mark download removed", slog.Int64("download_id", d.ID), slog.Any("error", err))
 		return
 	}
 	s.track.forget(d.ID)
-	s.log.Info("download removed", slog.Int64("download_id", d.ID), slog.String("release", d.ReleaseTitle), slog.String("reason", reason))
+	s.dlog.Info("download removed", slog.Int64("download_id", d.ID), slog.String("release", d.ReleaseTitle), slog.String("reason", reason))
 	s.publish(events.Event{Type: EventDownloadRemoved, MovieID: d.MovieID, Data: s.queueItem(d, "")})
 }
 
@@ -432,16 +432,16 @@ func (s *Service) handleFailed(ctx context.Context, c *db.DownloadClient, cl dow
 		return s.blocklistDownload(ctx, q, d, reason, blockGroup)
 	})
 	if err != nil {
-		s.log.Error("record failed download", slog.Int64("download_id", d.ID), slog.Any("error", err))
+		s.dlog.Error("record failed download", slog.Int64("download_id", d.ID), slog.Any("error", err))
 		return
 	}
 	s.track.forget(d.ID)
-	s.log.Warn("download failed, release blocklisted", slog.Int64("movie_id", d.MovieID), slog.String("release", d.ReleaseTitle),
+	s.dlog.Warn("download failed, release blocklisted", slog.Int64("movie_id", d.MovieID), slog.String("release", d.ReleaseTitle),
 		slog.String("reason", reason))
 	s.publish(events.Event{Type: EventDownloadFailed, MovieID: d.MovieID, Data: s.queueItem(d, clientName(c))})
 	if c != nil && cl != nil && c.RemoveFailed && d.ClientRef != nil {
 		if err := cl.Remove(ctx, *d.ClientRef, false); err != nil && !errors.Is(err, download.ErrNotFound) {
-			s.log.Warn("remove failed download from client", slog.String("client", c.Name), slog.Any("error", err))
+			s.dlog.Warn("remove failed download from client", slog.String("client", c.Name), slog.Any("error", err))
 		}
 	}
 	s.scheduleRetry(ctx, d)
@@ -495,7 +495,7 @@ func (s *Service) startImport(ctx context.Context, c *db.DownloadClient, d *db.D
 		s.track.noImport = true
 		s.track.mu.Unlock()
 		if !logged {
-			s.log.Warn("completed downloads wait: no importer is configured")
+			s.dlog.Warn("completed downloads wait: no importer is configured")
 		}
 		return
 	}
@@ -552,9 +552,9 @@ func (s *Service) runImport(ctx context.Context, c *db.DownloadClient, d *db.Dow
 			})
 		})
 		if werr != nil {
-			s.log.Error("record import failure", slog.Int64("download_id", d.ID), slog.Any("error", werr))
+			s.dlog.Error("record import failure", slog.Int64("download_id", d.ID), slog.Any("error", werr))
 		}
-		s.log.Warn("import failed", slog.Int64("download_id", d.ID), slog.String("release", d.ReleaseTitle), slog.Any("error", err))
+		s.dlog.Warn("import failed", slog.Int64("download_id", d.ID), slog.String("release", d.ReleaseTitle), slog.Any("error", err))
 		s.publish(events.Event{Type: EventDownloadUpdated, MovieID: d.MovieID, Data: s.queueItem(d, c.Name)})
 	case !res.Imported:
 		reason := res.Reason
@@ -583,16 +583,16 @@ func (s *Service) runImport(ctx context.Context, c *db.DownloadClient, d *db.Dow
 			})
 		})
 		if werr != nil {
-			s.log.Error("record import", slog.Int64("download_id", d.ID), slog.Any("error", werr))
+			s.dlog.Error("record import", slog.Int64("download_id", d.ID), slog.Any("error", werr))
 			return
 		}
 		s.track.forget(d.ID)
-		s.log.Info("download imported", slog.Int64("movie_id", d.MovieID), slog.String("release", d.ReleaseTitle), slog.Bool("upgrade", res.Upgraded))
+		s.dlog.Info("download imported", slog.Int64("movie_id", d.MovieID), slog.String("release", d.ReleaseTitle), slog.Bool("upgrade", res.Upgraded))
 		s.publish(events.Event{Type: EventDownloadImported, MovieID: d.MovieID, Data: s.queueItem(d, c.Name)})
 		if c.RemoveCompleted && d.Protocol == string(decision.Usenet) && d.ClientRef != nil {
 			if cl, err := s.downloadClient(c); err == nil {
 				if err := cl.Remove(context.WithoutCancel(ctx), *d.ClientRef, false); err != nil && !errors.Is(err, download.ErrNotFound) {
-					s.log.Warn("remove imported download from client", slog.String("client", c.Name), slog.Any("error", err))
+					s.dlog.Warn("remove imported download from client", slog.String("client", c.Name), slog.Any("error", err))
 				}
 			}
 		}
@@ -758,7 +758,7 @@ func (s *Service) RemoveFromQueue(ctx context.Context, id int64, opts RemoveOpti
 		return fmt.Errorf("acquire: remove download %d: %w", id, err)
 	}
 	s.track.forget(d.ID)
-	s.log.Info("download removed by the user", slog.Int64("download_id", d.ID), slog.String("release", d.ReleaseTitle),
+	s.dlog.Info("download removed by the user", slog.Int64("download_id", d.ID), slog.String("release", d.ReleaseTitle),
 		slog.Bool("blocklist", opts.Blocklist), slog.Bool("retry", opts.Retry), slog.Bool("delete_data", opts.DeleteData))
 	s.publish(events.Event{Type: EventDownloadRemoved, MovieID: d.MovieID, Data: s.queueItem(&d, clientName(c))})
 	if opts.Retry {

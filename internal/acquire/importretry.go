@@ -93,7 +93,7 @@ func (s *Service) RetryImport(ctx context.Context, id, movieID int64) (QueueItem
 		}
 		return QueueItem{}, fmt.Errorf("acquire: retry import of download %d: %w", id, err)
 	}
-	s.log.Info("import retried by the user", slog.Int64("download_id", d.ID), slog.Int64("movie_id", movieID),
+	s.dlog.Info("import retried by the user", slog.Int64("download_id", d.ID), slog.Int64("movie_id", movieID),
 		slog.String("release", d.ReleaseTitle))
 
 	d.OutputPath = &local
@@ -123,7 +123,7 @@ func (s *Service) retryPath(ctx context.Context, d *db.Download, c *db.DownloadC
 	defer cancel()
 	items, err := cl.Items(cctx)
 	if err != nil {
-		s.log.Warn("import retry: download client unreachable, using the stored path", slog.String("client", c.Name),
+		s.dlog.Warn("import retry: download client unreachable, using the stored path", slog.String("client", c.Name),
 			slog.Any("error", err))
 		return stored, "path as last reported (" + c.Name + " cannot be reached)", nil
 	}

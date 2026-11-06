@@ -9,6 +9,12 @@
 //
 // The level is a *slog.LevelVar shared by both outputs, so it can change at
 // runtime.
+//
+// The top-level attribute ComponentKey (set by logger.With("component",
+// name) where a service is wired) names the part of Gonema that logged: it is
+// kept in Entry.Component, not in the attributes. A later With of the key
+// replaces the earlier one, so a service can hand a narrower component to a
+// part of itself without the outputs repeating the key.
 package logbuf
 
 import (
@@ -25,16 +31,23 @@ import (
 // DefaultCapacity is the number of entries a Buffer keeps by default.
 const DefaultCapacity = 2000
 
+// ComponentKey is the attribute naming the component that logs an entry.
+const ComponentKey = "component"
+
+// maxComponentLen bounds the component name kept in an entry.
+const maxComponentLen = 64
+
 // maxValueLen bounds an attribute value kept in the buffer.
 const maxValueLen = 2048
 
 // Entry is one log record, redacted.
 type Entry struct {
-	ID      uint64            `json:"id"`
-	Time    time.Time         `json:"time"`
-	Level   string            `json:"level" enum:"debug,info,warn,error"`
-	Message string            `json:"message"`
-	Attrs   map[string]string `json:"attrs,omitempty" doc:"Attributes, redacted; groups are joined with dots"`
+	ID        uint64            `json:"id"`
+	Time      time.Time         `json:"time"`
+	Level     string            `json:"level" enum:"debug,info,warn,error"`
+	Component string            `json:"component" doc:"Part of Gonema that logged (indexer, download, import...); empty when unknown"`
+	Message   string            `json:"message"`
+	Attrs     map[string]string `json:"attrs,omitempty" doc:"Attributes, redacted; groups are joined with dots"`
 }
 
 // LevelName returns the lower-case name of a level: debug, info, warn, error.
@@ -112,11 +125,25 @@ func (b *Buffer) entries() []Entry {
 
 // Query selects entries.
 type Query struct {
-	MinLevel string    // debug, info, warn or error: entries at this level or above; "" = all
-	Since    time.Time // zero: no lower bound
-	AfterID  uint64    // entries with a greater ID
-	Text     string    // case-insensitive substring of the message or an attribute
-	Limit    int       // the newest Limit matches; <= 0: all
+	MinLevel   string    // debug, info, warn or error: entries at this level or above; "" = all
+	Since      time.Time // zero: no lower bound
+	AfterID    uint64    // entries with a greater ID
+	Text       string    // case-insensitive substring of the message or an attribute
+	Components []string  // entries of one of these components (exact, case-insensitive); empty: all
+	Limit      int       // the newest Limit matches; <= 0: all
+}
+
+// Match reports whether e has the level and component q asks for (the
+// filters a live follower applies; Since, AfterID and Limit are not checked).
+func (q *Query) Match(e *Entry) bool {
+	if q.MinLevel != "" && levelOf(e.Level) < levelOf(q.MinLevel) {
+		return false
+	}
+	if len(q.Components) > 0 && !slices.ContainsFunc(q.Components, func(c string) bool { return strings.EqualFold(c, e.Component) }) {
+		return false
+	}
+	text := strings.ToLower(strings.TrimSpace(q.Text))
+	return text == "" || e.contains(text)
 }
 
 // Entries returns the matching entries, oldest first.
@@ -124,11 +151,6 @@ func (b *Buffer) Entries(q Query) []Entry {
 	b.mu.Lock()
 	all := b.entries()
 	b.mu.Unlock()
-	text := strings.ToLower(strings.TrimSpace(q.Text))
-	minLevel := slog.LevelDebug
-	if q.MinLevel != "" {
-		minLevel = levelOf(q.MinLevel)
-	}
 	out := make([]Entry, 0, min(len(all), max(q.Limit, 0)+1))
 	for i := len(all) - 1; i >= 0; i-- {
 		e := &all[i]
@@ -138,7 +160,7 @@ func (b *Buffer) Entries(q Query) []Entry {
 		if !q.Since.IsZero() && e.Time.Before(q.Since) {
 			break // entries are in time order
 		}
-		if levelOf(e.Level) < minLevel || text != "" && !e.contains(text) {
+		if !q.Match(e) {
 			continue
 		}
 		out = append(out, *e)
@@ -197,6 +219,9 @@ func (e *Entry) format(sb *strings.Builder) {
 	sb.WriteByte(' ')
 	sb.WriteString(strings.ToUpper(e.Level))
 	sb.WriteByte(' ')
+	if e.Component != "" {
+		sb.WriteString(ComponentKey + "=" + e.Component + " ")
+	}
 	sb.WriteString(e.Message)
 	keys := make([]string, 0, len(e.Attrs))
 	for k := range e.Attrs {
@@ -266,6 +291,11 @@ type Handler struct {
 	level  slog.Leveler
 	prefix string      // group prefix of the attributes added by WithGroup
 	attrs  []slog.Attr // attributes added by WithAttrs, redacted, with the prefix applied (buffer only)
+	// component is the last top-level ComponentKey given to WithAttrs. While
+	// pending, next has not received it: Handle adds it to the record, so a
+	// replaced component never reaches next. WithGroup hands it over first.
+	component string
+	pending   bool
 }
 
 // NewHandler returns a handler writing to next and buf at level (next should
@@ -282,19 +312,38 @@ func (h *Handler) Enabled(ctx context.Context, l slog.Level) bool {
 // Handle implements slog.Handler.
 func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	red := slog.NewRecord(r.Time, r.Level, Redact(r.Message), r.PC)
-	e := Entry{Time: r.Time.UTC(), Level: LevelName(r.Level), Message: red.Message}
+	e := Entry{Time: r.Time.UTC(), Level: LevelName(r.Level), Component: h.component, Message: red.Message}
 	if n := len(h.attrs) + r.NumAttrs(); n > 0 {
 		e.Attrs = make(map[string]string, n)
 	}
 	for _, a := range h.attrs {
 		flatten(e.Attrs, "", a)
 	}
+	own := false // the record names its component itself
+	if h.prefix == "" {
+		r.Attrs(func(a slog.Attr) bool {
+			if a.Key == ComponentKey {
+				own = true
+			}
+			return !own
+		})
+	}
+	if h.pending && !own {
+		red.AddAttrs(slog.String(ComponentKey, h.component))
+	}
 	r.Attrs(func(a slog.Attr) bool {
 		a = redactAttr(a)
 		red.AddAttrs(a)
-		flatten(e.Attrs, h.prefix, a)
+		if c, ok := componentOf(h.prefix, a); ok {
+			e.Component = c
+		} else {
+			flatten(e.Attrs, h.prefix, a)
+		}
 		return true
 	})
+	if len(e.Attrs) == 0 {
+		e.Attrs = nil
+	}
 	if h.buf != nil {
 		h.buf.add(e)
 	}
@@ -303,13 +352,20 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 
 // WithAttrs implements slog.Handler.
 func (h *Handler) WithAttrs(as []slog.Attr) slog.Handler {
-	red := make([]slog.Attr, len(as))
-	for i, a := range as {
-		red[i] = redactAttr(a)
-	}
 	c := *h
-	c.next = h.next.WithAttrs(red)
-	c.attrs = append(append([]slog.Attr(nil), h.attrs...), prefixed(h.prefix, red)...)
+	red := make([]slog.Attr, 0, len(as))
+	for _, a := range as {
+		a = redactAttr(a)
+		if comp, ok := componentOf(h.prefix, a); ok {
+			c.component, c.pending = comp, true
+			continue
+		}
+		red = append(red, a)
+	}
+	if len(red) > 0 {
+		c.next = h.next.WithAttrs(red)
+		c.attrs = append(append([]slog.Attr(nil), h.attrs...), prefixed(h.prefix, red)...)
+	}
 	return &c
 }
 
@@ -319,7 +375,11 @@ func (h *Handler) WithGroup(name string) slog.Handler {
 		return h
 	}
 	c := *h
-	c.next = h.next.WithGroup(name)
+	if c.pending { // attributes added after the group cannot replace it any more
+		c.next = c.next.WithAttrs([]slog.Attr{slog.String(ComponentKey, c.component)})
+		c.pending = false
+	}
+	c.next = c.next.WithGroup(name)
 	c.prefix = h.prefix + name + "."
 	return &c
 }
@@ -333,6 +393,19 @@ func prefixed(prefix string, as []slog.Attr) []slog.Attr {
 		out[i] = slog.Attr{Key: prefix + a.Key, Value: a.Value}
 	}
 	return out
+}
+
+// componentOf returns the component named by a (redacted) when it is the
+// top-level ComponentKey attribute.
+func componentOf(prefix string, a slog.Attr) (string, bool) {
+	if prefix != "" || a.Key != ComponentKey || a.Value.Kind() == slog.KindGroup {
+		return "", false
+	}
+	v := strings.TrimSpace(a.Value.String())
+	if len(v) > maxComponentLen {
+		v = v[:maxComponentLen]
+	}
+	return v, true
 }
 
 // redactAttr resolves a and redacts its value (recursively for groups).
