@@ -200,7 +200,7 @@ Galerie : `docs/design/index.html`. Captures 1440 × 900 en sombre et en clair :
 | `docs/design/mockups/error.html` | Serveur injoignable, reconnexion | — |
 | `docs/design/mockups/failed-download.html` | Détail d'un téléchargement échoué | — |
 
-**Ajoutées le 2026-11-06, à valider par le PO** (écrans construits en phase 8 sans maquette) :
+**Ajoutées le 2026-11-06, validées par le PO le 2026-11-06, textes compris** (écrans construits en phase 8 sans maquette) :
 
 | Fichier | Contenu | Variantes |
 |---|---|---|
