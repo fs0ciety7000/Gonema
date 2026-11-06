@@ -1,5 +1,6 @@
 import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useSyncExternalStore } from 'react';
+import { bulkSearch, isEnded, parseBulkEvent } from '@/lib/bulkSearch';
 import { API_ROOT, notifyUnauthorized } from './client';
 import { type ConnectionState, EventStream, type ServerEvent } from './events';
 import { setProgress } from './progress';
@@ -117,7 +118,25 @@ export function handleServerEvent(qc: QueryClient, e: ServerEvent, scheduleLibra
     void qc.invalidateQueries({ queryKey: keys.health });
     return;
   }
+  if (e.type.startsWith('bulksearch.')) {
+    const p = parseBulkEvent(e.data);
+    if (p) bulkSearch.set(p);
+    if (e.type === 'bulksearch.finished' || isEnded(p)) {
+      void qc.invalidateQueries({ queryKey: ['wanted'] });
+      void qc.invalidateQueries({ queryKey: keys.queue });
+      void qc.invalidateQueries({ queryKey: ['history', 'all'] });
+    }
+    return;
+  }
+  if (e.type.startsWith('libraryimport.')) {
+    // the folder events are followed by the import screen itself (onServerEvent)
+    if (e.type !== 'libraryimport.folder') void qc.invalidateQueries({ queryKey: ['library-import', 'scans'] });
+    if (e.type === 'libraryimport.finished')
+      void import('@/screens/discover/import/scanNotice').then((m) => m.notifyScanFinished(e.data));
+    return;
+  }
   if (e.type.startsWith('collection.')) {
+    void qc.invalidateQueries({ queryKey: ['collections'] });
     void qc.invalidateQueries({ queryKey: ['collection'] });
     return;
   }

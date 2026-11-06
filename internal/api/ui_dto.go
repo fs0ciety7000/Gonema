@@ -134,7 +134,7 @@ type MovieListItem struct {
 	RuntimeMin          int64             `json:"runtimeMin"`
 	Genres              stringList        `json:"genres"`
 	Ratings             ratingsJSON       `json:"ratings"`
-	PosterURL           *string           `json:"posterUrl" doc:"Poster at w342; replace w342 by w780 in the path for high-density screens"`
+	PosterURL           *string           `json:"posterUrl" doc:"Poster at w342; replace w342 by w780 in the path for high-density screens, or by w92 for a thumbnail"`
 	DominantColor       *string           `json:"dominantColor" doc:"#rrggbb from the poster"`
 	QualityProfileID    int64             `json:"qualityProfileId"`
 	MinimumAvailability string            `json:"minimumAvailability" enum:"announced,in_cinemas,released"`
@@ -230,7 +230,7 @@ type MovieColumns struct {
 	State         []string          `json:"state"`
 	Failed        []bool            `json:"failed"`
 	Monitored     []bool            `json:"monitored"`
-	PosterURL     []*string         `json:"posterUrl" doc:"w342"`
+	PosterURL     []*string         `json:"posterUrl" doc:"w342; replace w342 by w92 in the path for a table thumbnail"`
 	DominantColor []*string         `json:"dominantColor"`
 	Quality       []*string         `json:"quality"`
 	QualityNames  map[string]string `json:"qualityNames" doc:"Display name of each quality id present"`

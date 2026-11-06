@@ -33,7 +33,7 @@ import {
   restoreBackup,
   uploadBackup,
 } from '@/api/ops';
-import type { BackupInfo, BackupList, BackupSettings, RestoreStaged } from '@/api/schema';
+import type { BackupInfo, BackupList, BackupSettings, BackupSettingsView, RestoreStaged } from '@/api/schema';
 import { problemText } from '@/components/auth/AuthParts';
 import { StatusText } from '@/components/ui/Badges';
 import { Button, IconButton } from '@/components/ui/Button';
@@ -133,6 +133,8 @@ function PendingBanner({ data }: { data: BackupList }) {
 
 function Tiles({ data, settings }: { data: BackupList | undefined; settings: BackupSettings | undefined }) {
   const list = data?.backups ?? [];
+  // next scheduled run (GET /backups, else GET /settings/backups)
+  const nextRun = data?.nextScheduledAt ?? (settings as BackupSettingsView | undefined)?.nextRunAt ?? null;
   const last = list[0];
   const tot = folderTotals(list);
   return (
@@ -167,7 +169,9 @@ function Tiles({ data, settings }: { data: BackupList | undefined; settings: Bac
           {!settings
             ? ''
             : settings.enabled
-              ? `Keeps the ${settings.keep} newest scheduled ${settings.keep === 1 ? 'backup' : 'backups'}`
+              ? nextRun
+                ? `Next ${madeWhen(nextRun).replace(/^Today/, 'today')} · keeps the ${settings.keep} newest`
+                : `Keeps the ${settings.keep} newest scheduled ${settings.keep === 1 ? 'backup' : 'backups'}`
               : 'Backups made by hand still work'}
         </span>
       </div>
@@ -353,7 +357,9 @@ function SchedulePanel({ settings }: { settings: BackupSettings | undefined }) {
   const v: Draft = draft ?? { intervalHours: String(settings.intervalHours), keep: String(settings.keep) };
   const save = (patch: Partial<BackupSettings>) => {
     setSaved(false);
-    m.mutate({ ...settings, ...patch });
+    // only the writable fields: GET also answers nextRunAt, which PUT refuses
+    const { enabled, intervalHours, keep, includeKey } = { ...settings, ...patch };
+    m.mutate({ enabled, intervalHours, keep, includeKey });
   };
   const commit = (ev?: FormEvent) => {
     ev?.preventDefault();

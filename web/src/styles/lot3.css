@@ -88,6 +88,23 @@
     color: var(--accent);
     justify-self: start;
   }
+  .tile button.s {
+    all: unset;
+    font: var(--type-body-sm);
+    color: var(--accent);
+    justify-self: start;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .tile button.s:focus-visible {
+    box-shadow: var(--focus-ring);
+    border-radius: 2px;
+  }
+  .tile button.s[aria-busy="true"] {
+    cursor: progress;
+    opacity: 0.7;
+  }
   .dash-alert {
     display: grid;
     grid-template-columns: 36px 1fr auto;

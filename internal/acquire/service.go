@@ -197,6 +197,8 @@ type Service struct {
 
 	track trackerState
 
+	bulk bulkState // progress of the bulk searches (bulksearch.go)
+
 	onImportDone func(downloadID int64) // test hook, called after each import attempt
 }
 

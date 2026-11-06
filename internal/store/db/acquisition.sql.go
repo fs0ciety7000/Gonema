@@ -347,7 +347,7 @@ func (q *Queries) GetCurrentMovieFile(ctx context.Context, movieID int64) (Movie
 }
 
 const getDownload = `-- name: GetDownload :one
-SELECT id, movie_id, client_id, client_ref, indexer_id, release_title, release_guid, info_url, protocol, size, quality, revision, custom_score, decision, status, progress, speed_bps, eta_s, output_path, status_messages, retry_of, grabbed_at, completed_at, imported_at, manual FROM downloads WHERE id = ?
+SELECT id, movie_id, client_id, client_ref, indexer_id, release_title, release_guid, info_url, protocol, size, quality, revision, custom_score, decision, status, progress, speed_bps, eta_s, output_path, status_messages, retry_of, grabbed_at, completed_at, imported_at, manual, retry_stopped_at FROM downloads WHERE id = ?
 `
 
 func (q *Queries) GetDownload(ctx context.Context, id int64) (Download, error) {
@@ -379,6 +379,7 @@ func (q *Queries) GetDownload(ctx context.Context, id int64) (Download, error) {
 		&i.CompletedAt,
 		&i.ImportedAt,
 		&i.Manual,
+		&i.RetryStoppedAt,
 	)
 	return i, err
 }
@@ -537,7 +538,7 @@ INSERT INTO downloads (
     ?9, ?10, ?11, ?12,
     ?13, 'queued', ?14, ?15, ?16
 )
-RETURNING id, movie_id, client_id, client_ref, indexer_id, release_title, release_guid, info_url, protocol, size, quality, revision, custom_score, decision, status, progress, speed_bps, eta_s, output_path, status_messages, retry_of, grabbed_at, completed_at, imported_at, manual
+RETURNING id, movie_id, client_id, client_ref, indexer_id, release_title, release_guid, info_url, protocol, size, quality, revision, custom_score, decision, status, progress, speed_bps, eta_s, output_path, status_messages, retry_of, grabbed_at, completed_at, imported_at, manual, retry_stopped_at
 `
 
 type InsertDownloadParams struct {
@@ -606,6 +607,7 @@ func (q *Queries) InsertDownload(ctx context.Context, arg InsertDownloadParams) 
 		&i.CompletedAt,
 		&i.ImportedAt,
 		&i.Manual,
+		&i.RetryStoppedAt,
 	)
 	return i, err
 }
@@ -635,7 +637,7 @@ func (q *Queries) InsertScoringCondition(ctx context.Context, arg InsertScoringC
 }
 
 const listActiveDownloads = `-- name: ListActiveDownloads :many
-SELECT id, movie_id, client_id, client_ref, indexer_id, release_title, release_guid, info_url, protocol, size, quality, revision, custom_score, decision, status, progress, speed_bps, eta_s, output_path, status_messages, retry_of, grabbed_at, completed_at, imported_at, manual FROM downloads
+SELECT id, movie_id, client_id, client_ref, indexer_id, release_title, release_guid, info_url, protocol, size, quality, revision, custom_score, decision, status, progress, speed_bps, eta_s, output_path, status_messages, retry_of, grabbed_at, completed_at, imported_at, manual, retry_stopped_at FROM downloads
 WHERE status IN ('queued', 'downloading', 'paused', 'completed', 'importing', 'warning')
 ORDER BY grabbed_at, id
 `
@@ -676,6 +678,7 @@ func (q *Queries) ListActiveDownloads(ctx context.Context) ([]Download, error) {
 			&i.CompletedAt,
 			&i.ImportedAt,
 			&i.Manual,
+			&i.RetryStoppedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -881,7 +884,7 @@ func (q *Queries) ListIndexers(ctx context.Context) ([]Indexer, error) {
 }
 
 const listMovieDownloads = `-- name: ListMovieDownloads :many
-SELECT id, movie_id, client_id, client_ref, indexer_id, release_title, release_guid, info_url, protocol, size, quality, revision, custom_score, decision, status, progress, speed_bps, eta_s, output_path, status_messages, retry_of, grabbed_at, completed_at, imported_at, manual FROM downloads WHERE movie_id = ? ORDER BY grabbed_at DESC, id DESC
+SELECT id, movie_id, client_id, client_ref, indexer_id, release_title, release_guid, info_url, protocol, size, quality, revision, custom_score, decision, status, progress, speed_bps, eta_s, output_path, status_messages, retry_of, grabbed_at, completed_at, imported_at, manual, retry_stopped_at FROM downloads WHERE movie_id = ? ORDER BY grabbed_at DESC, id DESC
 `
 
 func (q *Queries) ListMovieDownloads(ctx context.Context, movieID int64) ([]Download, error) {
@@ -919,6 +922,7 @@ func (q *Queries) ListMovieDownloads(ctx context.Context, movieID int64) ([]Down
 			&i.CompletedAt,
 			&i.ImportedAt,
 			&i.Manual,
+			&i.RetryStoppedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1298,7 +1302,7 @@ UPDATE downloads SET
     imported_at     = ?8
 WHERE id = ?9
   AND status IN ('queued', 'downloading', 'paused', 'completed', 'importing', 'warning')
-RETURNING id, movie_id, client_id, client_ref, indexer_id, release_title, release_guid, info_url, protocol, size, quality, revision, custom_score, decision, status, progress, speed_bps, eta_s, output_path, status_messages, retry_of, grabbed_at, completed_at, imported_at, manual
+RETURNING id, movie_id, client_id, client_ref, indexer_id, release_title, release_guid, info_url, protocol, size, quality, revision, custom_score, decision, status, progress, speed_bps, eta_s, output_path, status_messages, retry_of, grabbed_at, completed_at, imported_at, manual, retry_stopped_at
 `
 
 type UpdateDownloadStateParams struct {
@@ -1355,6 +1359,7 @@ func (q *Queries) UpdateDownloadState(ctx context.Context, arg UpdateDownloadSta
 		&i.CompletedAt,
 		&i.ImportedAt,
 		&i.Manual,
+		&i.RetryStoppedAt,
 	)
 	return i, err
 }

@@ -101,7 +101,7 @@ func (q *Queries) ListFileSizesInRootFolder(ctx context.Context, rootFolderID in
 const reassignDownloadMovie = `-- name: ReassignDownloadMovie :one
 UPDATE downloads SET movie_id = ?1
 WHERE id = ?2 AND status IN ('completed', 'warning')
-RETURNING id, movie_id, client_id, client_ref, indexer_id, release_title, release_guid, info_url, protocol, size, quality, revision, custom_score, decision, status, progress, speed_bps, eta_s, output_path, status_messages, retry_of, grabbed_at, completed_at, imported_at, manual
+RETURNING id, movie_id, client_id, client_ref, indexer_id, release_title, release_guid, info_url, protocol, size, quality, revision, custom_score, decision, status, progress, speed_bps, eta_s, output_path, status_messages, retry_of, grabbed_at, completed_at, imported_at, manual, retry_stopped_at
 `
 
 type ReassignDownloadMovieParams struct {
@@ -140,6 +140,7 @@ func (q *Queries) ReassignDownloadMovie(ctx context.Context, arg ReassignDownloa
 		&i.CompletedAt,
 		&i.ImportedAt,
 		&i.Manual,
+		&i.RetryStoppedAt,
 	)
 	return i, err
 }

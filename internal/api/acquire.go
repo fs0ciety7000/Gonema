@@ -247,6 +247,7 @@ func (s *Server) acquireRoutes() {
 	})
 
 	// ------------------------------------------------------------- searches
+	s.bulkSearchRoutes(a)
 	srTags := []string{"Search"}
 	huma.Register(s.api, huma.Operation{
 		OperationID: "search-movie", Method: http.MethodPost, Path: "/movies/{id}/search", Summary: "Search now and grab the best release",
@@ -361,6 +362,35 @@ func (s *Server) acquireRoutes() {
 		}
 		return nil, nil
 	})
+
+	for _, op := range []struct {
+		path, id, summary, desc string
+		stop                    bool
+	}{
+		{"/queue/{id}/stop-retrying", "stop-retrying-download", "Stop the automatic retries of a download chain",
+			"Any download of the chain (failed or active; ids from the queue or history) can be given. When a download of the chain fails, " +
+				"the next best release is no longer grabbed automatically; RSS and the scheduled searches still run. The current download " +
+				"is not touched. Written to history (retries_stopped); undo with resume-retrying. Idempotent.", true},
+		{"/queue/{id}/resume-retrying", "resume-retrying-download", "Resume the automatic retries of a download chain",
+			"Undoes stop-retrying (history retries_resumed). When the newest download of the chain failed meanwhile and nothing is " +
+				"downloading for the movie, the next release is tried now. Idempotent.", false},
+	} {
+		huma.Register(s.api, huma.Operation{
+			OperationID: op.id, Method: http.MethodPost, Path: op.path, Summary: op.summary, Description: op.desc, Tags: qTags,
+		}, func(ctx context.Context, in *IDParam) (*struct{ Body acquire.QueueItem }, error) {
+			var item acquire.QueueItem
+			var err error
+			if op.stop {
+				item, err = a.StopRetrying(ctx, in.ID)
+			} else {
+				item, err = a.ResumeRetrying(ctx, in.ID)
+			}
+			if err != nil {
+				return nil, s.problem(ctx, err, false)
+			}
+			return &struct{ Body acquire.QueueItem }{item}, nil
+		})
+	}
 
 	huma.Register(s.api, huma.Operation{
 		OperationID: "retry-download-import", Method: http.MethodPost, Path: "/queue/{id}/import", Summary: "Import a completed download again",

@@ -44,7 +44,7 @@ export const NAV: ReadonlyArray<{ heading: string; items: readonly NavEntry[] }>
     items: [
       { id: 'home', label: 'Home', icon: Gauge, path: '/', built: true },
       { id: 'films', label: 'Films', icon: Film, path: '/films', built: true },
-      { id: 'collections', label: 'Collections', icon: Layers, path: '/collections', built: false, lot: 3 },
+      { id: 'collections', label: 'Collections', icon: Layers, path: '/collections', built: true },
       { id: 'calendar', label: 'Calendar', icon: Calendar, path: '/calendar', built: true },
       { id: 'discover', label: 'Add & discover', icon: Compass, path: '/discover', built: true },
     ],

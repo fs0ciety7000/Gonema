@@ -457,7 +457,13 @@ func TestSetupToken(t *testing.T) {
 	if !s.CheckSetupToken(tok) || !s.CheckSetupToken(" "+strings.ToLower(strings.ReplaceAll(tok, "-", ""))+" ") {
 		t.Error("the token is refused")
 	}
-	if s.CheckSetupToken(tok[:len(tok)-1]+"X") || s.CheckSetupToken("") {
+	// A wrong last character: never the right one (the token alphabet holds X
+	// and Y, so a fixed replacement would match 1 time in 32).
+	wrong := "X"
+	if strings.HasSuffix(tok, "X") {
+		wrong = "Y"
+	}
+	if s.CheckSetupToken(tok[:len(tok)-1]+wrong) || s.CheckSetupToken("") {
 		t.Error("a wrong token is accepted")
 	}
 	if _, err := s.Setup(ctx, "admin", "long enough password", ci); err != nil {

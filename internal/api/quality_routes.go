@@ -36,7 +36,7 @@ type QualityDefinition struct {
 // ProfileEntry is one row of a profile: a quality, or a named group of
 // qualities the profile treats as equal.
 type ProfileEntry struct {
-	Group     string   `json:"group,omitempty" maxLength:"100" doc:"Group name; empty for a single quality"`
+	Group     string   `json:"group,omitempty" maxLength:"100" doc:"Group name; empty for a single quality. The qualities of a group are equal (one rank): among them the best score wins. Names are unique without case and differ from quality names; rename, merge or split by sending the new entries (update the cutoff with them, or name a member quality as the cutoff)"`
 	Qualities []string `json:"qualities" minItems:"1" maxItems:"30" doc:"Quality ids"`
 	Allowed   bool     `json:"allowed"`
 }

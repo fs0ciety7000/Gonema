@@ -13,7 +13,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import type { LibraryItem } from '@/api/model';
+import { type LibraryItem, posterThumb } from '@/api/model';
 import type { LiveDownload } from '@/components/movie/PosterCard';
 import { QualityBadge, ScorePill } from '@/components/ui/Badges';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -281,7 +281,6 @@ export function LibraryTable({
                   m={m}
                   index={vr.index}
                   top={vr.start - v.options.scrollMargin}
-                  scrolling={v.isScrolling}
                   selected={selection.selected.has(m.id)}
                   active={m.id === activeId}
                   context={ctxOpen && ctx?.id === m.id}
@@ -318,8 +317,6 @@ type RowProps = {
   index: number;
   /** Offset of the row in the body (px). */
   top: number;
-  /** The list is scrolling: rows that enter now show their colour until it stops (no image decode per frame). */
-  scrolling: boolean;
   selected: boolean;
   active: boolean;
   context: boolean;
@@ -338,7 +335,6 @@ const TableRow = memo(function TableRow({
   m,
   index,
   top,
-  scrolling,
   selected,
   active,
   context,
@@ -352,10 +348,6 @@ const TableRow = memo(function TableRow({
   onSelectClick,
 }: RowProps) {
   const s = displayStatus(m);
-  const [thumb, setThumb] = useState(!scrolling);
-  useEffect(() => {
-    if (!scrolling) setThumb(true);
-  }, [scrolling]);
   const text =
     s === 'downloading' && lv
       ? [`${Math.round(lv.progress * 100)}%`, formatEta(lv.etaSeconds)].filter(Boolean).join(' · ')
@@ -386,8 +378,10 @@ const TableRow = memo(function TableRow({
       </td>
       <td role="gridcell" className={cx(s === 'unmonitored' && 'unmon')}>
         <div className="t-cell">
+          {/* w92 thumbnail (~2 KB), loaded at once: only rows near the window exist (virtualised), and
+              lazy-loading's own observation of each image cost more than it saved while scrolling */}
           <span className="thumb" data-poster-frame={m.id}>
-            <PosterArt src={thumb ? m.posterUrl : null} title={m.title} color={m.dominantColor} />
+            <PosterArt src={posterThumb(m.posterUrl)} title={m.title} color={m.dominantColor} eager />
           </span>
           <a
             className="name"

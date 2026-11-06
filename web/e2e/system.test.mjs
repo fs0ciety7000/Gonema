@@ -143,7 +143,8 @@ describe('phase 8 screens, as the approved mockups', () => {
       await api('/settings/backups', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(before),
+        // nextRunAt (v1.1) is read only
+        body: JSON.stringify({ ...before, nextRunAt: undefined }),
       });
       await page.context().close();
     }

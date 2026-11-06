@@ -37,7 +37,10 @@ func (s *Server) registerEvents() {
 		Description: "Each message has an id, an event name (movie.added, movie.updated, movie.deleted, job.started, " +
 			"job.completed, job.failed, health.changed, download.progress, download.grabbed, download.updated, " +
 			"download.imported, download.failed, download.removed, search.batch, search.indexer_done, " +
-			"search.indexer_failed, search.finished, ...) and JSON data {id, type, time, movieId, data}. " +
+			"search.indexer_failed, search.finished, job.cancelled, bulksearch.progress, bulksearch.finished, " +
+			"libraryimport.folder, libraryimport.progress, libraryimport.finished, ...) and JSON data {id, type, time, movieId, data}. " +
+			"bulksearch.* data is a BulkSearchProgress; libraryimport.folder data is {scanId, done, total, folder} and the other " +
+			"libraryimport.* carry the LibraryScan without its folders. " +
 			"download.progress data is compact, keyed by download id: {id, movieId, status, progress, speedBps, etaSeconds, message}. " +
 			"moviefile.renamed / moviefile.deleted follow file operations; tags.changed follows tag edits. " +
 			"A comment is sent every 15 s as a heartbeat. An event named \"resync\" means events were missed: refetch.",

@@ -190,7 +190,7 @@ func (in *SavedViewInput) view() library.ViewInput {
 
 type imageInput struct {
 	Kind string `path:"kind" enum:"poster,backdrop,profile"`
-	Size string `path:"size" enum:"w185,w342,w780,w1280" doc:"poster: w342, w780; backdrop: w1280; profile: w185"`
+	Size string `path:"size" enum:"w92,w185,w342,w780,w1280" doc:"poster: w92 (thumbnail), w342, w780; backdrop: w1280; profile: w185"`
 	File string `path:"file" maxLength:"127" pattern:"^[A-Za-z0-9_-]+\\.(jpg|jpeg|png|webp)$" doc:"TMDB file name"`
 }
 

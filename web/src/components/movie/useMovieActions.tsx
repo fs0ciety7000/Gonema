@@ -14,6 +14,7 @@ import {
   searchMovie,
 } from '@/api/queries';
 import { toast } from '@/components/ui/Toast';
+import { startBulk } from '@/lib/bulkSearch';
 
 type Target = { id: number; title: string };
 
@@ -150,6 +151,11 @@ export function useMovieActions() {
 
   const search = useCallback(async (targets: readonly Target[]) => {
     if (!targets.length) return;
+    // several films: one bulk search job on the server (progress strip, cancel)
+    if (targets.length > 1) {
+      await startBulk({ ids: targets.map((t) => t.id) });
+      return;
+    }
     const results = await Promise.allSettled(targets.map((t) => searchMovie(t.id)));
     const failed = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
     if (failed.length === targets.length) {

@@ -2,6 +2,7 @@ package quality_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/fs0ciety7000/gonema/internal/quality"
@@ -166,7 +167,22 @@ func TestProfile_Validate(t *testing.T) {
 		}, `group name "WEB 1080p" is used twice`},
 		{"group named like a quality", func(p *quality.Profile) {
 			p.Items = append(p.Items, quality.Item{Name: "cam", Qualities: []quality.ID{quality.Cam}})
-		}, `group name "cam" is also a quality ID`},
+		}, `group name "cam" is also the name of a quality`},
+		{"group named like a quality display name", func(p *quality.Profile) {
+			p.Items = append(p.Items, quality.Item{Name: "bluray-720P", Qualities: []quality.ID{quality.Cam}})
+		}, `group name "bluray-720P" is also the name of a quality`},
+		{"duplicate group, other case", func(p *quality.Profile) {
+			p.Items = append(p.Items, quality.Item{Name: "web 1080P", Qualities: []quality.ID{quality.Cam}})
+		}, `group name "web 1080P" is used twice (names are compared without case)`},
+		{"blank group name", func(p *quality.Profile) {
+			p.Items = append(p.Items, quality.Item{Name: "   ", Qualities: []quality.ID{quality.Cam}})
+		}, "item 5 has a blank group name"},
+		{"long group name", func(p *quality.Profile) {
+			p.Items = append(p.Items, quality.Item{Name: strings.Repeat("g", 101), Qualities: []quality.ID{quality.Cam}})
+		}, "is longer than 100 characters"},
+		{"one-quality group", func(p *quality.Profile) {
+			p.Items = append(p.Items, quality.Item{Name: "Old", Qualities: []quality.ID{quality.Cam}})
+		}, ""},
 		{"negative step", func(p *quality.Profile) { p.MinUpgradeStep = -1 }, "minimum upgrade step -1 is negative"},
 		{"unknown language", func(p *quality.Profile) { p.Languages = []string{"klingon"} }, `unknown language "klingon"`},
 		{"duplicate language", func(p *quality.Profile) { p.Languages = []string{"fr", "fr"} }, `language "fr" is listed twice`},

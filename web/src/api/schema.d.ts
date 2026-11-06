@@ -310,6 +310,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bulk-searches/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Progress of a bulk search
+         * @description Live counts while it runs in this process; after a restart, the state of its job with the total only.
+         */
+        get: operations["get-bulk-search"];
+        put?: never;
+        post?: never;
+        /**
+         * Cancel a bulk search
+         * @description A queued bulk search is cancelled at once; a running one stops after the current movie's search (bulksearch.finished with state cancelled). Grabs already made stay. 409 when it already ended.
+         */
+        delete: operations["cancel-bulk-search"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/calendar": {
         parameters: {
             query?: never;
@@ -330,6 +354,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/calendar.ics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * iCal feed of the release dates
+         * @description An RFC 5545 calendar of the release dates of the library movies (all-day events), for calendar apps. Authenticated by the calendar feed key in the key query parameter, the one key accepted in a URL: it is read-only and opens this feed only (no session, no API key). Options are set in Settings > Calendar feed. Limited to 60 requests and 10 wrong keys per 10 minutes per client address (429).
+         */
+        get: operations["get-calendar-feed-ics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Collections of the library
+         * @description Every collection with at least one library movie, with its films in release order and their state. Library movies come from the in-memory index; films not in the library come from the last read of the collection on TMDB (no TMDB call: partsKnown is false until it was read once, which the collections refresh job does within 12 hours). totals ignore the filters.
+         */
+        get: operations["list-collections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/collections/{id}": {
         parameters: {
             query?: never;
@@ -337,7 +401,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a collection */
+        /**
+         * Get a collection
+         * @description The collection with its settings and every film (films), in release order: library movies with their state, file quality and size; the others missing or not released. The films are read from TMDB when it answers (then saved for the list), else from the last read (partsError says why). movies and parts are the raw library movies and TMDB parts.
+         */
         get: operations["get-collection"];
         put?: never;
         post?: never;
@@ -357,7 +424,7 @@ export interface paths {
         get?: never;
         /**
          * Monitor a collection
-         * @description Saves the settings; when monitored, adds every movie of the collection that is not in the library (excluded movies are skipped).
+         * @description Saves the settings (profile, root folder, minimum availability and searchOnAdd are used for every film the collection adds). When monitored, adds now the released films that are not in the library (excluded ones are skipped); films not released yet are listed in upcoming and added on their release day by the collections job (every 6 hours, written to history). Turning it off keeps every movie.
          */
         put: operations["monitor-collection"];
         post?: never;
@@ -582,7 +649,7 @@ export interface paths {
         };
         /**
          * Event stream (Server-Sent Events)
-         * @description Each message has an id, an event name (movie.added, movie.updated, movie.deleted, job.started, job.completed, job.failed, health.changed, download.progress, download.grabbed, download.updated, download.imported, download.failed, download.removed, search.batch, search.indexer_done, search.indexer_failed, search.finished, ...) and JSON data {id, type, time, movieId, data}. download.progress data is compact, keyed by download id: {id, movieId, status, progress, speedBps, etaSeconds, message}. moviefile.renamed / moviefile.deleted follow file operations; tags.changed follows tag edits. A comment is sent every 15 s as a heartbeat. An event named "resync" means events were missed: refetch.
+         * @description Each message has an id, an event name (movie.added, movie.updated, movie.deleted, job.started, job.completed, job.failed, health.changed, download.progress, download.grabbed, download.updated, download.imported, download.failed, download.removed, search.batch, search.indexer_done, search.indexer_failed, search.finished, job.cancelled, bulksearch.progress, bulksearch.finished, libraryimport.folder, libraryimport.progress, libraryimport.finished, ...) and JSON data {id, type, time, movieId, data}. bulksearch.* data is a BulkSearchProgress; libraryimport.folder data is {scanId, done, total, folder} and the other libraryimport.* carry the LibraryScan without its folders. download.progress data is compact, keyed by download id: {id, movieId, status, progress, speedBps, etaSeconds, message}. moviefile.renamed / moviefile.deleted follow file operations; tags.changed follows tag edits. A comment is sent every 15 s as a heartbeat. An event named "resync" means events were missed: refetch.
          */
         get: operations["stream-events"];
         put?: never;
@@ -914,6 +981,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/library-import/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search TMDB for a folder (change match)
+         * @description Searches TMDB (a title, tmdb:<id> or an IMDb id) and scores each result against the folder and file names: confidence and reason are relative to this folder, as in the scan. Nothing is changed.
+         */
+        post: operations["library-import-candidates"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/library-import/confirm": {
         parameters: {
             query?: never;
@@ -925,9 +1012,29 @@ export interface paths {
         put?: never;
         /**
          * Adopt movie folders
-         * @description Adds each movie to the library, pointed at its existing folder, and records its file where it is. No file is moved or renamed.
+         * @description Adds each movie to the library, pointed at its existing folder, and records its file where it is (mode keep, the default). Mode move then renames the folder and file to the naming templates inside the root folder: a move, never a deletion; when a step fails the files already moved are put back and the movie keeps its folder. Monitored movies are upgraded later up to the profile cutoff; searchOnAdd searches right after the import. Each file is written to history. The summary counts the outcomes and lists the collections the import completed.
          */
         post: operations["confirm-library-import"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/library-import/folders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Folders of a root folder, for the folder picker
+         * @description Sub-folders of a root folder or of path inside it (hidden folders excluded); movie tells a folder that holds a video directly.
+         */
+        get: operations["list-library-import-folders"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -944,11 +1051,59 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Find unmanaged movie folders
-         * @description Folders of a root folder that hold a movie Gonema does not manage yet, with the TMDB movies they may be. Nothing is changed.
+         * Find unmanaged movie folders (waits for the result)
+         * @description Folders of a root folder (or of a sub-path) that hold a movie Gonema does not manage yet, with the TMDB movies they may be. Nothing is changed. For a large library use POST /library-import/scans: a background job that streams its progress.
          */
         post: operations["scan-library-import"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/library-import/scans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent library scans
+         * @description Newest first, without their folders.
+         */
+        get: operations["list-library-scans"];
+        put?: never;
+        /**
+         * Scan existing movie folders in the background
+         * @description Queues a scan job of a root folder or of a sub-path. It goes on when the page is left. Each described folder streams as a libraryimport.folder event {scanId, done, total, folder}; libraryimport.progress and libraryimport.finished carry the scan. Results stay for a later review (the last 20 scans): GET /library-import/scans/{scanId}. DELETE cancels it (the folders found are kept). Nothing is changed on disk.
+         */
+        post: operations["start-library-scan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/library-import/scans/{scanId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A library scan with its folders
+         * @description Folders described so far while it runs; all of them once done.
+         */
+        get: operations["get-library-scan"];
+        put?: never;
+        post?: never;
+        /**
+         * Cancel a library scan
+         * @description Stops the scan job; the folders described so far are kept (libraryimport.finished with status cancelled). 409 when it already ended.
+         */
+        delete: operations["cancel-library-scan"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1258,6 +1413,26 @@ export interface paths {
          * @description Each movie as POST /movies/{id}/rename; preview=true only plans.
          */
         post: operations["rename-movies"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/movies/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search several movies automatically
+         * @description Queues one background job that runs the automatic search of each movie, one at a time, spaced out, waiting while every indexer is paused by its circuit breaker (rate limit, repeated errors). Each grab is written to history. Progress streams as bulksearch.progress events (bulksearch.finished at the end) and at GET /bulk-searches/{jobId}; DELETE /bulk-searches/{jobId} cancels it. Give ids or a filter, not both. One bulk search at a time (409 otherwise). Movies that are unmonitored or not available yet are skipped.
+         */
+        post: operations["bulk-search-movies"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1837,6 +2012,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/queue/{id}/resume-retrying": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume the automatic retries of a download chain
+         * @description Undoes stop-retrying (history retries_resumed). When the newest download of the chain failed meanwhile and nothing is downloading for the movie, the next release is tried now. Idempotent.
+         */
+        post: operations["resume-retrying-download"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/queue/{id}/stop-retrying": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop the automatic retries of a download chain
+         * @description Any download of the chain (failed or active; ids from the queue or history) can be given. When a download of the chain fails, the next best release is no longer grabbed automatically; RSS and the scheduled searches still run. The current download is not touched. Written to history (retries_stopped); undo with resume-retrying. Idempotent.
+         */
+        post: operations["stop-retrying-download"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/recycle-bin": {
         parameters: {
             query?: never;
@@ -2175,10 +2390,58 @@ export interface paths {
         get: operations["get-backup-settings"];
         /**
          * Change scheduled backups
-         * @description Interval (hours), scheduled backups kept, and whether they include gonema.key (off by default: see the warning). A new interval applies at once.
+         * @description Interval (hours), scheduled backups kept, and whether they include gonema.key (off by default: see the warning). A new interval applies at once (nextRunAt may show the previous due time for a moment).
          */
         put: operations["set-backup-settings"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/calendar-feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Calendar feed settings
+         * @description Whether the iCal feed is on, the last four characters of its key and its options. The key and the feed URL are shown only by regenerate.
+         */
+        get: operations["get-calendar-feed"];
+        /**
+         * Change the calendar feed options
+         * @description Days back and ahead, unmonitored movies, release types. The key is unchanged; the feed stays on or off.
+         */
+        put: operations["set-calendar-feed"];
+        post?: never;
+        /**
+         * Turn the calendar feed off
+         * @description Requires confirm=true (422 otherwise). The key is forgotten: subscribed calendars stop updating. The options are kept. 404 when the feed is already off.
+         */
+        delete: operations["disable-calendar-feed"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/calendar-feed/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Turn the calendar feed on with a new key
+         * @description Creates a new read-only key and returns it once, with the feed URL. The previous key (and every calendar subscribed with it) stops working at once.
+         */
+        post: operations["regenerate-calendar-feed"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2598,6 +2861,11 @@ export interface components {
              */
             lastSeenAt: string;
             userAgent: string;
+            /**
+             * @description How the browser connects, as of its last use: direct (public address), local (loopback or private address) or proxy (through a reverse proxy of GONEMA_TRUSTED_PROXIES)
+             * @enum {string}
+             */
+            via: "direct" | "local" | "proxy";
         };
         AuthStatus: {
             /** @enum {string} */
@@ -2648,6 +2916,11 @@ export interface components {
             directory: string;
             /** @description What a backup holds about the master key, to show next to the list */
             keyNotice: string;
+            /**
+             * Format: date-time
+             * @description Next scheduled backup; null when scheduled backups are off or not scheduled yet
+             */
+            nextScheduledAt: string | null;
             /** @description A restore staged for the next start */
             pendingRestore?: components["schemas"]["PendingRestore"];
         };
@@ -2665,6 +2938,26 @@ export interface components {
              * @description Scheduled backups kept; older scheduled ones are deleted (manual, uploaded and pre-restore backups are kept until you delete them)
              */
             keep: number;
+        };
+        BackupSettingsView: {
+            enabled: boolean;
+            /** @description Also store gonema.key in scheduled backups. Warning: whoever gets such an archive can decrypt every stored secret */
+            includeKey: boolean;
+            /**
+             * Format: int64
+             * @description Hours between two scheduled backups; default 168 (weekly)
+             */
+            intervalHours: number;
+            /**
+             * Format: int64
+             * @description Scheduled backups kept; older scheduled ones are deleted (manual, uploaded and pre-restore backups are kept until you delete them)
+             */
+            keep: number;
+            /**
+             * Format: date-time
+             * @description Next scheduled backup; null when scheduled backups are off or not scheduled yet
+             */
+            nextRunAt: string | null;
         };
         "Block-groupRequest": {
             group: string;
@@ -2722,6 +3015,74 @@ export interface components {
             /** @description Settings before the edit, one per movie: POST them to /movies/bulk/restore to undo (root folders: move back with /movies/move) */
             previous: components["schemas"]["MovieSettings"][] | null;
         };
+        BulkSearchProgress: {
+            /**
+             * Format: int64
+             * @description Movie being searched
+             */
+            currentMovieId?: number;
+            /**
+             * Format: int64
+             * @description Movies handled, whatever the outcome
+             */
+            done: number;
+            /**
+             * Format: int64
+             * @description The search failed (see the logs)
+             */
+            failed: number;
+            /**
+             * Format: int64
+             * @description Movies for which a release was grabbed (written to history)
+             */
+            grabbed: number;
+            /** Format: int64 */
+            jobId: number;
+            /** @description missing_released, cutoff_unmet or selection */
+            label: string;
+            /**
+             * Format: int64
+             * @description Searched, nothing acceptable to grab
+             */
+            noResult: number;
+            /** @description Why the search stopped or waits, plain language */
+            reason?: string;
+            /**
+             * Format: int64
+             * @description Not searched: unmonitored, not available yet, removed, or already searched by this job before a restart
+             */
+            skipped: number;
+            /** @enum {string} */
+            state: "pending" | "running" | "waiting" | "finished" | "cancelled" | "stopped";
+            /** Format: int64 */
+            total: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            waitingUntil?: string;
+        };
+        BulkSearchRequest: {
+            /**
+             * @description missing_released: the Wanted > Missing list (monitored, no file, released enough for the minimum availability), the dashboard's "Search the N released"; cutoff_unmet: the Wanted > Cutoff unmet list
+             * @enum {string}
+             */
+            filter?: "missing_released" | "cutoff_unmet";
+            /** @description Library movie ids, searched in this order */
+            ids?: number[] | null;
+        };
+        BulkSearchStarted: {
+            /** Format: int64 */
+            jobId: number;
+            /** @enum {string} */
+            label: "missing_released" | "cutoff_unmet" | "selection";
+            /** @description Path of the progress (GET), also the cancel endpoint (DELETE) */
+            location: string;
+            /**
+             * Format: int64
+             * @description Movies queued
+             */
+            total: number;
+        };
         BulkSet: {
             /** @description Labels; missing tags are created */
             addTags?: string[] | null;
@@ -2749,6 +3110,38 @@ export interface components {
             searchable: boolean;
             /** @enum {string} */
             type: "cinema" | "digital" | "physical";
+        };
+        CalendarFeedView: {
+            /** Format: date-time */
+            createdAt: string | null;
+            enabled: boolean;
+            /**
+             * Format: int64
+             * @description Days after today included
+             */
+            futureDays: number;
+            /** @description Only in the answer of regenerate: the key, shown once */
+            key?: string;
+            /** @description Last four characters of the key */
+            last4?: string;
+            /**
+             * Format: date-time
+             * @description Last fetch by a calendar app (updated at most every 5 minutes)
+             */
+            lastUsedAt: string | null;
+            /**
+             * Format: int64
+             * @description Days before today included
+             */
+            pastDays: number;
+            /** @description Only in the answer of regenerate: the feed path with its key, to prefix with the public origin */
+            path?: string;
+            /** @description cinema, digital and/or physical */
+            releaseTypes: string[] | null;
+            /** @description Also the unmonitored movies that are not released yet (like the calendar screen) */
+            unmonitored: boolean;
+            /** @description Only in the answer of regenerate: the feed URL with its key, as seen from this request (behind a reverse proxy, check the host) */
+            url?: string;
         };
         CalendarMovie: {
             dominantColor: string | null;
@@ -2778,6 +3171,22 @@ export interface components {
             tmdbId: number;
             /** Format: int64 */
             year: number;
+        };
+        CalendarOptions: {
+            /**
+             * Format: int64
+             * @description Days after today included
+             */
+            futureDays: number;
+            /**
+             * Format: int64
+             * @description Days before today included
+             */
+            pastDays: number;
+            /** @description cinema, digital and/or physical */
+            releaseTypes: string[] | null;
+            /** @description Also the unmonitored movies that are not released yet (like the calendar screen) */
+            unmonitored: boolean;
         };
         CalendarPage: {
             end: string;
@@ -2864,6 +3273,225 @@ export interface components {
             /** Format: int64 */
             tmdbId: number;
         };
+        CollectionCounts: {
+            /** Format: int64 */
+            downloading: number;
+            /** Format: int64 */
+            inLibrary: number;
+            /**
+             * Format: int64
+             * @description Released films not in the library. An upcoming film is never missing: a monitored collection adds it on its release day
+             */
+            missing: number;
+            /**
+             * Format: int64
+             * @description Every film not in the library, released or not
+             */
+            notInLibrary: number;
+            /** Format: int64 */
+            onDisk: number;
+            /**
+             * Format: int64
+             * @description Bytes
+             */
+            sizeOnDisk: number;
+            /** Format: int64 */
+            total: number;
+            /**
+             * Format: int64
+             * @description Not released yet, in the library or not
+             */
+            upcoming: number;
+            /**
+             * Format: int64
+             * @description In the library without a file, released or in cinemas
+             */
+            wanted: number;
+            /**
+             * Format: int64
+             * @description 0 when unknown
+             */
+            yearFrom: number;
+            /** Format: int64 */
+            yearTo: number;
+        };
+        CollectionDetail: {
+            backdropPath: string | null;
+            /** @description Collection backdrop, w1280 */
+            backdropUrl: string | null;
+            /** @description Every film is on disk */
+            complete: boolean;
+            counts: components["schemas"]["CollectionCounts"];
+            /** @description #rrggbb of the lead film: the first library film, in release order, with a poster color */
+            dominantColor: string | null;
+            /** @description Every film, in release order (undated last) */
+            films: components["schemas"]["CollectionFilm"][] | null;
+            /** @description Misses released films (counts.missing > 0): the Missing films filter */
+            hasMissing: boolean;
+            /** Format: int64 */
+            id: number;
+            minimumAvailability: string;
+            /** @description Add the collection's movies automatically */
+            monitored: boolean;
+            /** @description Movies of the collection in the library */
+            movies: components["schemas"]["Movie"][] | null;
+            name: string;
+            overview: string;
+            /** @description Every movie of the collection according to TMDB; null when TMDB is unavailable */
+            parts: components["schemas"]["MovieSummary"][] | null;
+            partsError?: string;
+            /** @description false until Gonema read the collection from TMDB once: only library movies are listed */
+            partsKnown: boolean;
+            /**
+             * Format: date-time
+             * @description When the films were last read from TMDB
+             */
+            partsRefreshedAt: string | null;
+            posterPath: string | null;
+            /** @description Collection poster, w342 */
+            posterUrl: string | null;
+            /** Format: int64 */
+            qualityProfileId: number | null;
+            qualityProfileName: string | null;
+            /** Format: date-time */
+            refreshedAt: string | null;
+            /** Format: int64 */
+            rootFolderId: number | null;
+            /** @description Path of the root folder of the films it adds */
+            rootFolderPath: string | null;
+            /** @description Films added by the collection are searched at once */
+            searchOnAdd: boolean;
+            /** Format: int64 */
+            tmdbId: number;
+        };
+        CollectionFilm: {
+            dominantColor: string | null;
+            /** @description Detail only: not in the library and on the import list exclusions (not added with the collection) */
+            excluded: boolean;
+            /** @description Space-separated HDR formats of the file (DV HDR10); null for SDR or no file */
+            hdr: string | null;
+            inLibrary: boolean;
+            /**
+             * Format: date-time
+             * @description Detail only
+             */
+            lastSearchedAt?: string;
+            /** @enum {string|null} */
+            minimumAvailability: "announced" | "in_cinemas" | "released" | null;
+            monitored: boolean | null;
+            /** Format: int64 */
+            movieId: number | null;
+            /** @description Next release from today on; null when none is known */
+            nextRelease: components["schemas"]["NextRelease"];
+            /** @description w342; replace w342 by w92 in the path for a thumbnail */
+            posterUrl: string | null;
+            /**
+             * Format: double
+             * @description Download progress 0 to 1 while downloading
+             */
+            progress: number | null;
+            /** @description Quality id of the file */
+            quality: string | null;
+            qualityName: string | null;
+            /** @description YYYY-MM-DD */
+            releaseCinema: string | null;
+            /** @description Release date of the part on TMDB (YYYY-MM-DD); null when unknown */
+            releaseDate: string | null;
+            releaseDigital: string | null;
+            releasePhysical: string | null;
+            released: boolean;
+            /** Format: int64 */
+            sizeOnDisk: number | null;
+            /**
+             * @description on_disk, downloading, wanted (no file yet, released or in cinemas) and upcoming (announced) are library movies; missing (released) and not_released are not in the library
+             * @enum {string}
+             */
+            state: "on_disk" | "downloading" | "wanted" | "upcoming" | "missing" | "not_released";
+            /**
+             * @description Release stage of the library movie
+             * @enum {string|null}
+             */
+            status: "announced" | "in_cinemas" | "released" | "deleted" | null;
+            title: string;
+            /** Format: int64 */
+            tmdbId: number;
+            /**
+             * Format: int64
+             * @description 0 when unknown
+             */
+            year: number;
+        };
+        CollectionList: {
+            collections: components["schemas"]["CollectionListItem"][] | null;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            pageSize: number;
+            /**
+             * Format: int64
+             * @description Collections matching the filters
+             */
+            total: number;
+            totals: components["schemas"]["CollectionListTotals"];
+        };
+        CollectionListItem: {
+            /** @description Collection backdrop, w1280 */
+            backdropUrl: string | null;
+            /** @description Every film is on disk */
+            complete: boolean;
+            counts: components["schemas"]["CollectionCounts"];
+            /** @description #rrggbb of the lead film: the first library film, in release order, with a poster color */
+            dominantColor: string | null;
+            /** @description Every film, in release order (undated last) */
+            films: components["schemas"]["CollectionFilm"][] | null;
+            /** @description Misses released films (counts.missing > 0): the Missing films filter */
+            hasMissing: boolean;
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            minimumAvailability: "announced" | "in_cinemas" | "released";
+            /** @description New films of the collection are added automatically */
+            monitored: boolean;
+            name: string;
+            /** @description false until Gonema read the collection from TMDB once: only library movies are listed */
+            partsKnown: boolean;
+            /**
+             * Format: date-time
+             * @description When the films were last read from TMDB
+             */
+            partsRefreshedAt: string | null;
+            /** @description Collection poster, w342 */
+            posterUrl: string | null;
+            /** Format: int64 */
+            qualityProfileId: number | null;
+            qualityProfileName: string | null;
+            /** Format: int64 */
+            rootFolderId: number | null;
+            /** @description Films added by the collection are searched at once */
+            searchOnAdd: boolean;
+            /** Format: int64 */
+            tmdbId: number;
+        };
+        CollectionListTotals: {
+            /** Format: int64 */
+            collections: number;
+            /**
+             * Format: int64
+             * @description Films in the collections
+             */
+            films: number;
+            /** Format: int64 */
+            monitored: number;
+            /** Format: int64 */
+            notInLibrary: number;
+            /** Format: int64 */
+            upcoming: number;
+            /**
+             * Format: int64
+             * @description Collections with hasMissing
+             */
+            withMissing: number;
+        };
         CollectionPart: {
             dominantColor: string | null;
             /** Format: int64 */
@@ -2887,6 +3515,11 @@ export interface components {
             posterUrl: string | null;
             /** Format: int64 */
             tmdbId: number;
+        };
+        CompletedCollection: {
+            /** Format: int64 */
+            id: number;
+            name: string;
         };
         ConditionKindInfo: {
             /** @enum {string} */
@@ -3588,11 +4221,29 @@ export interface components {
             /** @enum {string} */
             status: "pending" | "running" | "done" | "failed" | "cancelled";
         };
-        LibraryCandidate: {
-            /** Format: double */
-            confidence: number;
+        "Library-import-candidatesRequest": {
+            /** @description Folder as listed by the scan */
+            folder: string;
+            query: string;
             /** Format: int64 */
+            rootFolderId: number;
+            /** Format: int64 */
+            year?: number;
+        };
+        LibraryCandidate: {
+            /**
+             * Format: double
+             * @description 0 to 1, computed against the folder and file names
+             */
+            confidence: number;
+            /**
+             * Format: int64
+             * @description Library movie when it is already in the library
+             */
             movieId?: number;
+            /** @description w342, through the image cache */
+            posterUrl: string | null;
+            /** @description Why this movie is proposed, plain language */
             reason: string;
             title: string;
             /** Format: int64 */
@@ -3606,39 +4257,127 @@ export interface components {
             selections: components["schemas"]["LibrarySelection"][] | null;
         };
         LibraryFolder: {
+            /** @description Best first */
             candidates: components["schemas"]["LibraryCandidate"][] | null;
+            /** @description Main video, relative to the folder */
             file?: string;
+            /** @description Path relative to the root folder (a name, or sub/name for a scan of a sub-path) */
             folder: string;
+            /** @description HDR formats read from the names (dv, hdr10...) */
+            hdr: string[] | null;
+            libraryPath?: string;
             /** Format: int64 */
             movieId?: number;
+            /** @description Folder name */
+            name: string;
+            /** @description Absolute path */
             path: string;
+            /** @description Detected from the folder and file names */
             quality?: string;
             rejections?: string[] | null;
             /** Format: int64 */
             size?: number;
+            /** @enum {string} */
+            status: "new" | "ambiguous" | "no_match" | "in_library";
+            /** @description Read from the names */
             title?: string;
             /** Format: int64 */
             year?: number;
         };
+        LibraryImport: {
+            /** @description In the order of the selections */
+            results: components["schemas"]["LibraryResult"][] | null;
+            summary: components["schemas"]["LibraryImportSummary"];
+        };
+        LibraryImportSummary: {
+            /**
+             * Format: int64
+             * @description Movies added without a file
+             */
+            added: number;
+            /**
+             * Format: int64
+             * @description Imported files below their profile cutoff (upgraded later when monitored)
+             */
+            belowCutoff: number;
+            collectionsCompleted: components["schemas"]["CompletedCollection"][] | null;
+            collectionsGrown: components["schemas"]["CompletedCollection"][] | null;
+            /** Format: int64 */
+            failed: number;
+            /**
+             * Format: int64
+             * @description Files recorded (kept + moved)
+             */
+            imported: number;
+            /** Format: int64 */
+            kept: number;
+            /** Format: int64 */
+            moved: number;
+            /** Format: int64 */
+            skipped: number;
+        };
         LibraryResult: {
+            belowCutoff: boolean;
             error?: string;
             /** Format: int64 */
             fileId?: number;
             folder: string;
             /** Format: int64 */
             movieId?: number;
+            /** @enum {string} */
+            outcome: "kept" | "moved" | "added" | "skipped" | "failed";
             reason?: string;
         };
+        LibraryScan: {
+            /** @description Folders by status */
+            counts: components["schemas"]["ScanCounts"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int64 */
+            done: number;
+            error?: string;
+            /** @description Described folders, in folder order (GET /library-import/scans/{id} only) */
+            folders?: components["schemas"]["LibraryFolder"][] | null;
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            jobId: number | null;
+            /** @description Scanned sub-path, relative to the root folder; empty for the root folder */
+            path: string;
+            /** Format: int64 */
+            rootFolderId: number;
+            /** @enum {string} */
+            status: "pending" | "running" | "done" | "cancelled" | "failed";
+            /**
+             * Format: int64
+             * @description Folders to describe (known once the folder is listed)
+             */
+            total: number;
+            /** Format: date-time */
+            updatedAt: string;
+        };
         LibraryScanInputBody: {
+            /** @description Sub-path inside the root folder (from GET /library-import/folders); empty for the whole root folder. A movie folder (a video inside) is scanned as one folder */
+            path?: string;
             /** Format: int64 */
             rootFolderId: number;
         };
         LibrarySelection: {
+            /** @description Folder as listed by the scan (relative to the root folder) */
             folder: string;
+            /** @description Default released */
             minimumAvailability?: string;
+            /**
+             * @description keep (default) records the file where it is; move then moves it into the naming templates (nothing is deleted; on failure the files are put back)
+             * @enum {string}
+             */
+            mode?: "keep" | "move";
+            /** @description Monitored movies are upgraded later, up to the profile cutoff */
             monitored: boolean;
             /** Format: int64 */
             qualityProfileId?: number;
+            /** @description Search right after the import: a missing file, or an upgrade below the cutoff (monitored movies only) */
+            searchOnAdd?: boolean;
             /** Format: int64 */
             tmdbId?: number;
         };
@@ -3880,6 +4619,8 @@ export interface components {
             collection: components["schemas"]["Collection"];
             /** @description Movies not added, with the reason */
             skipped: components["schemas"]["SkippedPart"][] | null;
+            /** @description Parts not released yet: added automatically on their release day (written to history) */
+            upcoming: components["schemas"]["SkippedPart"][] | null;
         };
         MoveBody: {
             /** @description Move the files into a folder named with the template (refused if it exists); false only changes where Gonema looks */
@@ -3964,7 +4705,7 @@ export interface components {
             minimumAvailability: string[] | null;
             monitored: boolean[] | null;
             path: string[] | null;
-            /** @description w342 */
+            /** @description w342; replace w342 by w92 in the path for a table thumbnail */
             posterUrl: (string | null)[] | null;
             /** @description Download progress 0 to 1; null when not downloading */
             progress: (number | null)[] | null;
@@ -4133,7 +4874,7 @@ export interface components {
             monitored: boolean;
             /** @description Movie folder, relative to the root folder */
             path: string;
-            /** @description Poster at w342; replace w342 by w780 in the path for high-density screens */
+            /** @description Poster at w342; replace w342 by w780 in the path for high-density screens, or by w92 for a thumbnail */
             posterUrl: string | null;
             /** @description Quality id of the current file; null without a file */
             quality: string | null;
@@ -4256,6 +4997,15 @@ export interface components {
             folderTemplate: string;
             /** @description false keeps the original file names */
             renameFiles: boolean;
+        };
+        NextRelease: {
+            /** @description YYYY-MM-DD */
+            date: string;
+            /**
+             * @description For a film not in the library, TMDB gives only its first release date, reported as cinema
+             * @enum {string}
+             */
+            type: "cinema" | "digital" | "physical";
         };
         Notification: {
             enabled: boolean;
@@ -4669,7 +5419,7 @@ export interface components {
         };
         ProfileEntry: {
             allowed: boolean;
-            /** @description Group name; empty for a single quality */
+            /** @description Group name; empty for a single quality. The qualities of a group are equal (one rank): among them the best score wins. Names are unique without case and differ from quality names; rename, merge or split by sending the new entries (update the cutoff with them, or name a member quality as the cutoff) */
             group?: string;
             /** @description Quality ids */
             qualities: string[] | null;
@@ -4828,8 +5578,12 @@ export interface components {
             /** @description Remove (optionally blocklist and retry) */
             remove: boolean;
             resume: boolean;
+            /** @description POST /queue/{id}/resume-retrying: the user stopped the retries of this chain */
+            resumeRetrying: boolean;
             /** @description The import failed: POST /queue/{id}/import */
             retryImport: boolean;
+            /** @description POST /queue/{id}/stop-retrying: no automatic next release if this chain fails */
+            stopRetrying: boolean;
         };
         QueueEntry: {
             actions: components["schemas"]["QueueActions"];
@@ -4879,6 +5633,8 @@ export interface components {
             retry: components["schemas"]["QueueRetry"];
             /** Format: int64 */
             retryOf: number | null;
+            /** @description The user stopped the automatic next-best retries of this download's chain */
+            retryStopped: boolean;
             /**
              * Format: int64
              * @description Torrents: seeders when grabbed
@@ -4930,6 +5686,8 @@ export interface components {
             qualityName: string;
             /** Format: int64 */
             retryOf: number | null;
+            /** @description The user stopped the automatic next-best retries of this download's chain */
+            retryStopped: boolean;
             /** Format: int64 */
             size: number;
             /** Format: int64 */
@@ -5213,6 +5971,16 @@ export interface components {
             rejections?: string[] | null;
             /** Format: int64 */
             size: number;
+        };
+        ScanCounts: {
+            /** Format: int64 */
+            ambiguous: number;
+            /** Format: int64 */
+            inLibrary: number;
+            /** Format: int64 */
+            new: number;
+            /** Format: int64 */
+            noMatch: number;
         };
         ScanInputBody: {
             /** @description Folder or file inside an allowed import folder */
@@ -5559,6 +6327,13 @@ export interface components {
             /** Format: int64 */
             tmdbId: number;
         };
+        Subfolder: {
+            /** @description It holds a video file directly: a movie folder rather than a folder of movies */
+            movie: boolean;
+            name: string;
+            /** @description Relative to the root folder */
+            path: string;
+        };
         SystemStatus: {
             arch: string;
             baseUrl: string;
@@ -5689,6 +6464,7 @@ export type AuthUser = components['schemas']['AuthUser'];
 export type BackupInfo = components['schemas']['BackupInfo'];
 export type BackupList = components['schemas']['BackupList'];
 export type BackupSettings = components['schemas']['BackupSettings'];
+export type BackupSettingsView = components['schemas']['BackupSettingsView'];
 export type BlockGroupRequest = components['schemas']['Block-groupRequest'];
 export type BlocklistItem = components['schemas']['BlocklistItem'];
 export type Breakdown = components['schemas']['Breakdown'];
@@ -5697,9 +6473,14 @@ export type BulkInputBody = components['schemas']['BulkInputBody'];
 export type BulkMoveInputBody = components['schemas']['BulkMoveInputBody'];
 export type BulkRenameInputBody = components['schemas']['BulkRenameInputBody'];
 export type BulkResult = components['schemas']['BulkResult'];
+export type BulkSearchProgress = components['schemas']['BulkSearchProgress'];
+export type BulkSearchRequest = components['schemas']['BulkSearchRequest'];
+export type BulkSearchStarted = components['schemas']['BulkSearchStarted'];
 export type BulkSet = components['schemas']['BulkSet'];
 export type CalendarEvent = components['schemas']['CalendarEvent'];
+export type CalendarFeedView = components['schemas']['CalendarFeedView'];
 export type CalendarMovie = components['schemas']['CalendarMovie'];
+export type CalendarOptions = components['schemas']['CalendarOptions'];
 export type CalendarPage = components['schemas']['CalendarPage'];
 export type Candidate = components['schemas']['Candidate'];
 export type CheckStatus = components['schemas']['CheckStatus'];
@@ -5707,8 +6488,15 @@ export type ClearMovieBlocklistResponse = components['schemas']['Clear-movie-blo
 export type ClientHealth = components['schemas']['ClientHealth'];
 export type ClientPauseResult = components['schemas']['ClientPauseResult'];
 export type Collection = components['schemas']['Collection'];
+export type CollectionCounts = components['schemas']['CollectionCounts'];
+export type CollectionDetail = components['schemas']['CollectionDetail'];
+export type CollectionFilm = components['schemas']['CollectionFilm'];
+export type CollectionList = components['schemas']['CollectionList'];
+export type CollectionListItem = components['schemas']['CollectionListItem'];
+export type CollectionListTotals = components['schemas']['CollectionListTotals'];
 export type CollectionPart = components['schemas']['CollectionPart'];
 export type CollectionSummary = components['schemas']['CollectionSummary'];
+export type CompletedCollection = components['schemas']['CompletedCollection'];
 export type ConditionKindInfo = components['schemas']['ConditionKindInfo'];
 export type CreateBackupRequest = components['schemas']['CreateBackupRequest'];
 export type Credentials = components['schemas']['Credentials'];
@@ -5752,10 +6540,14 @@ export type IndexerHealth = components['schemas']['IndexerHealth'];
 export type IndexerInput = components['schemas']['IndexerInput'];
 export type IndexerStatus = components['schemas']['IndexerStatus'];
 export type Job = components['schemas']['Job'];
+export type LibraryImportCandidatesRequest = components['schemas']['Library-import-candidatesRequest'];
 export type LibraryCandidate = components['schemas']['LibraryCandidate'];
 export type LibraryConfirmInputBody = components['schemas']['LibraryConfirmInputBody'];
 export type LibraryFolder = components['schemas']['LibraryFolder'];
+export type LibraryImport = components['schemas']['LibraryImport'];
+export type LibraryImportSummary = components['schemas']['LibraryImportSummary'];
 export type LibraryResult = components['schemas']['LibraryResult'];
+export type LibraryScan = components['schemas']['LibraryScan'];
 export type LibraryScanInputBody = components['schemas']['LibraryScanInputBody'];
 export type LibrarySelection = components['schemas']['LibrarySelection'];
 export type LibraryStats = components['schemas']['LibraryStats'];
@@ -5788,6 +6580,7 @@ export type MovieTagsInputBody = components['schemas']['MovieTagsInputBody'];
 export type NamingPreview = components['schemas']['NamingPreview'];
 export type NamingSettingsView = components['schemas']['NamingSettingsView'];
 export type NamingTemplates = components['schemas']['NamingTemplates'];
+export type NextRelease = components['schemas']['NextRelease'];
 export type Notification = components['schemas']['Notification'];
 export type NotificationAppSettings = components['schemas']['NotificationAppSettings'];
 export type NotificationInput = components['schemas']['NotificationInput'];
@@ -5859,6 +6652,7 @@ export type RuleScoreInput = components['schemas']['RuleScoreInput'];
 export type SavedView = components['schemas']['SavedView'];
 export type SavedViewInput = components['schemas']['SavedViewInput'];
 export type ScanCandidate = components['schemas']['ScanCandidate'];
+export type ScanCounts = components['schemas']['ScanCounts'];
 export type ScanInputBody = components['schemas']['ScanInputBody'];
 export type ScoreBreakdown = components['schemas']['ScoreBreakdown'];
 export type ScoreRule = components['schemas']['ScoreRule'];
@@ -5885,6 +6679,7 @@ export type SetupStep = components['schemas']['SetupStep'];
 export type SizeRange = components['schemas']['SizeRange'];
 export type SkippedPart = components['schemas']['SkippedPart'];
 export type Studio = components['schemas']['Studio'];
+export type Subfolder = components['schemas']['Subfolder'];
 export type SystemStatus = components['schemas']['SystemStatus'];
 export type TmdbSetting = components['schemas']['TMDBSetting'];
 export type Tag = components['schemas']['Tag'];
@@ -6593,6 +7388,97 @@ export interface operations {
             };
         };
     };
+    "get-bulk-search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job id of the bulk search */
+                jobId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkSearchProgress"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "cancel-bulk-search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job id of the bulk search */
+                jobId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkSearchProgress"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-calendar": {
         parameters: {
             query?: {
@@ -6631,6 +7517,105 @@ export interface operations {
             };
         };
     };
+    "get-calendar-feed-ics": {
+        parameters: {
+            query?: {
+                /** @description The calendar feed key (Settings > Calendar feed); read-only, opens this feed only */
+                key?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The calendar */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/calendar": string;
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-collections": {
+        parameters: {
+            query?: {
+                /** @description name: A to Z; missing: most films not in the library first; year: newest film first; added: most recently added library movie first */
+                sort?: "name" | "missing" | "year" | "added";
+                /** @description Only monitored (true) or not monitored (false) collections; absent: all */
+                monitored?: "true" | "false";
+                /** @description Only collections with hasMissing */
+                missing?: boolean;
+                /** @description Part of the name */
+                q?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-collection": {
         parameters: {
             query?: never;
@@ -6649,7 +7634,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Collection"];
+                    "application/json": components["schemas"]["CollectionDetail"];
                 };
             };
             /** @description Error */
@@ -7262,7 +8247,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Event kinds, comma-separated; all when absent */
-                event?: ("grabbed" | "grab_failed" | "grab_overridden" | "download_failed" | "download_removed" | "imported" | "upgraded" | "import_failed" | "file_deleted" | "file_renamed" | "blocklisted" | "ignored" | "metadata_changed" | "movie_added" | "movie_deleted" | "retry_scheduled" | "retries_exhausted")[] | null;
+                event?: ("grabbed" | "grab_failed" | "grab_overridden" | "download_failed" | "download_removed" | "imported" | "upgraded" | "import_failed" | "file_deleted" | "file_renamed" | "blocklisted" | "ignored" | "metadata_changed" | "movie_added" | "movie_deleted" | "retry_scheduled" | "retries_exhausted" | "retries_stopped" | "retries_resumed")[] | null;
                 /** @description Only this movie (also after its removal) */
                 movieId?: number;
                 /** @description Only the entries of this download */
@@ -7305,7 +8290,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Event kinds, comma-separated; all when absent */
-                event?: ("grabbed" | "grab_failed" | "grab_overridden" | "download_failed" | "download_removed" | "imported" | "upgraded" | "import_failed" | "file_deleted" | "file_renamed" | "blocklisted" | "ignored" | "metadata_changed" | "movie_added" | "movie_deleted" | "retry_scheduled" | "retries_exhausted")[] | null;
+                event?: ("grabbed" | "grab_failed" | "grab_overridden" | "download_failed" | "download_removed" | "imported" | "upgraded" | "import_failed" | "file_deleted" | "file_renamed" | "blocklisted" | "ignored" | "metadata_changed" | "movie_added" | "movie_deleted" | "retry_scheduled" | "retries_exhausted" | "retries_stopped" | "retries_resumed")[] | null;
                 /** @description Only this movie (also after its removal) */
                 movieId?: number;
                 /** @description Only the entries of this download */
@@ -7349,8 +8334,8 @@ export interface operations {
             header?: never;
             path: {
                 kind: "poster" | "backdrop" | "profile";
-                /** @description poster: w342, w780; backdrop: w1280; profile: w185 */
-                size: "w185" | "w342" | "w780" | "w1280";
+                /** @description poster: w92 (thumbnail), w342, w780; backdrop: w1280; profile: w185 */
+                size: "w92" | "w185" | "w342" | "w780" | "w1280";
                 /** @description TMDB file name */
                 file: string;
             };
@@ -7832,6 +8817,39 @@ export interface operations {
             };
         };
     };
+    "library-import-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Library-import-candidatesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryCandidate"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "confirm-library-import": {
         parameters: {
             query?: never;
@@ -7851,7 +8869,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LibraryResult"][] | null;
+                    "application/json": components["schemas"]["LibraryImport"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-library-import-folders": {
+        parameters: {
+            query: {
+                rootFolderId: number;
+                /** @description Relative to the root folder; empty for the root folder */
+                path?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Subfolder"][] | null;
                 };
             };
             /** @description Error */
@@ -7885,6 +8936,130 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LibraryFolder"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-library-scans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryScan"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "start-library-scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryScanInputBody"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryScan"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-library-scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scanId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryScan"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "cancel-library-scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scanId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryScan"];
                 };
             };
             /** @description Error */
@@ -8582,6 +9757,57 @@ export interface operations {
             };
             /** @description Error */
             default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "bulk-search-movies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkSearchStarted"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9830,6 +11056,70 @@ export interface operations {
             };
         };
     };
+    "resume-retrying-download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueItem"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "stop-retrying-download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueItem"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "list-recycle-bin": {
         parameters: {
             query?: never;
@@ -10583,7 +11873,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackupSettings"];
+                    "application/json": components["schemas"]["BackupSettingsView"];
                 };
             };
             /** @description Error */
@@ -10616,7 +11906,131 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackupSettings"];
+                    "application/json": components["schemas"]["BackupSettingsView"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-calendar-feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarFeedView"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "set-calendar-feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalendarOptions"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarFeedView"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "disable-calendar-feed": {
+        parameters: {
+            query?: {
+                /** @description Must be true */
+                confirm?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "regenerate-calendar-feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarFeedView"];
                 };
             };
             /** @description Error */

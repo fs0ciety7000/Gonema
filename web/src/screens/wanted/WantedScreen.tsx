@@ -1,10 +1,10 @@
 import '@/styles/lot2.css';
 import '@/styles/lot3.css';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
 import { Calendar, CircleCheck, Compass, Search } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
-import { fetchWanted, type WantedKind } from '@/api/lot3';
+import { useEffect, useMemo, useState } from 'react';
+import { dashboardQuery, fetchWanted, type WantedKind } from '@/api/lot3';
 import { toLibraryItem } from '@/api/model';
 import { useProfiles } from '@/api/queries';
 import { useMovieActions } from '@/components/movie/useMovieActions';
@@ -14,6 +14,7 @@ import { Button, buttonClass } from '@/components/ui/Button';
 import { EmptyState, Notice, Skeleton } from '@/components/ui/Feedback';
 import { PosterArt } from '@/components/ui/PosterArt';
 import { Tabs } from '@/components/ui/Tabs';
+import { startBulk, useBulkSearch } from '@/lib/bulkSearch';
 import { formatDate, formatNumber } from '@/lib/format';
 import { missingNote } from '@/lib/status';
 import mascotNeutral from '../../../../docs/brand/kit/mascot/kernel-neutral.svg?url';
@@ -89,6 +90,7 @@ export function WantedScreen() {
               },
             ]}
           />
+          <BulkSearchButton tab={tab} total={total} />
         </div>
         <div id="wanted-panel" role="tabpanel" aria-labelledby={`tab-wanted-panel-${tab}`}>
           {q.isError ? (
@@ -208,5 +210,37 @@ export function WantedScreen() {
         </div>
       </main>
     </>
+  );
+}
+
+/** "Search the N released" (missing tab, the dashboard's count) or "Search the N below cutoff": one bulk
+ *  search job on the server; the strip shows its progress and can cancel it. */
+function BulkSearchButton({ tab, total }: { tab: Tab; total: number | undefined }) {
+  const dash = useQuery({ ...dashboardQuery, enabled: tab === 'missing' });
+  const running = useBulkSearch();
+  const [busy, setBusy] = useState(false);
+  const n = tab === 'missing' ? dash.data?.wanted.released : total;
+  if (!n) return null;
+  const label =
+    tab === 'missing' ? `Search the ${formatNumber(n)} released` : `Search the ${formatNumber(n)} below cutoff`;
+  return (
+    <div className="toolbar">
+      <Button
+        size="sm"
+        variant="secondary"
+        icon={<Search className="i" aria-hidden="true" />}
+        loading={busy}
+        disabled={busy || (!!running && running.state !== 'finished')}
+        title={running ? 'A bulk search is already running' : undefined}
+        onClick={() => {
+          setBusy(true);
+          void startBulk({ filter: tab === 'missing' ? 'missing_released' : 'cutoff_unmet' }).finally(() =>
+            setBusy(false),
+          );
+        }}
+      >
+        {label}
+      </Button>
+    </div>
   );
 }

@@ -418,3 +418,195 @@ export async function mockInteractiveSearch(page, movie, calls = []) {
   });
   return { acc, rej };
 }
+
+// ----------------------------------------------------------------- folder import (v1.1)
+// The scan matches each folder on TMDB: the demo has no key, so the scan job, the candidates search and the
+// confirmation are mocked. The root folder and its sub-folders (GET /library-import/folders) are real: the
+// tests make a temporary folder with real (sparse) video files. Films "in the library" are real demo films.
+
+export const IMPORT_SCAN_ID = 9_101;
+
+/** Scan answers for the real folders `names` of root folder `rootFolderId` (created by the caller). */
+export function importScanFolders(rootPath, names, films) {
+  const pick = (i) => films[i % films.length];
+  return names.map((name, i) => {
+    const base = { folder: name, name, path: `${rootPath}/${name}`, hdr: [], candidates: [] };
+    const kind = i === 0 ? 'ambiguous' : i === 1 ? 'no_match' : i === names.length - 1 ? 'in_library' : 'new';
+    const year = 1990 + ((i * 7) % 33);
+    const title = name
+      .replace(/[.(].*$/, '')
+      .replace(/\./g, ' ')
+      .trim();
+    const q = ['bluray-1080p', 'webdl-2160p', 'webdl-1080p', 'bluray-720p', 'dvd'][i % 5];
+    const file = kind === 'no_match' ? {} : { file: `${name}.mkv`, size: (3 + (i % 7) * 2.7) * 1e9, quality: q };
+    if (kind === 'no_match')
+      return { ...base, status: kind, rejections: ['No film title in these names'], title: name };
+    if (kind === 'in_library') {
+      const f = pick(i);
+      return {
+        ...base,
+        ...file,
+        status: kind,
+        title: f.title,
+        year: f.year,
+        movieId: f.id,
+        libraryPath: `${rootPath}/${name}`,
+        candidates: [
+          {
+            tmdbId: 800_000 + i,
+            title: f.title,
+            year: f.year,
+            confidence: 1,
+            movieId: f.id,
+            posterUrl: f.posterUrl,
+            reason: 'the folder of a library movie that has no file yet',
+          },
+        ],
+      };
+    }
+    const c = {
+      tmdbId: 700_000 + i,
+      title,
+      year,
+      confidence: kind === 'ambiguous' ? 0.52 : 0.88 + (i % 3) * 0.04,
+      posterUrl: null,
+      reason: kind === 'ambiguous' ? 'Title only, no year to compare' : 'Title and year',
+    };
+    const alt = {
+      tmdbId: 710_000 + i,
+      title: `${title}: Terminus`,
+      year: year + 9,
+      confidence: 0.21,
+      posterUrl: null,
+      reason: 'Not released yet, so unlikely',
+    };
+    return {
+      ...base,
+      ...file,
+      hdr: i % 5 === 1 ? ['hdr10'] : [],
+      status: kind,
+      title,
+      year,
+      candidates:
+        kind === 'ambiguous'
+          ? [
+              c,
+              {
+                ...pick(i),
+                tmdbId: 720_000,
+                confidence: 0.38,
+                movieId: pick(i).id,
+                reason: 'Title contains the folder name',
+              },
+              alt,
+            ]
+          : [c],
+    };
+  });
+}
+
+/**
+ * Mocks the scan job of `rootFolderId` (folders revealed one by one, `perMs` apart; `hold` stops after that many
+ * and keeps the scan running), the TMDB candidates search and the confirmation (each selection kept or moved).
+ * `calls` collects the requests the app sent.
+ */
+export async function mockLibraryImport(page, { rootFolderId, folders, perMs = 250, hold, calls = [] }) {
+  let startedAt = 0;
+  let cancelled = false;
+  const scan = () => {
+    const elapsed = startedAt ? Date.now() - startedAt : 0;
+    const n = Math.min(folders.length, hold ?? folders.length, Math.floor(elapsed / perMs));
+    const shown = folders.slice(0, n);
+    const running = !cancelled && n < folders.length && startedAt > 0;
+    const counts = { new: 0, ambiguous: 0, noMatch: 0, inLibrary: 0 };
+    for (const f of shown)
+      counts[{ new: 'new', ambiguous: 'ambiguous', no_match: 'noMatch', in_library: 'inLibrary' }[f.status]]++;
+    return {
+      id: IMPORT_SCAN_ID,
+      jobId: 1,
+      rootFolderId,
+      path: '',
+      status: cancelled ? 'cancelled' : running ? 'running' : 'done',
+      total: folders.length,
+      done: n,
+      createdAt: new Date(startedAt || Date.now()).toISOString(),
+      updatedAt: new Date().toISOString(),
+      counts,
+      folders: shown,
+    };
+  };
+  await page.route('**/api/v1/settings/tmdb', (r) =>
+    r.request().method() === 'GET' ? r.fulfill(json({ configured: true })) : r.fallback(),
+  );
+  await page.route('**/api/v1/library-import/scans', (r) => {
+    if (r.request().method() === 'POST') {
+      calls.push({ method: 'POST', url: r.request().url(), body: r.request().postDataJSON() });
+      startedAt = Date.now();
+      cancelled = false;
+      const { folders: _f, ...s } = scan();
+      return r.fulfill(json({ ...s, status: 'pending', done: 0, total: 0 }, 202));
+    }
+    if (!startedAt) return r.fulfill(json([]));
+    const { folders: _f, ...s } = scan();
+    return r.fulfill(json([s]));
+  });
+  await page.route(`**/api/v1/library-import/scans/${IMPORT_SCAN_ID}`, (r) => {
+    if (r.request().method() === 'DELETE') {
+      calls.push({ method: 'DELETE', url: r.request().url() });
+      cancelled = true;
+      const { folders: _f, ...s } = scan();
+      return r.fulfill(json(s, 202));
+    }
+    if (!startedAt) startedAt = Date.now() - perMs * folders.length;
+    return r.fulfill(json(scan()));
+  });
+  await page.route('**/api/v1/library-import/candidates', (r) => {
+    const body = r.request().postDataJSON();
+    calls.push({ method: 'POST', url: r.request().url(), body });
+    return r.fulfill(
+      json([
+        { tmdbId: 730_001, title: body.query, year: 2011, confidence: 0.93, posterUrl: null, reason: 'Title and year' },
+        {
+          tmdbId: 730_002,
+          title: `${body.query} Returns`,
+          year: 2014,
+          confidence: 0.41,
+          posterUrl: null,
+          reason: 'Title starts the same',
+        },
+      ]),
+    );
+  });
+  await page.route('**/api/v1/library-import/confirm', (r) => {
+    const body = r.request().postDataJSON();
+    calls.push({ method: 'POST', url: r.request().url(), body });
+    const results = body.selections.map((s, i) =>
+      i === 0 && body.selections.length > 2
+        ? { folder: s.folder, outcome: 'failed', error: `Permission denied on ${s.folder}.`, belowCutoff: false }
+        : {
+            folder: s.folder,
+            outcome: s.mode === 'move' ? 'moved' : 'kept',
+            movieId: undefined,
+            belowCutoff: i % 2 === 0,
+          },
+    );
+    const ok = results.filter((x) => x.outcome !== 'failed');
+    return r.fulfill(
+      json({
+        results,
+        summary: {
+          imported: ok.length,
+          kept: ok.filter((x) => x.outcome === 'kept').length,
+          moved: ok.filter((x) => x.outcome === 'moved').length,
+          added: 0,
+          skipped: 0,
+          failed: results.length - ok.length,
+          belowCutoff: ok.filter((x) => x.belowCutoff).length,
+          collectionsCompleted: [],
+          collectionsGrown: [{ id: 1, name: 'The Ashgrove Cycle' }],
+        },
+      }),
+    );
+  });
+  return { calls, scan };
+}

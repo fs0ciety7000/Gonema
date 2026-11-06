@@ -1,7 +1,7 @@
 import '@/styles/lot2.css';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
-import { Check, CircleDashed, KeyRound, Plus, Search, SearchX } from 'lucide-react';
+import { Check, ChevronRight, CircleDashed, KeyRound, Plus, Search, SearchX } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError } from '@/api/client';
 import { useLibrary, useProfiles, useRootFolders } from '@/api/queries';
@@ -21,6 +21,7 @@ import { TmdbKeyDialog } from './TmdbKeyDialog';
 import { useAddFilm } from './useAddFilm';
 
 const DiscoverTab = lazy(() => import('./DiscoverTab').then((m) => ({ default: m.DiscoverTab })));
+const ImportTab = lazy(() => import('./import/ImportTab').then((m) => ({ default: m.ImportTab })));
 
 const route = getRouteApi('/discover');
 const DEBOUNCE_MS = 250;
@@ -85,28 +86,37 @@ export function AddFilmScreen() {
     <>
       <Topbar>
         <nav className="crumbs" aria-label="Breadcrumb">
-          <span aria-current="page">Add &amp; discover</span>
+          {tab === 'import' ? (
+            <>
+              <Link to="/discover">Add &amp; discover</Link>
+              <ChevronRight className="i" aria-hidden="true" />
+              <span aria-current="page">Import a folder</span>
+            </>
+          ) : (
+            <span aria-current="page">Add &amp; discover</span>
+          )}
         </nav>
         <div className="spacer" />
         <ThemeToggle />
       </Topbar>
       <main id="main" className="page add-page" tabIndex={-1}>
         <div className="add-head">
-          <h1>Add a film</h1>
+          <h1>{tab === 'import' ? 'Import a folder' : 'Add a film'}</h1>
           <Tabs
-            label="Add or discover"
+            label="Add, discover or import"
             panelId="add-panel"
             className="tabs-plain"
             value={tab}
             onChange={(t) =>
               void navigate({
                 to: '/discover',
-                search: (s) => ({ ...s, tab: t === 'discover' ? 'discover' : undefined }),
+                search: (s) => ({ ...s, tab: t === 'search' ? undefined : t, scan: undefined }),
               })
             }
             items={[
               { value: 'search', label: 'Search' },
               { value: 'discover', label: 'Discover' },
+              { value: 'import', label: 'Import folder' },
             ]}
           />
         </div>
@@ -115,6 +125,10 @@ export function AddFilmScreen() {
             <NoTmdbKey onConnect={() => setKeyOpen(true)} />
           ) : tab === 'search' ? (
             <SearchTab initial={search.q ?? ''} onNeedKey={() => setKeyOpen(true)} />
+          ) : tab === 'import' ? (
+            <Suspense fallback={null}>
+              <ImportTab scanId={search.scan} />
+            </Suspense>
           ) : (
             <Suspense fallback={null}>
               <DiscoverTab onNeedKey={() => setKeyOpen(true)} />

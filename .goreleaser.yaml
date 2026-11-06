@@ -73,7 +73,7 @@ dockers_v2:
       org.opencontainers.image.title: Gonema
       org.opencontainers.image.description: Self-hosted movie collection manager
       org.opencontainers.image.licenses: GPL-3.0-only
-      org.opencontainers.image.source: https://github.com/fs0ciety7000/gonema
+      org.opencontainers.image.source: https://github.com/fs0ciety7000/Gonema
       org.opencontainers.image.version: "{{ .Version }}"
       org.opencontainers.image.revision: "{{ .FullCommit }}"
 

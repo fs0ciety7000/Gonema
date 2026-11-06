@@ -109,6 +109,7 @@ type AuthSession struct {
 	ExpiresAt  time.Time `json:"expiresAt"`
 	IP         string    `json:"ip"`
 	UserAgent  string    `json:"userAgent"`
+	Via        string    `json:"via" enum:"direct,local,proxy" doc:"How the browser connects, as of its last use: direct (public address), local (loopback or private address) or proxy (through a reverse proxy of GONEMA_TRUSTED_PROXIES)"`
 }
 
 // OutboundPolicy is the policy of the outgoing connections (package netx).
@@ -206,7 +207,7 @@ func (s *Server) authRoutes() {
 			return nil, huma.Error403Forbidden("The setup token is missing or wrong: copy it from the server logs " +
 				"(the line \"no account exists yet\", field setup), or create the account from the server itself (http://localhost).")
 		}
-		cr, err := a.Setup(ctx, in.Body.Username, in.Body.Password, auth.ClientInfo{IP: c.IP, UserAgent: c.UserAgent})
+		cr, err := a.Setup(ctx, in.Body.Username, in.Body.Password, c.authClient())
 		if err != nil {
 			return nil, s.authProblem(ctx, err)
 		}
@@ -228,7 +229,7 @@ func (s *Server) authRoutes() {
 			return nil, err
 		}
 		c := clientOf(ctx)
-		token, sess, u, err := a.Login(ctx, in.Body.Username, in.Body.Password, auth.ClientInfo{IP: c.IP, UserAgent: c.UserAgent}, c.Token)
+		token, sess, u, err := a.Login(ctx, in.Body.Username, in.Body.Password, c.authClient(), c.Token)
 		if err != nil {
 			return nil, s.authProblem(ctx, err)
 		}
@@ -266,7 +267,7 @@ func (s *Server) authRoutes() {
 		}
 		c := clientOf(ctx)
 		ch, err := a.ChangePassword(ctx, p, in.Body.CurrentPassword, in.Body.NewPassword,
-			auth.ClientInfo{IP: c.IP, UserAgent: c.UserAgent}, in.Body.RegenerateAPIKey)
+			c.authClient(), in.Body.RegenerateAPIKey)
 		if err != nil {
 			return nil, s.authProblem(ctx, err)
 		}
@@ -342,9 +343,10 @@ func (s *Server) authRoutes() {
 			if err != nil {
 				return nil, s.problem(ctx, err, false)
 			}
-			for _, x := range sessions {
+			for i := range sessions {
+				x := &sessions[i]
 				out.Sessions = append(out.Sessions, AuthSession{ID: x.ID, Current: x.ID == p.SessionID, CreatedAt: x.CreatedAt,
-					LastSeenAt: x.LastSeenAt, ExpiresAt: x.ExpiresAt, IP: x.IP, UserAgent: x.UserAgent})
+					LastSeenAt: x.LastSeenAt, ExpiresAt: x.ExpiresAt, IP: x.IP, UserAgent: x.UserAgent, Via: x.Via})
 			}
 			k, ok, err := a.APIKey(ctx, p.UserID)
 			if err != nil {

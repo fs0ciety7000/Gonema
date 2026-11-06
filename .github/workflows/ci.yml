@@ -1,0 +1,237 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  GOVULNCHECK_VERSION: v1.9.0
+
+jobs:
+  go:
+    name: Go (generate, test, race, lint, vuln, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+
+      - name: Generated code is committed (sqlc)
+        run: |
+          make generate
+          git diff --exit-code || { echo "::error::make generate changed files: commit the sqlc output."; exit 1; }
+          if [ -n "$(git status --porcelain --untracked-files=all)" ]; then
+            git status --porcelain --untracked-files=all
+            echo "::error::make generate created untracked files: commit them."
+            exit 1
+          fi
+
+      - name: Test
+        run: make test
+
+      - name: Test with the race detector
+        run: go test -race ./...
+
+      - name: Lint
+        run: make lint
+
+      - name: Vulnerabilities
+        run: go run "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}" ./...
+
+      - name: Build
+        run: make build
+
+  web:
+    name: Web (typecheck, lint, test, build, JS budget)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+      - name: Initial JS budget of the library route (200 KB gzip)
+        run: npm run budget
+
+  e2e:
+    name: End-to-end (demo and fresh servers)
+    needs: [go, web]
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Work directories
+        run: |
+          {
+            echo "DEMO_DIR=$RUNNER_TEMP/gonema-demo"
+            echo "LOG_DIR=$RUNNER_TEMP/gonema-logs"
+            echo "REPORT_DIR=$RUNNER_TEMP/e2e-reports"
+          } >> "$GITHUB_ENV"
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # make web: npm ci + vite build, copied into internal/webui/dist; make build embeds it.
+      - name: Build the binary with the SPA embedded
+        run: make release
+
+      - name: Install Chromium for Playwright
+        working-directory: web
+        run: |
+          npx playwright install --with-deps chromium
+          # helpers.mjs launches PLAYWRIGHT_CHROMIUM (default /opt/pw-browsers/chromium, absent here)
+          echo "PLAYWRIGHT_CHROMIUM=$(node --input-type=commonjs -p "require('playwright').chromium.executablePath()")" >> "$GITHUB_ENV"
+
+      - name: Start the servers (demo 7676, fresh 7677 and 7678)
+        run: |
+          mkdir -p "$LOG_DIR" "$REPORT_DIR"
+          bin/gonema demo seed -films 10000 -data-dir "$DEMO_DIR"
+          GONEMA_AUTH=disabled_for_local nohup bin/gonema serve -data-dir "$DEMO_DIR" > "$LOG_DIR/demo.log" 2>&1 &
+          nohup bin/gonema serve -data-dir "$(mktemp -d)" -bind 127.0.0.1:7677 > "$LOG_DIR/fresh-auth.log" 2>&1 &
+          nohup bin/gonema serve -data-dir "$(mktemp -d)" -bind 127.0.0.1:7678 > "$LOG_DIR/fresh-journey.log" 2>&1 &
+          for port in 7676 7677 7678; do
+            ok=
+            for _ in $(seq 1 60); do
+              if curl -fsS "http://127.0.0.1:$port/health" > /dev/null; then ok=1; break; fi
+              sleep 1
+            done
+            [ -n "$ok" ] || { echo "::error::server on port $port did not become healthy"; cat "$LOG_DIR"/*.log; exit 1; }
+          done
+
+      - name: E2E (demo server)
+        working-directory: web
+        env:
+          NODE_OPTIONS: --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=${{ runner.temp }}/e2e-reports/demo.xml
+        run: npm run e2e
+
+      - name: E2E (fresh servers)
+        if: ${{ !cancelled() }}
+        working-directory: web
+        env:
+          NODE_OPTIONS: --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=${{ runner.temp }}/e2e-reports/fresh.xml
+        run: npm run e2e:fresh
+
+      - name: Upload reports, screenshots and server logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-failure-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/e2e-reports/
+            ${{ runner.temp }}/gonema-logs/
+            web/test-results/
+            web/e2e/__screenshots__/*.png
+          if-no-files-found: ignore
+          retention-days: 7
+
+  docker:
+    name: Docker image (build, run, health)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      IMAGE: gonema:ci
+      # An image above this size means something unexpected got in (scratch + one binary).
+      MAX_IMAGE_MB: 100
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build (linux/amd64, no push)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64
+          build-args: VERSION=ci-${{ github.sha }}
+          tags: ${{ env.IMAGE }}
+          load: true
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image size
+        run: |
+          bytes=$(docker image inspect -f '{{.Size}}' "$IMAGE")
+          mb=$(( bytes / 1024 / 1024 ))
+          echo "Image size: ${mb} MB (${bytes} bytes)" | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$mb" -le "$MAX_IMAGE_MB" ] || { echo "::error::image is ${mb} MB, above ${MAX_IMAGE_MB} MB"; exit 1; }
+
+      - name: Run and wait for the HEALTHCHECK
+        run: |
+          docker run -d --name gonema -p 127.0.0.1:7676:7676 "$IMAGE"
+          status=
+          for _ in $(seq 1 30); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' gonema)
+            [ "$status" = healthy ] && break
+            [ "$(docker inspect -f '{{.State.Running}}' gonema)" = true ] || break
+            sleep 3
+          done
+          echo "Health: $status"
+          if [ "$status" != healthy ]; then
+            docker logs gonema
+            echo "::error::container did not become healthy (status: $status)"
+            exit 1
+          fi
+          docker exec gonema /gonema healthcheck
+          curl -fsS http://127.0.0.1:7676/health
+          echo
+
+      - name: Runs as non-root
+        run: |
+          user=$(docker inspect -f '{{.Config.User}}' "$IMAGE")
+          echo "Configured user: $user"
+          [ "$user" = "65532:65532" ] || { echo "::error::image USER is '$user', expected 65532:65532"; exit 1; }
+          pid=$(docker inspect -f '{{.State.Pid}}' gonema)
+          uid=$(ps -o uid= -p "$pid" | tr -d ' ')
+          echo "Process UID: $uid"
+          [ "$uid" != 0 ] || { echo "::error::the process runs as root"; exit 1; }
+
+      - name: Container logs
+        if: ${{ always() }}
+        run: docker logs gonema 2>&1 | tail -n 100 || true

@@ -50,6 +50,7 @@ func (s *Service) GetCollection(ctx context.Context, id int64) (CollectionDetail
 		return d, nil
 	}
 	d.Parts = c.Parts
+	s.saveParts(ctx, id, c.Parts)
 	return d, nil
 }
 
@@ -67,6 +68,9 @@ type MonitorResult struct {
 	Collection db.Collection
 	Added      []db.Movie
 	Skipped    []SkippedPart
+	// Upcoming are the parts not released yet: the collections job adds them
+	// on their release day.
+	Upcoming []SkippedPart
 }
 
 // SkippedPart is a collection movie that was not added, with the reason.
@@ -77,8 +81,10 @@ type SkippedPart struct {
 }
 
 // MonitorCollection saves the collection settings and, when monitored, adds
-// every movie of the collection that is not in the library yet (excluded
-// movies are skipped). Already present movies are left as they are.
+// the released movies of the collection that are not in the library yet
+// (excluded movies are skipped); the others are added on their release day by
+// the collections job (RefreshCollections). Already present movies are left
+// as they are.
 func (s *Service) MonitorCollection(ctx context.Context, id int64, opts MonitorOptions) (MonitorResult, error) {
 	if opts.MinimumAvailability == "" {
 		opts.MinimumAvailability = AvailReleased
@@ -86,8 +92,15 @@ func (s *Service) MonitorCollection(ctx context.Context, id int64, opts MonitorO
 	if !validAvailability(opts.MinimumAvailability) {
 		return MonitorResult{}, invalid("minimumAvailability", "minimum availability must be announced, in_cinemas or released")
 	}
-	p := db.UpdateCollectionSettingsParams{ID: id, Monitored: opts.Monitored, MinimumAvailability: opts.MinimumAvailability}
+	p := db.UpdateCollectionSettingsParams{ID: id, Monitored: opts.Monitored, MinimumAvailability: opts.MinimumAvailability, SearchOnAdd: opts.Monitored && opts.SearchOnAdd}
+	var prov KeyedProvider
 	if opts.Monitored {
+		// Check the provider before saving: monitoring without TMDB must not
+		// be stored and then reported as a failure.
+		var err error
+		if prov, err = s.Provider(); err != nil {
+			return MonitorResult{}, err
+		}
 		if err := s.checkRefs(ctx, opts.RootFolderID, opts.QualityProfileID); err != nil {
 			return MonitorResult{}, err
 		}
@@ -105,16 +118,22 @@ func (s *Service) MonitorCollection(ctx context.Context, id int64, opts MonitorO
 	if !opts.Monitored {
 		return res, nil
 	}
-	prov, err := s.Provider()
-	if err != nil {
-		return res, err
-	}
 	c, err := prov.Collection(ctx, int(res.Collection.TmdbID))
 	if err != nil {
 		return res, fmt.Errorf("library: collection %d parts: %w", id, err)
 	}
+	s.saveParts(ctx, id, c.Parts)
+	today := s.now().Format(dateLayout)
 	for i := range c.Parts {
 		part := &c.Parts[i]
+		if part.Adult {
+			continue
+		}
+		if part.ReleaseDate.IsZero() || part.ReleaseDate.String() > today {
+			res.Upcoming = append(res.Upcoming, SkippedPart{TmdbID: part.TMDBID, Title: part.Title,
+				Reason: "not released yet: added on its release day"})
+			continue
+		}
 		excluded, err := s.st.Read().IsImportListExcluded(ctx, int64(part.TMDBID))
 		if err != nil {
 			return res, store.MapError(fmt.Errorf("library: exclusion of %d: %w", part.TMDBID, err))
@@ -126,6 +145,7 @@ func (s *Service) MonitorCollection(ctx context.Context, id int64, opts MonitorO
 		m, created, err := s.AddMovie(ctx, part.TMDBID, AddOptions{
 			RootFolderID: opts.RootFolderID, QualityProfileID: opts.QualityProfileID,
 			MinimumAvailability: opts.MinimumAvailability, Monitored: true, SearchOnAdd: opts.SearchOnAdd,
+			Reason: fmt.Sprintf("Added with the collection %s, monitored by the user.", res.Collection.Name),
 		})
 		switch {
 		case err != nil:

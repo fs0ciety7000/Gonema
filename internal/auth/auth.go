@@ -108,6 +108,25 @@ type Principal struct {
 type ClientInfo struct {
 	IP        string
 	UserAgent string
+	// Via is how the client reached Gonema: ViaDirect, ViaLocal or ViaProxy
+	// ("" counts as ViaDirect).
+	Via string
+}
+
+// How a client reaches Gonema (sessions.via). Display only, never an access
+// decision.
+const (
+	ViaDirect = "direct" // a public address, no trusted proxy
+	ViaLocal  = "local"  // a loopback or private address, no trusted proxy
+	ViaProxy  = "proxy"  // through a reverse proxy of GONEMA_TRUSTED_PROXIES
+)
+
+func validVia(v string) string {
+	switch v {
+	case ViaLocal, ViaProxy:
+		return v
+	}
+	return ViaDirect
 }
 
 // User is the account, without its hash.
@@ -126,6 +145,7 @@ type SessionInfo struct {
 	ExpiresAt  time.Time
 	IP         string
 	UserAgent  string
+	Via        string // ViaDirect, ViaLocal or ViaProxy, as of the last use
 }
 
 // APIKeyInfo describes the API key without revealing it.
@@ -442,6 +462,14 @@ func (s *Service) Logout(ctx context.Context, token string) error {
 // SessionPrincipal returns the caller of a session token, ErrUnauthenticated
 // when it is unknown, expired or idle too long.
 func (s *Service) SessionPrincipal(ctx context.Context, token string) (Principal, error) {
+	return s.SessionPrincipalFor(ctx, token, ClientInfo{})
+}
+
+// SessionPrincipalFor is SessionPrincipal for a request of the client ci: the
+// address and connection kind (via) of the session are refreshed when they
+// changed, and its last use at most every touchEvery. A zero ci refreshes only
+// the last use.
+func (s *Service) SessionPrincipalFor(ctx context.Context, token string, ci ClientInfo) (Principal, error) {
 	if token == "" || len(token) > 128 {
 		return Principal{}, ErrUnauthenticated
 	}
@@ -457,8 +485,14 @@ func (s *Service) SessionPrincipal(ctx context.Context, token string) (Principal
 	if row.Session.ExpiresAt <= ms || row.Session.LastSeenAt <= store.Millis(now.Add(-s.idle)) {
 		return Principal{}, ErrUnauthenticated
 	}
-	if ms-row.Session.LastSeenAt >= touchEvery.Milliseconds() {
-		if err := s.st.Write().TouchSession(ctx, db.TouchSessionParams{LastSeenAt: ms, ID: row.Session.ID}); err != nil {
+	ip, via := row.Session.Ip, row.Session.Via
+	if ci.IP != "" {
+		ip, via = clip(ci.IP, 64), validVia(ci.Via)
+	}
+	if ms-row.Session.LastSeenAt >= touchEvery.Milliseconds() || ip != row.Session.Ip || via != row.Session.Via {
+		if err := s.st.Write().UpdateSessionClient(ctx, db.UpdateSessionClientParams{
+			LastSeenAt: ms, Ip: ip, Via: via, ID: row.Session.ID,
+		}); err != nil {
 			s.log.Warn("cannot record session activity", slog.Any("error", err))
 		}
 	}
@@ -739,6 +773,7 @@ func (s *Service) sessionParams(tokenHash []byte, userID int64, now time.Time, c
 	return db.CreateSessionParams{
 		TokenHash: tokenHash, UserID: userID, CreatedAt: store.Millis(now), LastSeenAt: store.Millis(now),
 		ExpiresAt: store.Millis(now.Add(s.ttl)), Ip: clip(ci.IP, 64), UserAgent: clip(ci.UserAgent, 256),
+		Via: validVia(ci.Via),
 	}
 }
 
@@ -810,7 +845,7 @@ func userOf(u *db.User) User {
 
 func sessionOf(s *db.Session) SessionInfo {
 	return SessionInfo{ID: s.ID, CreatedAt: store.FromMillis(s.CreatedAt), LastSeenAt: store.FromMillis(s.LastSeenAt),
-		ExpiresAt: store.FromMillis(s.ExpiresAt), IP: s.Ip, UserAgent: s.UserAgent}
+		ExpiresAt: store.FromMillis(s.ExpiresAt), IP: s.Ip, UserAgent: s.UserAgent, Via: s.Via}
 }
 
 func keyInfoOf(k *db.ApiKey) APIKeyInfo {

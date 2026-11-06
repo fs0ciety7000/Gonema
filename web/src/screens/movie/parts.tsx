@@ -3,6 +3,7 @@ import {
   Ban,
   ChevronDown,
   CircleArrowUp,
+  CircleStop,
   Disc3,
   FileVideo,
   FolderOpen,
@@ -241,6 +242,8 @@ export const EVENT: Record<
   metadata_changed: { label: 'Details updated', icon: RefreshCw, kind: 'other' },
   movie_added: { label: 'Added to the library', icon: Plus, kind: 'other' },
   movie_deleted: { label: 'Removed from the library', icon: Trash2, kind: 'other' },
+  retries_stopped: { label: 'Stopped retrying', icon: CircleStop, kind: 'other' },
+  retries_resumed: { label: 'Resumed retrying', icon: RefreshCw, kind: 'other' },
 };
 
 type HistoryData = {

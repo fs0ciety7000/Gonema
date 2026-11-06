@@ -36,6 +36,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.cancelJobStmt, err = db.PrepareContext(ctx, cancelJob); err != nil {
 		return nil, fmt.Errorf("error preparing query CancelJob: %w", err)
 	}
+	if q.cancelRunningJobStmt, err = db.PrepareContext(ctx, cancelRunningJob); err != nil {
+		return nil, fmt.Errorf("error preparing query CancelRunningJob: %w", err)
+	}
 	if q.claimJobStmt, err = db.PrepareContext(ctx, claimJob); err != nil {
 		return nil, fmt.Errorf("error preparing query ClaimJob: %w", err)
 	}
@@ -86,6 +89,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.createIndexerStmt, err = db.PrepareContext(ctx, createIndexer); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateIndexer: %w", err)
+	}
+	if q.createLibraryScanStmt, err = db.PrepareContext(ctx, createLibraryScan); err != nil {
+		return nil, fmt.Errorf("error preparing query CreateLibraryScan: %w", err)
 	}
 	if q.createMediaServerStmt, err = db.PrepareContext(ctx, createMediaServer); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateMediaServer: %w", err)
@@ -198,6 +204,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.deleteUserSessionsExceptStmt, err = db.PrepareContext(ctx, deleteUserSessionsExcept); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteUserSessionsExcept: %w", err)
 	}
+	if q.disableCalendarFeedStmt, err = db.PrepareContext(ctx, disableCalendarFeed); err != nil {
+		return nil, fmt.Errorf("error preparing query DisableCalendarFeed: %w", err)
+	}
 	if q.enqueueJobStmt, err = db.PrepareContext(ctx, enqueueJob); err != nil {
 		return nil, fmt.Errorf("error preparing query EnqueueJob: %w", err)
 	}
@@ -212,6 +221,12 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.getBlocklistStmt, err = db.PrepareContext(ctx, getBlocklist); err != nil {
 		return nil, fmt.Errorf("error preparing query GetBlocklist: %w", err)
+	}
+	if q.getCalendarFeedStmt, err = db.PrepareContext(ctx, getCalendarFeed); err != nil {
+		return nil, fmt.Errorf("error preparing query GetCalendarFeed: %w", err)
+	}
+	if q.getCalendarFeedByKeyStmt, err = db.PrepareContext(ctx, getCalendarFeedByKey); err != nil {
+		return nil, fmt.Errorf("error preparing query GetCalendarFeedByKey: %w", err)
 	}
 	if q.getCollectionStmt, err = db.PrepareContext(ctx, getCollection); err != nil {
 		return nil, fmt.Errorf("error preparing query GetCollection: %w", err)
@@ -245,6 +260,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.getLibraryChangesHeadStmt, err = db.PrepareContext(ctx, getLibraryChangesHead); err != nil {
 		return nil, fmt.Errorf("error preparing query GetLibraryChangesHead: %w", err)
+	}
+	if q.getLibraryScanStmt, err = db.PrepareContext(ctx, getLibraryScan); err != nil {
+		return nil, fmt.Errorf("error preparing query GetLibraryScan: %w", err)
 	}
 	if q.getLibraryVersionStmt, err = db.PrepareContext(ctx, getLibraryVersion); err != nil {
 		return nil, fmt.Errorf("error preparing query GetLibraryVersion: %w", err)
@@ -372,6 +390,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listCollectionsStmt, err = db.PrepareContext(ctx, listCollections); err != nil {
 		return nil, fmt.Errorf("error preparing query ListCollections: %w", err)
 	}
+	if q.listCollectionsNeedingPartsStmt, err = db.PrepareContext(ctx, listCollectionsNeedingParts); err != nil {
+		return nil, fmt.Errorf("error preparing query ListCollectionsNeedingParts: %w", err)
+	}
 	if q.listDownloadClientsStmt, err = db.PrepareContext(ctx, listDownloadClients); err != nil {
 		return nil, fmt.Errorf("error preparing query ListDownloadClients: %w", err)
 	}
@@ -425,6 +446,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.listLibraryIndexByIDsStmt, err = db.PrepareContext(ctx, listLibraryIndexByIDs); err != nil {
 		return nil, fmt.Errorf("error preparing query ListLibraryIndexByIDs: %w", err)
+	}
+	if q.listLibraryScansStmt, err = db.PrepareContext(ctx, listLibraryScans); err != nil {
+		return nil, fmt.Errorf("error preparing query ListLibraryScans: %w", err)
 	}
 	if q.listMatcherAlternateTitleRowsStmt, err = db.PrepareContext(ctx, listMatcherAlternateTitleRows); err != nil {
 		return nil, fmt.Errorf("error preparing query ListMatcherAlternateTitleRows: %w", err)
@@ -534,6 +558,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.pruneImportJournalStmt, err = db.PrepareContext(ctx, pruneImportJournal); err != nil {
 		return nil, fmt.Errorf("error preparing query PruneImportJournal: %w", err)
 	}
+	if q.pruneLibraryScansStmt, err = db.PrepareContext(ctx, pruneLibraryScans); err != nil {
+		return nil, fmt.Errorf("error preparing query PruneLibraryScans: %w", err)
+	}
 	if q.purgeHistoryStmt, err = db.PrepareContext(ctx, purgeHistory); err != nil {
 		return nil, fmt.Errorf("error preparing query PurgeHistory: %w", err)
 	}
@@ -570,14 +597,29 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.searchAlternateTitleMoviesStmt, err = db.PrepareContext(ctx, searchAlternateTitleMovies); err != nil {
 		return nil, fmt.Errorf("error preparing query SearchAlternateTitleMovies: %w", err)
 	}
+	if q.setCalendarFeedKeyStmt, err = db.PrepareContext(ctx, setCalendarFeedKey); err != nil {
+		return nil, fmt.Errorf("error preparing query SetCalendarFeedKey: %w", err)
+	}
+	if q.setCalendarFeedOptionsStmt, err = db.PrepareContext(ctx, setCalendarFeedOptions); err != nil {
+		return nil, fmt.Errorf("error preparing query SetCalendarFeedOptions: %w", err)
+	}
+	if q.setCollectionPartsStmt, err = db.PrepareContext(ctx, setCollectionParts); err != nil {
+		return nil, fmt.Errorf("error preparing query SetCollectionParts: %w", err)
+	}
 	if q.setDownloadClientSecretsStmt, err = db.PrepareContext(ctx, setDownloadClientSecrets); err != nil {
 		return nil, fmt.Errorf("error preparing query SetDownloadClientSecrets: %w", err)
+	}
+	if q.setDownloadsRetryStoppedStmt, err = db.PrepareContext(ctx, setDownloadsRetryStopped); err != nil {
+		return nil, fmt.Errorf("error preparing query SetDownloadsRetryStopped: %w", err)
 	}
 	if q.setImportJournalStatusStmt, err = db.PrepareContext(ctx, setImportJournalStatus); err != nil {
 		return nil, fmt.Errorf("error preparing query SetImportJournalStatus: %w", err)
 	}
 	if q.setIndexerSecretsStmt, err = db.PrepareContext(ctx, setIndexerSecrets); err != nil {
 		return nil, fmt.Errorf("error preparing query SetIndexerSecrets: %w", err)
+	}
+	if q.setLibraryScanJobStmt, err = db.PrepareContext(ctx, setLibraryScanJob); err != nil {
+		return nil, fmt.Errorf("error preparing query SetLibraryScanJob: %w", err)
 	}
 	if q.setMediaServerSecretsStmt, err = db.PrepareContext(ctx, setMediaServerSecrets); err != nil {
 		return nil, fmt.Errorf("error preparing query SetMediaServerSecrets: %w", err)
@@ -615,6 +657,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.touchAPIKeyStmt, err = db.PrepareContext(ctx, touchAPIKey); err != nil {
 		return nil, fmt.Errorf("error preparing query TouchAPIKey: %w", err)
 	}
+	if q.touchCalendarFeedStmt, err = db.PrepareContext(ctx, touchCalendarFeed); err != nil {
+		return nil, fmt.Errorf("error preparing query TouchCalendarFeed: %w", err)
+	}
 	if q.touchSessionStmt, err = db.PrepareContext(ctx, touchSession); err != nil {
 		return nil, fmt.Errorf("error preparing query TouchSession: %w", err)
 	}
@@ -635,6 +680,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.updateIndexerHealthStmt, err = db.PrepareContext(ctx, updateIndexerHealth); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateIndexerHealth: %w", err)
+	}
+	if q.updateLibraryScanStmt, err = db.PrepareContext(ctx, updateLibraryScan); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateLibraryScan: %w", err)
 	}
 	if q.updateMediaServerStmt, err = db.PrepareContext(ctx, updateMediaServer); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateMediaServer: %w", err)
@@ -668,6 +716,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.updateScoringRuleStmt, err = db.PrepareContext(ctx, updateScoringRule); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateScoringRule: %w", err)
+	}
+	if q.updateSessionClientStmt, err = db.PrepareContext(ctx, updateSessionClient); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateSessionClient: %w", err)
 	}
 	if q.upsertCollectionStmt, err = db.PrepareContext(ctx, upsertCollection); err != nil {
 		return nil, fmt.Errorf("error preparing query UpsertCollection: %w", err)
@@ -704,6 +755,11 @@ func (q *Queries) Close() error {
 	if q.cancelJobStmt != nil {
 		if cerr := q.cancelJobStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing cancelJobStmt: %w", cerr)
+		}
+	}
+	if q.cancelRunningJobStmt != nil {
+		if cerr := q.cancelRunningJobStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing cancelRunningJobStmt: %w", cerr)
 		}
 	}
 	if q.claimJobStmt != nil {
@@ -789,6 +845,11 @@ func (q *Queries) Close() error {
 	if q.createIndexerStmt != nil {
 		if cerr := q.createIndexerStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createIndexerStmt: %w", cerr)
+		}
+	}
+	if q.createLibraryScanStmt != nil {
+		if cerr := q.createLibraryScanStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createLibraryScanStmt: %w", cerr)
 		}
 	}
 	if q.createMediaServerStmt != nil {
@@ -976,6 +1037,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing deleteUserSessionsExceptStmt: %w", cerr)
 		}
 	}
+	if q.disableCalendarFeedStmt != nil {
+		if cerr := q.disableCalendarFeedStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing disableCalendarFeedStmt: %w", cerr)
+		}
+	}
 	if q.enqueueJobStmt != nil {
 		if cerr := q.enqueueJobStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing enqueueJobStmt: %w", cerr)
@@ -999,6 +1065,16 @@ func (q *Queries) Close() error {
 	if q.getBlocklistStmt != nil {
 		if cerr := q.getBlocklistStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getBlocklistStmt: %w", cerr)
+		}
+	}
+	if q.getCalendarFeedStmt != nil {
+		if cerr := q.getCalendarFeedStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getCalendarFeedStmt: %w", cerr)
+		}
+	}
+	if q.getCalendarFeedByKeyStmt != nil {
+		if cerr := q.getCalendarFeedByKeyStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getCalendarFeedByKeyStmt: %w", cerr)
 		}
 	}
 	if q.getCollectionStmt != nil {
@@ -1054,6 +1130,11 @@ func (q *Queries) Close() error {
 	if q.getLibraryChangesHeadStmt != nil {
 		if cerr := q.getLibraryChangesHeadStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getLibraryChangesHeadStmt: %w", cerr)
+		}
+	}
+	if q.getLibraryScanStmt != nil {
+		if cerr := q.getLibraryScanStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getLibraryScanStmt: %w", cerr)
 		}
 	}
 	if q.getLibraryVersionStmt != nil {
@@ -1266,6 +1347,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listCollectionsStmt: %w", cerr)
 		}
 	}
+	if q.listCollectionsNeedingPartsStmt != nil {
+		if cerr := q.listCollectionsNeedingPartsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listCollectionsNeedingPartsStmt: %w", cerr)
+		}
+	}
 	if q.listDownloadClientsStmt != nil {
 		if cerr := q.listDownloadClientsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listDownloadClientsStmt: %w", cerr)
@@ -1354,6 +1440,11 @@ func (q *Queries) Close() error {
 	if q.listLibraryIndexByIDsStmt != nil {
 		if cerr := q.listLibraryIndexByIDsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listLibraryIndexByIDsStmt: %w", cerr)
+		}
+	}
+	if q.listLibraryScansStmt != nil {
+		if cerr := q.listLibraryScansStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listLibraryScansStmt: %w", cerr)
 		}
 	}
 	if q.listMatcherAlternateTitleRowsStmt != nil {
@@ -1536,6 +1627,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing pruneImportJournalStmt: %w", cerr)
 		}
 	}
+	if q.pruneLibraryScansStmt != nil {
+		if cerr := q.pruneLibraryScansStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing pruneLibraryScansStmt: %w", cerr)
+		}
+	}
 	if q.purgeHistoryStmt != nil {
 		if cerr := q.purgeHistoryStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing purgeHistoryStmt: %w", cerr)
@@ -1596,9 +1692,29 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing searchAlternateTitleMoviesStmt: %w", cerr)
 		}
 	}
+	if q.setCalendarFeedKeyStmt != nil {
+		if cerr := q.setCalendarFeedKeyStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing setCalendarFeedKeyStmt: %w", cerr)
+		}
+	}
+	if q.setCalendarFeedOptionsStmt != nil {
+		if cerr := q.setCalendarFeedOptionsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing setCalendarFeedOptionsStmt: %w", cerr)
+		}
+	}
+	if q.setCollectionPartsStmt != nil {
+		if cerr := q.setCollectionPartsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing setCollectionPartsStmt: %w", cerr)
+		}
+	}
 	if q.setDownloadClientSecretsStmt != nil {
 		if cerr := q.setDownloadClientSecretsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing setDownloadClientSecretsStmt: %w", cerr)
+		}
+	}
+	if q.setDownloadsRetryStoppedStmt != nil {
+		if cerr := q.setDownloadsRetryStoppedStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing setDownloadsRetryStoppedStmt: %w", cerr)
 		}
 	}
 	if q.setImportJournalStatusStmt != nil {
@@ -1609,6 +1725,11 @@ func (q *Queries) Close() error {
 	if q.setIndexerSecretsStmt != nil {
 		if cerr := q.setIndexerSecretsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing setIndexerSecretsStmt: %w", cerr)
+		}
+	}
+	if q.setLibraryScanJobStmt != nil {
+		if cerr := q.setLibraryScanJobStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing setLibraryScanJobStmt: %w", cerr)
 		}
 	}
 	if q.setMediaServerSecretsStmt != nil {
@@ -1671,6 +1792,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing touchAPIKeyStmt: %w", cerr)
 		}
 	}
+	if q.touchCalendarFeedStmt != nil {
+		if cerr := q.touchCalendarFeedStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing touchCalendarFeedStmt: %w", cerr)
+		}
+	}
 	if q.touchSessionStmt != nil {
 		if cerr := q.touchSessionStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing touchSessionStmt: %w", cerr)
@@ -1704,6 +1830,11 @@ func (q *Queries) Close() error {
 	if q.updateIndexerHealthStmt != nil {
 		if cerr := q.updateIndexerHealthStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updateIndexerHealthStmt: %w", cerr)
+		}
+	}
+	if q.updateLibraryScanStmt != nil {
+		if cerr := q.updateLibraryScanStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateLibraryScanStmt: %w", cerr)
 		}
 	}
 	if q.updateMediaServerStmt != nil {
@@ -1759,6 +1890,11 @@ func (q *Queries) Close() error {
 	if q.updateScoringRuleStmt != nil {
 		if cerr := q.updateScoringRuleStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updateScoringRuleStmt: %w", cerr)
+		}
+	}
+	if q.updateSessionClientStmt != nil {
+		if cerr := q.updateSessionClientStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateSessionClientStmt: %w", cerr)
 		}
 	}
 	if q.upsertCollectionStmt != nil {
@@ -1824,6 +1960,7 @@ type Queries struct {
 	addMovieTagStmt                   *sql.Stmt
 	appendHistoryStmt                 *sql.Stmt
 	cancelJobStmt                     *sql.Stmt
+	cancelRunningJobStmt              *sql.Stmt
 	claimJobStmt                      *sql.Stmt
 	clearMovieBlocklistStmt           *sql.Stmt
 	clearMovieTagsStmt                *sql.Stmt
@@ -1841,6 +1978,7 @@ type Queries struct {
 	createDownloadClientStmt          *sql.Stmt
 	createImportJournalStmt           *sql.Stmt
 	createIndexerStmt                 *sql.Stmt
+	createLibraryScanStmt             *sql.Stmt
 	createMediaServerStmt             *sql.Stmt
 	createNotificationStmt            *sql.Stmt
 	createQualityProfileStmt          *sql.Stmt
@@ -1878,11 +2016,14 @@ type Queries struct {
 	deleteUserAPIKeyStmt              *sql.Stmt
 	deleteUserSessionStmt             *sql.Stmt
 	deleteUserSessionsExceptStmt      *sql.Stmt
+	disableCalendarFeedStmt           *sql.Stmt
 	enqueueJobStmt                    *sql.Stmt
 	failJobStmt                       *sql.Stmt
 	findImageOwnerStmt                *sql.Stmt
 	getAPIKeyByHashStmt               *sql.Stmt
 	getBlocklistStmt                  *sql.Stmt
+	getCalendarFeedStmt               *sql.Stmt
+	getCalendarFeedByKeyStmt          *sql.Stmt
 	getCollectionStmt                 *sql.Stmt
 	getCollectionByTmdbIDStmt         *sql.Stmt
 	getCurrentMovieFileStmt           *sql.Stmt
@@ -1894,6 +2035,7 @@ type Queries struct {
 	getJobStmt                        *sql.Stmt
 	getLastRSSSyncStmt                *sql.Stmt
 	getLibraryChangesHeadStmt         *sql.Stmt
+	getLibraryScanStmt                *sql.Stmt
 	getLibraryVersionStmt             *sql.Stmt
 	getMediaServerStmt                *sql.Stmt
 	getMovieStmt                      *sql.Stmt
@@ -1936,6 +2078,7 @@ type Queries struct {
 	listCollectionMovieStatesStmt     *sql.Stmt
 	listCollectionMoviesStmt          *sql.Stmt
 	listCollectionsStmt               *sql.Stmt
+	listCollectionsNeedingPartsStmt   *sql.Stmt
 	listDownloadClientsStmt           *sql.Stmt
 	listDownloadLinksStmt             *sql.Stmt
 	listEnabledMediaServersStmt       *sql.Stmt
@@ -1954,6 +2097,7 @@ type Queries struct {
 	listLibraryChangesSinceStmt       *sql.Stmt
 	listLibraryIndexStmt              *sql.Stmt
 	listLibraryIndexByIDsStmt         *sql.Stmt
+	listLibraryScansStmt              *sql.Stmt
 	listMatcherAlternateTitleRowsStmt *sql.Stmt
 	listMatcherAlternateTitlesStmt    *sql.Stmt
 	listMatcherMoviesStmt             *sql.Stmt
@@ -1990,6 +2134,7 @@ type Queries struct {
 	listTagsWithUsageStmt             *sql.Stmt
 	listUserSessionsStmt              *sql.Stmt
 	pruneImportJournalStmt            *sql.Stmt
+	pruneLibraryScansStmt             *sql.Stmt
 	purgeHistoryStmt                  *sql.Stmt
 	reassignDownloadMovieStmt         *sql.Stmt
 	recordMediaServerFailureStmt      *sql.Stmt
@@ -2002,9 +2147,14 @@ type Queries struct {
 	resetNotificationHealthStmt       *sql.Stmt
 	resetRunningJobsStmt              *sql.Stmt
 	searchAlternateTitleMoviesStmt    *sql.Stmt
+	setCalendarFeedKeyStmt            *sql.Stmt
+	setCalendarFeedOptionsStmt        *sql.Stmt
+	setCollectionPartsStmt            *sql.Stmt
 	setDownloadClientSecretsStmt      *sql.Stmt
+	setDownloadsRetryStoppedStmt      *sql.Stmt
 	setImportJournalStatusStmt        *sql.Stmt
 	setIndexerSecretsStmt             *sql.Stmt
+	setLibraryScanJobStmt             *sql.Stmt
 	setMediaServerSecretsStmt         *sql.Stmt
 	setMovieFileRelativePathStmt      *sql.Stmt
 	setMovieLastSearchedStmt          *sql.Stmt
@@ -2017,6 +2167,7 @@ type Queries struct {
 	setUserLastLoginStmt              *sql.Stmt
 	setUserPasswordStmt               *sql.Stmt
 	touchAPIKeyStmt                   *sql.Stmt
+	touchCalendarFeedStmt             *sql.Stmt
 	touchSessionStmt                  *sql.Stmt
 	updateCollectionSettingsStmt      *sql.Stmt
 	updateDownloadClientStmt          *sql.Stmt
@@ -2024,6 +2175,7 @@ type Queries struct {
 	updateDownloadStateStmt           *sql.Stmt
 	updateIndexerStmt                 *sql.Stmt
 	updateIndexerHealthStmt           *sql.Stmt
+	updateLibraryScanStmt             *sql.Stmt
 	updateMediaServerStmt             *sql.Stmt
 	updateMovieFileScoreStmt          *sql.Stmt
 	updateMovieMetadataStmt           *sql.Stmt
@@ -2035,6 +2187,7 @@ type Queries struct {
 	updateRootFolderSpaceStmt         *sql.Stmt
 	updateSavedViewStmt               *sql.Stmt
 	updateScoringRuleStmt             *sql.Stmt
+	updateSessionClientStmt           *sql.Stmt
 	upsertCollectionStmt              *sql.Stmt
 	upsertMovieStmt                   *sql.Stmt
 	upsertMovieFileStmt               *sql.Stmt
@@ -2049,6 +2202,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		addMovieTagStmt:                   q.addMovieTagStmt,
 		appendHistoryStmt:                 q.appendHistoryStmt,
 		cancelJobStmt:                     q.cancelJobStmt,
+		cancelRunningJobStmt:              q.cancelRunningJobStmt,
 		claimJobStmt:                      q.claimJobStmt,
 		clearMovieBlocklistStmt:           q.clearMovieBlocklistStmt,
 		clearMovieTagsStmt:                q.clearMovieTagsStmt,
@@ -2066,6 +2220,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		createDownloadClientStmt:          q.createDownloadClientStmt,
 		createImportJournalStmt:           q.createImportJournalStmt,
 		createIndexerStmt:                 q.createIndexerStmt,
+		createLibraryScanStmt:             q.createLibraryScanStmt,
 		createMediaServerStmt:             q.createMediaServerStmt,
 		createNotificationStmt:            q.createNotificationStmt,
 		createQualityProfileStmt:          q.createQualityProfileStmt,
@@ -2103,11 +2258,14 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		deleteUserAPIKeyStmt:              q.deleteUserAPIKeyStmt,
 		deleteUserSessionStmt:             q.deleteUserSessionStmt,
 		deleteUserSessionsExceptStmt:      q.deleteUserSessionsExceptStmt,
+		disableCalendarFeedStmt:           q.disableCalendarFeedStmt,
 		enqueueJobStmt:                    q.enqueueJobStmt,
 		failJobStmt:                       q.failJobStmt,
 		findImageOwnerStmt:                q.findImageOwnerStmt,
 		getAPIKeyByHashStmt:               q.getAPIKeyByHashStmt,
 		getBlocklistStmt:                  q.getBlocklistStmt,
+		getCalendarFeedStmt:               q.getCalendarFeedStmt,
+		getCalendarFeedByKeyStmt:          q.getCalendarFeedByKeyStmt,
 		getCollectionStmt:                 q.getCollectionStmt,
 		getCollectionByTmdbIDStmt:         q.getCollectionByTmdbIDStmt,
 		getCurrentMovieFileStmt:           q.getCurrentMovieFileStmt,
@@ -2119,6 +2277,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		getJobStmt:                        q.getJobStmt,
 		getLastRSSSyncStmt:                q.getLastRSSSyncStmt,
 		getLibraryChangesHeadStmt:         q.getLibraryChangesHeadStmt,
+		getLibraryScanStmt:                q.getLibraryScanStmt,
 		getLibraryVersionStmt:             q.getLibraryVersionStmt,
 		getMediaServerStmt:                q.getMediaServerStmt,
 		getMovieStmt:                      q.getMovieStmt,
@@ -2161,6 +2320,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		listCollectionMovieStatesStmt:     q.listCollectionMovieStatesStmt,
 		listCollectionMoviesStmt:          q.listCollectionMoviesStmt,
 		listCollectionsStmt:               q.listCollectionsStmt,
+		listCollectionsNeedingPartsStmt:   q.listCollectionsNeedingPartsStmt,
 		listDownloadClientsStmt:           q.listDownloadClientsStmt,
 		listDownloadLinksStmt:             q.listDownloadLinksStmt,
 		listEnabledMediaServersStmt:       q.listEnabledMediaServersStmt,
@@ -2179,6 +2339,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		listLibraryChangesSinceStmt:       q.listLibraryChangesSinceStmt,
 		listLibraryIndexStmt:              q.listLibraryIndexStmt,
 		listLibraryIndexByIDsStmt:         q.listLibraryIndexByIDsStmt,
+		listLibraryScansStmt:              q.listLibraryScansStmt,
 		listMatcherAlternateTitleRowsStmt: q.listMatcherAlternateTitleRowsStmt,
 		listMatcherAlternateTitlesStmt:    q.listMatcherAlternateTitlesStmt,
 		listMatcherMoviesStmt:             q.listMatcherMoviesStmt,
@@ -2215,6 +2376,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		listTagsWithUsageStmt:             q.listTagsWithUsageStmt,
 		listUserSessionsStmt:              q.listUserSessionsStmt,
 		pruneImportJournalStmt:            q.pruneImportJournalStmt,
+		pruneLibraryScansStmt:             q.pruneLibraryScansStmt,
 		purgeHistoryStmt:                  q.purgeHistoryStmt,
 		reassignDownloadMovieStmt:         q.reassignDownloadMovieStmt,
 		recordMediaServerFailureStmt:      q.recordMediaServerFailureStmt,
@@ -2227,9 +2389,14 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		resetNotificationHealthStmt:       q.resetNotificationHealthStmt,
 		resetRunningJobsStmt:              q.resetRunningJobsStmt,
 		searchAlternateTitleMoviesStmt:    q.searchAlternateTitleMoviesStmt,
+		setCalendarFeedKeyStmt:            q.setCalendarFeedKeyStmt,
+		setCalendarFeedOptionsStmt:        q.setCalendarFeedOptionsStmt,
+		setCollectionPartsStmt:            q.setCollectionPartsStmt,
 		setDownloadClientSecretsStmt:      q.setDownloadClientSecretsStmt,
+		setDownloadsRetryStoppedStmt:      q.setDownloadsRetryStoppedStmt,
 		setImportJournalStatusStmt:        q.setImportJournalStatusStmt,
 		setIndexerSecretsStmt:             q.setIndexerSecretsStmt,
+		setLibraryScanJobStmt:             q.setLibraryScanJobStmt,
 		setMediaServerSecretsStmt:         q.setMediaServerSecretsStmt,
 		setMovieFileRelativePathStmt:      q.setMovieFileRelativePathStmt,
 		setMovieLastSearchedStmt:          q.setMovieLastSearchedStmt,
@@ -2242,6 +2409,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		setUserLastLoginStmt:              q.setUserLastLoginStmt,
 		setUserPasswordStmt:               q.setUserPasswordStmt,
 		touchAPIKeyStmt:                   q.touchAPIKeyStmt,
+		touchCalendarFeedStmt:             q.touchCalendarFeedStmt,
 		touchSessionStmt:                  q.touchSessionStmt,
 		updateCollectionSettingsStmt:      q.updateCollectionSettingsStmt,
 		updateDownloadClientStmt:          q.updateDownloadClientStmt,
@@ -2249,6 +2417,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		updateDownloadStateStmt:           q.updateDownloadStateStmt,
 		updateIndexerStmt:                 q.updateIndexerStmt,
 		updateIndexerHealthStmt:           q.updateIndexerHealthStmt,
+		updateLibraryScanStmt:             q.updateLibraryScanStmt,
 		updateMediaServerStmt:             q.updateMediaServerStmt,
 		updateMovieFileScoreStmt:          q.updateMovieFileScoreStmt,
 		updateMovieMetadataStmt:           q.updateMovieMetadataStmt,
@@ -2260,6 +2429,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		updateRootFolderSpaceStmt:         q.updateRootFolderSpaceStmt,
 		updateSavedViewStmt:               q.updateSavedViewStmt,
 		updateScoringRuleStmt:             q.updateScoringRuleStmt,
+		updateSessionClientStmt:           q.updateSessionClientStmt,
 		upsertCollectionStmt:              q.upsertCollectionStmt,
 		upsertMovieStmt:                   q.upsertMovieStmt,
 		upsertMovieFileStmt:               q.upsertMovieFileStmt,

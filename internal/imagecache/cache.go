@@ -42,7 +42,7 @@ const (
 
 // Sizes kept for each kind (TMDB size names).
 var sizes = map[Kind][]string{
-	Poster:   {"w342", "w780"},
+	Poster:   {"w92", "w342", "w780"}, // w92: thumbnails of the library table
 	Backdrop: {"w1280"},
 	Profile:  {"w185"},
 }

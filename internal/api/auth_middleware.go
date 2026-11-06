@@ -82,6 +82,16 @@ type client struct {
 	// Loopback: a direct connection from a loopback address (not a trusted
 	// proxy, no proxy header) with a loopback Host (localhost, 127.0.0.1, ::1).
 	Loopback bool
+	// Host is the Host header of the request.
+	Host string
+	// Via is how the client connects (auth.ViaDirect, ViaLocal or ViaProxy),
+	// for the session list only.
+	Via string
+}
+
+// authClient is the client information the auth service records.
+func (c *client) authClient() auth.ClientInfo {
+	return auth.ClientInfo{IP: c.IP, UserAgent: c.UserAgent, Via: c.Via}
 }
 
 // PrincipalOf returns the authenticated caller of ctx.
@@ -146,6 +156,13 @@ func (s *Server) withAuth(next http.Handler) http.Handler {
 			return
 		}
 
+		if r.URL.Path == calendarPath && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+			// The iCal feed authenticates with its own read-only key in the
+			// query string (calendar_routes.go): no session, no API key.
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		p, err := s.identify(r, c)
 		switch {
 		case err != nil && !errors.Is(err, auth.ErrUnauthenticated):
@@ -181,7 +198,7 @@ func (s *Server) identify(r *http.Request, c client) (auth.Principal, error) {
 		return a.APIKeyPrincipal(ctx, strings.TrimSpace(key)) // a wrong key is not retried as a cookie
 	}
 	if c.Token != "" {
-		p, err := a.SessionPrincipal(ctx, c.Token)
+		p, err := a.SessionPrincipalFor(ctx, c.Token, c.authClient())
 		if !errors.Is(err, auth.ErrUnauthenticated) {
 			return p, err
 		}
@@ -295,13 +312,20 @@ func loopbackHost(r *http.Request) bool {
 // It only serves login throttling and the session list, never an access
 // decision. X-Forwarded-Proto is read from trusted proxies only.
 func (s *Server) clientInfo(r *http.Request) client {
-	c := client{UserAgent: r.UserAgent(), HostOK: s.hostAllowed(r)}
+	c := client{UserAgent: r.UserAgent(), HostOK: s.hostAllowed(r), Host: r.Host}
 	sec := &s.d.Security
 	peer, ok := remoteAddr(r)
 	trusted := ok && sec.ProxyTrusted(peer)
+	c.Via = auth.ViaDirect
 	if ok {
 		c.IP = peer.String()
 		c.Loopback = peer.IsLoopback() && !trusted && !hasProxyHeader(r) && loopbackHost(r)
+		switch {
+		case trusted:
+			c.Via = auth.ViaProxy
+		case peer.IsLoopback() || peer.IsPrivate() || peer.IsLinkLocalUnicast():
+			c.Via = auth.ViaLocal
+		}
 	}
 	if trusted {
 		if ip, ok := forwardedFor(r, sec); ok {

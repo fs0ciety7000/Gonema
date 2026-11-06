@@ -404,12 +404,7 @@ function CollectionsShelf({
                       Add the missing one
                     </Button>
                   ) : (d.movies ?? [])[0] ? (
-                    <Link
-                      className={buttonClass('secondary', 'sm')}
-                      to="/films/$movieId"
-                      params={{ movieId: d.movies![0]!.id }}
-                      hash="collection"
-                    >
+                    <Link className={buttonClass('secondary', 'sm')} to="/collections" search={{ id: d.id }}>
                       {d.monitored
                         ? 'Open collection'
                         : missing.length

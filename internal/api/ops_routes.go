@@ -27,11 +27,18 @@ import (
 type OpsDeps struct {
 	Backups        *backup.Service
 	BackupSettings *backup.SettingsStore
-	BackupJobs     interface{ Reschedule(kind string) bool } // jobs.Runner; optional
+	BackupJobs     BackupScheduler // jobs.Runner; optional
 	Logs           *logbuf.Buffer
 	LogLevel       *slog.LevelVar
 	LogFile        *logbuf.RotatingFile // optional
 	Imports        *importer.Service
+}
+
+// BackupScheduler reschedules the scheduled backup and tells its next run
+// (jobs.Runner).
+type BackupScheduler interface {
+	Reschedule(kind string) bool
+	NextRun(ctx context.Context, kind string) (time.Time, bool)
 }
 
 // RegisterOpsRoutes adds the backup, log and import journal endpoints. Call it
@@ -84,6 +91,11 @@ type (
 	}
 	// BackupSettings configure the scheduled backups.
 	BackupSettings backup.Settings
+	// BackupSettingsView is BackupSettings with the schedule.
+	BackupSettingsView struct {
+		BackupSettings
+		NextRunAt *time.Time `json:"nextRunAt" doc:"Next scheduled backup; null when scheduled backups are off or not scheduled yet"`
+	}
 	// LogEntry is one log record, redacted.
 	LogEntry logbuf.Entry
 	// ImportJournalEntry is an interrupted import.
@@ -121,6 +133,24 @@ type BackupList struct {
 	PendingRestore *PendingRestore `json:"pendingRestore,omitempty" doc:"A restore staged for the next start"`
 	Directory      string          `json:"directory" doc:"Folder of the archives, inside the data directory"`
 	KeyNotice      string          `json:"keyNotice" doc:"What a backup holds about the master key, to show next to the list"`
+	NextScheduled  *time.Time      `json:"nextScheduledAt" doc:"Next scheduled backup; null when scheduled backups are off or not scheduled yet"`
+}
+
+// nextBackup is the next scheduled backup time, nil when off or unknown.
+func (r *opsRoutes) nextBackup(ctx context.Context, set *backup.Settings) *time.Time {
+	if !set.Enabled || r.d.BackupJobs == nil {
+		return nil
+	}
+	t, ok := r.d.BackupJobs.NextRun(ctx, backup.JobScheduled)
+	if !ok {
+		return nil
+	}
+	t = t.UTC()
+	return &t
+}
+
+func (r *opsRoutes) settingsView(ctx context.Context, set backup.Settings) BackupSettingsView {
+	return BackupSettingsView{BackupSettings: BackupSettings(set), NextRunAt: r.nextBackup(ctx, &set)}
 }
 
 // KeyNotice explains the master key and backups.
@@ -175,7 +205,11 @@ func (r *opsRoutes) backups() {
 		if err != nil {
 			return nil, r.problem(ctx, err)
 		}
-		return &struct{ Body BackupList }{BackupList{Backups: backupInfos(list), PendingRestore: (*PendingRestore)(p), Directory: svc.Dir(), KeyNotice: KeyNotice}}, nil
+		set := r.d.BackupSettings.Get(ctx)
+		return &struct{ Body BackupList }{BackupList{
+			Backups: backupInfos(list), PendingRestore: (*PendingRestore)(p), Directory: svc.Dir(), KeyNotice: KeyNotice,
+			NextScheduled: r.nextBackup(ctx, &set),
+		}}, nil
 	})
 
 	huma.Register(r.s.api, huma.Operation{
@@ -290,15 +324,15 @@ func (r *opsRoutes) backups() {
 	huma.Register(r.s.api, huma.Operation{
 		OperationID: "get-backup-settings", Method: http.MethodGet, Path: "/settings/backups", Summary: "Scheduled backups",
 		Tags: []string{"Settings"},
-	}, func(ctx context.Context, _ *struct{}) (*struct{ Body BackupSettings }, error) {
-		return &struct{ Body BackupSettings }{BackupSettings(r.d.BackupSettings.Get(ctx))}, nil
+	}, func(ctx context.Context, _ *struct{}) (*struct{ Body BackupSettingsView }, error) {
+		return &struct{ Body BackupSettingsView }{r.settingsView(ctx, r.d.BackupSettings.Get(ctx))}, nil
 	})
 	huma.Register(r.s.api, huma.Operation{
 		OperationID: "set-backup-settings", Method: http.MethodPut, Path: "/settings/backups", Summary: "Change scheduled backups",
 		Description: "Interval (hours), scheduled backups kept, and whether they include gonema.key (off by default: see the warning). " +
-			"A new interval applies at once.",
+			"A new interval applies at once (nextRunAt may show the previous due time for a moment).",
 		Tags: []string{"Settings"},
-	}, func(ctx context.Context, in *struct{ Body BackupSettings }) (*struct{ Body BackupSettings }, error) {
+	}, func(ctx context.Context, in *struct{ Body BackupSettings }) (*struct{ Body BackupSettingsView }, error) {
 		out, err := r.d.BackupSettings.Set(ctx, backup.Settings(in.Body))
 		if err != nil {
 			return nil, r.problem(ctx, err)
@@ -309,7 +343,7 @@ func (r *opsRoutes) backups() {
 		if r.s.d.Bus != nil {
 			r.s.d.Bus.Publish(events.Event{Type: events.SettingsChanged, Data: map[string]any{"setting": "backups"}})
 		}
-		return &struct{ Body BackupSettings }{BackupSettings(out)}, nil
+		return &struct{ Body BackupSettingsView }{r.settingsView(ctx, out)}, nil
 	})
 }
 

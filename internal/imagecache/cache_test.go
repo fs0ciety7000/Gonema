@@ -129,7 +129,7 @@ func TestFetch(t *testing.T) {
 	for _, k := range []struct {
 		kind Kind
 		size string
-	}{{Poster, "w780"}, {Backdrop, "w1280"}, {Profile, "w185"}} {
+	}{{Poster, "w92"}, {Poster, "w780"}, {Backdrop, "w1280"}, {Profile, "w185"}} {
 		if _, err := c.Fetch(t.Context(), k.kind, k.size, "/abc123.jpg"); err != nil {
 			t.Errorf("Fetch %s %s: %v", k.kind, k.size, err)
 		}
@@ -307,7 +307,7 @@ func TestNewValidates(t *testing.T) {
 	if _, err := New(t.TempDir(), nil, Options{}); err == nil {
 		t.Error("New accepted a nil base source")
 	}
-	if got := Sizes(Poster); len(got) != 2 || got[0] != "w342" || got[1] != "w780" {
+	if got := Sizes(Poster); len(got) != 3 || got[0] != "w92" || got[1] != "w342" || got[2] != "w780" {
 		t.Errorf("Sizes(Poster) = %v", got)
 	}
 }
@@ -322,5 +322,27 @@ func TestDefaultClientPublicOnly(t *testing.T) {
 	}
 	if _, err := c.Fetch(t.Context(), Poster, "w342", "/abc123.jpg"); !errors.Is(err, netx.ErrBlocked) {
 		t.Fatalf("fetch from loopback = %v, want blocked", err)
+	}
+}
+
+// TestThumbnailSize checks the w92 poster size of the library table: allowed
+// for posters only, cached in its own folder, requested from TMDB as is.
+func TestThumbnailSize(t *testing.T) {
+	dir := t.TempDir()
+	c, err := New(dir, staticBase("https://image.example/t/p/"), Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := c.Path(Poster, "w92", "/thumb.jpg")
+	if want := filepath.Join(dir, "images", "poster", "w92", "thumb.jpg"); err != nil || p != want {
+		t.Errorf("Path = %q, %v; want %q", p, err, want)
+	}
+	for _, k := range []Kind{Backdrop, Profile} {
+		if _, err := c.Path(k, "w92", "/thumb.jpg"); !errors.Is(err, ErrInvalidPath) {
+			t.Errorf("%s w92: err = %v, want ErrInvalidPath", k, err)
+		}
+	}
+	if got := Sizes(Poster); len(got) != 3 || got[0] != "w92" {
+		t.Errorf("Sizes(Poster) = %v", got)
 	}
 }

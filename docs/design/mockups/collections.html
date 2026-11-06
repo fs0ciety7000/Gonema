@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Collections · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: collections. Default = grid · ?id=<collection> = detail · ?state=empty = no collection yet */
+  [data-view="grid"] .only-detail, [data-view="grid"] .only-empty,
+  [data-view="detail"] .only-grid, [data-view="detail"] .only-empty,
+  [data-view="empty"] .only-grid, [data-view="empty"] .only-detail, [data-view="detail"] .not-detail { display: none !important; }
+
+  /* ---------- Grid ---------- */
+  .page { padding-bottom: 120px; }
+  .filters { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-6); }
+  .filters .find { width: 260px; height: 36px; }
+  .filters .find input { font: var(--type-body-sm); }
+  .filters .spacer { flex: 1; }
+  .filters .segmented .n { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .filters .segmented [aria-checked="true"] .n { color: var(--text-secondary); }
+
+  .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(256px, 1fr)); gap: var(--space-8) var(--space-6); }
+  .cc { position: relative; display: grid; gap: 12px; min-width: 0; }
+  .cc-frame { position: relative; aspect-ratio: 16 / 10; border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-raised); box-shadow: var(--elev-poster); transition: transform var(--spring-gentle-dur) var(--spring-gentle), box-shadow var(--dur-slow) var(--ease-out); }
+  .cc-frame .backdrop-art { position: absolute; inset: -8px; filter: blur(3px) saturate(1.05); }
+  .cc-frame .backdrop-art svg { width: 100%; height: 100%; }
+  .cc-frame::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(10, 8, 7, .35) 0%, rgba(10, 8, 7, .05) 34%, rgba(10, 8, 7, .62) 100%); box-shadow: inset 0 0 0 1px rgba(255, 244, 232, .08); border-radius: inherit; }
+  .cc-link { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+  .cc-link:focus-visible { box-shadow: var(--focus-ring); outline: none; }
+  .cc-posters { position: absolute; z-index: 2; left: 12px; right: 12px; bottom: 12px; display: flex; gap: 6px; pointer-events: none; }
+  .cc-posters .p { position: relative; flex: 0 0 calc((100% - 24px) / 5); aspect-ratio: 2 / 3; border-radius: 6px; overflow: hidden; box-shadow: 0 6px 16px -6px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 244, 232, .14); }
+  .cc-posters .p svg { width: 100%; height: 100%; }
+  .cc-posters .p.out .poster-art { filter: grayscale(.85) brightness(.55); }
+  .cc-posters .p.out { box-shadow: 0 0 0 1px rgba(255, 244, 232, .5); outline: 1px dashed rgba(255, 244, 232, .55); outline-offset: -4px; }
+  .cc-posters .more { flex: 0 0 calc((100% - 24px) / 5); aspect-ratio: 2 / 3; border-radius: 6px; display: grid; place-items: center; background: rgba(18, 16, 14, .72); color: #F7F0E6; font: 600 13px/1 var(--font-ui); box-shadow: inset 0 0 0 1px rgba(255, 244, 232, .14); }
+  .cc-top { position: absolute; z-index: 2; top: 10px; left: 10px; right: 52px; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
+  .cc-top .badge { pointer-events: auto; }
+  .cc-mon { position: absolute; z-index: 3; top: 8px; right: 8px; }
+  .badge.on-media:not([data-status]) .i { color: #C9BBAB; }
+  .icon-btn.on-media[aria-pressed="true"] { color: #F7F0E6; background: rgba(18, 16, 14, .72); }
+  .cc-meta { display: grid; gap: 6px; min-width: 0; }
+  .cc-title { font: 600 15px/20px var(--font-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cc-count { display: flex; align-items: center; gap: 10px; font: 500 13px/18px var(--font-ui); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .cc-count b { color: var(--text-primary); font-weight: 600; }
+  .pips { display: flex; gap: 3px; flex: 1; max-width: 120px; }
+  .pips i { flex: 1; height: 4px; border-radius: 2px; background: var(--bg-active); box-shadow: inset 0 0 0 1px var(--border-strong); }
+  .pips i.d { background: var(--status-available); box-shadow: none; }
+  .pips i.w { background: var(--status-missing); box-shadow: none; }
+  .pips i.l { background: var(--status-downloading); box-shadow: none; }
+  .pips i.u { background: var(--text-muted); box-shadow: none; }
+  .cc-sub { display: flex; align-items: center; gap: 8px; font: var(--type-caption); color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 0; }
+  .cc-sub .sep { width: 3px; height: 3px; border-radius: 50%; background: var(--text-muted); flex: none; }
+  .cc-sub .status { font: 500 12px/16px var(--font-ui); gap: 4px; }
+  .cc-sub .status .i { width: 13px; height: 13px; }
+  .cc-sub .on { color: var(--text-secondary); }
+  .cc:hover .cc-frame, .cc.is-hover .cc-frame, .cc:has(:focus-visible) .cc-frame { transform: translateY(-3px); box-shadow: var(--elev-poster-hover); }
+  .cc.sk .cc-frame { box-shadow: none; }
+  .grid-end { margin-top: var(--space-10); text-align: center; color: var(--text-muted); font: var(--type-caption); }
+
+  /* ---------- Detail ---------- */
+  .main { position: relative; isolation: isolate; }
+  .atmos { position: absolute; inset: 0 0 auto 0; height: 620px; z-index: -1; overflow: hidden; pointer-events: none; }
+  .atmos .backdrop-art { position: absolute; inset: -80px; }
+  .atmos .backdrop-art svg { width: 100%; height: 100%; }
+  .atmos .soft { filter: blur(56px) saturate(1.15); opacity: .6; transform: scale(1.1); }
+  .atmos .sharp { filter: blur(3px); opacity: .3; inset: 0 0 0 35%; -webkit-mask-image: radial-gradient(80% 90% at 75% 30%, #000 20%, transparent 75%); mask-image: radial-gradient(80% 90% at 75% 30%, #000 20%, transparent 75%); }
+  .atmos::before { content: ""; position: absolute; inset: 0; background: radial-gradient(60% 70% at 18% 20%, var(--movie-glow), transparent 70%), radial-gradient(50% 60% at 90% 0%, var(--movie-glow-2), transparent 70%); }
+  .atmos::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, color-mix(in srgb, var(--bg-base) 72%, transparent) 0%, color-mix(in srgb, var(--bg-base) 30%, transparent) 60%, transparent 100%), linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--bg-base) 45%, transparent) 55%, var(--bg-base) 100%); }
+  [data-theme="light"] .atmos .soft { opacity: .36; }
+  [data-theme="light"] .atmos .sharp { opacity: .14; }
+  [data-theme="light"] .atmos::after { background: linear-gradient(90deg, color-mix(in srgb, var(--bg-base) 84%, transparent) 0%, color-mix(in srgb, var(--bg-base) 48%, transparent) 60%, color-mix(in srgb, var(--bg-base) 22%, transparent) 100%), linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--bg-base) 58%, transparent) 55%, var(--bg-base) 100%); }
+  [data-view="detail"] .topbar { background: color-mix(in srgb, var(--glass-1) 40%, transparent); border-bottom-color: transparent; }
+
+  .chero { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: var(--space-10); align-items: end; padding: var(--space-10) var(--gutter) var(--space-8); max-width: var(--content-max); }
+  .fan { position: relative; height: 300px; }
+  .fan .poster-art { position: absolute; width: 150px; aspect-ratio: 2 / 3; border-radius: 12px; overflow: hidden; box-shadow: 0 30px 60px -24px rgba(0, 0, 0, .85), 0 0 0 1px rgba(255, 244, 232, .1); }
+  [data-theme="light"] .fan .poster-art { box-shadow: 0 30px 56px -26px rgba(60, 30, 10, .55), 0 0 0 1px rgba(42, 32, 24, .1); }
+  .fan .poster-art svg { width: 100%; height: 100%; }
+  .fan .poster-art:nth-child(1) { left: 0; top: 34px; transform: rotate(-7deg); }
+  .fan .poster-art:nth-child(2) { left: 74px; top: 30px; transform: rotate(6deg); }
+  .fan .poster-art:nth-child(3) { left: 40px; top: 70px; z-index: 2; }
+  .cinfo { display: grid; gap: var(--space-4); min-width: 0; padding-bottom: 4px; }
+  .cinfo h1 { font: var(--type-display-xl); letter-spacing: var(--type-display-xl-tracking); font-stretch: 125%; text-wrap: balance; }
+  .facts { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; color: var(--text-secondary); font: var(--type-body-lg); font-variant-numeric: tabular-nums; }
+  .facts .sep { width: 4px; height: 4px; border-radius: 50%; background: var(--text-muted); }
+  .facts b { color: var(--text-primary); font-weight: 600; }
+  .overview { max-width: 68ch; color: var(--text-secondary); font: var(--type-body-lg); }
+  .cactions { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-2); }
+  .cactions .switch { margin-left: var(--space-3); font: 500 14px/1 var(--font-ui); }
+
+  .cbody { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--space-8); padding: var(--space-2) var(--gutter) var(--space-16); max-width: var(--content-max); align-items: start; }
+  .sec-hd { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-3); }
+  .sec-hd h2 { font: var(--type-title-lg); }
+  .sec-hd .t-caption { color: var(--text-muted); }
+  .parts { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .part { display: grid; grid-template-columns: 22px 48px minmax(0, 1fr) 224px 36px 92px; gap: var(--space-4); align-items: center; padding: 10px 12px 10px 14px; border-radius: var(--radius-lg); background: var(--bg-raised); border: 1px solid var(--border); box-shadow: var(--elev-1); }
+  .part .n { font: 600 13px/1 var(--font-mono); color: var(--text-muted); text-align: right; font-variant-numeric: tabular-nums; }
+  .part .th { aspect-ratio: 2 / 3; border-radius: 6px; overflow: hidden; box-shadow: var(--elev-poster); }
+  .part .th svg { width: 100%; height: 100%; }
+  .part.out .th .poster-art { filter: grayscale(.8) brightness(.7); }
+  .part.out .th { outline: 1px dashed var(--border-control); outline-offset: 2px; }
+  .part.unmon .th .poster-art { filter: saturate(.25); }
+  .part .tt { display: grid; gap: 2px; min-width: 0; }
+  .part .tt a { font: 600 15px/20px var(--font-ui); color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .part.out .tt a { color: var(--text-secondary); }
+  .part .tt span { font: var(--type-body-sm); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .part .st { display: grid; gap: 6px; justify-items: start; min-width: 0; }
+  .part .st .q { white-space: nowrap; display: flex; align-items: center; gap: 6px; font: var(--type-mono-sm); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .part .act { justify-self: end; }
+  .part .act .btn { min-width: 76px; }
+
+  .side { display: grid; gap: var(--space-5); position: sticky; top: calc(var(--topbar-h) + 16px); }
+  .side .panel-bd { display: grid; gap: var(--space-4); }
+  .side .field-hint { font: var(--type-caption); color: var(--text-muted); }
+  .why { display: grid; gap: 8px; font: var(--type-body-sm); color: var(--text-secondary); }
+  .why b { color: var(--text-primary); font-weight: 500; }
+  .legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font: var(--type-body-sm); color: var(--text-secondary); }
+  .legend li { display: flex; align-items: center; gap: 10px; }
+  .legend .pips { flex: none; width: 24px; }
+
+  /* ---------- Empty ---------- */
+  .glyph { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: var(--bg-active); color: var(--text-secondary); margin-bottom: 4px; }
+  .glyph .i { width: 24px; height: 24px; }
+  .empty-wrap { display: grid; place-items: center; min-height: 520px; }
+  .empty-wrap .empty { width: min(640px, 100%); }
+  .empty .ghosts { display: flex; gap: 8px; margin: 4px 0 6px; }
+  .empty .ghosts span { width: 44px; aspect-ratio: 2 / 3; border-radius: 6px; border: 1px dashed var(--border-control); background: color-mix(in srgb, var(--bg-raised) 60%, transparent); }
+  .empty .ghosts span:nth-child(2) { transform: translateY(-6px); }
+  .empty .hintline { font: var(--type-caption); color: var(--text-muted); }
+
+  @media (max-width: 1100px) {
+    .filters .find { width: 200px; }
+    .cgrid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-6) var(--space-5); }
+    .chero { grid-template-columns: 180px minmax(0, 1fr); gap: var(--space-8); }
+    .fan { height: 240px; }
+    .fan .poster-art { width: 118px; }
+    .fan .poster-art:nth-child(3) { left: 30px; top: 60px; }
+    .cinfo h1 { font: var(--type-display-lg); letter-spacing: var(--type-display-lg-tracking); font-stretch: 125%; }
+    .cbody { grid-template-columns: minmax(0, 1fr); }
+    .side { position: static; grid-template-columns: 1fr 1fr; }
+    .part { grid-template-columns: 22px 44px minmax(0, 1fr) 200px 36px 84px; gap: var(--space-3); }
+    .part .hdr-flag { display: none; }
+    .fan .poster-art:nth-child(2) { left: 56px; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app movie-scope" id="app" data-view="grid">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar="collections"></nav>
+  <div class="main">
+    <div class="atmos only-detail" aria-hidden="true" id="atmos"></div>
+
+    <header class="topbar">
+      <nav class="crumbs only-detail" aria-label="Breadcrumb"><a href="collections.html">Collections</a><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg><span aria-current="page" id="crumb"></span></nav>
+      <label class="input search not-detail" aria-label="Search"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" placeholder="Search films, people, releases…" aria-label="Search films, people, releases"><span class="kbd" aria-hidden="true">⌘K</span></label>
+      <div class="spacer"></div>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    </header>
+
+    <!-- GRID -->
+    <main id="main" class="page only-grid">
+      <div class="page-head">
+        <div>
+          <h1>Collections</h1>
+          <p class="sub">86 collections · 214 films in them · 31 not in your library · 9 upcoming</p>
+        </div>
+      </div>
+      <div class="filters" role="toolbar" aria-label="Collection filters">
+        <div class="segmented" role="radiogroup" aria-label="Show">
+          <button role="radio" aria-checked="true" type="button">All <span class="n">86</span></button>
+          <button role="radio" aria-checked="false" type="button">Missing films <span class="n">23</span></button>
+          <button role="radio" aria-checked="false" type="button">Monitored <span class="n">41</span></button>
+        </div>
+        <label class="input find" aria-label="Filter collections by name"><svg class="i" aria-hidden="true"><use href="#i-list-filter"/></svg><input type="search" placeholder="Filter by name…" aria-label="Filter collections by name"></label>
+        <div class="spacer"></div>
+        <button class="btn btn-ghost btn-sm" type="button" aria-haspopup="listbox"><svg class="i" aria-hidden="true"><use href="#i-arrow-up-down"/></svg><span class="t-muted" style="font-weight:500">Sort</span> <span style="font-weight:600">Name</span></button>
+        <a class="btn btn-ghost btn-sm" href="add-film.html?tab=discover"><svg class="i" aria-hidden="true"><use href="#i-compass"/></svg>Find more on TMDB</a>
+      </div>
+      <section class="cgrid" id="cgrid" aria-label="Collections, sorted by name"></section>
+      <p class="grid-end">Loading 74 more collections…</p>
+    </main>
+
+    <!-- DETAIL -->
+    <main id="main-detail" class="only-detail" aria-labelledby="c-title">
+      <section class="chero">
+        <div class="fan" id="fan" aria-hidden="true"></div>
+        <div class="cinfo">
+          <p class="t-overline" id="c-over"></p>
+          <h1 id="c-title"></h1>
+          <div class="facts" id="c-facts"></div>
+          <p class="overview" id="c-overview"></p>
+          <div class="cactions" id="c-actions"></div>
+        </div>
+      </section>
+      <div class="cbody">
+        <section aria-labelledby="parts-h">
+          <div class="sec-hd"><h2 id="parts-h">Films, in release order</h2><span class="t-caption" id="parts-note"></span></div>
+          <ol class="parts" id="parts"></ol>
+        </section>
+        <aside class="side" aria-label="Collection settings">
+          <section class="panel" aria-labelledby="set-h">
+            <div class="panel-hd"><h2 id="set-h">When Gonema adds a film</h2></div>
+            <div class="panel-bd">
+              <div class="field"><span class="field-label" id="qp-l">Quality profile</span><button class="input select" type="button" aria-haspopup="listbox" aria-labelledby="qp-l qp-v"><span class="value" id="qp-v">Cinema HD</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button><span class="field-hint">1080p, upgrades until Remux-1080p. Films already in your library keep their own profile.</span></div>
+              <div class="field"><span class="field-label" id="rf-l">Root folder <span class="t-muted" style="font-weight:400">6.3 TB free</span></span><button class="input select" type="button" aria-haspopup="listbox" aria-labelledby="rf-l rf-v"><span class="value t-mono" id="rf-v">/data/movies</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button></div>
+              <div class="field"><span class="field-label" id="ma-l">Minimum availability</span><button class="input select" type="button" aria-haspopup="listbox" aria-labelledby="ma-l ma-v"><span class="value" id="ma-v">Released</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button></div>
+              <label class="check" style="font:var(--type-body-sm)"><input type="checkbox" checked>Search as soon as a film is added</label>
+            </div>
+          </section>
+          <section class="panel" aria-labelledby="why-h">
+            <div class="panel-hd"><h2 id="why-h">What monitoring does</h2></div>
+            <div class="panel-bd why" id="why"></div>
+          </section>
+        </aside>
+      </div>
+    </main>
+
+    <!-- EMPTY -->
+    <main id="main-empty" class="page only-empty">
+      <div class="page-head"><div><h1>Collections</h1><p class="sub">None yet</p></div></div>
+      <div class="empty-wrap">
+        <div class="empty">
+          <div class="ghosts" aria-hidden="true"><span></span><span></span><span></span></div>
+          <h2>No sagas on the bill yet.</h2>
+          <p>Collections appear on their own when a film in your library belongs to one on TMDB. Add one film of a series and the rest of the set shows up here.</p>
+          <div class="actions"><a class="btn btn-primary" href="add-film.html?tab=discover"><svg class="i" aria-hidden="true"><use href="#i-compass"/></svg>Browse collections</a><a class="btn btn-secondary" href="library-import.html"><svg class="i" aria-hidden="true"><use href="#i-folder-open"/></svg>Import a folder</a></div>
+          <span class="hintline">Collections are read from TMDB when a film is added or refreshed.</span>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="../system/icons.js"></script>
+<script src="../system/posters.js"></script>
+<script src="../system/mock.js"></script>
+<script>
+  const ic = GN.ic;
+  /* Part states: disk (on disk, monitored) · unmon (on disk, not monitored) · wanted (in library, no file yet)
+     · grab (downloading) · missing (not in library, released) · soon (not in library, not released yet)
+     · soonlib (in library, not released yet) */
+  const P = {
+    'drift-signal':         ['disk', '1080p Bluray', '9.4 GB'],
+    'halcyon-drift':        ['disk', '2160p WEB-DL', '21.7 GB', 'DV'],
+    'drift-terminus':       ['soon', 'Announced for 2027'],
+    'odeon-vale':           ['disk', '1080p Bluray', '12.4 GB'],
+    'kingdom-lanterns':     ['unmon', '2160p WEB-DL', '18.9 GB', 'HDR10'],
+    'paper-lanterns-kessel':['missing', 'Released 2017 · digital and physical'],
+    'ember-ash':            ['disk', '1080p WEB-DL', '6.2 GB'],
+    'neon-orchard':         ['wanted', 'Searching daily · last tried 2 h ago'],
+    'small-hours-cairo':    ['soon', 'In cinemas 27 Nov'],
+    'lighthouse-daughter':  ['disk', '1080p Bluray', '10.1 GB'],
+    'drifters-calder':      ['missing', 'Released 2005'],
+    'quiet-meridian':       ['disk', '2160p Remux', '58.2 GB', 'HDR10'],
+    'glass-cartographer':   ['disk', '2160p Bluray', '31.0 GB', 'HDR10+'],
+    'orbit-small-things':   ['disk', '2160p WEB-DL', '19.3 GB', 'DV'],
+    'tidewater':            ['disk', '1080p Remux', '27.5 GB'],
+    'saltwater-hymn':       ['disk', '1080p Bluray', '9.8 GB'],
+    'fathom':               ['missing', 'Released 2021'],
+    'sundial':              ['disk', '1080p Bluray', '8.7 GB'],
+    'low-tide-high-noon':   ['soonlib', 'Out 14 Nov · physical'],
+    'second-sunrise':       ['soonlib', 'In cinemas 4 Dec'],
+    'ghost-frequency':      ['missing', 'Released 2023'],
+    'parallax':             ['disk', '2160p Remux', '61.4 GB', 'DV'],
+    'velvet-static':        ['wanted', 'In cinemas · waiting for a digital release'],
+    'coldharbour':          ['unmon', '720p HDTV', '3.1 GB'],
+    'concrete-psalms':      ['missing', 'Released 2017'],
+    'marrow':               ['missing', 'Released 2025'],
+    'orchid-protocol':      ['disk', '2160p WEB-DL', '17.8 GB', 'HDR10'],
+    'iron-meadow':          ['soonlib', 'In cinemas 20 Nov'],
+    'atlas-undone':         ['soonlib', 'In cinemas 11 Dec'],
+    'room-without-weather': ['disk', '1080p WEB-DL', '5.9 GB'],
+    'last-projectionist':   ['grab', 'Downloading · 42% · 12 min left'],
+    'quiet-hours':          ['soonlib', 'Out 7 Nov · digital'],
+  };
+  const C = {
+    'drift':        { name: 'The Drift Saga', lead: 'halcyon-drift', mon: true, parts: ['drift-signal', 'halcyon-drift', 'drift-terminus'], overview: 'A generation ship, the colony it seeds and the long dusk that follows. Ines Calloway’s science-fiction cycle, one film a decade.' },
+    'golden-hour':  { name: 'Golden Hour', lead: 'sundial', mon: true, parts: ['sundial', 'low-tide-high-noon', 'second-sunrise'], overview: 'Three summers, three heatwaves, one family that never leaves the coast.' },
+    'greywater':    { name: 'Greywater Noir', lead: 'coldharbour', mon: false, parts: ['coldharbour', 'concrete-psalms', 'marrow'], overview: 'Rain, concrete and bad decisions in the same harbour town.' },
+    'gull-island':  { name: 'Gull Island Stories', lead: 'lighthouse-daughter', mon: false, parts: ['lighthouse-daughter', 'drifters-calder'], overview: 'Two tales from a northern island and the people who keep its lights on.' },
+    'meridian':     { name: 'The Meridian Trilogy', lead: 'quiet-meridian', mon: true, parts: ['quiet-meridian', 'glass-cartographer', 'orbit-small-things'], overview: 'Tomas Reinholt’s quiet space trilogy, complete.' },
+    'night-market': { name: 'Night Market Anthology', lead: 'odeon-vale', mon: false, parts: ['odeon-vale', 'kingdom-lanterns', 'paper-lanterns-kessel', 'ember-ash', 'neon-orchard', 'small-hours-cairo'], overview: 'Six stories set after dark, each in a different city, linked by one travelling cinema and the projectionist who runs it. Shot over fourteen years by five directors; the last one opens this month.' },
+    'vantage':      { name: 'The Orchid Protocol Collection', lead: 'orchid-protocol', mon: true, parts: ['orchid-protocol', 'iron-meadow', 'atlas-undone'], overview: 'The Vantage conspiracy, from the greenhouse to the edge of the map.' },
+    'salle-noire':  { name: 'Salle Noire Chamber Pieces', lead: 'room-without-weather', mon: true, parts: ['room-without-weather', 'last-projectionist', 'quiet-hours'], overview: 'Small rooms, long takes, very few people.' },
+    'static-house': { name: 'Static House Trilogy', lead: 'parallax', mon: false, parts: ['ghost-frequency', 'parallax', 'velvet-static'], overview: 'Radio ghosts and the people who listen for them.' },
+    'tidewater':    { name: 'The Tidewater Cycle', lead: 'tidewater', mon: false, parts: ['tidewater', 'saltwater-hymn', 'fathom'], overview: 'The sea, three ways.' },
+  };
+  const ORDER = ['drift', 'golden-hour', 'greywater', 'gull-island', 'meridian', 'night-market', 'vantage', 'salle-noire', 'static-house', 'tidewater'];
+  const inLib = s => !['missing', 'soon'].includes(s);
+  const out = s => ['missing', 'soon'].includes(s);
+  const notReleased = s => ['soon', 'soonlib'].includes(s);
+  const pip = s => s === 'disk' || s === 'unmon' ? 'd' : s === 'grab' ? 'l' : s === 'wanted' ? 'w' : s === 'soonlib' ? 'u' : '';
+  function stats(c) {
+    const st = c.parts.map(id => P[id][0]);
+    const years = c.parts.map(id => GN.films[id].year);
+    return { n: st.length, lib: st.filter(inLib).length, disk: st.filter(s => s === 'disk' || s === 'unmon').length, miss: st.filter(x => x === 'missing' || (x === 'soon' && !c.mon)).length, soon: st.filter(notReleased).length, y0: Math.min(...years), y1: Math.max(...years), st };
+  }
+  const q = new URLSearchParams(location.search);
+  const app = document.getElementById('app');
+  const view = q.get('state') === 'empty' ? 'empty' : (q.get('id') && C[q.get('id')]) ? 'detail' : 'grid';
+  app.dataset.view = view;
+  // One <main> per page: drop the ones this view does not use.
+  ['main', 'main-detail', 'main-empty'].forEach(id => { const el = document.getElementById(id); if ((id === 'main' && view !== 'grid') || (id === 'main-detail' && view !== 'detail') || (id === 'main-empty' && view !== 'empty')) el.remove(); else el.id = 'main'; });
+
+  if (view === 'grid') {
+    let html = ORDER.map(id => {
+      const c = C[id], s = stats(c);
+      const shown = c.parts.slice(0, s.n > 5 ? 4 : 5);
+      const posters = shown.map(p => '<div class="p' + (out(P[p][0]) ? ' out' : '') + '"><div class="poster-art" data-film="' + p + '"></div></div>').join('') + (s.n > 5 ? '<span class="more">+' + (s.n - 4) + '</span>' : '');
+      const badges = (s.miss ? '<span class="badge on-media" data-status="missing">' + ic('circle-dashed') + s.miss + ' missing</span>' : '') +
+        (s.soon ? '<span class="badge on-media">' + ic('calendar') + s.soon + ' upcoming</span>' : '') +
+        (!s.miss && !s.soon ? '<span class="badge on-media" data-status="available">' + ic('circle-check') + 'Complete</span>' : '');
+      const mon = '<button class="icon-btn on-media cc-mon" type="button" aria-pressed="' + c.mon + '" aria-label="' + (c.mon ? 'Stop monitoring ' : 'Monitor ') + c.name + '" title="' + (c.mon ? 'Monitored: new films are added automatically' : 'Not monitored') + '">' + ic(c.mon ? 'bookmark' : 'bookmark-minus', 'i-sm') + '</button>';
+      const pips = '<span class="pips" aria-hidden="true">' + s.st.map(x => '<i class="' + pip(x) + '"></i>').join('') + '</span>';
+      const monLine = c.mon ? '<span class="status on">' + ic('bookmark') + 'Monitored</span>' : '<span class="status" data-status="unmonitored">' + ic('eye-off') + 'Not monitored</span>';
+      return '<article class="cc' + (id === 'night-market' ? ' is-hover' : '') + '" aria-labelledby="cc-' + id + '">' +
+        '<div class="cc-frame"><div class="backdrop-art" data-film="' + c.lead + '"></div>' +
+        '<a class="cc-link" href="?id=' + id + '" aria-label="' + c.name + ', ' + s.lib + ' of ' + s.n + ' in library"></a>' +
+        '<div class="cc-top">' + badges + '</div>' + mon +
+        '<div class="cc-posters" aria-hidden="true">' + posters + '</div></div>' +
+        '<div class="cc-meta"><div class="cc-title" id="cc-' + id + '">' + c.name + '</div>' +
+        '<div class="cc-count"><span><b>' + s.lib + '</b> of ' + s.n + ' in library</span>' + pips + '</div>' +
+        '<div class="cc-sub"><span>' + (s.y0 === s.y1 ? s.y0 : s.y0 + '–' + s.y1) + '</span><span class="sep" aria-hidden="true"></span>' + monLine + '</div></div></article>';
+    }).join('');
+    for (let i = 0; i < 2; i++) html += '<div class="cc sk" aria-hidden="true"><div class="cc-frame skeleton" style="--shimmer-delay:' + i * 60 + 'ms"></div><div class="cc-meta"><div class="skeleton sk-line" style="width:70%"></div><div class="skeleton sk-line" style="width:45%;height:10px"></div></div></div>';
+    document.getElementById('cgrid').innerHTML = html;
+  }
+
+  if (view === 'detail') {
+    const id = q.get('id'), c = C[id], s = stats(c);
+    document.title = c.name + ' · Collections · Gonema';
+    app.style.setProperty('--movie-dominant', GN.films[c.lead].dom);
+    document.getElementById('atmos').innerHTML = '<div class="backdrop-art soft" data-film="' + c.lead + '"></div><div class="backdrop-art sharp" data-film="' + c.lead + '"></div>';
+    document.getElementById('crumb').textContent = c.name;
+    const fanIds = [c.parts[0], c.parts[c.parts.length - 1], c.parts.includes(c.lead) && c.lead !== c.parts[0] ? c.lead : c.parts[1]];
+    document.getElementById('fan').innerHTML = fanIds.map(p => '<div class="poster-art" data-film="' + p + '"></div>').join('');
+    document.getElementById('c-over').textContent = 'Collection · ' + s.n + ' films · ' + s.y0 + '–' + s.y1;
+    document.getElementById('c-title').textContent = c.name;
+    const gb = c.parts.reduce((a, p) => a + (parseFloat(P[p][2]) || 0), 0);
+    const outN = s.miss, outSoon = c.mon ? 0 : c.parts.filter(p => P[p][0] === 'soon').length;
+    document.getElementById('c-facts').innerHTML = '<span><b>' + s.lib + ' of ' + s.n + '</b> in library</span><span class="sep" aria-hidden="true"></span><span>' + s.disk + ' on disk</span><span class="sep" aria-hidden="true"></span>' +
+      (outN ? '<span class="status" data-status="missing" style="font:inherit">' + ic('circle-dashed') + outN + ' missing' + (outSoon ? ', ' + outSoon + ' not out yet' : '') + '</span><span class="sep" aria-hidden="true"></span>' : '') + '<span>' + gb.toFixed(1) + ' GB</span>';
+    document.getElementById('c-overview').textContent = c.overview;
+    const wanted = c.parts.filter(p => P[p][0] === 'wanted').length;
+    document.getElementById('c-actions').innerHTML =
+      (outN ? '<button class="btn btn-primary btn-lg" type="button">' + ic('plus') + 'Add the ' + outN + ' missing</button>' : '') +
+      (wanted ? '<button class="btn btn-secondary btn-lg" type="button">' + ic('search') + (wanted === 1 ? 'Search ' + GN.films[c.parts.find(p => P[p][0] === 'wanted')].title : 'Search the ' + wanted + ' wanted') + '</button>' : '') +
+      '<button class="switch" role="switch" aria-checked="' + c.mon + '" type="button"><span class="track" aria-hidden="true"></span>Monitor collection</button>' +
+      '<button class="icon-btn" type="button" aria-label="More actions for this collection" aria-haspopup="menu" style="margin-left:auto">' + ic('ellipsis') + '</button>';
+    document.getElementById('parts-note').textContent = 'From TMDB · refreshed 3 h ago';
+    document.getElementById('parts').innerHTML = c.parts.map((p, i) => {
+      const f = GN.films[p], [st, a, b, hdr] = P[p];
+      let state = '', act = '', sub = f.year;
+      if (st === 'disk') { state = '<span class="status" data-status="available">' + ic('circle-check') + 'On disk</span><span class="q">' + GN.qbadge(a) + (hdr ? '<span class="hdr-flag">' + hdr + '</span>' : '') + b + '</span>'; act = ''; }
+      if (st === 'unmon') { state = '<span class="status" data-status="unmonitored">' + ic('eye-off') + 'Not monitored</span><span class="q">' + GN.qbadge(a) + (hdr ? '<span class="hdr-flag">' + hdr + '</span>' : '') + b + '</span>'; }
+      if (st === 'wanted') { state = '<span class="badge" data-status="missing">' + ic('circle-dashed') + 'Wanted</span>'; sub += ' · ' + a; act = '<button class="btn btn-ghost btn-sm" type="button">' + ic('search') + 'Search</button>'; }
+      if (st === 'grab') { state = '<span class="badge" data-status="downloading">' + ic('arrow-down-to-line') + 'Downloading</span>'; sub += ' · ' + a; }
+      if (st === 'missing') { state = '<span class="badge" data-status="missing">' + ic('circle-dashed') + 'Missing</span>'; sub += ' · Not in your library'; act = '<button class="btn btn-secondary btn-sm" type="button">' + ic('plus') + 'Add</button>'; }
+      if (st === 'soon') { state = '<span class="badge">' + ic('calendar') + 'Upcoming</span>'; sub = a + (c.mon ? ' · Added automatically when it comes out' : ' · Not in your library'); act = c.mon ? '' : '<button class="btn btn-secondary btn-sm" type="button">' + ic('plus') + 'Add</button>'; }
+      if (st === 'soonlib') { state = '<span class="badge">' + ic('calendar') + 'Upcoming</span>'; sub = a + ' · In library, grabbed on release'; }
+      const monBtn = inLib(st) ? '<button class="icon-btn sm" type="button" aria-pressed="' + (st !== 'unmon') + '" aria-label="' + (st === 'unmon' ? 'Monitor ' : 'Stop monitoring ') + f.title + '" title="' + (st === 'unmon' ? 'Not monitored' : 'Monitored') + '">' + ic(st === 'unmon' ? 'bookmark-minus' : 'bookmark', 'i-sm') + '</button>' : '<span></span>';
+      const cls = 'part' + (out(st) ? ' out' : '') + (st === 'unmon' ? ' unmon' : '');
+      return '<li class="' + cls + '"><span class="n" aria-hidden="true">' + (i + 1) + '</span><div class="th"><div class="poster-art" data-film="' + p + '"></div></div>' +
+        '<div class="tt"><a href="' + (inLib(st) ? 'movie-detail.html' : 'add-film.html') + '">' + f.title + '</a><span>' + sub + '</span></div>' +
+        '<div class="st">' + state + '</div>' + monBtn + '<div class="act">' + act + '</div></li>';
+    }).join('');
+    const unmonNames = c.parts.filter(p => P[p][0] === 'unmon').map(p => GN.films[p].title);
+    const missNames = c.parts.filter(p => P[p][0] === 'missing' || (P[p][0] === 'soon' && !c.mon)).map(p => GN.films[p].title);
+    document.getElementById('why').innerHTML = c.mon
+      ? '<p>Monitored. Films TMDB adds to this collection later join your library with the settings above, and Gonema grabs them on release.</p><p class="t-caption t-muted">Turning it off keeps every film you have; it only stops new ones from being added.</p>'
+      : '<p>Not monitored. Turn it on to add <b>' + missNames.join('</b> and <b>') + '</b> now, and any film TMDB adds to the collection later.</p>' + (unmonNames.length ? '<p>Films already in your library keep their own monitoring: <b>' + unmonNames.join('</b>, <b>') + '</b> stays unmonitored until you change it.</p>' : '') + '<p class="t-caption t-muted">Nothing is downloaded until a film is released and meets its profile.</p>';
+  }
+  if (view === 'empty') document.addEventListener('DOMContentLoaded', () => { const c = document.querySelector('.nav-item[href="collections.html"] .count'); if (c) c.remove(); });
+  GN.renderPosters();
+</script>
+</body>
+</html>

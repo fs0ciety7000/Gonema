@@ -47,7 +47,7 @@ describe('lot 3: home, setup, calendar, palette, wanted, blocklist, health, sett
     await page.context().close();
   });
 
-  it('home shows the dashboard: tiles, queue, coming up, disks, activity; the wanted tile opens Wanted', async () => {
+  it('home shows the dashboard: tiles, queue, coming up, disks, activity; the wanted tile offers the bulk search', async () => {
     const d = await api('/dashboard');
     const page = await openPage(browser);
     await page.goto(`${BASE}/`);
@@ -55,7 +55,15 @@ describe('lot 3: home, setup, calendar, palette, wanted, blocklist, health, sett
     await lib.getByText(d.library.total.toLocaleString('en-US'), { exact: true }).waitFor();
     await page.getByRole('region', { name: 'Queue' }).locator('.q-item').first().waitFor();
     await page.getByRole('region', { name: 'Disk space' }).getByRole('meter').first().waitFor();
-    await page.getByRole('link', { name: 'See what’s missing' }).click();
+    // the wanted tile starts the bulk search of the released ones (v1.1: tested in v11.test.mjs); Wanted is in the sidebar
+    await page
+      .getByRole('region', { name: 'Wanted' })
+      .getByRole('button', { name: /^Search the [\d,]+ released$/ })
+      .waitFor();
+    await page
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('link', { name: /^Wanted/ })
+      .click();
     await page.waitForURL(/\/wanted$/);
     await page.locator('.wanted tbody tr').first().waitFor();
     await page.getByRole('tab', { name: /Cutoff unmet/ }).click();

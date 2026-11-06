@@ -45,6 +45,7 @@ func (s *Server) routes() {
 	s.movieRoutes()
 	s.libraryRoutes()
 	s.uiRoutes()
+	s.calendarRoutes()
 	if s.d.Acquire != nil {
 		s.acquireRoutes()
 	}
@@ -329,6 +330,7 @@ type MonitorResult struct {
 	Collection Collection            `json:"collection"`
 	Added      []Movie               `json:"added"`
 	Skipped    []library.SkippedPart `json:"skipped" doc:"Movies not added, with the reason"`
+	Upcoming   []library.SkippedPart `json:"upcoming" doc:"Parts not released yet: added automatically on their release day (written to history)"`
 }
 
 // TMDBSetting is the state of the TMDB key. The key itself is never returned.
@@ -337,27 +339,16 @@ type TMDBSetting struct {
 }
 
 func (s *Server) libraryRoutes() {
-	huma.Register(s.api, huma.Operation{
-		OperationID: "get-collection", Method: http.MethodGet, Path: "/collections/{id}", Summary: "Get a collection",
-		Tags: []string{"Collections"},
-	}, func(ctx context.Context, in *IDParam) (*struct{ Body Collection }, error) {
-		d, err := s.d.Library.GetCollection(ctx, in.ID)
-		if err != nil {
-			return nil, s.problem(ctx, err, false)
-		}
-		c := collectionOf(&d.Collection)
-		for i := range d.Movies {
-			c.Movies = append(c.Movies, movieOf(&d.Movies[i]))
-		}
-		c.Parts, c.PartsError = d.Parts, d.PartsError
-		return &struct{ Body Collection }{c}, nil
-	})
+	s.collectionRoutes()
 
 	huma.Register(s.api, huma.Operation{
 		OperationID: "monitor-collection", Method: http.MethodPut, Path: "/collections/{id}/monitor",
-		Summary:     "Monitor a collection",
-		Description: "Saves the settings; when monitored, adds every movie of the collection that is not in the library (excluded movies are skipped).",
-		Tags:        []string{"Collections"},
+		Summary: "Monitor a collection",
+		Description: "Saves the settings (profile, root folder, minimum availability and searchOnAdd are used for every film the collection adds). " +
+			"When monitored, adds now the released films that are not in the library (excluded ones are skipped); films not released yet " +
+			"are listed in upcoming and added on their release day by the collections job (every 6 hours, written to history). " +
+			"Turning it off keeps every movie.",
+		Tags: []string{"Collections"},
 	}, func(ctx context.Context, in *monitorInput) (*struct{ Body MonitorResult }, error) {
 		b := in.Body
 		res, err := s.d.Library.MonitorCollection(ctx, in.ID, library.MonitorOptions{
@@ -367,9 +358,12 @@ func (s *Server) libraryRoutes() {
 		if err != nil {
 			return nil, s.problem(ctx, err, true)
 		}
-		out := MonitorResult{Collection: collectionOf(&res.Collection), Added: []Movie{}, Skipped: res.Skipped}
+		out := MonitorResult{Collection: collectionOf(&res.Collection), Added: []Movie{}, Skipped: res.Skipped, Upcoming: res.Upcoming}
 		if out.Skipped == nil {
 			out.Skipped = []library.SkippedPart{}
+		}
+		if out.Upcoming == nil {
+			out.Upcoming = []library.SkippedPart{}
 		}
 		for i := range res.Added {
 			out.Added = append(out.Added, movieOf(&res.Added[i]))

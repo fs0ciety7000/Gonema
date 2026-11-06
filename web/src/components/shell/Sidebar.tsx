@@ -3,6 +3,7 @@ import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { LogOut, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { authStatusQuery, signOut } from '@/api/auth';
+import { api, unwrap } from '@/api/client';
 import { healthQuery, useLibrary, useQueue, useRootFolders, useSystemStatus } from '@/api/queries';
 import { IconButton } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/Progress';
@@ -16,11 +17,25 @@ function activeSection(pathname: string): string {
   return pathname.split('/').filter(Boolean)[0] ?? 'home';
 }
 
+/** Collections in the library (the list's totals; one small request once the library is there). */
+function CollectionsCount() {
+  const lib = useLibrary();
+  const q = useQuery({
+    queryKey: ['collections', 'count'],
+    queryFn: ({ signal }) => unwrap(api.GET('/collections', { params: { query: { pageSize: 1 } }, signal })),
+    enabled: !!lib.data,
+    staleTime: 5 * 60_000,
+  });
+  const n = q.data?.totals.collections;
+  return n ? <span className="count">{formatNumber(n)}</span> : null;
+}
+
 function Count({ entry }: { entry: NavEntry }) {
   const lib = useLibrary();
   const queue = useQueue();
   const health = useQuery(healthQuery);
   if (entry.id === 'films' && lib.data) return <span className="count">{formatNumber(lib.data.length)}</span>;
+  if (entry.id === 'collections') return <CollectionsCount />;
   if (entry.id === 'queue' && queue.data?.length) {
     const n = queue.data.length;
     return (

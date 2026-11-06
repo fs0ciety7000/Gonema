@@ -6,6 +6,7 @@ import { useServerEvents } from '@/api/live';
 import { useDialogsUsed } from '@/components/movie/dialogStore';
 import { preloadMenusWhenIdle } from '@/components/ui/Menu';
 import { Toaster } from '@/components/ui/Toast';
+import { bulkSearch, isEnded, useBulkSearch } from '@/lib/bulkSearch';
 import { isTypingTarget } from '@/lib/keys';
 import { isPaletteShortcut, palette, usePalette } from '@/lib/palette';
 import { Sidebar } from './Sidebar';
@@ -13,6 +14,27 @@ import { DemoBanner, ErrorBoundary, OfflineOverlay } from './Status';
 
 const MovieDialogs = lazy(() => import('@/components/movie/dialogs/MovieDialogs'));
 const CommandPalette = lazy(() => import('@/screens/palette/CommandPalette'));
+const BulkSearchStrip = lazy(() => import('./BulkSearchStrip'));
+
+/** The bulk search strip (lazy): shown while a bulk search runs. After a reload, the search this
+ *  browser started is asked for once; the bulksearch.* events do the rest. */
+function BulkSearchHost({ signedIn }: { signedIn: boolean }) {
+  const s = useBulkSearch();
+  useEffect(() => {
+    const id = signedIn ? bulkSearch.remembered() : null;
+    if (!id || bulkSearch.get()) return;
+    void import('@/api/v11')
+      .then((m) => m.getBulkSearch(id))
+      .then((p) => (isEnded(p) ? bulkSearch.dismiss() : bulkSearch.set(p)))
+      .catch(() => bulkSearch.dismiss());
+  }, [signedIn]);
+  if (!s) return null;
+  return (
+    <Suspense fallback={null}>
+      <BulkSearchStrip />
+    </Suspense>
+  );
+}
 
 /** Loads the command palette chunk (cmdk) on first ⌘K / Ctrl+K, then keeps it mounted. */
 function PaletteHost() {
@@ -92,6 +114,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </OfflineOverlay>
       <Toaster />
+      <BulkSearchHost signedIn={!!auth.data?.authenticated} />
       <MovieDialogHost />
       <PaletteHost />
       <section id="gn-overlays" aria-label="Menus and dialogs" />

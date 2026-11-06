@@ -171,3 +171,116 @@ export function conditionError(c: ScoringCondition): string | null {
   }
   return null;
 }
+
+// ----------------------------------------------------------------- quality groups
+
+/* Groups: qualities that count as equal (one rank); among them the best score wins. The API
+   takes the new entries as they are (rename, merge and split are a PUT of the profile); the
+   cutoff follows the group it pointed at. */
+
+export const isGroup = (e: ProfileEntry) => !!e.group && (e.qualities?.length ?? 0) > 1;
+
+/** Why a group name cannot be used (null when it can): empty, too long, taken by another group
+ *  (case-insensitive) or by a quality. `self` is the group being renamed. */
+export function groupNameError(
+  entries: readonly ProfileEntry[],
+  name: string,
+  names: ReadonlyMap<string, string>,
+  self?: string,
+): string | null {
+  const n = name.trim();
+  if (!n) return 'Give the group a name.';
+  if (n.length > 100) return 'Keep the name under 100 characters.';
+  const low = n.toLowerCase();
+  if (entries.some((e) => e.group && e.group !== self && e.group.toLowerCase() === low))
+    return 'Another group has this name.';
+  for (const [id, label] of names)
+    if (id.toLowerCase() === low || label.toLowerCase() === low) return 'A quality has this name: pick another.';
+  return null;
+}
+
+/** "WEB 2160p" for WEBDL-2160p + WEBRip-2160p; members joined with "+" otherwise. Unique in `entries`. */
+export function defaultGroupName(
+  qualities: readonly string[],
+  names: ReadonlyMap<string, string>,
+  entries: readonly ProfileEntry[] = [],
+): string {
+  const labels = qualities.map((q) => names.get(q) ?? q);
+  const res = labels.map((l) => /(\d{3,4}p)/.exec(l)?.[1] ?? '');
+  let base: string;
+  if (labels.length && res[0] && res.every((r) => r === res[0])) {
+    const sources = labels.map((l) => l.replace(res[0]!, '').replace(/[-_\s]+$|^[-_\s]+/g, ''));
+    let p = sources[0] ?? '';
+    for (const s of sources) while (p && !s.toLowerCase().startsWith(p.toLowerCase())) p = p.slice(0, -1);
+    p = p.replace(/[^A-Za-z0-9]+$/, '');
+    base = p.length >= 2 ? `${p} ${res[0]}` : `${sources.join(' + ')} ${res[0]}`;
+  } else base = labels.join(' + ');
+  base = base.slice(0, 60).trim() || 'Group';
+  let name = base;
+  for (let i = 2; groupNameError(entries, name, names) === 'Another group has this name.'; i++) name = `${base} ${i}`;
+  return name;
+}
+
+const keyCutoff = (d: ProfileDraft, gone: readonly ProfileEntry[], to: string) =>
+  gone.some((e) => entryKey(e) === d.cutoff || (e.qualities ?? []).includes(d.cutoff)) ? to : d.cutoff;
+
+/** Makes one group of the single qualities `qualities`, where the best of them was. */
+export function groupQualities(d: ProfileDraft, qualities: readonly string[], name: string): ProfileDraft {
+  const set = new Set(qualities);
+  const picked = d.entries.filter((e) => !isGroup(e) && (e.qualities ?? []).some((q) => set.has(q)));
+  if (picked.length < 2) return d;
+  const at = d.entries.indexOf(picked[0]!);
+  const group: ProfileEntry = {
+    group: name.trim(),
+    qualities: picked.flatMap((e) => e.qualities ?? []),
+    allowed: picked.some((e) => e.allowed),
+  };
+  const entries = d.entries.filter((e) => !picked.includes(e));
+  entries.splice(at, 0, group);
+  return { ...d, entries, cutoff: keyCutoff(d, picked, group.group!) };
+}
+
+export function renameGroup(d: ProfileDraft, from: string, to: string): ProfileDraft {
+  const name = to.trim();
+  return {
+    ...d,
+    entries: d.entries.map((e) => (e.group === from ? { ...e, group: name } : e)),
+    cutoff: d.cutoff === from ? name : d.cutoff,
+  };
+}
+
+/** Splits a group into single qualities, in its place; a cutoff on the group moves to its best member. */
+export function splitGroup(d: ProfileDraft, name: string): ProfileDraft {
+  const i = d.entries.findIndex((e) => e.group === name);
+  const g = d.entries[i];
+  if (!g) return d;
+  const singles = (g.qualities ?? []).map((q) => ({ qualities: [q], allowed: g.allowed }));
+  const entries = [...d.entries];
+  entries.splice(i, 1, ...singles);
+  return { ...d, entries, cutoff: d.cutoff === name ? (g.qualities?.[0] ?? d.cutoff) : d.cutoff };
+}
+
+/** Takes one quality out of its group (placed right after it); a group left with one quality becomes a single. */
+export function ungroupQuality(d: ProfileDraft, name: string, quality: string): ProfileDraft {
+  const i = d.entries.findIndex((e) => e.group === name);
+  const g = d.entries[i];
+  if (!g || !(g.qualities ?? []).includes(quality)) return d;
+  const rest = (g.qualities ?? []).filter((q) => q !== quality);
+  if (rest.length < 2) return splitGroup(d, name);
+  const entries = [...d.entries];
+  entries.splice(i, 1, { ...g, qualities: rest }, { qualities: [quality], allowed: g.allowed });
+  return { ...d, entries };
+}
+
+/** Merges the entries at i and i+1 into one group (a group keeps its name; two singles get one). */
+export function mergeWithNext(d: ProfileDraft, i: number, names: ReadonlyMap<string, string>): ProfileDraft {
+  const a = d.entries[i];
+  const b = d.entries[i + 1];
+  if (!a || !b) return d;
+  const qualities = [...(a.qualities ?? []), ...(b.qualities ?? [])];
+  const name = (isGroup(a) && a.group) || (isGroup(b) && b.group) || defaultGroupName(qualities, names, d.entries);
+  const merged: ProfileEntry = { group: name, qualities, allowed: a.allowed || b.allowed };
+  const entries = [...d.entries];
+  entries.splice(i, 2, merged);
+  return { ...d, entries, cutoff: keyCutoff(d, [a, b], name) };
+}

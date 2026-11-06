@@ -39,6 +39,9 @@ func (s *Service) RegisterJobs(r JobRunner) {
 		jobs.HandlerOptions{Timeout: time.Minute})
 	r.Every(JobRefreshAll, RefreshAllInterval, RefreshAllJitter, nil)
 	r.Every(JobRootFolderSpace, DiskSpaceInterval, DiskSpaceJitter, nil)
+	r.Handle(JobCollectionsRefresh, func(ctx context.Context, _ db.Job) error { return s.RefreshCollections(ctx) },
+		jobs.HandlerOptions{Timeout: 15 * time.Minute})
+	r.Every(JobCollectionsRefresh, CollectionsRefreshInterval, time.Hour, nil)
 }
 
 func moviePayload(job db.Job) (int64, error) {

@@ -140,6 +140,20 @@ func (p *Profile) WantsAnyLanguage() bool {
 	return len(p.Languages) == 0 || (len(p.Languages) == 1 && p.Languages[0] == LanguageAny)
 }
 
+// MaxGroupName is the longest group name.
+const MaxGroupName = 100
+
+// qualityNamed reports whether a lower-case name is a quality ID or display
+// name of the catalog.
+func qualityNamed(name string) bool {
+	for i := range catalog {
+		if q := &catalog[i]; strings.EqualFold(string(q.ID), name) || strings.EqualFold(q.Name, name) {
+			return true
+		}
+	}
+	return false
+}
+
 // Validate reports every problem of the profile, joined, each wrapping ErrInvalid.
 // rules is the rule set that Scores refers to; a score for an unknown rule is an
 // error. Pass nil to skip that check.
@@ -167,13 +181,18 @@ func (p *Profile) Validate(rules []*Rule) error {
 			add("item %d groups %d qualities but has no group name", i+1, len(it.Qualities))
 		}
 		if it.IsGroup() {
-			if seenG[it.Name] {
-				add("group name %q is used twice", it.Name)
+			key := strings.ToLower(strings.TrimSpace(it.Name))
+			switch {
+			case key == "":
+				add("item %d has a blank group name", i+1)
+			case len(it.Name) > MaxGroupName:
+				add("group name %q is longer than %d characters", it.Name, MaxGroupName)
+			case seenG[key]:
+				add("group name %q is used twice (names are compared without case)", it.Name)
+			case qualityNamed(key):
+				add("group name %q is also the name of a quality: choose another name", it.Name)
 			}
-			seenG[it.Name] = true
-			if ID(it.Name).Valid() {
-				add("group name %q is also a quality ID", it.Name)
-			}
+			seenG[key] = true
 		}
 		for _, q := range it.Qualities {
 			if !q.Valid() {

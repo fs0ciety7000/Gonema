@@ -36,27 +36,30 @@ const (
 // QueueItem is a download of the queue as shown to the user. It carries no
 // download link.
 type QueueItem struct {
-	ID          int64      `json:"id"`
-	MovieID     int64      `json:"movieId"`
-	Title       string     `json:"title" doc:"Release title"`
-	Protocol    string     `json:"protocol" enum:"usenet,torrent"`
-	Size        int64      `json:"size"`
-	Quality     string     `json:"quality"`
-	QualityName string     `json:"qualityName"`
-	CustomScore int64      `json:"customScore"`
-	Status      string     `json:"status" enum:"queued,downloading,paused,completed,importing,imported,failed,warning,removed"`
-	Progress    float64    `json:"progress" doc:"0 to 1"`
-	SpeedBps    int64      `json:"speedBps"`
-	EtaSeconds  *int64     `json:"etaSeconds"`
-	ClientID    *int64     `json:"clientId"`
-	Client      string     `json:"client"`
-	IndexerID   *int64     `json:"indexerId"`
-	Messages    []string   `json:"messages"`
-	Manual      bool       `json:"manual"`
-	RetryOf     *int64     `json:"retryOf"`
-	GrabbedAt   time.Time  `json:"grabbedAt"`
-	CompletedAt *time.Time `json:"completedAt"`
-	ImportedAt  *time.Time `json:"importedAt"`
+	ID          int64    `json:"id"`
+	MovieID     int64    `json:"movieId"`
+	Title       string   `json:"title" doc:"Release title"`
+	Protocol    string   `json:"protocol" enum:"usenet,torrent"`
+	Size        int64    `json:"size"`
+	Quality     string   `json:"quality"`
+	QualityName string   `json:"qualityName"`
+	CustomScore int64    `json:"customScore"`
+	Status      string   `json:"status" enum:"queued,downloading,paused,completed,importing,imported,failed,warning,removed"`
+	Progress    float64  `json:"progress" doc:"0 to 1"`
+	SpeedBps    int64    `json:"speedBps"`
+	EtaSeconds  *int64   `json:"etaSeconds"`
+	ClientID    *int64   `json:"clientId"`
+	Client      string   `json:"client"`
+	IndexerID   *int64   `json:"indexerId"`
+	Messages    []string `json:"messages"`
+	Manual      bool     `json:"manual"`
+	RetryOf     *int64   `json:"retryOf"`
+	// RetryStopped: the user stopped the automatic retries of this download's
+	// retry chain (POST /queue/{id}/stop-retrying).
+	RetryStopped bool       `json:"retryStopped" doc:"The user stopped the automatic next-best retries of this download's chain"`
+	GrabbedAt    time.Time  `json:"grabbedAt"`
+	CompletedAt  *time.Time `json:"completedAt"`
+	ImportedAt   *time.Time `json:"importedAt"`
 }
 
 // ProgressUpdate is the data of download.progress events: the live fields of
@@ -517,14 +520,14 @@ func (s *Service) startImport(ctx context.Context, c *db.DownloadClient, d *db.D
 	}
 	client := *c
 	s.goBackground(func(base context.Context) {
-		defer func() {
-			s.track.mu.Lock()
-			delete(s.track.importing, dl.ID)
-			s.track.mu.Unlock()
-		}()
 		ictx, cancel := context.WithTimeout(base, importTimout)
 		defer cancel()
 		s.runImport(ictx, &client, &dl, local)
+		// The download is free for another import before anyone is told the
+		// attempt ended: a retry requested right after must not be ignored.
+		s.track.mu.Lock()
+		delete(s.track.importing, dl.ID)
+		s.track.mu.Unlock()
 		if s.onImportDone != nil {
 			s.onImportDone(dl.ID)
 		}
@@ -606,7 +609,7 @@ func (s *Service) queueItem(d *db.Download, client string) QueueItem {
 		ID: d.ID, MovieID: d.MovieID, Title: d.ReleaseTitle, Protocol: d.Protocol, Size: d.Size, Quality: d.Quality,
 		QualityName: quality.ID(d.Quality).Name(), CustomScore: d.CustomScore, Status: d.Status, Progress: d.Progress,
 		SpeedBps: d.SpeedBps, EtaSeconds: d.EtaS, ClientID: d.ClientID, Client: client, IndexerID: d.IndexerID,
-		Messages: decodeArray[string](d.StatusMessages), Manual: d.Manual, RetryOf: d.RetryOf,
+		Messages: decodeArray[string](d.StatusMessages), Manual: d.Manual, RetryOf: d.RetryOf, RetryStopped: d.RetryStoppedAt != nil,
 		GrabbedAt: store.FromMillis(d.GrabbedAt), CompletedAt: timePtr(d.CompletedAt), ImportedAt: timePtr(d.ImportedAt),
 	}
 	return it
@@ -762,6 +765,14 @@ func (s *Service) RemoveFromQueue(ctx context.Context, id int64, opts RemoveOpti
 		slog.Bool("blocklist", opts.Blocklist), slog.Bool("retry", opts.Retry), slog.Bool("delete_data", opts.DeleteData))
 	s.publish(events.Event{Type: EventDownloadRemoved, MovieID: d.MovieID, Data: s.queueItem(&d, clientName(c))})
 	if opts.Retry {
+		if d.RetryStoppedAt != nil {
+			// The user asks for the next release: that resumes the retries
+			// of the chain (written to history).
+			if _, err := s.ResumeRetrying(ctx, d.ID); err != nil {
+				s.dlog.Warn("resume retries before the requested retry", slog.Int64("download_id", d.ID), slog.Any("error", err))
+			}
+			d.RetryStoppedAt = nil
+		}
 		s.scheduleRetry(ctx, &d)
 	}
 	return nil

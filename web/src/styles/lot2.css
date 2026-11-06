@@ -24,10 +24,10 @@
   }
 
   /* Small thumbnails: the typographic placeholder keeps its colour only (the title is shown beside it). */
-  :is(.res, .add-opt .id, .qi, .hist .film, .coll-parts, .is-head .thumb, .coll .stackp) .poster-fallback {
+  :is(.res, .add-opt .id, .qi, .hist .film, .is-head .thumb, .coll .stackp) .poster-fallback {
     padding: 0;
   }
-  :is(.res, .add-opt .id, .qi, .hist .film, .coll-parts, .is-head .thumb, .coll .stackp) :is(.pf-title, .pf-year) {
+  :is(.res, .add-opt .id, .qi, .hist .film, .is-head .thumb, .coll .stackp) :is(.pf-title, .pf-year) {
     display: none;
   }
   .big-search input::-webkit-search-cancel-button {
@@ -1392,35 +1392,6 @@
   .dialog .segmented {
     margin-top: var(--space-4);
   }
-  .coll-parts {
-    display: grid;
-    gap: var(--space-3);
-    list-style: none;
-    margin: var(--space-4) 0;
-    padding: 0;
-    max-height: 360px;
-    overflow: auto;
-  }
-  .coll-parts li {
-    display: grid;
-    grid-template-columns: 40px 1fr;
-    gap: var(--space-3);
-    align-items: center;
-  }
-  .coll-parts .poster-art {
-    width: 40px;
-    aspect-ratio: 2 / 3;
-    border-radius: 5px;
-    overflow: hidden;
-  }
-  .coll-parts li > div {
-    display: grid;
-    gap: 2px;
-  }
-  .coll-parts a {
-    font-weight: 500;
-  }
-
   /* film page additions */
   .detail .card-actions {
     display: flex;

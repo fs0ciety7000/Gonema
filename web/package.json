@@ -17,6 +17,7 @@
     "e2e": "node --test --test-concurrency=1 \"e2e/*.test.mjs\"",
     "e2e:fresh": "node --test --test-concurrency=1 \"e2e/fresh/*.test.mjs\"",
     "perf": "node e2e/perf.mjs",
+    "budget": "node tools/check-budget.mjs",
     "fidelity": "node e2e/fidelity.mjs"
   },
   "dependencies": {

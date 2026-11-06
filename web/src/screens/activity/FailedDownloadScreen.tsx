@@ -16,6 +16,7 @@ import { formatBytes, formatWhen } from '@/lib/format';
 import { qualityName } from '@/lib/quality';
 import { errorText } from '@/screens/settings/form';
 import mascotFailed from '../../../../docs/brand/kit/mascot/kernel-failed-download.svg?url';
+import { useRetrying } from './retrying';
 
 type Attempt = {
   n: number;
@@ -70,6 +71,7 @@ export function FailedDownloadScreen() {
   const history = useQuery({ ...historyQuery(movieId), enabled: movieId > 0 });
   const profiles = useProfiles();
   const blocklist = useQuery(blocklistQuery);
+  const setRetrying = useRetrying();
   const [hidden, setHidden] = useState<ReadonlySet<number>>(new Set());
   useEffect(() => {
     document.title = `${item?.movie?.title ?? 'Download'} · failed download · Gonema`;
@@ -119,11 +121,16 @@ export function FailedDownloadScreen() {
   const attempt = item.retry?.attempt ?? 1;
   const of = item.retry?.of ?? 6;
   const reason = item.failedReason || item.retry?.previousReason || item.statusMessage;
-  const lead = failed
-    ? attempt < of
-      ? `Blocklisted it and moving on to the next release (${attempt + 1} of ${of}). Nothing for you to do unless you want to choose yourself.`
-      : `That was the last of ${of} automatic tries. Choose a release yourself, or Gonema tries again at the next search.`
-    : `Blocklisted it and moved on. ${title} is downloading again (release ${attempt} of ${of}). Nothing for you to do unless you want to choose yourself.`;
+  const stopped = item.retryStopped;
+  const lead = stopped
+    ? failed
+      ? 'Blocklisted it. Retries are stopped for this film: Gonema won’t grab the next release on its own. Choose one yourself, or resume the retries.'
+      : `Retries are stopped for ${title}: if this download fails too, Gonema won’t grab the next release on its own. RSS and scheduled searches still run.`
+    : failed
+      ? attempt < of
+        ? `Blocklisted it and moving on to the next release (${attempt + 1} of ${of}). Nothing for you to do unless you want to choose yourself.`
+        : `That was the last of ${of} automatic tries. Choose a release yourself, or Gonema tries again at the next search.`
+      : `Blocklisted it and moved on. ${title} is downloading again (release ${attempt} of ${of}). Nothing for you to do unless you want to choose yourself.`;
 
   const removeEntry = () => {
     if (!entry) return;
@@ -197,6 +204,16 @@ export function FailedDownloadScreen() {
                     <ScanSearch className="i" aria-hidden="true" />
                     Choose another release
                   </Link>
+                  {(item.actions?.stopRetrying || item.actions?.resumeRetrying || stopped) &&
+                    (stopped ? (
+                      <Button variant="ghost" onClick={() => void setRetrying(item.id, title, false)}>
+                        Resume retrying
+                      </Button>
+                    ) : (
+                      <Button variant="ghost" onClick={() => void setRetrying(item.id, title, true)}>
+                        Stop retrying
+                      </Button>
+                    ))}
                 </div>
               </div>
             </div>

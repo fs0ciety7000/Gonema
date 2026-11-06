@@ -58,6 +58,19 @@ const jobs = [
   ['404', 'mockups/404.html', [1440, 900], false],
   ['error-offline', 'mockups/error.html', [1440, 900], false],
   ['failed-download', 'mockups/failed-download.html', [1440, 900], false],
+  ['collections', 'mockups/collections.html', [1440, 900], false],
+  ['collections-full', 'mockups/collections.html', [1440, 900], true],
+  ['collections-tablet', 'mockups/collections.html', [1024, 768], false],
+  ['collections-detail', 'mockups/collections.html?id=night-market', [1440, 900], false],
+  ['collections-detail-full', 'mockups/collections.html?id=night-market', [1440, 900], true],
+  ['collections-detail-tablet', 'mockups/collections.html?id=drift', [1024, 768], false],
+  ['collections-empty', 'mockups/collections.html?state=empty', [1440, 900], false],
+  ['library-import-folder', 'mockups/library-import.html?step=folder', [1440, 900], false],
+  ['library-import-scan', 'mockups/library-import.html?step=scan', [1440, 900], false],
+  ['library-import-review', 'mockups/library-import.html?step=review', [1440, 900], false],
+  ['library-import-match', 'mockups/library-import.html?step=review&match=open', [1440, 900], false],
+  ['library-import-review-tablet', 'mockups/library-import.html?step=review', [1024, 768], false],
+  ['library-import-done', 'mockups/library-import.html?step=done', [1440, 900], false],
   ['design-system', 'system/index.html', [1440, 900], false],
   ['design-system-full', 'system/index.html', [1440, 900], true],
   ['motion', 'motion/index.html', [1440, 900], false],
@@ -117,6 +130,15 @@ const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY) : null;
     console.log('rendered motion frames');
   }
   await browser.close();
-  if (AXE) fs.writeFileSync(path.join(OUT, 'a11y-report.json'), JSON.stringify(report, null, 2));
+  if (AXE) {
+    // With ONLY, keep the entries of the pages that were not re-rendered.
+    const file = path.join(OUT, 'a11y-report.json');
+    let all = report;
+    if (ONLY && fs.existsSync(file)) {
+      const fresh = new Set(report.map(r => r.page + '/' + r.theme));
+      all = JSON.parse(fs.readFileSync(file, 'utf8')).filter(r => !fresh.has(r.page + '/' + r.theme)).concat(report);
+    }
+    fs.writeFileSync(file, JSON.stringify(all, null, 2));
+  }
   for (const r of report) console.log(r.page, r.theme, 'violations:', r.violations.map(v => `${v.id}(${v.impact})x${v.n}`).join(', ') || 'none', '| passes', r.passes);
 })();

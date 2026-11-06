@@ -4,6 +4,7 @@ import {
   ArrowDownToLine,
   Ban,
   CircleCheck,
+  CircleStop,
   Clapperboard,
   Ellipsis,
   Film,
@@ -12,12 +13,14 @@ import {
   Play,
   RefreshCw,
   ScanSearch,
+  Search,
   TriangleAlert,
 } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
 import { ApiError, api, unwrap } from '@/api/client';
+import { dashboardQuery } from '@/api/lot3';
 import { type Progress, setProgress, useProgress } from '@/api/progress';
-import { keys, type QueueItem, queueQuery, useLibrary } from '@/api/queries';
+import { keys, type QueueItem, queueQuery } from '@/api/queries';
 import { pauseDownload, type RemoveOptions, removeDownload, resumeDownload, retryImport } from '@/api/screens';
 import { QualityBadge } from '@/components/ui/Badges';
 import { Button, IconButton } from '@/components/ui/Button';
@@ -30,9 +33,11 @@ import { PosterArt } from '@/components/ui/PosterArt';
 import { ProgressBar } from '@/components/ui/Progress';
 import { toast } from '@/components/ui/Toast';
 import { Tooltip, TooltipProvider } from '@/components/ui/Tooltip';
+import { startBulk } from '@/lib/bulkSearch';
 import { formatBytes, formatClock, formatEta, formatNumber, formatSpeed } from '@/lib/format';
 import { qualityName } from '@/lib/quality';
 import type { DisplayStatus } from '@/lib/status';
+import { useRetrying } from './retrying';
 
 /* Live queue. The list renders again only when items or statuses change: progress,
    speed and time left are read per row from the progress store (download.progress). */
@@ -145,8 +150,9 @@ export function QueuePanel() {
 }
 
 function EmptyQueue({ every }: { every?: number }) {
-  const lib = useLibrary();
-  const wanted = (lib.data ?? []).filter((m) => m.monitored && m.state === 'missing').length;
+  const dash = useQuery(dashboardQuery);
+  const released = dash.data?.wanted.released ?? 0;
+  const [busy, setBusy] = useState(false);
   return (
     <div className="empty">
       <span className="glyph" aria-hidden="true">
@@ -154,12 +160,26 @@ function EmptyQueue({ every }: { every?: number }) {
       </span>
       <h2>Nothing in the projector.</h2>
       <p>No downloads right now.{every ? ` Gonema checks your indexers every ${every} minutes.` : ''}</p>
-      {wanted > 0 && (
-        <div className="actions">
-          <Link className="btn btn-secondary btn-sm" to="/films" search={{ view: 'wanted' }}>
-            See the {formatNumber(wanted)} wanted {wanted === 1 ? 'film' : 'films'}
-          </Link>
-        </div>
+      {released > 0 && (
+        <>
+          <span className="hintline">
+            {formatNumber(released)} released {released === 1 ? 'film' : 'films'} still wanted
+          </span>
+          <div className="actions">
+            <Button
+              size="sm"
+              icon={<Search className="i" aria-hidden="true" />}
+              loading={busy}
+              disabled={busy}
+              onClick={() => {
+                setBusy(true);
+                void startBulk({ filter: 'missing_released' }).finally(() => setBusy(false));
+              }}
+            >
+              Search the {formatNumber(released)} now
+            </Button>
+          </div>
+        </>
       )}
     </div>
   );
@@ -188,6 +208,7 @@ const QueueRow = memo(function QueueRow({
 }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const setRetrying = useRetrying();
   const p = useProgress(q.id, { progress: 0, speedBps: 0, etaSeconds: null, status: q.status });
   const status = p.status || q.status;
   const attempt = q.retry?.attempt ?? 1;
@@ -340,6 +361,26 @@ const QueueRow = memo(function QueueRow({
           >
             Interactive search…
           </MenuItem>
+          {(q.actions?.stopRetrying || q.actions?.resumeRetrying) && (
+            <>
+              <MenuSeparator />
+              {q.actions.resumeRetrying ? (
+                <MenuItem
+                  icon={<RefreshCw className="i" aria-hidden="true" />}
+                  onSelect={() => void setRetrying(q.id, title, false)}
+                >
+                  Resume retrying
+                </MenuItem>
+              ) : (
+                <MenuItem
+                  icon={<CircleStop className="i" aria-hidden="true" />}
+                  onSelect={() => void setRetrying(q.id, title, true)}
+                >
+                  Stop retrying
+                </MenuItem>
+              )}
+            </>
+          )}
           {q.actions?.retryImport && (
             <>
               <MenuSeparator />
@@ -357,7 +398,11 @@ const QueueRow = memo(function QueueRow({
             {status === 'failed' ? (
               <>
                 <b>The print arrived damaged.</b> {reason || 'The download failed in the client.'}
-                {attempt < of ? ' Gonema blocklisted it and tries the next release.' : ''}
+                {q.retryStopped
+                  ? ' Gonema blocklisted it. Retries are stopped: choose a release yourself, or resume them.'
+                  : attempt < of
+                    ? ' Gonema blocklisted it and tries the next release.'
+                    : ''}
               </>
             ) : status === 'warning' ? (
               <>

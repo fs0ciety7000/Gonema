@@ -134,6 +134,18 @@ gonema healthcheck -url http://127.0.0.1:7676/health
 
 Downgrading is not supported: an older Gonema refuses a database with a newer schema. To go back, restore the backup made before the upgrade with the older version.
 
+## Releases
+
+Maintainers only. Pushing a tag `vX.Y.Z` runs `.github/workflows/release.yml` (GoReleaser, `GITHUB_TOKEN` only):
+
+```sh
+git tag -a v1.2.0 -m "v1.2.0" && git push origin v1.2.0
+```
+
+- A **draft** GitHub release with the archives (web interface embedded), `checksums.txt` and one SBOM per archive (syft, SPDX).
+- The multi-arch image `ghcr.io/fs0ciety7000/gonema:1.2.0` (linux/amd64, arm64, arm/v7), plus `:latest` unless the tag is a pre-release (`v1.2.0-rc.1`).
+- Check the draft and the image (`docker buildx imagetools inspect ghcr.io/fs0ciety7000/gonema:1.2.0`), then publish the release. Checklist and rollback: [`DEPLOY.md`](../DEPLOY.md).
+
 ## Disk usage
 
 - Scheduled backups: `keep` x (database size, compressed). The database of a 10,000-film library is in the tens of MB.

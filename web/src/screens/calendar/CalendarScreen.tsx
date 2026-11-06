@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
 import {
   ArrowDownToLine,
+  Calendar,
   ChevronLeft,
   ChevronRight,
   CircleArrowUp,
@@ -14,7 +15,7 @@ import {
   MonitorPlay,
   Ticket,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { calendarQuery } from '@/api/lot3';
 import { SearchField, ThemeToggle, Topbar } from '@/components/shell/Topbar';
 import { Button, IconButton } from '@/components/ui/Button';
@@ -201,6 +202,8 @@ function Agenda({ events, today, from }: { events: CalEvent[]; today: Date; from
   );
 }
 
+const CalendarFeedDialog = lazy(() => import('./CalendarFeedDialog'));
+
 export function CalendarScreen() {
   const search = route.useSearch();
   const navigate = useNavigate();
@@ -209,6 +212,7 @@ export function CalendarScreen() {
   const month = parseMonth(search.month, now);
   const view = search.view === 'agenda' ? 'agenda' : 'month';
   const [types, setTypes] = useState<ReadonlySet<ReleaseType>>(new Set(ALL_TYPES));
+  const [feedOpen, setFeedOpen] = useState(false);
   const set = (p: Record<string, unknown>) =>
     void navigate({
       to: '/calendar',
@@ -281,6 +285,15 @@ export function CalendarScreen() {
               { value: 'agenda', label: 'Agenda' },
             ]}
           />
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<Calendar className="i" aria-hidden="true" />}
+            aria-haspopup="dialog"
+            onClick={() => setFeedOpen(true)}
+          >
+            iCal feed
+          </Button>
         </div>
         {/* biome-ignore lint/a11y/useSemanticElements: a labelled group of toggle chips, not a form */}
         <div className="legend" role="group" aria-label="Release types">
@@ -335,6 +348,11 @@ export function CalendarScreen() {
           <Agenda events={events} today={today} from={range.from} />
         )}
       </main>
+      {feedOpen && (
+        <Suspense fallback={null}>
+          <CalendarFeedDialog open={feedOpen} onOpenChange={setFeedOpen} />
+        </Suspense>
+      )}
     </>
   );
 }
