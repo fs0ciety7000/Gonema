@@ -2321,3 +2321,26 @@
     overflow-wrap: anywhere;
   }
 }
+
+@layer screens {
+  /* health: interrupted imports (phase 8) */
+  .journal-path {
+    display: block;
+    overflow-wrap: anywhere;
+    color: var(--text-primary);
+  }
+  .journal-paths {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 6px 12px;
+    margin: var(--space-3) 0 0;
+    font: var(--type-body-sm);
+  }
+  .journal-paths dt {
+    color: var(--text-muted);
+  }
+  .journal-paths dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+}

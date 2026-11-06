@@ -19,8 +19,11 @@ import {
   Search,
   Server,
   Sparkles,
+  TriangleAlert,
 } from 'lucide-react';
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react';
+import { authKey, authStatusQuery } from '@/api/auth';
+import { api } from '@/api/client';
 import {
   addRootFolder,
   clientApi,
@@ -32,11 +35,17 @@ import {
   putUiPreferences,
 } from '@/api/lot3';
 import { onboardingQuery, setOnboardingDismissed } from '@/api/onboarding';
-import { authKey, authStatusQuery } from '@/api/auth';
-import { api } from '@/api/client';
-import { keys, libraryQuery, profilesQuery, rootFoldersQuery, useLibrary, useQueue } from '@/api/queries';
+import { keys, libraryQuery, profilesQuery, rootFoldersQuery, useQueue } from '@/api/queries';
 import type { DownloadClientInput, IndexerInput, LookupResult, TestResult } from '@/api/schema';
 import { addMovie, lookupQuery, screenKeys, setTmdbKey, tmdbQuery } from '@/api/screens';
+import {
+  ApiKeyReveal,
+  MAX_PASSWORD,
+  MIN_PASSWORD,
+  PasswordInput,
+  passwordStrength,
+  StrengthMeter,
+} from '@/components/auth/AuthParts';
 import { Mark, Wordmark } from '@/components/shell/Logo';
 import { ThemeToggle } from '@/components/shell/Topbar';
 import { StatusText } from '@/components/ui/Badges';
@@ -99,8 +108,7 @@ function useDone(enabled: boolean, accountDone: boolean) {
         film: !!lib.data?.length,
       };
   const ready =
-    !enabled ||
-    (!server.isPending && !tmdb.isPending && !roots.isPending && !indexers.isPending && !clients.isPending);
+    !enabled || (!server.isPending && !tmdb.isPending && !roots.isPending && !indexers.isPending && !clients.isPending);
   return { done, ready };
 }
 
@@ -181,8 +189,7 @@ function Welcome({ go }: { go: (s: StepId) => void }) {
     >
       <div className="welcome">
         <p className="intro">
-          Seven short steps and Gonema will be finding films for you. Keep your download client and one indexer at
-          hand.
+          Seven short steps and Gonema will be finding films for you. Keep your download client and one indexer at hand.
         </p>
         <img src={mascotWelcome} alt="Kernel, the Gonema gopher, waving from the projection booth" />
       </div>
@@ -216,6 +223,154 @@ function Welcome({ go }: { go: (s: StepId) => void }) {
         })}
       </ul>
     </Pane>
+  );
+}
+
+function AccountStep({ go, signedIn, username }: { go: (s: StepId) => void; signedIn: boolean; username?: string }) {
+  const qc = useQueryClient();
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<{ name?: string; password?: string; form?: string }>({});
+  const [busy, setBusy] = useState(false);
+  // The key of the account just created: shown once, kept only in this component's state.
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const strength = passwordStrength(password);
+  const submit = async (ev: FormEvent) => {
+    ev.preventDefault();
+    if (apiKey || (signedIn && !name && !password)) return go('tmdb');
+    const e: typeof errors = {};
+    const n = name.trim();
+    if (!n) e.name = 'Choose a username: you type it to sign in.';
+    else if (n.length > 64) e.name = 'Keep the username to 64 characters or fewer.';
+    if (password.length < MIN_PASSWORD)
+      e.password = `Use at least ${MIN_PASSWORD} characters. A short sentence is easy to remember.`;
+    else if (password.length > MAX_PASSWORD) e.password = `Use at most ${MAX_PASSWORD} characters.`;
+    else if (password === n) e.password = 'The password cannot be the username.';
+    setErrors(e);
+    if (e.name || e.password) return;
+    setBusy(true);
+    try {
+      const { data, error, response } = await api.POST('/auth/setup', { body: { username: n, password } });
+      if (response.ok && data) {
+        setPassword('');
+        setApiKey(data.apiKey);
+        qc.setQueryData(authStatusQuery.queryKey, (s) => ({
+          setupRequired: false,
+          authenticated: true,
+          method: 'session' as const,
+          authMode: s?.authMode ?? 'enabled',
+          username: data.user.username,
+        }));
+        void qc.invalidateQueries({ queryKey: onboardingQuery.queryKey });
+        return;
+      }
+      const detail = (error as { detail?: string } | undefined)?.detail ?? `The server answered ${response.status}.`;
+      if (response.status === 409) {
+        // someone (or another tab) created the account meanwhile
+        void qc.invalidateQueries({ queryKey: authKey });
+        setErrors({ form: 'The account already exists. Sign in with it instead.' });
+      } else if (response.status === 422 && /username/i.test(detail)) setErrors({ name: detail });
+      else if (response.status === 422) setErrors({ password: detail });
+      else setErrors({ form: detail });
+    } catch {
+      setErrors({ form: 'Gonema could not be reached. Check that the server is running, then try again.' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  const done = signedIn && !apiKey;
+  return (
+    <form onSubmit={submit} noValidate className="contents">
+      <Pane
+        id="account"
+        overline="Step 1 · Security"
+        title="Secure the booth"
+        intro="One admin account protects the web interface and the API. Create it before this server is reachable from other machines."
+        nav={
+          <Nav
+            type="submit"
+            back={() => go('welcome')}
+            loading={busy}
+            nextLabel={apiKey || done ? 'Continue' : 'Create the account'}
+          />
+        }
+      >
+        {apiKey ? (
+          <div className="form wide">
+            <span className="ok-line" role="status">
+              <CircleCheck className="i" aria-hidden="true" />
+              Account created. This browser is signed in.
+            </span>
+            <ApiKeyReveal apiKey={apiKey} />
+          </div>
+        ) : done ? (
+          <div className="form">
+            <span className="ok-line" role="status">
+              <CircleCheck className="i" aria-hidden="true" />
+              {username ? `Signed in as ${username}.` : 'The admin account exists.'}
+            </span>
+            <p className="t-secondary t-body-sm">
+              Change the password, end sessions or make a new API key in Settings › Security.
+            </p>
+          </div>
+        ) : (
+          <div className="form">
+            {errors.form && (
+              <Notice
+                tone="failed"
+                icon={<TriangleAlert className="i" aria-hidden="true" />}
+                title={errors.form}
+                role="alert"
+              >
+                {/exists/.test(errors.form) && (
+                  <Link to="/login" className="link">
+                    Go to sign-in
+                  </Link>
+                )}
+              </Notice>
+            )}
+            <Field label="Username" error={errors.name}>
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={name}
+                  onChange={(ev) => setName(ev.target.value)}
+                />
+              )}
+            </Field>
+            <Field
+              label="Password"
+              aside={strength.label ? <span className="t-muted field-aside">{strength.label}</span> : undefined}
+              error={errors.password}
+              hint="At least 10 characters. A passphrase is easiest."
+            >
+              {({ id, describedBy, invalid }) => (
+                <>
+                  <PasswordInput
+                    id={id}
+                    autoComplete="new-password"
+                    aria-describedby={describedBy}
+                    invalid={invalid}
+                    value={password}
+                    onChange={(ev) => setPassword(ev.target.value)}
+                  />
+                  <StrengthMeter password={password} />
+                </>
+              )}
+            </Field>
+            <p className="t-caption t-muted">
+              Signing in is required on every network. To skip it on a trusted LAN, start Gonema with{' '}
+              <span className="t-mono-sm">GONEMA_AUTH=disabled_for_local</span>.
+            </p>
+          </div>
+        )}
+      </Pane>
+    </form>
   );
 }
 
@@ -934,9 +1089,13 @@ function FilmStep({ go, finish }: { go: (s: StepId) => void; finish: () => void 
 
 export function OnboardingScreen() {
   const navigate = useNavigate();
-  const asked = route.useSearch().step;
-  const { done, ready } = useDone();
-  const step = currentStep(asked, done);
+  const askedRaw = route.useSearch().step;
+  const auth = useQuery(authStatusQuery).data;
+  const signedIn = !!auth?.authenticated;
+  // Signed out before the account exists: only the welcome and the account steps can be shown.
+  const asked = !signedIn && askedRaw !== 'welcome' && askedRaw !== undefined ? 'account' : askedRaw;
+  const { done, ready } = useDone(signedIn, !auth?.setupRequired);
+  const step = signedIn ? currentStep(asked, done) : asked === 'account' ? 'account' : 'welcome';
   const idx = STEPS.findIndex((s) => s.id === step);
   useEffect(() => {
     document.title = 'Setup · Gonema';
@@ -954,7 +1113,7 @@ export function OnboardingScreen() {
       .finally(() => void navigate({ to: '/' }));
   };
   const doneCount = STEPS.filter((s) => s.id !== 'welcome' && done[s.id]).length;
-  const posters = useLibrary().data?.slice(0, 30) ?? [];
+  const posters = useQuery({ ...libraryQuery, enabled: signedIn }).data?.slice(0, 30) ?? [];
   const wall = useMemo(() => posters.filter((m) => m.posterUrl), [posters]);
   return (
     <div className="ob-page">
@@ -975,27 +1134,42 @@ export function OnboardingScreen() {
         <span className="time">Setup · about 5 minutes</span>
         <div className="spacer" />
         <ThemeToggle />
-        <Button variant="ghost" size="sm" onClick={finish}>
-          Skip for now
-        </Button>
+        {signedIn && (
+          <Button variant="ghost" size="sm" onClick={finish}>
+            Skip for now
+          </Button>
+        )}
       </header>
       <main className="ob glass-2" id="main" aria-label="Setup">
         <nav className="steps" aria-label="Setup steps">
           <ol>
             {STEPS.map((s, i) => {
               const d = s.id !== 'welcome' && done[s.id];
+              const body = (
+                <>
+                  <span className="n" aria-hidden="true">
+                    {d ? <Check className="i" /> : i + 1}
+                  </span>
+                  <span>
+                    {s.label}
+                    {d && <span className="sr-only"> (done)</span>}
+                    {s.sub && <small>{s.sub}</small>}
+                  </span>
+                </>
+              );
+              const locked = !signedIn && s.id !== 'welcome' && s.id !== 'account';
               return (
-                <li key={s.id} className={d ? 'done' : undefined}>
-                  <Link to="/setup" search={{ step: s.id }} aria-current={s.id === step ? 'step' : undefined}>
-                    <span className="n" aria-hidden="true">
-                      {d ? <Check className="i" /> : i + 1}
+                <li key={s.id} className={d ? 'done' : locked ? 'locked' : undefined}>
+                  {locked ? (
+                    <span className="step-locked" aria-disabled="true">
+                      {body}
+                      <span className="sr-only"> (after the account)</span>
                     </span>
-                    <span>
-                      {s.label}
-                      {d && <span className="sr-only"> (done)</span>}
-                      {s.sub && <small>{s.sub}</small>}
-                    </span>
-                  </Link>
+                  ) : (
+                    <Link to="/setup" search={{ step: s.id }} aria-current={s.id === step ? 'step' : undefined}>
+                      {body}
+                    </Link>
+                  )}
                 </li>
               );
             })}
@@ -1013,10 +1187,12 @@ export function OnboardingScreen() {
             · progress is saved, you can leave anytime.
           </div>
         </nav>
-        {!ready && step !== 'welcome' ? (
+        {!ready && step !== 'welcome' && step !== 'account' ? (
           <section className="pane" aria-busy="true" />
         ) : step === 'welcome' ? (
           <Welcome go={go} />
+        ) : step === 'account' ? (
+          <AccountStep go={go} signedIn={signedIn && !auth?.setupRequired} username={auth?.username} />
         ) : step === 'tmdb' ? (
           <Tmdb go={go} done={done.tmdb!} />
         ) : step === 'folder' ? (

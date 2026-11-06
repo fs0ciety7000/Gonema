@@ -105,7 +105,7 @@
     display: flex;
     gap: 8px;
     align-items: center;
-    font: 500 14px/20px var(--font-ui);
+    font: 500 14px / 20px var(--font-ui);
   }
   .key-reveal p {
     font: var(--type-body-sm);
@@ -175,7 +175,7 @@
     vertical-align: top;
   }
   .policy thead th {
-    font: 500 12px/1 var(--font-ui);
+    font: 500 12px / 1 var(--font-ui);
     color: var(--text-muted);
   }
   .policy tbody th {
@@ -261,7 +261,7 @@
     background: var(--bg-sunken);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    font: 400 12px/20px var(--font-mono);
+    font: 400 12px / 20px var(--font-mono);
     color: var(--text-secondary);
   }
   .logs-view:focus-visible {
@@ -334,7 +334,7 @@
   }
   /* overview card: the last lines, not virtualised */
   .logs-mini {
-    font: 400 11.5px/18px var(--font-mono);
+    font: 400 11.5px / 18px var(--font-mono);
     color: var(--text-secondary);
     background: var(--bg-sunken);
     border-radius: var(--radius-md);
@@ -368,5 +368,32 @@
     color: var(--text-secondary);
     margin: 0;
     padding-left: 18px;
+  }
+}
+
+@layer screens {
+  /* setup: steps that need the account first */
+  .ob .steps .step-locked {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 12px;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
+    font: 500 14px / 18px var(--font-ui);
+    cursor: not-allowed;
+  }
+  .ob .steps .step-locked small {
+    display: block;
+    font: var(--type-caption);
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .field-aside {
+    font-weight: 400;
+  }
+  .ob .pane .form .pw-meter {
+    margin-top: 2px;
   }
 }

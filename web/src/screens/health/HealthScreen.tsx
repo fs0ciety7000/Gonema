@@ -2,7 +2,7 @@ import '@/styles/lot3.css';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { CircleCheck, CircleSlash, CloudOff, Info, RefreshCw, TriangleAlert } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ApiError } from '@/api/client';
 import {
   clientsQuery,
@@ -13,11 +13,13 @@ import {
   lot3Keys,
   runHealthChecks,
 } from '@/api/lot3';
+import { dismissJournal, journalQuery, opsKeys } from '@/api/ops';
 import { keys } from '@/api/queries';
-import type { HealthIssue, Indexer } from '@/api/schema';
+import type { HealthIssue, ImportJournalEntry, Indexer } from '@/api/schema';
 import { SearchField, ThemeToggle, Topbar } from '@/components/shell/Topbar';
 import { StatusText } from '@/components/ui/Badges';
 import { Button, buttonClass } from '@/components/ui/Button';
+import { Dialog } from '@/components/ui/Dialog';
 import { EmptyState, Skeleton } from '@/components/ui/Feedback';
 import { toast } from '@/components/ui/Toast';
 import { formatClock, formatWhen } from '@/lib/format';
@@ -47,13 +49,71 @@ const CHECK_NAME: Record<string, string> = {
   root_folders: 'Root folders',
   disk: 'Disk space',
   backups: 'Backups',
+  imports: 'Interrupted imports',
   recycle_bin: 'Recycle bin',
   mediaservers: 'Media servers',
   notifications: 'Notifications',
 };
 const checkName = (id: string) => CHECK_NAME[id] ?? id.replace(/[._-]+/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 
-function IssueCard({ issue }: { issue: HealthIssue }) {
+/** Journal id of an interrupted-import issue ("import.interrupted:42" → 42). */
+export function journalIdOf(issueId: string): number | null {
+  const m = /^import\.interrupted:(\d+)$/.exec(issueId);
+  return m ? Number(m[1]) : null;
+}
+
+const MODE: Record<ImportJournalEntry['mode'], string> = { move: 'Move', copy: 'Copy', hardlink: 'Hardlink' };
+
+/** "Mark as handled": the user says the files are where they belong. Changes no file. */
+function HandledDialog({
+  entry,
+  onClose,
+}: {
+  entry: { id: number; source?: string; destination?: string } | null;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const m = useMutation({
+    mutationFn: () => dismissJournal(entry!.id),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: opsKeys.journal });
+      void qc.invalidateQueries({ queryKey: keys.health });
+      toast.show({ title: 'Marked as handled.', body: 'Gonema changed no file.' });
+      onClose();
+    },
+    onError: (e) => toast.error('Still listed', e instanceof ApiError ? e.detail : String(e)),
+  });
+  return (
+    <Dialog
+      open={!!entry}
+      onOpenChange={(o) => !o && onClose()}
+      title="Mark this import as handled?"
+      description="Do this once the file is where you want it (moved by hand, rescanned or imported manually). Gonema changes no file: it only stops listing this import."
+      actions={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Not yet
+          </Button>
+          <Button variant="primary" loading={m.isPending} onClick={() => m.mutate()}>
+            Mark as handled
+          </Button>
+        </>
+      }
+    >
+      {entry?.source && (
+        <dl className="journal-paths">
+          <dt>From</dt>
+          <dd className="t-mono-sm">{entry.source}</dd>
+          <dt>To</dt>
+          <dd className="t-mono-sm">{entry.destination}</dd>
+        </dl>
+      )}
+    </Dialog>
+  );
+}
+
+function IssueCard({ issue, onHandled }: { issue: HealthIssue; onHandled: (id: number) => void }) {
+  const journalId = journalIdOf(issue.id);
   const s = SEV[issue.severity] ?? SEV.info;
   const link = issueLink(issue.link);
   const Icon = issue.severity === 'error' ? TriangleAlert : issue.severity === 'warning' ? CloudOff : Info;
@@ -77,10 +137,16 @@ function IssueCard({ issue }: { issue: HealthIssue }) {
           {issue.source && `${issue.source} · `}since {formatWhen(issue.since)}
         </span>
       </div>
-      {link && (
-        <Link className={buttonClass('secondary', 'sm')} to={link as never}>
-          Open settings
-        </Link>
+      {journalId !== null ? (
+        <Button size="sm" onClick={() => onHandled(journalId)}>
+          Mark as handled…
+        </Button>
+      ) : (
+        link && (
+          <Link className={buttonClass('secondary', 'sm')} to={link as never}>
+            {link === '/settings/backups' ? 'Open backups' : 'Open settings'}
+          </Link>
+        )
       )}
     </li>
   );
@@ -144,6 +210,9 @@ export function HealthScreen() {
   const checks = useQuery(healthChecksQuery);
   const indexers = useQuery(indexersQuery);
   const clients = useQuery(clientsQuery);
+  const journal = useQuery(journalQuery);
+  const [handling, setHandling] = useState<number | null>(null);
+  const handlingEntry = handling === null ? null : (journal.data?.find((j) => j.id === handling) ?? { id: handling });
   useEffect(() => {
     document.title = 'Health · Gonema';
     if (location.hash === '#indexers') document.getElementById('indexers')?.scrollIntoView();
@@ -200,7 +269,7 @@ export function HealthScreen() {
             ) : list.length ? (
               <ul className="issues">
                 {list.map((i) => (
-                  <IssueCard key={i.id} issue={i} />
+                  <IssueCard key={i.id} issue={i} onHandled={setHandling} />
                 ))}
               </ul>
             ) : (
@@ -210,6 +279,36 @@ export function HealthScreen() {
             )}
           </section>
           <div className="health-side">
+            {!!journal.data?.length && (
+              <section className="panel" aria-labelledby="journal-h">
+                <div className="panel-hd">
+                  <h2 id="journal-h">Interrupted imports</h2>
+                </div>
+                <div className="panel-bd">
+                  <p className="t-secondary t-body-sm">
+                    A restart cut these imports short. Gonema settled what it could and never deletes files on a guess:
+                    check each one, then mark it as handled.
+                  </p>
+                  <ul className="mini-rows">
+                    {journal.data.map((j) => (
+                      <li key={j.id}>
+                        <span>
+                          <span className="t-mono-sm journal-path">{j.destination}</span>
+                          <small>
+                            {MODE[j.mode] ?? j.mode} from <span className="t-mono-sm">{j.source}</span> ·{' '}
+                            {formatWhen(j.updatedAt)}
+                          </small>
+                          {j.message && <small className="err">{j.message}</small>}
+                        </span>
+                        <Button size="sm" variant="ghost" onClick={() => setHandling(j.id)}>
+                          Mark as handled…
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </section>
+            )}
             <section className="panel" aria-labelledby="indexers">
               <div className="panel-hd">
                 <h2 id="indexers" tabIndex={-1}>
@@ -312,6 +411,7 @@ export function HealthScreen() {
           </div>
         </div>
       </main>
+      <HandledDialog entry={handlingEntry} onClose={() => setHandling(null)} />
     </>
   );
 }

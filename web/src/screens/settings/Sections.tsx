@@ -52,7 +52,7 @@ export function Panel({
 }
 
 /** Settings form bound to one GET/PUT pair: edits locally, saves on submit, says when it is saved. */
-function SettingsForm<T extends object>({
+export function SettingsForm<T extends object>({
   id,
   title,
   spec,

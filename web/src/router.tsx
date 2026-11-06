@@ -45,8 +45,13 @@ const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
     if (!s) return;
     const path = location.pathname;
     if (path === '/login') {
-      if (s.setupRequired && !s.authenticated) throw redirect({ to: '/setup', search: { step: 'account' }, replace: true });
-      if (s.authenticated) throw redirect({ href: safeRedirect((location.search as { redirect?: unknown }).redirect) ?? '/', replace: true });
+      if (s.setupRequired && !s.authenticated)
+        throw redirect({ to: '/setup', search: { step: 'account' }, replace: true });
+      if (s.authenticated)
+        throw redirect({
+          href: safeRedirect((location.search as { redirect?: unknown }).redirect) ?? '/',
+          replace: true,
+        });
       return;
     }
     if (s.authenticated) return;

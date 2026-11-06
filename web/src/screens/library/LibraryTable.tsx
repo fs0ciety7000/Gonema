@@ -210,6 +210,7 @@ export function LibraryTable({
 
   return (
     <>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: right click on a row opens the list's menu (keyboard: Shift+F10, or the row's "more" button) */}
       <div className="table-wrap" onContextMenu={ctxMenu.onContextMenu}>
         <table
           className="tbl"

@@ -6,9 +6,13 @@ import {
   ArrowDownToLine,
   Bell,
   ChevronRight,
+  FileVideo,
   Film,
   Gauge,
   Globe,
+  HardDrive,
+  Info,
+  Lock,
   type LucideIcon,
   MonitorPlay,
   Radar,
@@ -37,6 +41,11 @@ import { ClientsSection, EVENTS, IndexersSection, MediaServersSection, Notificat
 import { AcquisitionSection, LibrarySection, MetadataSection, TagsSection } from './Sections';
 
 const QualitySection = lazy(() => import('./QualitySection'));
+const SecuritySection = lazy(() => import('./SecuritySection'));
+const BackupsSection = lazy(() => import('./BackupsSection'));
+const LogsSection = lazy(() => import('./LogsSection'));
+const AboutSection = lazy(() => import('./AboutSection'));
+const SystemCards = lazy(() => import('./SystemCards'));
 
 type SectionDef = {
   id: string;
@@ -138,6 +147,44 @@ export const SECTIONS: ReadonlyArray<{ heading: string; items: readonly SectionD
         title: 'Notifications',
         intro: 'Short notes when something happens, with the reason behind it.',
         keywords: 'discord slack telegram pushover ntfy gotify email webhook',
+      },
+    ],
+  },
+  {
+    heading: 'System',
+    items: [
+      {
+        id: 'security',
+        label: 'Security',
+        icon: Lock,
+        title: 'Security',
+        intro: 'Who can sign in, the browsers signed in now, the API key, and where Gonema may connect.',
+        keywords: 'password sign in login session api key logout ssrf outbound network auth',
+      },
+      {
+        id: 'backups',
+        label: 'Backups',
+        icon: HardDrive,
+        title: 'Backups',
+        intro:
+          'Copies of the database, made on a schedule or by hand. Restoring one replaces the current state at the next restart.',
+        keywords: 'backup restore archive schedule retention master key download upload',
+      },
+      {
+        id: 'logs',
+        label: 'Logs',
+        icon: FileVideo,
+        title: 'Logs',
+        intro: 'What Gonema did and why, as it happens. Secrets are removed before anything is written.',
+        keywords: 'log level debug error warning tail download',
+      },
+      {
+        id: 'about',
+        label: 'About',
+        icon: Info,
+        title: 'About Gonema',
+        intro: 'Version, source code and license.',
+        keywords: 'version license gpl source credits tmdb',
       },
     ],
   },
@@ -406,6 +453,9 @@ function Overview() {
           </ul>
         </div>
       </section>
+      <Suspense fallback={null}>
+        <SystemCards />
+      </Suspense>
     </div>
   );
 }
@@ -436,6 +486,17 @@ function Body({ id }: { id: string }) {
       return <MediaServersSection />;
     case 'notifications':
       return <NotificationsSection />;
+    case 'security':
+    case 'backups':
+    case 'logs':
+    case 'about': {
+      const C = { security: SecuritySection, backups: BackupsSection, logs: LogsSection, about: AboutSection }[id];
+      return (
+        <Suspense fallback={<Skeleton className="sk-wanted" />}>
+          <C />
+        </Suspense>
+      );
+    }
     default:
       return null;
   }

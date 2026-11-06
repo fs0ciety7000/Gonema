@@ -136,7 +136,9 @@ export function ApiKeyReveal({ apiKey }: { apiKey: string }) {
           wrapperClassName="key-field"
         />
         <Button
-          icon={copied === 'yes' ? <Check className="i" aria-hidden="true" /> : <Copy className="i" aria-hidden="true" />}
+          icon={
+            copied === 'yes' ? <Check className="i" aria-hidden="true" /> : <Copy className="i" aria-hidden="true" />
+          }
           onClick={() => void copyText(apiKey, field.current).then((ok) => setCopied(ok ? 'yes' : 'no'))}
         >
           {copied === 'yes' ? 'Copied' : 'Copy'}

@@ -6,12 +6,7 @@ import { Clock, LogIn, TriangleAlert } from 'lucide-react';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { authStatusQuery, safeRedirect } from '@/api/auth';
 import { api } from '@/api/client';
-import {
-  formatCountdown,
-  PasswordInput,
-  retryAfterSeconds,
-  useSecondsLeft,
-} from '@/components/auth/AuthParts';
+import { formatCountdown, PasswordInput, retryAfterSeconds, useSecondsLeft } from '@/components/auth/AuthParts';
 import { Mark, Wordmark } from '@/components/shell/Logo';
 import { ThemeToggle } from '@/components/shell/Topbar';
 import { Button } from '@/components/ui/Button';
@@ -82,10 +77,16 @@ export function LoginScreen() {
       } else if (response.status === 422) {
         setProblem({ kind: 'invalid', text: detail ?? 'Check the username and the password.' });
       } else {
-        setProblem({ kind: 'server', text: detail ?? `The server answered ${response.status}. Try again in a moment.` });
+        setProblem({
+          kind: 'server',
+          text: detail ?? `The server answered ${response.status}. Try again in a moment.`,
+        });
       }
     } catch {
-      setProblem({ kind: 'offline', text: 'Gonema could not be reached. Check that the server is running, then try again.' });
+      setProblem({
+        kind: 'offline',
+        text: 'Gonema could not be reached. Check that the server is running, then try again.',
+      });
     } finally {
       setBusy(false);
     }
@@ -109,7 +110,12 @@ export function LoginScreen() {
             <p className="intro">Sign in to run your collection on this server.</p>
           </div>
           {blocked ? (
-            <Notice tone="missing" icon={<Clock className="i" aria-hidden="true" />} title="Too many attempts." role="status">
+            <Notice
+              tone="missing"
+              icon={<Clock className="i" aria-hidden="true" />}
+              title="Too many attempts."
+              role="status"
+            >
               Gonema pauses sign-in for a few minutes to keep guessers out. You can try again in{' '}
               <span className="t-mono-sm countdown" aria-hidden="true">
                 {formatCountdown(left)}
@@ -121,7 +127,12 @@ export function LoginScreen() {
             </Notice>
           ) : (
             problem && (
-              <Notice tone="failed" icon={<TriangleAlert className="i" aria-hidden="true" />} title={problem.text} role="alert" />
+              <Notice
+                tone="failed"
+                icon={<TriangleAlert className="i" aria-hidden="true" />}
+                title={problem.text}
+                role="alert"
+              />
             )
           )}
           {blockedUntil !== null && !blocked && (
@@ -175,8 +186,8 @@ export function LoginScreen() {
             <p>
               Gonema has one admin account and no reset by e-mail. On the server, stop Gonema and remove the account
               from the <span className="t-mono-sm">users</span> table of the database, then start it again: this page
-              offers to create the account anew. Films, settings and connections are kept; the API key must be
-              replaced in the apps that use it.
+              offers to create the account anew. Films, settings and connections are kept; the API key must be replaced
+              in the apps that use it.
             </p>
           </details>
         </form>

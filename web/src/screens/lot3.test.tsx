@@ -231,13 +231,21 @@ describe('setup and palette', () => {
       dismissed: false,
       next: 'indexer',
       steps: [
+        { id: 'account', done: true, available: true, count: 1 },
         { id: 'tmdb', done: true, available: true, count: 1 },
         { id: 'root_folder', done: true, available: true, count: 1 },
         { id: 'quality_profile', done: true, available: true, count: 1 },
         { id: 'indexer', done: false, available: true, count: 0 },
       ],
     });
-    expect(s.done).toMatchObject({ tmdb: true, folder: true, quality: true, indexer: false, film: false });
+    expect(s.done).toMatchObject({
+      account: true,
+      tmdb: true,
+      folder: true,
+      quality: true,
+      indexer: false,
+      film: false,
+    });
     expect(currentStep(undefined, s.done)).toBe('indexer');
     expect(currentStep(undefined, {})).toBe('welcome');
     expect(currentStep('client', s.done)).toBe('client');
