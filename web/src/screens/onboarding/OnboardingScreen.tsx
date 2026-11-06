@@ -32,7 +32,9 @@ import {
   putUiPreferences,
 } from '@/api/lot3';
 import { onboardingQuery, setOnboardingDismissed } from '@/api/onboarding';
-import { keys, profilesQuery, rootFoldersQuery, useLibrary, useQueue } from '@/api/queries';
+import { authKey, authStatusQuery } from '@/api/auth';
+import { api } from '@/api/client';
+import { keys, libraryQuery, profilesQuery, rootFoldersQuery, useLibrary, useQueue } from '@/api/queries';
 import type { DownloadClientInput, IndexerInput, LookupResult, TestResult } from '@/api/schema';
 import { addMovie, lookupQuery, screenKeys, setTmdbKey, tmdbQuery } from '@/api/screens';
 import { Mark, Wordmark } from '@/components/shell/Logo';
@@ -52,10 +54,11 @@ import mascotWelcome from '../../../../docs/brand/kit/mascot/kernel-welcome.svg?
 
 const route = getRouteApi('/setup');
 
-export type StepId = 'welcome' | 'tmdb' | 'folder' | 'quality' | 'indexer' | 'client' | 'film';
+export type StepId = 'welcome' | 'account' | 'tmdb' | 'folder' | 'quality' | 'indexer' | 'client' | 'film';
 
 export const STEPS: ReadonlyArray<{ id: StepId; label: string; sub: string }> = [
   { id: 'welcome', label: 'Welcome', sub: '' },
+  { id: 'account', label: 'Account', sub: 'Admin sign-in' },
   { id: 'tmdb', label: 'Metadata', sub: 'TMDB key' },
   { id: 'folder', label: 'Library folder', sub: 'Where films live' },
   { id: 'quality', label: 'Quality', sub: 'Starting profile' },
@@ -72,19 +75,22 @@ export function currentStep(asked: string | undefined, done: Record<string, bool
   return STEPS.find((s) => s.id !== 'welcome' && !done[s.id])?.id ?? 'film';
 }
 
-function useDone() {
-  const server = useQuery(onboardingQuery);
-  const tmdb = useQuery(tmdbQuery);
-  const roots = useQuery(rootFoldersQuery);
-  const indexers = useQuery(indexersQuery);
-  const clients = useQuery(clientsQuery);
-  const lib = useLibrary();
-  const ui = useQuery(generalSettingsQuery);
+/** Steps already done. Before the account exists (or while signed out) nothing else can be read:
+ *  every other endpoint needs a signed-in caller. */
+function useDone(enabled: boolean, accountDone: boolean) {
+  const server = useQuery({ ...onboardingQuery, enabled });
+  const tmdb = useQuery({ ...tmdbQuery, enabled });
+  const roots = useQuery({ ...rootFoldersQuery, enabled });
+  const indexers = useQuery({ ...indexersQuery, enabled });
+  const clients = useQuery({ ...clientsQuery, enabled });
+  const lib = useQuery({ ...libraryQuery, enabled });
+  const ui = useQuery({ ...generalSettingsQuery, enabled });
   const s = server.data?.done;
   // The server's answer is the truth; the lists only stand in when it has none (older server).
   const done: Record<string, boolean> = s
-    ? { ...s }
+    ? { ...s, account: accountDone }
     : {
+        account: accountDone,
         tmdb: !!tmdb.data?.configured,
         folder: !!roots.data?.length,
         quality: !!ui.data?.ui.defaultQualityProfileId,
@@ -92,7 +98,9 @@ function useDone() {
         client: !!clients.data?.length,
         film: !!lib.data?.length,
       };
-  const ready = !server.isPending && !tmdb.isPending && !roots.isPending && !indexers.isPending && !clients.isPending;
+  const ready =
+    !enabled ||
+    (!server.isPending && !tmdb.isPending && !roots.isPending && !indexers.isPending && !clients.isPending);
   return { done, ready };
 }
 
@@ -169,16 +177,18 @@ function Welcome({ go }: { go: (s: StepId) => void }) {
       id="welcome"
       overline="Welcome"
       title="Your private cinema is almost open."
-      nav={<Nav next={() => go('tmdb')} nextLabel="Let’s begin" />}
+      nav={<Nav next={() => go('account')} nextLabel="Let’s begin" />}
     >
       <div className="welcome">
         <p className="intro">
-          Six short steps and Gonema will be finding films for you. Keep your download client and one indexer at hand.
+          Seven short steps and Gonema will be finding films for you. Keep your download client and one indexer at
+          hand.
         </p>
         <img src={mascotWelcome} alt="Kernel, the Gonema gopher, waving from the projection booth" />
       </div>
       <ul className="checklist">
         {[
+          [Lock, 'Secure the booth', 'Create the admin account', '30 s'],
           [Film, 'Connect film metadata', 'A free TMDB key for posters and dates', '1 min'],
           [HardDrive, 'Choose where films live', 'Your library folder', '30 s'],
           [Sparkles, 'Pick a quality', 'A starting profile you can fine-tune later', '30 s'],
@@ -238,13 +248,13 @@ function Tmdb({ go, done }: { go: (s: StepId) => void; done: boolean }) {
     <form onSubmit={submit} noValidate className="contents">
       <Pane
         id="tmdb"
-        overline="Step 1 · Metadata"
+        overline="Step 2 · Metadata"
         title="Connect film metadata"
         intro="Gonema uses The Movie Database for posters, cast, collections and release dates. The key is yours, free, and stays encrypted on this server."
         nav={
           <Nav
             type="submit"
-            back={() => go('welcome')}
+            back={() => go('account')}
             loading={save.isPending}
             nextLabel={ok && !key ? 'Continue' : 'Check and continue'}
           />
@@ -335,7 +345,7 @@ function FolderStep({ go }: { go: (s: StepId) => void }) {
     <form onSubmit={submit} noValidate className="contents">
       <Pane
         id="folder"
-        overline="Step 2 · Library"
+        overline="Step 3 · Library"
         title="Choose where films live"
         intro="Each film gets its own folder here. Gonema hardlinks finished torrents into it when it can, so nothing is stored twice."
         nav={
@@ -433,7 +443,7 @@ function QualityStep({ go }: { go: (s: StepId) => void }) {
   return (
     <Pane
       id="quality"
-      overline="Step 3 · Quality"
+      overline="Step 4 · Quality"
       title="How should your films look?"
       intro="Pick a starting point. Gonema grabs the first good copy, then keeps upgrading until it reaches the target. You can fine-tune everything in Settings."
       nav={
@@ -546,7 +556,7 @@ function IndexerStep({ go }: { go: (s: StepId) => void }) {
     <form onSubmit={(ev) => void submit(ev)} noValidate className="contents">
       <Pane
         id="indexer"
-        overline="Step 4 · Indexer"
+        overline="Step 5 · Indexer"
         title="Add an indexer"
         intro="Where Gonema looks for releases: any Newznab (Usenet) or Torznab (torrent) indexer. Paste its API URL and key."
         nav={
@@ -667,7 +677,7 @@ function ClientStep({ go }: { go: (s: StepId) => void }) {
     <form onSubmit={(ev) => void submit(ev)} noValidate className="contents">
       <Pane
         id="client"
-        overline="Step 5 · Download client"
+        overline="Step 6 · Download client"
         title="Connect your download client"
         intro="Gonema sends releases here and watches them until they’re ready to import."
         nav={
@@ -775,7 +785,7 @@ function FilmStep({ go, finish }: { go: (s: StepId) => void; finish: () => void 
     return (
       <Pane
         id="film"
-        overline="Step 6 · First screening"
+        overline="Step 7 · First screening"
         title={dl ? 'The first print is on its way.' : 'Your first film is in the programme.'}
         intro={
           dl
@@ -848,7 +858,7 @@ function FilmStep({ go, finish }: { go: (s: StepId) => void; finish: () => void 
   return (
     <Pane
       id="film"
-      overline="Step 6 · First screening"
+      overline="Step 7 · First screening"
       title="Add your first film"
       intro="Search TMDB for a film you want. Gonema adds it with the quality you picked and starts looking right away."
       nav={<Nav back={() => go('client')} next={finish} nextLabel="Skip and open my cinema" />}

@@ -103,6 +103,16 @@ export function handleServerEvent(qc: QueryClient, e: ServerEvent, scheduleLibra
     scheduleLibrary();
     return;
   }
+  if (e.type === 'library.reindexed') {
+    void qc.invalidateQueries({ queryKey: keys.library });
+    void qc.invalidateQueries({ queryKey: ['movie'] });
+    return;
+  }
+  if (e.type.startsWith('import.journal')) {
+    void qc.invalidateQueries({ queryKey: ['imports', 'journal'] });
+    void qc.invalidateQueries({ queryKey: keys.health });
+    return;
+  }
   if (e.type === 'health.changed') {
     void qc.invalidateQueries({ queryKey: keys.health });
     return;
