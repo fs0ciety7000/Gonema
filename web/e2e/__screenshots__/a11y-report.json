@@ -1,0 +1,657 @@
+{
+  "base": "http://127.0.0.1:7676",
+  "date": "2026-11-06T12:13:35.388Z",
+  "tags": "wcag2a, wcag2aa, wcag21a, wcag21aa, best-practice",
+  "screens": [
+    {
+      "screen": "library-grid",
+      "theme": "dark",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-grid",
+      "theme": "light",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-grid-tablet",
+      "theme": "dark",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-grid-tablet",
+      "theme": "light",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-table",
+      "theme": "dark",
+      "url": "/films?layout=table",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-table",
+      "theme": "light",
+      "url": "/films?layout=table",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "movie-detail",
+      "theme": "dark",
+      "url": "/films/884",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "movie-detail",
+      "theme": "light",
+      "url": "/films/884",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "add-film",
+      "theme": "dark",
+      "url": "/discover?q=drift",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "add-film",
+      "theme": "light",
+      "url": "/discover?q=drift",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "add-film-discover",
+      "theme": "dark",
+      "url": "/discover?tab=discover",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "add-film-discover",
+      "theme": "light",
+      "url": "/discover?tab=discover",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "add-film-no-key",
+      "theme": "dark",
+      "url": "/discover",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "add-film-no-key",
+      "theme": "light",
+      "url": "/discover",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "tmdb-key-dialog",
+      "theme": "dark",
+      "url": "/discover",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "tmdb-key-dialog",
+      "theme": "light",
+      "url": "/discover",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "interactive-search",
+      "theme": "dark",
+      "url": "/films/1665/search",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "interactive-search",
+      "theme": "light",
+      "url": "/films/1665/search",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "interactive-search-confirm",
+      "theme": "dark",
+      "url": "/films/1665/search",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "interactive-search-confirm",
+      "theme": "light",
+      "url": "/films/1665/search",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "queue",
+      "theme": "dark",
+      "url": "/queue",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "queue",
+      "theme": "light",
+      "url": "/queue",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "queue-history",
+      "theme": "dark",
+      "url": "/history",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "queue-history",
+      "theme": "light",
+      "url": "/history",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dialog-tags",
+      "theme": "dark",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dialog-tags",
+      "theme": "light",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dialog-move",
+      "theme": "dark",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dialog-move",
+      "theme": "light",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dialog-delete-file",
+      "theme": "dark",
+      "url": "/films/1665",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dialog-delete-file",
+      "theme": "light",
+      "url": "/films/1665",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dialog-rename",
+      "theme": "dark",
+      "url": "/films/1665",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dialog-rename",
+      "theme": "light",
+      "url": "/films/1665",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dashboard",
+      "theme": "dark",
+      "url": "/",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dashboard",
+      "theme": "light",
+      "url": "/",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "calendar",
+      "theme": "dark",
+      "url": "/calendar",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "calendar",
+      "theme": "light",
+      "url": "/calendar",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "calendar-agenda",
+      "theme": "dark",
+      "url": "/calendar?view=agenda",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "calendar-agenda",
+      "theme": "light",
+      "url": "/calendar?view=agenda",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "command-palette",
+      "theme": "dark",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "command-palette",
+      "theme": "light",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "command-palette-query",
+      "theme": "dark",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "command-palette-query",
+      "theme": "light",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "command-palette-empty",
+      "theme": "dark",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "command-palette-empty",
+      "theme": "light",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-quality",
+      "theme": "dark",
+      "url": "/settings/quality",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-quality",
+      "theme": "light",
+      "url": "/settings/quality",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-index",
+      "theme": "dark",
+      "url": "/settings",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-index",
+      "theme": "light",
+      "url": "/settings",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-welcome",
+      "theme": "dark",
+      "url": "/setup?step=welcome",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-welcome",
+      "theme": "light",
+      "url": "/setup?step=welcome",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-account",
+      "theme": "dark",
+      "url": "/setup?step=account",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-account",
+      "theme": "light",
+      "url": "/setup?step=account",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-tmdb",
+      "theme": "dark",
+      "url": "/setup?step=tmdb",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-tmdb",
+      "theme": "light",
+      "url": "/setup?step=tmdb",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-folder",
+      "theme": "dark",
+      "url": "/setup?step=folder",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-folder",
+      "theme": "light",
+      "url": "/setup?step=folder",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-quality",
+      "theme": "dark",
+      "url": "/setup?step=quality",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-quality",
+      "theme": "light",
+      "url": "/setup?step=quality",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-client-error",
+      "theme": "dark",
+      "url": "/setup?step=client",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-client-error",
+      "theme": "light",
+      "url": "/setup?step=client",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-film",
+      "theme": "dark",
+      "url": "/setup?step=film",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-film",
+      "theme": "light",
+      "url": "/setup?step=film",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "failed-download",
+      "theme": "dark",
+      "url": "/queue/253",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "failed-download",
+      "theme": "light",
+      "url": "/queue/253",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "wanted",
+      "theme": "dark",
+      "url": "/wanted",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "wanted",
+      "theme": "light",
+      "url": "/wanted",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "blocklist",
+      "theme": "dark",
+      "url": "/blocklist",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "blocklist",
+      "theme": "light",
+      "url": "/blocklist",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "health",
+      "theme": "dark",
+      "url": "/system/health",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "health",
+      "theme": "light",
+      "url": "/system/health",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "login",
+      "theme": "dark",
+      "url": "/login?redirect=%2Ffilms",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "login",
+      "theme": "light",
+      "url": "/login?redirect=%2Ffilms",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "login-error",
+      "theme": "dark",
+      "url": "/login",
+      "violations": [],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    {
+      "screen": "login-error",
+      "theme": "light",
+      "url": "/login",
+      "violations": [],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    {
+      "screen": "login-throttled",
+      "theme": "dark",
+      "url": "/login",
+      "violations": [],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ]
+    },
+    {
+      "screen": "login-throttled",
+      "theme": "light",
+      "url": "/login",
+      "violations": [],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ]
+    },
+    {
+      "screen": "settings-security",
+      "theme": "dark",
+      "url": "/settings/security",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-security",
+      "theme": "light",
+      "url": "/settings/security",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-security-account",
+      "theme": "dark",
+      "url": "/settings/security",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-security-account",
+      "theme": "light",
+      "url": "/settings/security",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-backups",
+      "theme": "dark",
+      "url": "/settings/backups",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-backups",
+      "theme": "light",
+      "url": "/settings/backups",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-backups-restore",
+      "theme": "dark",
+      "url": "/settings/backups",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-backups-restore",
+      "theme": "light",
+      "url": "/settings/backups",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-logs",
+      "theme": "dark",
+      "url": "/settings/logs",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-logs",
+      "theme": "light",
+      "url": "/settings/logs",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-about",
+      "theme": "dark",
+      "url": "/settings/about",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-about",
+      "theme": "light",
+      "url": "/settings/about",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-indexer-dialog",
+      "theme": "dark",
+      "url": "/settings/indexers",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-indexer-dialog",
+      "theme": "light",
+      "url": "/settings/indexers",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "404",
+      "theme": "dark",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "404",
+      "theme": "light",
+      "violations": [],
+      "errors": []
+    }
+  ]
+}

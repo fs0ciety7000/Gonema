@@ -1,0 +1,55 @@
+{
+  "blocks": [
+    {
+      "text": {
+        "emoji": false,
+        "text": "Grabbed — Halcyon Drift (2024)",
+        "type": "plain_text"
+      },
+      "type": "header"
+    },
+    {
+      "accessory": {
+        "alt_text": "Halcyon Drift (2024) poster",
+        "image_url": "https://image.tmdb.org/t/p/w342/poster.jpg",
+        "type": "image"
+      },
+      "text": {
+        "text": "Remux-2160p · 58.4 GB from Nebula NZB. Sent to SABnzbd.",
+        "type": "mrkdwn"
+      },
+      "type": "section"
+    },
+    {
+      "fields": [
+        {
+          "text": "*Quality*\nRemux-2160p",
+          "type": "mrkdwn"
+        },
+        {
+          "text": "*Size*\n58.4 GB",
+          "type": "mrkdwn"
+        },
+        {
+          "text": "*Indexer*\nNebula NZB",
+          "type": "mrkdwn"
+        },
+        {
+          "text": "*Release*\nHalcyon.Drift.2024.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-GRP \u0026lt;@everyone\u0026gt; \u0026amp; co",
+          "type": "mrkdwn"
+        }
+      ],
+      "type": "section"
+    },
+    {
+      "elements": [
+        {
+          "text": "\u003chttps://gonema.example.lan/movies/7|Open in Gonema\u003e",
+          "type": "mrkdwn"
+        }
+      ],
+      "type": "context"
+    }
+  ],
+  "text": "Grabbed — Halcyon Drift (2024) · Remux-2160p · 58.4 GB from Nebula NZB"
+}

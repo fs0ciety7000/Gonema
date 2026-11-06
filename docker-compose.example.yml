@@ -1,0 +1,82 @@
+# Example: Gonema with qBittorrent (BitTorrent) and SABnzbd (Usenet).
+# Copy to docker-compose.yml, adjust the paths and the user, then:
+#   docker compose up -d
+#
+# HARD LINKS. Gonema hard links completed torrents into the library (no extra
+# space, seeding continues). A hard link only works inside ONE file system and,
+# in Docker, inside ONE mount. So every container mounts the same host folder
+# at the same path (/media here), with downloads and the library under it:
+#
+#   /srv/media/                 -> /media in every container
+#   ├── downloads/torrents/     qBittorrent save path
+#   ├── downloads/usenet/       SABnzbd complete folder
+#   └── movies/                 Gonema root folder
+#
+# Separate mounts such as /downloads and /movies look like two file systems to
+# the kernel: hard links fail and Gonema falls back to a copy (twice the space).
+# With the same path in every container, no remote path mapping is needed
+# either: qBittorrent reports /media/downloads/torrents/..., Gonema sees it there.
+#
+# USER. The Gonema image is built FROM scratch: no shell, no user database, so
+# the PUID/PGID variables of other images do not exist. Set `user:` instead,
+# with the UID:GID that owns /srv/media and ./gonema-data (`id -u`, `id -g`).
+# Use the same IDs as PUID/PGID of qBittorrent and SABnzbd so every container
+# can read and write the files of the others.
+
+services:
+  gonema:
+    image: ghcr.io/fs0ciety7000/gonema:latest
+    container_name: gonema
+    user: "1000:1000" # UID:GID owning ./gonema-data and /srv/media
+    environment:
+      TZ: Europe/Paris # time zone of the logs and schedules (tzdata is built in)
+      GONEMA_LOG_FILE: logs/gonema.log # optional, rotated, inside /data
+      # First run: from another machine, the account creation asks for the
+      # one-time setup token printed in the logs (`docker logs gonema`, setup=...).
+      # GONEMA_AUTH: disabled_for_local      # NOT with published ports (docker-proxy): see docs/configuration.md
+      # GONEMA_ALLOWED_HOSTS: gonema.example.org,gonema.lan  # host names besides IP addresses and localhost
+      # GONEMA_TRUSTED_PROXIES: 172.18.0.0/16 # the reverse proxy (its X-Forwarded-For / -Proto are believed)
+      # GONEMA_BASE_URL: /gonema             # when served under a sub-path by a reverse proxy
+      # GONEMA_TRUSTED_ORIGINS: https://gonema.example.org  # when the proxy rewrites Host
+    volumes:
+      - ./gonema-data:/data # database, master key, backups, image cache, logs
+      - /srv/media:/media
+    ports:
+      - "7676:7676"
+    restart: unless-stopped
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Europe/Paris
+      WEBUI_PORT: "8080"
+    volumes:
+      - ./qbittorrent-config:/config
+      - /srv/media:/media # save path: /media/downloads/torrents
+    ports:
+      - "8080:8080"
+      - "6881:6881"
+      - "6881:6881/udp"
+    restart: unless-stopped
+
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Europe/Paris
+    volumes:
+      - ./sabnzbd-config:/config
+      - /srv/media:/media # complete folder: /media/downloads/usenet
+    ports:
+      - "8081:8080"
+    restart: unless-stopped
+
+# In Gonema: add qBittorrent at http://qbittorrent:8080 and SABnzbd at
+# http://sabnzbd:8080 (service names resolve on the compose network; they are
+# private addresses, allowed for integrations by default), add /media/movies as
+# a root folder, and allow /media/downloads as an import folder.

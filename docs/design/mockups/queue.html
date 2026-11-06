@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Queue · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: queue & activity. ?tab=queue (default) | history */
+  .page { padding-top: var(--space-6); }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); }
+  .head h1 { font: var(--type-display-lg); letter-spacing: var(--type-display-lg-tracking); font-stretch: 125%; }
+  .head .sub { color: var(--text-secondary); font-variant-numeric: tabular-nums; margin-top: 6px; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); border-bottom: 1px solid var(--border); margin-bottom: var(--space-5); }
+  .bar .tabs { border: 0; }
+  .bar .toolbar { padding-bottom: 6px; }
+  .q { display: grid; gap: 10px; }
+  .qi { display: grid; grid-template-columns: 44px minmax(0, 1fr) 260px 168px; gap: var(--space-5); align-items: center; padding: 12px 14px 12px 12px; border-radius: var(--radius-lg); background: var(--bg-raised); border: 1px solid var(--border); box-shadow: var(--elev-1); }
+  .qi .poster-art { aspect-ratio: 2/3; border-radius: 6px; overflow: hidden; } .qi .poster-art svg { width: 100%; height: 100%; }
+  .qi .t { font: 600 15px/20px var(--font-ui); display: flex; gap: 8px; align-items: baseline; }
+  .qi .t span { font: 400 13px/20px var(--font-ui); color: var(--text-muted); }
+  .qi .rel { font: var(--type-mono-sm); color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 3px; }
+  .qi .tags { display: flex; gap: 6px; align-items: center; margin-top: 6px; font: var(--type-caption); color: var(--text-muted); }
+  .qi .prog { display: grid; gap: 6px; font: var(--type-caption); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .qi .prog .row { justify-content: space-between; }
+  .qi .acts { display: flex; justify-content: flex-end; gap: 2px; }
+  .qi.failed { border-color: color-mix(in srgb, var(--status-failed) 35%, transparent); }
+  .qi .why { grid-column: 2 / -1; display: grid; grid-template-columns: auto 1fr auto; gap: var(--space-3); align-items: center; padding: 10px 12px; border-radius: var(--radius-md); background: var(--bg-sunken); border: 1px solid var(--border); font: var(--type-body-sm); color: var(--text-secondary); }
+  .qi .why .i { color: var(--status-failed); width: 16px; height: 16px; }
+  .qi .why b { color: var(--text-primary); font-weight: 500; }
+  .attempts { display: flex; gap: 4px; align-items: center; font: var(--type-caption); color: var(--text-muted); }
+  .attempts i { width: 18px; height: 4px; border-radius: 2px; background: var(--bg-active); }
+  .attempts i.x { background: var(--status-failed); } .attempts i.now { background: var(--status-downloading); }
+  .grp-h { display: flex; align-items: center; gap: 10px; margin: var(--space-6) 0 var(--space-3); font: var(--type-overline); letter-spacing: var(--type-overline-tracking); font-stretch: 125%; text-transform: uppercase; color: var(--text-muted); }
+  .grp-h .count { color: var(--text-secondary); }
+  .toast-wrap { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: var(--z-toast); }
+
+  /* History */
+  .hist { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-raised); box-shadow: var(--elev-2); overflow: hidden; }
+  .hist .tbl { table-layout: fixed; }
+  .hist .tbl td { vertical-align: top; padding-top: 12px; padding-bottom: 12px; height: auto; white-space: normal; }
+  .hist .tbl thead th { background: color-mix(in srgb, var(--bg-sunken) 60%, var(--bg-raised)); }
+  .hist .film { display: flex; gap: 10px; align-items: center; font-weight: 500; }
+  .hist .film .thumb { width: 26px; aspect-ratio: 2/3; border-radius: 4px; overflow: hidden; flex: none; } .hist .film .poster-art svg { width: 100%; height: 100%; }
+  .hist .reason { font: var(--type-body-sm); color: var(--text-secondary); }
+  .hist .reason .rel { display: block; font: var(--type-mono-sm); color: var(--text-muted); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+  .hist tr.chain td:first-child { box-shadow: inset 2px 0 0 var(--border-strong); }
+  .hist .tbl td.when { color: var(--text-muted); font: var(--type-caption); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  [data-tab="history"] .only-queue, [data-tab="queue"] .only-history { display: none !important; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app" id="app" data-tab="queue">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar="queue"></nav>
+  <div class="main">
+    <header class="topbar">
+      <label class="input search" aria-label="Search"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" placeholder="Search films, people, releases…" aria-label="Search films, people, releases"><span class="kbd" aria-hidden="true">⌘K</span></label>
+      <div class="spacer"></div>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    </header>
+    <main id="main" class="page">
+      <div class="head">
+        <div><h1>Activity</h1><p class="sub only-queue">3 downloading · 18.4 MB/s · about 14 min for everything</p><p class="sub only-history">Every automatic action, with the reason it was taken.</p></div>
+        <div class="row only-queue"><span class="t-caption t-muted">Clients</span><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>qBittorrent</span><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>SABnzbd</span></div>
+      </div>
+      <div class="bar">
+        <div class="tabs" role="tablist" aria-label="Activity">
+          <a role="tab" id="tq" href="?tab=queue" aria-selected="true" style="text-decoration:none">Queue <span class="count">6</span></a>
+          <a role="tab" id="th" href="?tab=history" aria-selected="false" style="text-decoration:none">History</a>
+          <a role="tab" href="#" aria-selected="false" style="text-decoration:none">Blocklist <span class="count">14</span></a>
+        </div>
+        <div class="toolbar only-queue"><button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-hand"/></svg>Pause all</button><button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-refresh-cw"/></svg>Refresh</button></div>
+        <div class="toolbar only-history"><button class="chip" type="button"><span class="k">Event</span> All<svg class="i" aria-hidden="true"><use href="#i-chevron-down"/></svg></button><button class="chip" type="button"><span class="k">Film</span> Any<svg class="i" aria-hidden="true"><use href="#i-chevron-down"/></svg></button><button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg>Export</button></div>
+      </div>
+
+      <div class="only-queue">
+        <div class="q" id="q"></div>
+      </div>
+
+      <div class="only-history hist">
+        <table class="tbl" aria-label="History">
+          <colgroup><col style="width:112px"><col style="width:200px"><col style="width:156px"><col><col style="width:148px"><col style="width:76px"></colgroup>
+          <thead><tr><th>When</th><th>Film</th><th>Event</th><th>What happened and why</th><th>Quality</th><th class="r">Score</th></tr></thead>
+          <tbody id="h"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+<div class="toast-wrap only-queue-toast">
+  <div class="toast" role="status" aria-live="polite">
+    <span class="ticon"><svg class="i" aria-hidden="true"><use href="#i-ban"/></svg></span>
+    <div><div class="ttitle">Velvet Static: removed and blocklisted</div><div class="tbody">Searching for the next release.</div></div>
+    <div class="tactions"><button class="btn btn-secondary btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-undo-2"/></svg>Undo <span class="kbd">⌘Z</span></button><button class="icon-btn sm" type="button" aria-label="Dismiss"><svg class="i i-sm" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+    <span class="timer" aria-hidden="true"></span>
+  </div>
+</div>
+<script src="../system/icons.js"></script>
+<script src="../system/posters.js"></script>
+<script src="../system/mock.js"></script>
+<script>
+  const tab = new URLSearchParams(location.search).get('tab') === 'history' ? 'history' : 'queue';
+  document.getElementById('app').dataset.tab = tab;
+  document.getElementById('tq').setAttribute('aria-selected', tab === 'queue'); document.getElementById('th').setAttribute('aria-selected', tab === 'history');
+  if (tab === 'history') document.querySelector('.only-queue-toast').remove();
+  const ic = GN.ic;
+  const btn = (i, l) => '<button class="icon-btn sm" type="button" aria-label="' + l + '" title="' + l + '">' + ic(i, 'i-sm') + '</button>';
+  const prog = (p, l, r, cls, live) => '<div class="prog"><div class="row"><span>' + l + '</span><span>' + r + '</span></div><div class="progress ' + (cls || '') + (live ? ' live' : '') + '" style="--p:' + p + '" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(p * 100) + '" aria-label="Progress"><div class="fill"></div></div></div>';
+  const item = (f, rel, tags, middle, status, acts, extra, cls) => '<div class="qi ' + (cls || '') + '"><div class="poster-art" data-film="' + f + '"></div><div style="min-width:0"><div class="t">' + GN.films[f].title + ' <span>' + GN.films[f].year + '</span></div><div class="rel" title="' + rel + '">' + rel + '</div><div class="tags">' + tags + '</div></div>' + middle + '<div class="acts">' + status + acts + '</div>' + (extra || '') + '</div>';
+  const st = (s, l, i) => '<span class="status" data-status="' + s + '" style="margin-right:auto">' + ic(i) + l + '</span>';
+  const normalActs = btn('hand', 'Pause') + btn('ban', 'Remove and blocklist') + btn('ellipsis', 'More');
+  document.getElementById('q').innerHTML =
+    '<div class="grp-h">Downloading <span class="count">3</span></div>' +
+    item('last-projectionist', 'The.Last.Projectionist.2022.1080p.BluRay.DTS.x264-REELiNG', GN.qbadge('1080p Bluray') + '<span>qBittorrent · Sprocket Tracker · ▲ 112</span>', prog(.42, '5.2 of 12.4 GB', '18.4 MB/s · 12 min', '', true), st('downloading', '42%', 'arrow-down-to-line'), normalActs) +
+    item('ember-ash', 'Ember.and.Ash.Street.2019.1080p.AMZN.WEB-DL.DDP5.1.H.264-NIMBUS', GN.qbadge('1080p WEB-DL') + '<span>SABnzbd · Nebula NZB</span>', prog(.71, '4.2 of 5.9 GB', '9.1 MB/s · 4 min', '', true), st('downloading', '71%', 'arrow-down-to-line'), normalActs) +
+    item('ninefold', 'Ninefold.2020.1080p.WEB-DL.DDP5.1.H.264-LUMEN', GN.qbadge('1080p WEB-DL') + '<span>SABnzbd · AltReel</span><span class="attempts"><span class="sr-only">Attempt 2 of 6</span><i class="x"></i><i class="now"></i><i></i><i></i><i></i><i></i></span>', prog(.08, '0.5 of 6.2 GB', '12.0 MB/s · 8 min', '', true), st('downloading', 'Retry 2 of 6', 'refresh-cw'), normalActs,
+      '<div class="why"><svg class="i" aria-hidden="true"><use href="#i-triangle-alert"/></svg><span><b>The first print arrived damaged.</b> Ninefold.2020.1080p.WEB-DL-ZEPHYR was password-protected, so Gonema blocklisted it and is <b>trying release #2 of 6</b> (next best, score +25).</span><a class="btn btn-ghost btn-sm" href="failed-download.html">Details</a></div>', 'failed') +
+    '<div class="grp-h">Waiting <span class="count">3</span></div>' +
+    item('tidewater', 'Tidewater.2014.1080p.BluRay.REMUX.AVC.DTS-HD.MA.5.1-BOBiNE', GN.qbadge('1080p Remux') + '<span>SABnzbd · upgrade from Bluray-1080p</span>', '<div class="prog"><div class="row"><span>Importing · hardlinking 28.4 GB</span><span>step 2 of 3</span></div><div class="skeleton" style="height:6px;border-radius:9px"></div></div>', st('upgraded', 'Importing', 'folder-open'), btn('ellipsis', 'More')) +
+    item('low-tide-high-noon', 'Low.Tide.High.Noon.2020.1080p.BluRay.x264-AURORAHD', GN.qbadge('1080p Bluray') + '<span>qBittorrent · paused by you at 21:02</span>', prog(.67, '7.1 of 10.6 GB', 'Paused', 'paused'), st('unmonitored', 'Paused', 'hand'), btn('play', 'Resume') + btn('ban', 'Remove and blocklist') + btn('ellipsis', 'More')) +
+    item('sundial', 'Sundial.2015.1080p.BluRay.x264-MARQUEE', GN.qbadge('1080p Bluray') + '<span>SABnzbd · 10.2 GB</span>', '<div class="prog"><div class="row"><span>Imported to /data/movies/Sundial (2015)/</span><span>19:02</span></div><div class="progress" style="--p:1;--c:var(--status-available)"><div class="fill"></div></div></div>', st('available', 'Completed', 'circle-check'), btn('x', 'Clear from list'));
+
+  const H = [
+    ['3 Nov · 21:14', 'halcyon-drift', 'upgraded', 'Upgraded', 'circle-arrow-up', 'Replaced WEBDL-1080p: higher in your profile and score +35 → +70 (Dolby Vision +40, Trusted group +20, DDP Atmos +10). Old file in the recycle bin for 7 days.', 'Halcyon.Drift.2024.2160p.AMZN.WEB-DL.DDP5.1.Atmos.DV.HDR10.H.265-PELLiCULE', '2160p WEB-DL', 70, true],
+    ['3 Nov · 21:13', 'halcyon-drift', 'available', 'Imported', 'folder-open', 'Hardlinked 21.7 GB from /downloads/complete/movies. Renamed with your template.', '', '2160p WEB-DL', 70, true],
+    ['3 Nov · 20:41', 'halcyon-drift', 'downloading', 'Grabbed', 'arrow-down-to-line', 'RSS from Nebula NZB. Best of 9 accepted releases; it is an upgrade over the file on disk.', 'Halcyon.Drift.2024.2160p.AMZN.WEB-DL.DDP5.1.Atmos.DV.HDR10.H.265-PELLiCULE', '2160p WEB-DL', 70, true],
+    ['3 Nov · 17:48', 'ninefold', 'failed', 'Download failed', 'triangle-alert', 'SABnzbd: archive is password-protected. Blocklisted the release; grabbed the next best (2 of 6).', 'Ninefold.2020.1080p.WEB-DL.DDP5.1.H.264-ZEPHYR', '1080p WEB-DL', 25],
+    ['3 Nov · 17:31', 'last-projectionist', 'downloading', 'Grabbed', 'arrow-down-to-line', 'Automatic search after adding. 22 releases found, 5 accepted; picked Bluray-1080p (your cutoff).', 'The.Last.Projectionist.2022.1080p.BluRay.DTS.x264-REELiNG', '1080p Bluray', 40],
+    ['2 Nov · 09:12', 'coldharbour', 'unmonitored', 'Ignored', 'eye-off', 'New release on RSS, not grabbed: the film is not monitored.', 'Coldharbour.2016.1080p.BluRay.x264-GRANDE', '1080p Bluray', 30],
+    ['2 Nov · 08:40', 'halcyon-drift', 'failed', 'Download failed', 'triangle-alert', 'CRC error in part 37 of 112, repair blocks missing. Blocklisted.', 'Halcyon.Drift.2024.2160p.WEB-DL.DDP5.1.HDR.H.265-ZEPHYR', '2160p WEB-DL', 30],
+  ];
+  document.getElementById('h').innerHTML = H.map(([w, f, s, ev, i, why, rel, q, sc, chain]) => '<tr' + (chain ? ' class="chain"' : '') + '><td class="when">' + w + '</td><td><a class="film" href="movie-detail.html" style="color:inherit"><span class="thumb poster-art" data-film="' + f + '"></span>' + GN.films[f].title + '</a></td><td><span class="status" data-status="' + s + '">' + ic(i) + ev + '</span></td><td class="reason">' + why + (rel ? '<span class="rel" title="' + rel + '">' + rel + '</span>' : '') + '</td><td>' + GN.qbadge(q) + '</td><td class="r"><span class="score pos">+' + sc + '</span></td></tr>').join('');
+  GN.renderPosters();
+</script>
+</body>
+</html>

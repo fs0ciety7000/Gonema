@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:newznab="http://www.newznab.com/DTD/2010/feeds/attributes/">
+<channel>
+  <title>indexer.example</title>
+  <newznab:response offset="0" total="4"/>
+  <item>
+    <title>Newest.Movie.2026.2160p.WEB-DL.DDP5.1.H.265-NEW</title>
+    <guid isPermaLink="false">guid-4</guid>
+    <pubDate>Thu, 05 Nov 2026 12:00:00 +0000</pubDate>
+    <enclosure url="https://indexer.example/getnzb/guid-4.nzb" length="15000000000" type="application/x-nzb"/>
+    <newznab:attr name="category" value="2045"/>
+    <newznab:attr name="size" value="15000000000"/>
+  </item>
+  <item>
+    <title>Third.Movie.2026.1080p.WEB-DL.DDP5.1.H.264-THREE</title>
+    <guid isPermaLink="false">guid-3</guid>
+    <pubDate>Thu, 05 Nov 2026 11:00:00 +0000</pubDate>
+    <enclosure url="https://indexer.example/getnzb/guid-3.nzb" length="6000000000" type="application/x-nzb"/>
+    <newznab:attr name="category" value="2040"/>
+    <newznab:attr name="size" value="6000000000"/>
+  </item>
+  <item>
+    <title>Second.Movie.2025.1080p.BluRay.x264-TWO</title>
+    <guid isPermaLink="false">guid-2</guid>
+    <pubDate>Thu, 05 Nov 2026 10:00:00 +0000</pubDate>
+    <enclosure url="https://indexer.example/getnzb/guid-2.nzb" length="9000000000" type="application/x-nzb"/>
+    <newznab:attr name="category" value="2040"/>
+    <newznab:attr name="size" value="9000000000"/>
+  </item>
+  <item>
+    <title>First.Movie.2024.720p.BluRay.x264-ONE</title>
+    <guid isPermaLink="false">guid-1</guid>
+    <pubDate>Thu, 05 Nov 2026 09:00:00 +0000</pubDate>
+    <enclosure url="https://indexer.example/getnzb/guid-1.nzb" length="4000000000" type="application/x-nzb"/>
+    <newznab:attr name="category" value="2040"/>
+    <newznab:attr name="size" value="4000000000"/>
+  </item>
+</channel>
+</rss>

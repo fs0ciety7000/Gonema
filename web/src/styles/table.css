@@ -1,0 +1,51 @@
+/* Library table cells: status and "more" icons as cached background images (one decoded image per
+   icon and theme) instead of an inline SVG per row: rows that scroll in paint faster. Same Lucide
+   glyphs (1.75 stroke) and the status colours of DESIGN.md. Generated from lucide-react. */
+.lib-tbl {
+  --ico-available: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237FCC89' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m16 9-5.5 5.5L8 12'/%3E%3C/svg%3E");
+  --ico-missing: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E8AE55' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.1 2.182a10 10 0 0 1 3.8 0'/%3E%3Cpath d='M13.9 21.818a10 10 0 0 1-3.8 0'/%3E%3Cpath d='M17.609 3.721a10 10 0 0 1 2.69 2.7'/%3E%3Cpath d='M2.182 13.9a10 10 0 0 1 0-3.8'/%3E%3Cpath d='M20.279 17.609a10 10 0 0 1-2.7 2.69'/%3E%3Cpath d='M21.818 10.1a10 10 0 0 1 0 3.8'/%3E%3Cpath d='M3.721 6.391a10 10 0 0 1 2.7-2.69'/%3E%3Cpath d='M6.391 20.279a10 10 0 0 1-2.69-2.7'/%3E%3C/svg%3E");
+  --ico-downloading: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235EC4D6' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 17V3'/%3E%3Cpath d='m6 11 6 6 6-6'/%3E%3Cpath d='M19 21H5'/%3E%3C/svg%3E");
+  --ico-failed: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F27268' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E");
+  --ico-upgraded: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23D69AEA' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m16 12-4-4-4 4'/%3E%3Cpath d='M12 16V8'/%3E%3C/svg%3E");
+  --ico-unmonitored: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239C8D7D' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49'/%3E%3Cpath d='M14.084 14.158a3 3 0 0 1-4.242-4.242'/%3E%3Cpath d='M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143'/%3E%3Cpath d='m2 2 20 20'/%3E%3C/svg%3E");
+  --ico-more: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23C9BBAB' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='1'/%3E%3Ccircle cx='19' cy='12' r='1'/%3E%3Ccircle cx='5' cy='12' r='1'/%3E%3C/svg%3E");
+}
+[data-theme="light"] .lib-tbl {
+  --ico-available: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232B7236' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m16 9-5.5 5.5L8 12'/%3E%3C/svg%3E");
+  --ico-missing: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238C5300' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.1 2.182a10 10 0 0 1 3.8 0'/%3E%3Cpath d='M13.9 21.818a10 10 0 0 1-3.8 0'/%3E%3Cpath d='M17.609 3.721a10 10 0 0 1 2.69 2.7'/%3E%3Cpath d='M2.182 13.9a10 10 0 0 1 0-3.8'/%3E%3Cpath d='M20.279 17.609a10 10 0 0 1-2.7 2.69'/%3E%3Cpath d='M21.818 10.1a10 10 0 0 1 0 3.8'/%3E%3Cpath d='M3.721 6.391a10 10 0 0 1 2.7-2.69'/%3E%3Cpath d='M6.391 20.279a10 10 0 0 1-2.69-2.7'/%3E%3C/svg%3E");
+  --ico-downloading: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230B6E80' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 17V3'/%3E%3Cpath d='m6 11 6 6 6-6'/%3E%3Cpath d='M19 21H5'/%3E%3C/svg%3E");
+  --ico-failed: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B42A22' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E");
+  --ico-upgraded: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2386389F' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m16 12-4-4-4 4'/%3E%3Cpath d='M12 16V8'/%3E%3C/svg%3E");
+  --ico-unmonitored: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236E6257' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49'/%3E%3Cpath d='M14.084 14.158a3 3 0 0 1-4.242-4.242'/%3E%3Cpath d='M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143'/%3E%3Cpath d='m2 2 20 20'/%3E%3C/svg%3E");
+  --ico-more: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234E443B' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='1'/%3E%3Ccircle cx='19' cy='12' r='1'/%3E%3Ccircle cx='5' cy='12' r='1'/%3E%3C/svg%3E");
+}
+.lib-tbl .ico {
+  display: inline-block;
+  flex: none;
+  width: 15px;
+  height: 15px;
+  background: center / contain no-repeat;
+}
+.lib-tbl .ico-more {
+  width: 16px;
+  height: 16px;
+  background-image: var(--ico-more);
+}
+.lib-tbl .status[data-status="available"] .ico {
+  background-image: var(--ico-available);
+}
+.lib-tbl .status[data-status="missing"] .ico {
+  background-image: var(--ico-missing);
+}
+.lib-tbl .status[data-status="downloading"] .ico {
+  background-image: var(--ico-downloading);
+}
+.lib-tbl .status[data-status="failed"] .ico {
+  background-image: var(--ico-failed);
+}
+.lib-tbl .status[data-status="upgraded"] .ico {
+  background-image: var(--ico-upgraded);
+}
+.lib-tbl .status[data-status="unmonitored"] .ico {
+  background-image: var(--ico-unmonitored);
+}

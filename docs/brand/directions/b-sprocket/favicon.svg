@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="t">
+  <title id="t">Gonema favicon</title>
+  <rect width="256" height="256" rx="60" fill="#0F0E0D"/>
+  <g transform="translate(28 28) scale(0.78125)">
+  <path fill="#EEEAE4" fill-rule="evenodd" d="M212 24 H64 A40 40 0 0 0 24 64 V192 A40 40 0 0 0 64 232 H192 A40 40 0 0 0 232 192 V120 H188 V188 H68 V68 H212 Z M40 96 H52 A4 4 0 0 1 56 100 V116 A4 4 0 0 1 52 120 H40 A4 4 0 0 1 36 116 V100 A4 4 0 0 1 40 96 Z M40 148 H52 A4 4 0 0 1 56 152 V168 A4 4 0 0 1 52 172 H40 A4 4 0 0 1 36 168 V152 A4 4 0 0 1 40 148 Z"/>
+  <path fill="#3ED1BA" d="M132 120 H188 V160 H132 Z"/>
+  </g>
+</svg>

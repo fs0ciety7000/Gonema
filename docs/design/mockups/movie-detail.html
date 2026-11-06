@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Halcyon Drift (2024) · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: movie detail. Atmosphere = blurred backdrop + tint glows, fading into bg-base. */
+  .main { position: relative; isolation: isolate; }
+  .atmos { position: absolute; inset: 0 0 auto 0; height: 760px; z-index: -1; overflow: hidden; pointer-events: none; }
+  .atmos .backdrop-art { position: absolute; inset: -80px; }
+  .atmos .backdrop-art svg { width: 100%; height: 100%; }
+  .atmos .soft { filter: blur(56px) saturate(1.15); opacity: 0.6; transform: scale(1.1); }
+  .atmos .sharp { filter: blur(3px); opacity: 0.32; inset: 0 0 0 30%; -webkit-mask-image: radial-gradient(80% 90% at 75% 30%, #000 20%, transparent 75%); mask-image: radial-gradient(80% 90% at 75% 30%, #000 20%, transparent 75%); }
+  .atmos::before { content: ""; position: absolute; inset: 0; background: radial-gradient(60% 70% at 18% 20%, var(--movie-glow), transparent 70%), radial-gradient(50% 60% at 90% 0%, var(--movie-glow-2), transparent 70%); }
+  .atmos::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, color-mix(in srgb, var(--bg-base) 70%, transparent) 0%, color-mix(in srgb, var(--bg-base) 25%, transparent) 60%, transparent 100%), linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--bg-base) 40%, transparent) 55%, var(--bg-base) 100%); }
+  [data-theme="light"] .atmos .soft { opacity: 0.38; }
+  [data-theme="light"] .atmos .sharp { opacity: 0.16; }
+  [data-theme="light"] .atmos::after { background: linear-gradient(90deg, color-mix(in srgb, var(--bg-base) 82%, transparent) 0%, color-mix(in srgb, var(--bg-base) 45%, transparent) 60%, color-mix(in srgb, var(--bg-base) 20%, transparent) 100%), linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--bg-base) 55%, transparent) 55%, var(--bg-base) 100%); }
+  .grain { position: absolute; inset: 0; opacity: 0.05; mix-blend-mode: overlay; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+
+  .topbar.over-media { background: color-mix(in srgb, var(--glass-1) 40%, transparent); border-bottom-color: transparent; }
+
+  .hero { display: grid; grid-template-columns: 272px minmax(0, 1fr); gap: var(--space-10); align-items: end; padding: var(--space-10) var(--gutter) var(--space-8); max-width: var(--content-max); }
+  .hero-poster { aspect-ratio: 2 / 3; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 0 rgba(255, 245, 235, 0.08) inset, 0 40px 80px -30px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 244, 232, 0.08); view-transition-name: poster-halcyon-drift; }
+  [data-theme="light"] .hero-poster { box-shadow: 0 40px 70px -32px rgba(60, 30, 10, 0.55), 0 0 0 1px rgba(42, 32, 24, 0.1); }
+  .hero-poster .poster-art, .hero-poster svg { width: 100%; height: 100%; }
+  .hero-info { display: grid; gap: var(--space-4); min-width: 0; padding-bottom: 4px; }
+  .hero-info .t-overline a { color: var(--text-secondary); }
+  .hero-info .t-overline a:hover { color: var(--text-primary); }
+  .hero h1 { font: var(--type-display-2xl); letter-spacing: var(--type-display-2xl-tracking); font-stretch: 125%; margin-top: -4px; text-wrap: balance; }
+  .meta-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; color: var(--text-secondary); font: var(--type-body-lg); font-variant-numeric: tabular-nums; }
+  .meta-row .sep { width: 4px; height: 4px; border-radius: 50%; background: var(--text-muted); }
+  .cert { display: inline-flex; align-items: center; height: 22px; padding: 0 6px; border: 1px solid var(--border-control); border-radius: 5px; font: 600 12px/1 var(--font-ui); color: var(--text-secondary); }
+  .ratings { display: flex; align-items: center; gap: var(--space-6); }
+  .rating { display: flex; align-items: center; gap: 10px; }
+  .ring { --v: .78; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--movie-tint) calc(var(--v) * 360deg), color-mix(in srgb, var(--text-primary) 12%, transparent) 0); position: relative; }
+  .ring::before { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: color-mix(in srgb, var(--bg-base) 88%, transparent); }
+  .ring b { position: relative; font: 600 14px/1 var(--font-ui); font-variant-numeric: tabular-nums; }
+  .rating .src { display: grid; white-space: nowrap; font: var(--type-caption); color: var(--text-muted); }
+  .rating .src strong { font: 600 14px/18px var(--font-ui); color: var(--text-primary); }
+  .state-line { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; font: var(--type-body-sm); color: var(--text-secondary); }
+  .tagline { font: italic 400 22px/28px 'Instrument Serif', Georgia, serif; color: var(--text-primary); opacity: .9; }
+  .synopsis { max-width: 68ch; color: var(--text-secondary); font: var(--type-body-lg); }
+  .credits { display: flex; gap: var(--space-8); font: var(--type-body-sm); }
+  .credits dt { color: var(--text-muted); font: var(--type-caption); margin-bottom: 2px; }
+  .credits dd { margin: 0; color: var(--text-primary); font-weight: 500; }
+  .actions { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-2); }
+  .actions .switch { margin-left: var(--space-3); font: 500 14px/1 var(--font-ui); }
+
+  .body { display: grid; grid-template-columns: minmax(0, 1fr) 368px; gap: var(--space-8); padding: var(--space-4) var(--gutter) var(--space-16); max-width: var(--content-max); }
+  .col { display: grid; gap: var(--space-8); align-content: start; min-width: 0; }
+  .sec-hd { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-4); }
+  .sec-hd h2 { font: var(--type-title-lg); letter-spacing: var(--type-title-lg-tracking); }
+  .sec-hd .t-caption { color: var(--text-muted); }
+
+  .cast { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--space-4); }
+  .person { display: grid; gap: 8px; min-width: 0; }
+  .person .ph { aspect-ratio: 1; border-radius: 50%; overflow: hidden; box-shadow: var(--elev-1), 0 0 0 1px var(--border); }
+  .person .ph svg { width: 100%; height: 100%; }
+  .person b { font: 500 13px/18px var(--font-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .person span { font: var(--type-caption); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: -6px; }
+  .person.more .ph { display: grid; place-items: center; background: var(--bg-raised); font: 600 14px/1 var(--font-ui); color: var(--text-secondary); }
+
+  .collection { display: grid; grid-template-columns: 1fr auto; gap: var(--space-5); padding: var(--space-5); overflow: hidden; position: relative; }
+  .collection::before { content: ""; position: absolute; inset: 0; background: radial-gradient(70% 120% at 0% 0%, var(--movie-tint-soft), transparent 70%); pointer-events: none; }
+  .collection .films { display: flex; gap: var(--space-4); position: relative; }
+  .mini { width: 104px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .mini .f { aspect-ratio: 2 / 3; border-radius: 10px; overflow: hidden; box-shadow: var(--elev-poster); position: relative; }
+  .mini .f svg { width: 100%; height: 100%; }
+  .mini.current .f { box-shadow: 0 0 0 2px var(--bg-raised), 0 0 0 3.5px var(--movie-tint), var(--elev-poster); }
+  .mini.missing .f .poster-art { filter: saturate(.7) brightness(.8); }
+  .mini b { font: 500 12.5px/16px var(--font-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mini .status { font-size: 12px; }
+  .collection .info { position: relative; display: grid; align-content: space-between; gap: var(--space-4); max-width: 300px; }
+  .collection .info p { color: var(--text-secondary); font: var(--type-body-sm); }
+
+  /* History timeline */
+  .timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+  .timeline::before { content: ""; position: absolute; left: 15px; top: 16px; bottom: 16px; width: 1px; background: var(--border-strong); }
+  .ev { position: relative; display: grid; grid-template-columns: 32px 1fr auto; gap: 0 var(--space-4); padding: 10px 0 18px; }
+  .ev .dot { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--bg-raised); border: 1px solid var(--border-strong); color: var(--c, var(--text-secondary)); position: relative; z-index: 1; }
+  .ev .dot .i { width: 16px; height: 16px; }
+  .ev[data-status] .dot { background: color-mix(in srgb, var(--c) 16%, var(--bg-base)); border-color: color-mix(in srgb, var(--c) 40%, transparent); }
+  .ev[data-status="upgraded"] { --c: var(--status-upgraded); }
+  .ev[data-status="failed"] { --c: var(--status-failed); }
+  .ev[data-status="downloading"] { --c: var(--status-downloading); }
+  .ev[data-status="available"] { --c: var(--status-available); }
+  .ev .what { display: grid; gap: 6px; min-width: 0; padding-top: 5px; }
+  .ev .what .head { font: 500 14px/20px var(--font-ui); }
+  .ev .what .head strong { font-weight: 600; color: var(--c, var(--text-primary)); }
+  .ev .what .say { color: var(--text-secondary); font: var(--type-body-sm); }
+  .ev .rel { font: var(--type-mono-sm); color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ev .facts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font: var(--type-caption); color: var(--text-muted); }
+  .ev .facts .tag { height: 20px; font-size: 11.5px; }
+  .ev .when { padding-top: 7px; font: var(--type-caption); color: var(--text-muted); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ev .reason { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: var(--radius-md); background: var(--bg-sunken); border: 1px solid var(--border); font: var(--type-body-sm); color: var(--text-secondary); }
+  .ev .reason .i { width: 15px; height: 15px; margin-top: 1px; color: var(--text-muted); }
+  .arrow { color: var(--text-muted); }
+  .more-ev { margin-left: 48px; }
+
+  /* Aside cards */
+  .file-name { font: var(--type-mono-sm); color: var(--text-secondary); word-break: break-all; padding: 10px 12px; border-radius: var(--radius-md); background: var(--bg-sunken); border: 1px solid var(--border); }
+  .spec { display: grid; gap: 12px; margin-top: var(--space-4); }
+  .spec-row { display: grid; grid-template-columns: 92px 1fr; gap: var(--space-3); font: var(--type-body-sm); align-items: start; }
+  .spec-row dt { color: var(--text-muted); }
+  .spec-row dd { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-variant-numeric: tabular-nums; min-width: 0; }
+  .score-break { display: flex; flex-wrap: wrap; gap: 6px; }
+  .score-break .tag { font-family: var(--font-mono); font-size: 11.5px; }
+  .card-actions { display: flex; gap: var(--space-2); margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--border); }
+  .dates { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .dates li { display: grid; grid-template-columns: 32px 1fr auto; gap: var(--space-3); align-items: center; padding: 8px 0; }
+  .dates li + li { border-top: 1px solid var(--border); }
+  .dates .ico { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--bg-active); color: var(--text-secondary); }
+  .dates .ico .i { width: 16px; height: 16px; }
+  .dates b { font: 500 14px/18px var(--font-ui); display: block; }
+  .dates span { font: var(--type-caption); color: var(--text-muted); }
+  .dates .d { font: 500 13px/1 var(--font-ui); font-variant-numeric: tabular-nums; color: var(--text-secondary); text-align: right; }
+  .settings { display: grid; gap: var(--space-4); }
+  .settings .switch-row { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }
+  .settings .switch-row .t { display: grid; }
+  .settings .switch-row .t b { font: 500 14px/20px var(--font-ui); }
+  .settings .switch-row .t span { font: var(--type-caption); color: var(--text-muted); }
+  .settings .tags-edit { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: var(--control-h); padding: 4px 6px; border-radius: var(--radius-md); border: 1px solid var(--border-control); background: var(--bg-sunken); }
+  .settings .tags-edit .tag { height: 24px; }
+  .settings .tags-edit input { all: unset; flex: 1; min-width: 60px; font: var(--type-body-sm); color: var(--text-primary); padding: 0 4px; }
+  .settings .tags-edit input::placeholder { color: var(--text-muted); }
+  .saved { display: inline-flex; align-items: center; gap: 6px; font: var(--type-caption); color: var(--text-muted); }
+  @media (max-width: 1100px) {
+    .hero { grid-template-columns: 200px minmax(0, 1fr); gap: var(--space-6); padding-top: var(--space-6); align-items: start; }
+    .hero h1 { font: var(--type-display-xl); letter-spacing: var(--type-display-xl-tracking); font-stretch: 125%; }
+    .ratings { flex-wrap: wrap; gap: var(--space-4); }
+    .credits { gap: var(--space-5); flex-wrap: wrap; }
+    .body { grid-template-columns: minmax(0, 1fr); }
+    .body aside { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
+    .body aside > :first-child { grid-column: 1 / -1; }
+    .cast { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .cast .person:nth-child(n+6):not(.more) { display: none; }
+    .topbar .search { display: none; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app movie-scope" style="--movie-dominant: #B8643C">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar="films"></nav>
+  <div class="main">
+    <div class="atmos" aria-hidden="true">
+      <div class="backdrop-art soft" data-film="halcyon-drift"></div>
+      <div class="backdrop-art sharp" data-film="halcyon-drift"></div>
+      <div class="grain"></div>
+    </div>
+
+    <header class="topbar over-media">
+      <nav class="crumbs" aria-label="Breadcrumb">
+        <a href="library-grid.html">Films</a><svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg><span aria-current="page">Halcyon Drift</span>
+      </nav>
+      <div class="spacer"></div>
+      <label class="input search" aria-label="Search" style="width:280px">
+        <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+        <input type="search" placeholder="Search…" aria-label="Search films, people, releases">
+        <span class="kbd" aria-hidden="true">⌘K</span>
+      </label>
+      <button class="icon-btn" type="button" aria-label="Previous film (K)" title="Previous  K"><svg class="i" aria-hidden="true"><use href="#i-chevron-up"/></svg></button>
+      <button class="icon-btn" type="button" aria-label="Next film (J)" title="Next  J"><svg class="i" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="film-title">
+        <div class="hero-poster"><div class="poster-art" data-film="halcyon-drift"></div></div>
+        <div class="hero-info">
+          <p class="t-overline">Science fiction · Drama · <a href="#collection">The Drift Saga, part 2</a></p>
+          <h1 id="film-title">Halcyon Drift</h1>
+          <div class="meta-row">
+            <span>2024</span><span class="sep" aria-hidden="true"></span>
+            <span>2 h 12 min</span><span class="sep" aria-hidden="true"></span>
+            <span class="cert" aria-label="Rated PG-13">PG-13</span><span class="sep" aria-hidden="true"></span>
+            <span>English</span>
+          </div>
+          <div class="ratings">
+            <div class="rating"><div class="ring" style="--v:.78" aria-hidden="true"><b>78</b></div><div class="src"><strong>TMDB 7.8</strong>4,210 votes</div></div>
+            <div class="rating"><div class="ring" style="--v:.76" aria-hidden="true"><b>76</b></div><div class="src"><strong>IMDb 7.6</strong>12.4k votes</div></div>
+            <div class="state-line">
+              <span class="badge lg" data-status="upgraded"><svg class="i" aria-hidden="true"><use href="#i-circle-arrow-up"/></svg>Upgraded</span>
+              <span>WEBDL-2160p on disk · cutoff Remux-2160p · still looking for upgrades</span>
+            </div>
+          </div>
+          <p class="tagline">The sun never sets on the colony. That is the problem.</p>
+          <p class="synopsis">Fourteen years after the generation ship <i>Halcyon</i> settled a tidally locked world, its engineer Ilse Varga discovers the colony has been drifting toward the terminator line, where endless dusk meets endless night. With the council divided and the archive silent, she has one long day to turn a city around.</p>
+          <dl class="credits">
+            <div><dt>Director</dt><dd>Ines Calloway</dd></div>
+            <div><dt>Writers</dt><dd>Ines Calloway, Rafe Okonkwo</dd></div>
+            <div><dt>Studio</dt><dd>Kestrel Pictures</dd></div>
+          </dl>
+          <div class="actions">
+            <button class="btn btn-tint btn-lg" type="button"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg>Search now</button>
+            <a class="btn btn-secondary btn-lg" href="interactive-search.html"><svg class="i" aria-hidden="true"><use href="#i-scan-search"/></svg>Interactive search</a>
+            <button class="btn btn-secondary btn-lg" type="button"><svg class="i" aria-hidden="true"><use href="#i-play"/></svg>Trailer <span class="t-muted tnum" style="font-weight:500">2:31</span></button>
+            <button class="switch tint" role="switch" aria-checked="true" type="button"><span class="track" aria-hidden="true"></span>Monitored</button>
+            <button class="icon-btn" type="button" aria-label="More actions" aria-haspopup="menu" style="margin-left:auto"><svg class="i" aria-hidden="true"><use href="#i-ellipsis"/></svg></button>
+          </div>
+        </div>
+      </section>
+
+      <div class="body">
+        <div class="col">
+          <section aria-labelledby="cast-h">
+            <div class="sec-hd"><h2 id="cast-h">Cast</h2><a class="t-caption" href="#">Full cast &amp; crew</a></div>
+            <div class="cast" id="cast"></div>
+          </section>
+
+          <section id="collection" class="panel collection" aria-labelledby="coll-h">
+            <div class="films">
+              <div class="mini"><div class="f"><div class="poster-art" data-film="drift-signal"></div></div><b>Drift: Signal</b><span class="status" data-status="available"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>2019 · 1080p</span></div>
+              <div class="mini current"><div class="f"><div class="poster-art" data-film="halcyon-drift"></div></div><b>Halcyon Drift</b><span class="status" data-status="upgraded"><svg class="i" aria-hidden="true"><use href="#i-circle-arrow-up"/></svg>2024 · 2160p</span></div>
+              <div class="mini missing"><div class="f"><div class="poster-art" data-film="drift-terminus"></div></div><b>Drift: Terminus</b><span class="status" data-status="missing"><svg class="i" aria-hidden="true"><use href="#i-circle-dashed"/></svg>Due 2027</span></div>
+            </div>
+            <div class="info">
+              <div>
+                <p class="t-overline" style="margin-bottom:6px">Collection</p>
+                <h2 id="coll-h" class="t-title-lg">The Drift Saga</h2>
+                <p style="margin-top:6px">3 films · 2 in your library. The third is announced for 2027; Gonema adds it on release day.</p>
+              </div>
+              <div class="row" style="justify-content:space-between">
+                <button class="switch tint" role="switch" aria-checked="true" type="button"><span class="track" aria-hidden="true"></span>Monitor collection</button>
+                <a class="btn btn-ghost btn-sm" href="#">Open<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></a>
+              </div>
+            </div>
+          </section>
+
+          <section aria-labelledby="hist-h">
+            <div class="sec-hd"><h2 id="hist-h">History</h2>
+              <div class="segmented" role="radiogroup" aria-label="History filter"><button role="radio" aria-checked="true">All</button><button role="radio" aria-checked="false">Grabs</button><button role="radio" aria-checked="false">Imports</button><button role="radio" aria-checked="false">Failures</button></div>
+            </div>
+            <ol class="timeline">
+              <li class="ev" data-status="upgraded">
+                <span class="dot"><svg class="i" aria-hidden="true"><use href="#i-circle-arrow-up"/></svg></span>
+                <div class="what">
+                  <div class="head"><strong>Upgraded</strong> <span class="t-muted">WEBDL-1080p</span> <span class="arrow" aria-label="to">→</span> WEBDL-2160p</div>
+                  <div class="say">New print. Same seat, better picture. The 1080p file went to the recycle bin (kept 7 days).</div>
+                  <div class="reason"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><span>Why: higher quality in your profile (rank 6 → 9) and score <b class="tnum">+35 → +70</b>: Dolby Vision +40, Trusted group +20, DDP Atmos +10.</span></div>
+                  <div class="facts"><span class="rel" title="Halcyon.Drift.2024.2160p.AMZN.WEB-DL.DDP5.1.Atmos.DV.HDR10.H.265-PELLiCULE">Halcyon.Drift.2024.2160p.AMZN.WEB-DL.DDP5.1.Atmos.DV.HDR10.H.265-PELLiCULE</span></div>
+                </div>
+                <time class="when" datetime="2026-11-03T21:14">3 Nov · 21:14</time>
+              </li>
+              <li class="ev" data-status="available">
+                <span class="dot"><svg class="i" aria-hidden="true"><use href="#i-folder-open"/></svg></span>
+                <div class="what">
+                  <div class="head"><strong>Imported</strong> 21.7 GB, hardlinked</div>
+                  <div class="facts"><span>SABnzbd</span><span>·</span><span>/downloads/complete/movies → /data/movies/Halcyon Drift (2024)/</span></div>
+                </div>
+                <time class="when" datetime="2026-11-03T21:13">3 Nov · 21:13</time>
+              </li>
+              <li class="ev" data-status="downloading">
+                <span class="dot"><svg class="i" aria-hidden="true"><use href="#i-arrow-down-to-line"/></svg></span>
+                <div class="what">
+                  <div class="head"><strong>Grabbed</strong> from Nebula NZB · automatic (RSS)</div>
+                  <div class="facts"><span class="score pos">+70</span><span class="tag plain">Usenet</span><span class="tag plain">Upgrade</span><span>Next best was 2 points lower</span></div>
+                </div>
+                <time class="when" datetime="2026-11-03T20:41">3 Nov · 20:41</time>
+              </li>
+              <li class="ev" data-status="failed">
+                <span class="dot"><svg class="i" aria-hidden="true"><use href="#i-triangle-alert"/></svg></span>
+                <div class="what">
+                  <div class="head"><strong>Download failed</strong>, release blocklisted</div>
+                  <div class="say">The print arrived damaged. Blocklisted it and tried the next release.</div>
+                  <div class="reason"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><span>SABnzbd: unpack failed, CRC error in part 37 of 112. Repair blocks were missing on the server.</span></div>
+                  <div class="facts"><span class="rel">Halcyon.Drift.2024.2160p.WEB-DL.DDP5.1.HDR.H.265-ZEPHYR</span></div>
+                </div>
+                <time class="when" datetime="2026-11-02T08:40">2 Nov · 08:40</time>
+              </li>
+              <li class="ev" data-status="available">
+                <span class="dot"><svg class="i" aria-hidden="true"><use href="#i-folder-open"/></svg></span>
+                <div class="what">
+                  <div class="head"><strong>Imported</strong> WEBDL-1080p, renamed</div>
+                  <div class="facts"><span class="rel">Halcyon.Drift.2024.1080p.AMZN.WEB-DL.DDP5.1.H.264-LUMEN</span></div>
+                </div>
+                <time class="when" datetime="2026-10-28T19:20">28 Oct · 19:20</time>
+              </li>
+            </ol>
+            <button class="btn btn-ghost btn-sm more-ev" type="button"><svg class="i" aria-hidden="true"><use href="#i-chevron-down"/></svg>2 earlier events</button>
+          </section>
+        </div>
+
+        <aside class="col" aria-label="File and settings">
+          <section class="panel" aria-labelledby="file-h">
+            <div class="panel-hd"><h2 id="file-h"><svg class="i" aria-hidden="true"><use href="#i-file-video"/></svg>File</h2><span class="saved">Imported 3 Nov 2026</span></div>
+            <div class="panel-bd">
+              <div class="file-name">Halcyon Drift (2024) [WEBDL-2160p][DV HDR10][EAC3 Atmos 5.1]-PELLiCULE.mkv</div>
+              <dl class="spec">
+                <div class="spec-row"><dt>Quality</dt><dd><span class="qbadge uhd"><b>2160p</b><span>WEB-DL</span></span><span class="t-muted">rev 1</span></dd></div>
+                <div class="spec-row"><dt>Size</dt><dd>21.7 GB <span class="t-muted">· 164 MB/min</span></dd></div>
+                <div class="spec-row"><dt>Edition</dt><dd>Theatrical</dd></div>
+                <div class="spec-row"><dt>Video</dt><dd>HEVC 10-bit · 3840×1606 · 23.976 fps</dd></div>
+                <div class="spec-row"><dt>HDR</dt><dd><span class="hdr-flag">DV P8</span><span class="hdr-flag">HDR10</span></dd></div>
+                <div class="spec-row"><dt>Audio</dt><dd>English · DDP Atmos 5.1<br><span class="t-muted">French · DDP 5.1</span></dd></div>
+                <div class="spec-row"><dt>Subtitles</dt><dd>EN, FR, DE, ES <span class="t-muted">+4</span></dd></div>
+                <div class="spec-row"><dt>Score</dt><dd><span class="score pos">+70</span><span class="score-break"><span class="tag plain">DV +40</span><span class="tag plain">Trusted +20</span><span class="tag plain">Atmos +10</span></span></dd></div>
+              </dl>
+              <div class="card-actions">
+                <button class="btn btn-secondary btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-pencil"/></svg>Rename preview</button>
+                <button class="btn btn-ghost btn-sm" type="button" style="--btn-fg:var(--status-failed);margin-left:auto"><svg class="i" aria-hidden="true"><use href="#i-trash-2"/></svg>Delete file…</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel" aria-labelledby="dates-h">
+            <div class="panel-hd"><h2 id="dates-h">Release dates</h2><span class="saved">United States</span></div>
+            <div class="panel-bd">
+              <ul class="dates">
+                <li><span class="ico"><svg class="i" aria-hidden="true"><use href="#i-ticket"/></svg></span><div><b>In cinemas</b><span>Theatrical</span></div><span class="d">14 Mar 2024</span></li>
+                <li><span class="ico"><svg class="i" aria-hidden="true"><use href="#i-monitor-play"/></svg></span><div><b>Digital</b><span>Streaming &amp; rental</span></div><span class="d">21 May 2024</span></li>
+                <li><span class="ico"><svg class="i" aria-hidden="true"><use href="#i-disc-3"/></svg></span><div><b>Physical</b><span>4K Blu-ray</span></div><span class="d">9 Jul 2024</span></li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="panel" aria-labelledby="set-h">
+            <div class="panel-hd"><h2 id="set-h">Film settings</h2><span class="saved"><svg class="i i-xs" aria-hidden="true"><use href="#i-check"/></svg>Saved</span></div>
+            <div class="panel-bd settings">
+              <div class="switch-row">
+                <div class="t"><b id="mon-l">Monitored</b><span>Search for it and for upgrades</span></div>
+                <button class="switch tint" role="switch" aria-checked="true" aria-labelledby="mon-l" type="button"><span class="track" aria-hidden="true"></span></button>
+              </div>
+              <div class="field">
+                <span class="field-label" id="prof-l">Quality profile</span>
+                <button class="input select" type="button" aria-haspopup="listbox" aria-labelledby="prof-l prof-v"><span class="value" id="prof-v">Cinema UHD</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button>
+                <span class="field-hint">Floor 1080p · cutoff Remux-2160p · min score 0</span>
+              </div>
+              <div class="field">
+                <span class="field-label" id="avail-l">Minimum availability</span>
+                <button class="input select" type="button" aria-haspopup="listbox" aria-labelledby="avail-l avail-v"><span class="value" id="avail-v">Released (digital or physical)</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button>
+              </div>
+              <div class="field">
+                <label class="field-label" for="tags-in">Tags</label>
+                <div class="tags-edit"><span class="tag">sci-fi</span><span class="tag">4k-hdr</span><span class="tag">family-room</span><input id="tags-in" placeholder="Add tag…"></div>
+              </div>
+              <div class="field">
+                <span class="field-label" id="root-l">Root folder <span class="t-muted" style="font-weight:400">6.3 TB free</span></span>
+                <button class="input select mono" type="button" aria-haspopup="listbox" aria-labelledby="root-l root-v"><span class="value t-mono" id="root-v">/data/movies</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="../system/icons.js"></script>
+<script src="../system/posters.js"></script>
+<script src="../system/mock.js"></script>
+<script>
+  // Fictional cast. Portraits are abstract silhouettes (no real faces).
+  const cast = [
+    ['Amara Okoye', 'Ilse Varga', ['#b8643c', '#3a1d14']],
+    ['Tomasz Hale', 'Rook', ['#5a6b7a', '#1a2028']],
+    ['Sun-li Park', 'Dr. Wren Adair', ['#8a5a8a', '#24152a']],
+    ['Mathis Delorme', 'Elias Varga', ['#7a6a4a', '#221d12']],
+    ['Priya Raman', 'The Archivist', ['#4a7a6a', '#12241e']],
+    ['Owen Castellan', 'Juno', ['#9a5a4a', '#2a1410']],
+  ];
+  const portrait = (c, i) => '<svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="pg' + i + '" x1="0" y1="0" x2=".4" y2="1"><stop offset="0" stop-color="' + c[0] + '"/><stop offset="1" stop-color="' + c[1] + '"/></linearGradient><radialGradient id="pl' + i + '" cx=".3" cy=".25" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="100" height="100" fill="url(#pg' + i + ')"/><circle cx="50" cy="42" r="17" fill="' + c[1] + '" opacity=".85"/><path d="M18 100 C20 74 34 64 50 64 C66 64 80 74 82 100Z" fill="' + c[1] + '" opacity=".85"/><rect width="100" height="100" fill="url(#pl' + i + ')"/></svg>';
+  document.getElementById('cast').innerHTML = cast.map((p, i) => '<a class="person" href="#" style="color:inherit;text-decoration:none"><div class="ph">' + portrait(p[2], i) + '</div><b>' + p[0] + '</b><span>' + p[1] + '</span></a>').join('') +
+    '<a class="person more" href="#" style="color:inherit;text-decoration:none" aria-label="18 more cast members"><div class="ph">+18</div><b>Full cast</b><span>&nbsp;</span></a>';
+  GN.renderPosters();
+</script>
+</body>
+</html>

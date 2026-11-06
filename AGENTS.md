@@ -4,18 +4,19 @@ Règles communes à tous les agents de code (Claude Code, Codex, Cursor...). For
 
 ## Contexte
 
-- **Nom** : `TODO`
-- **Type** : `TODO`
-- **Résumé en une phrase** : `TODO`
+- **Nom** : Gonema
+- **Type** : backend Go + SPA embarquée (application auto-hébergée)
+- **Résumé en une phrase** : gestionnaire de collection de films auto-hébergé (Usenet/BitTorrent) qui surveille, choisit la meilleure release selon des règles de qualité, télécharge, importe, renomme et améliore dans le temps.
 
 ## Commandes
 
 ```bash
-install: TODO
-dev:     TODO
-test:    TODO
-lint:    TODO
-build:   TODO
+install: go mod download            # front (phase 7) : npm ci dans web/
+dev:     go run ./cmd/gonema         # serveur à partir de la phase 3+
+test:    make test                   # go test ./...
+bench:   make bench                  # benchmarks du moteur
+lint:    make lint                   # golangci-lint (version compatible Go 1.27 requise)
+build:   make build                  # binaire statique bin/gonema (CGO_ENABLED=0)
 ```
 
 ## Structure du dépôt
@@ -26,10 +27,19 @@ build:   TODO
 ├── CLAUDE.md
 ├── DESIGN.md           # direction visuelle
 ├── DEPLOY.md           # Coolify / Cloudflare, domaine, variables (noms)
-├── docs/brief.md       # objectif et périmètre
+├── LICENSE             # GPL-3.0
+├── Makefile
+├── go.mod
+├── docs/
+│   ├── brief.md        # objectif et périmètre
+│   ├── architecture.md # plan par phases, stack, architecture
+│   └── data-model.md   # schéma SQLite et types du moteur
+├── cmd/gonema/         # point d'entrée
+├── internal/           # parser, quality, decision (purs), store, indexer, download, importer…
+├── testdata/releases/  # corpus de noms de releases
+├── web/                # SPA, uniquement après validation du design (phase 7)
 ├── .env.example        # noms des variables, valeurs factices
-├── secrets/            # secrets chiffrés (sops + age), commitables
-└── src/                # TODO
+└── secrets/            # secrets chiffrés (sops + age), commitables
 ```
 
 ## Règles de travail

@@ -1,0 +1,1223 @@
+{
+ "adult": false,
+ "backdrop_path": "/hZkgoQYus5vegHoetLkCJzb17zJ.jpg",
+ "belongs_to_collection": null,
+ "budget": 63000000,
+ "genres": [
+  {
+   "id": 18,
+   "name": "Drama"
+  },
+  {
+   "id": 53,
+   "name": "Thriller"
+  },
+  {
+   "id": 35,
+   "name": "Comedy"
+  }
+ ],
+ "homepage": "http://www.foxmovies.com/movies/fight-club",
+ "id": 550,
+ "imdb_id": "tt0137523",
+ "origin_country": [
+  "US"
+ ],
+ "original_language": "en",
+ "original_title": "Fight Club",
+ "overview": "A ticking-time-bomb insomniac and a slippery soap salesman channel primal male aggression into a shocking new form of therapy. Their concept catches on, with underground \"fight clubs\" forming in every town, until an eccentric gets in the way and ignites an out-of-control spiral toward oblivion.",
+ "popularity": 73.433,
+ "poster_path": "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",
+ "production_companies": [
+  {
+   "id": 1,
+   "logo_path": "/tlVSws0RvvtPBwViUyOFAO0vcQS.png",
+   "name": "Lucasfilm Ltd.",
+   "origin_country": "US"
+  },
+  {
+   "id": 25,
+   "logo_path": "/qZCc1lty5FzX30aOCVRBLzaVmcp.png",
+   "name": "20th Century Fox",
+   "origin_country": "US"
+  }
+ ],
+ "production_countries": [
+  {
+   "iso_3166_1": "US",
+   "name": "United States of America"
+  }
+ ],
+ "release_date": "1999-10-15",
+ "revenue": 100853753,
+ "runtime": 139,
+ "spoken_languages": [
+  {
+   "english_name": "English",
+   "iso_639_1": "en",
+   "name": "English"
+  }
+ ],
+ "status": "Released",
+ "tagline": "Mischief. Mayhem. Soap.",
+ "title": "Fight Club",
+ "video": false,
+ "vote_average": 8.433,
+ "vote_count": 26279,
+ "credits": {
+  "cast": [
+   {
+    "adult": false,
+    "gender": 2,
+    "id": 819,
+    "known_for_department": "Acting",
+    "name": "Edward Norton",
+    "original_name": "Edward Norton",
+    "popularity": 26.99,
+    "profile_path": "/8nytsqL59SFJTVYVrN72k6qkGgJ.jpg",
+    "cast_id": 4,
+    "character": "The Narrator",
+    "credit_id": "52fe4250c3a36847f80149f3",
+    "order": 0
+   },
+   {
+    "adult": false,
+    "gender": 2,
+    "id": 287,
+    "known_for_department": "Acting",
+    "name": "Brad Pitt",
+    "original_name": "Brad Pitt",
+    "popularity": 45.202,
+    "profile_path": "/huV2cdcolEUwJy37QvH914vup7d.jpg",
+    "cast_id": 5,
+    "character": "Tyler Durden",
+    "credit_id": "52fe4250c3a36847f80149f7",
+    "order": 1
+   },
+   {
+    "adult": false,
+    "gender": 1,
+    "id": 1283,
+    "known_for_department": "Acting",
+    "name": "Helena Bonham Carter",
+    "original_name": "Helena Bonham Carter",
+    "popularity": 22.112,
+    "profile_path": "/DDeITcCpnBd0CkAIRPhggy9bt5.jpg",
+    "cast_id": 285,
+    "character": "Marla Singer",
+    "credit_id": "631f0de8bd32090082733691",
+    "order": 2
+   },
+   {
+    "adult": false,
+    "gender": 2,
+    "id": 7470,
+    "known_for_department": "Acting",
+    "name": "Meat Loaf",
+    "original_name": "Meat Loaf",
+    "popularity": 7.738,
+    "profile_path": "/7gKLR1u46OB8WJ6m06LemNBCMx6.jpg",
+    "cast_id": 7,
+    "character": "Robert \"Bob\" Paulson",
+    "credit_id": "52fe4250c3a36847f80149ff",
+    "order": 3
+   },
+   {
+    "adult": false,
+    "gender": 2,
+    "id": 7499,
+    "known_for_department": "Acting",
+    "name": "Jared Leto",
+    "original_name": "Jared Leto",
+    "popularity": 18.969,
+    "profile_path": "/ca3x0OfIKbJppZh8S1Alx3GfUZO.jpg",
+    "cast_id": 286,
+    "character": "Angel Face",
+    "credit_id": "631f0e29ce9e91007f757d86",
+    "order": 4
+   },
+   {
+    "adult": false,
+    "gender": 2,
+    "id": 7471,
+    "known_for_department": "Acting",
+    "name": "Zach Grenier",
+    "original_name": "Zach Grenier",
+    "popularity": 5.608,
+    "profile_path": "/fSyQKZO39sUsqY283GXiScOg3Hi.jpg",
+    "cast_id": 31,
+    "character": "Richard Chesler",
+    "credit_id": "52fe4250c3a36847f8014a55",
+    "order": 5
+   }
+  ],
+  "crew": [
+   {
+    "adult": false,
+    "gender": 2,
+    "id": 376,
+    "known_for_department": "Production",
+    "name": "Arnon Milchan",
+    "original_name": "Arnon Milchan",
+    "popularity": 2.931,
+    "profile_path": "/b2hBExX4NnczNAnLuTBF4kmNhZm.jpg",
+    "credit_id": "55731b8192514111610027d7",
+    "department": "Production",
+    "job": "Executive Producer"
+   },
+   {
+    "adult": false,
+    "gender": 2,
+    "id": 605,
+    "known_for_department": "Costume & Make-Up",
+    "name": "Michael Kaplan",
+    "original_name": "Michael Kaplan",
+    "popularity": 4.294,
+    "profile_path": "/bNarnI5K4XYIKaHsX6HAitllyQr.jpg",
+    "credit_id": "5894c4eac3a3685ec6000218",
+    "department": "Costume & Make-Up",
+    "job": "Costume Design"
+   },
+   {
+    "adult": false,
+    "gender": 2,
+    "id": 1254,
+    "known_for_department": "Production",
+    "name": "Art Linson",
+    "original_name": "Art Linson",
+    "popularity": 2.503,
+    "profile_path": "/gZbaXFTQCSWCq6vzE817NXIA4zC.jpg",
+    "credit_id": "52fe4250c3a36847f8014a11",
+    "department": "Production",
+    "job": "Producer"
+   },
+   {
+    "adult": false,
+    "gender": 2,
+    "id": 1303,
+    "known_for_department": "Art",
+    "name": "Alex McDowell",
+    "original_name": "Alex McDowell",
+    "popularity": 2.188,
+    "profile_path": null,
+    "credit_id": "52fe4250c3a36847f8014a35",
+    "department": "Art",
+    "job": "Production Design"
+   },
+   {
+    "adult": false,
+    "gender": 2,
+    "id": 7237,
+    "known_for_department": "Art",
+    "name": "Jay Hart",
+    "original_name": "Jay Hart",
+    "popularity": 1.166,
+    "profile_path": null,
+    "credit_id": "5894c4a3c3a3685ecd0001c0",
+    "department": "Art",
+    "job": "Set Decoration"
+   },
+   {
+    "adult": false,
+    "gender": 2,
+    "id": 5339,
+    "known_for_department": "Sound",
+    "name": "David Boulton",
+    "original_name": "David Boulton",
+    "popularity": 1.4,
+    "profile_path": null,
+    "credit_id": "5c7a4d980e0a263ee10eaae9",
+    "department": "Sound",
+    "job": "ADR Mixer"
+   }
+  ]
+ },
+ "videos": {
+  "results": [
+   {
+    "iso_639_1": "en",
+    "iso_3166_1": "US",
+    "name": "Fight Club (1999) Trailer - Starring Brad Pitt, Edward Norton, Helena Bonham Carter",
+    "key": "O-b2VfmmbyA",
+    "site": "YouTube",
+    "size": 720,
+    "type": "Trailer",
+    "official": false,
+    "published_at": "2016-03-05T02:03:14.000Z",
+    "id": "639d5326be6d88007f170f44"
+   },
+   {
+    "iso_639_1": "en",
+    "iso_3166_1": "US",
+    "name": "#TBT Trailer",
+    "key": "BdJKm16Co6M",
+    "site": "YouTube",
+    "size": 1080,
+    "type": "Trailer",
+    "official": true,
+    "published_at": "2014-10-02T19:20:22.000Z",
+    "id": "5c9294240e0a267cd516835f"
+   },
+   {
+    "iso_639_1": "en",
+    "iso_3166_1": "US",
+    "name": "Fight Club - Teaser",
+    "key": "TEASER00001",
+    "site": "YouTube",
+    "size": 1080,
+    "type": "Teaser",
+    "official": true,
+    "published_at": "2014-10-01T19:20:22.000Z",
+    "id": "t1"
+   },
+   {
+    "iso_639_1": "en",
+    "iso_3166_1": "US",
+    "name": "Behind the scenes",
+    "key": "BTS00000001",
+    "site": "YouTube",
+    "size": 1080,
+    "type": "Featurette",
+    "official": true,
+    "published_at": "2014-10-01T19:20:22.000Z",
+    "id": "t2"
+   },
+   {
+    "iso_639_1": "en",
+    "iso_3166_1": "US",
+    "name": "Vimeo trailer",
+    "key": "123456",
+    "site": "Vimeo",
+    "size": 1080,
+    "type": "Trailer",
+    "official": true,
+    "published_at": "2014-10-01T19:20:22.000Z",
+    "id": "t3"
+   }
+  ]
+ },
+ "alternative_titles": {
+  "titles": [
+   {
+    "iso_3166_1": "RS",
+    "title": "Borilački klub",
+    "type": ""
+   },
+   {
+    "iso_3166_1": "IL",
+    "title": "Mo'adon Krav",
+    "type": "romanization"
+   },
+   {
+    "iso_3166_1": "RU",
+    "title": "Boytsovskiy klub",
+    "type": ""
+   },
+   {
+    "iso_3166_1": "BG",
+    "title": "Boen klub",
+    "type": ""
+   },
+   {
+    "iso_3166_1": "GR",
+    "title": "Kláb máchis",
+    "type": ""
+   },
+   {
+    "iso_3166_1": "UA",
+    "title": "Biytsivsʹkyy klub",
+    "type": ""
+   },
+   {
+    "iso_3166_1": "TR",
+    "title": "Dövüş Klubü",
+    "type": ""
+   },
+   {
+    "iso_3166_1": "MX",
+    "title": "El Club de la Pelea",
+    "type": "Hispanoamérica"
+   },
+   {
+    "iso_3166_1": "KR",
+    "title": "파이트 클럽",
+    "type": ""
+   },
+   {
+    "iso_3166_1": "LV",
+    "title": "Cīņas klubs",
+    "type": ""
+   },
+   {
+    "iso_3166_1": "IR",
+    "title": "باشگاه مشت زنی",
+    "type": ""
+   },
+   {
+    "iso_3166_1": "PL",
+    "title": "Podziemny krąg",
+    "type": ""
+   }
+  ]
+ },
+ "release_dates": {
+  "results": [
+   {
+    "iso_3166_1": "BG",
+    "release_dates": [
+     {
+      "certification": "c",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "2012-08-28T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "CH",
+    "release_dates": [
+     {
+      "certification": "18",
+      "descriptors": [],
+      "iso_639_1": "de",
+      "note": "",
+      "release_date": "1999-11-04T00:00:00.000Z",
+      "type": 3
+     },
+     {
+      "certification": "18",
+      "descriptors": [],
+      "iso_639_1": "fr",
+      "note": "",
+      "release_date": "1999-11-10T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "IE",
+    "release_dates": [
+     {
+      "certification": "18",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-12T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "NL",
+    "release_dates": [
+     {
+      "certification": "16",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-04T00:00:00.000Z",
+      "type": 3
+     },
+     {
+      "certification": "16",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "DVD",
+      "release_date": "2004-08-04T00:00:00.000Z",
+      "type": 5
+     },
+     {
+      "certification": "16",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "Net 5",
+      "release_date": "2002-10-26T00:00:00.000Z",
+      "type": 5
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "US",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "CMJ Film Festival",
+      "release_date": "1999-09-21T00:00:00.000Z",
+      "type": 1
+     },
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "Westwood, California (Premiere)",
+      "release_date": "1999-10-06T00:00:00.000Z",
+      "type": 1
+     },
+     {
+      "certification": "R",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-10-15T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "MY",
+    "release_dates": [
+     {
+      "certification": "18PL",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "2000-01-13T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "SK",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "release_date": "2000-02-10T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "AU",
+    "release_dates": [
+     {
+      "certification": "R18+",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-11T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "SG",
+    "release_dates": [
+     {
+      "certification": "M18 ",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-04T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "BE",
+    "release_dates": [
+     {
+      "certification": "KNT/ENA",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-10T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "HK",
+    "release_dates": [
+     {
+      "certification": "IIB",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-11T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "NO",
+    "release_dates": [
+     {
+      "certification": "18",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-12T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "TW",
+    "release_dates": [
+     {
+      "certification": "R-18 ",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-11T00:00:00.000Z",
+      "type": 3
+     },
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "Re-release",
+      "release_date": "2017-09-22T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "IL",
+    "release_dates": [
+     {
+      "certification": "16",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-16T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "EE",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "release_date": "2000-01-07T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "IS",
+    "release_dates": [
+     {
+      "certification": "16",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-05T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "SE",
+    "release_dates": [
+     {
+      "certification": "15",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-12-25T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "PL",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "release_date": "2000-02-11T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "GR",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "2000-02-18T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "DK",
+    "release_dates": [
+     {
+      "certification": "15",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-05T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "HR",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "release_date": "2000-03-09T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "RU",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "2000-01-13T00:00:00.000Z",
+      "type": 3
+     },
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "Re-release",
+      "release_date": "2019-07-25T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "LT",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "2000-01-21T00:00:00.000Z",
+      "type": 3
+     },
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "Re-release",
+      "release_date": "2019-06-09T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "UY",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "release_date": "1999-11-12T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "AE",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "Blu-ray",
+      "release_date": "2009-11-23T00:00:00.000Z",
+      "type": 5
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "DE",
+    "release_dates": [
+     {
+      "certification": "18",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-11T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "BR",
+    "release_dates": [
+     {
+      "certification": "18",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-10-29T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "HU",
+    "release_dates": [
+     {
+      "certification": "18",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "2000-01-27T00:00:00.000Z",
+      "type": 3
+     },
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "Re-release",
+      "release_date": "2015-06-18T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "ZA",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "release_date": "2000-01-28T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "TR",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-12-10T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "MX",
+    "release_dates": [
+     {
+      "certification": "C ",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-05T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "FR",
+    "release_dates": [
+     {
+      "certification": "16",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-10T00:00:00.000Z",
+      "type": 3
+     },
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "Re-release",
+      "release_date": "2019-05-15T00:00:00.000Z",
+      "type": 3
+     },
+     {
+      "certification": "16",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "VOD",
+      "release_date": "2011-09-08T00:00:00.000Z",
+      "type": 4
+     },
+     {
+      "certification": "18",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "Prime Video",
+      "release_date": "2019-07-18T00:00:00.000Z",
+      "type": 4
+     },
+     {
+      "certification": "16",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "Netflix",
+      "release_date": "2021-10-01T00:00:00.000Z",
+      "type": 4
+     },
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "Disney+",
+      "release_date": "2021-12-31T00:00:00.000Z",
+      "type": 4
+     },
+     {
+      "certification": "16",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "DVD",
+      "release_date": "2000-11-15T00:00:00.000Z",
+      "type": 5
+     },
+     {
+      "certification": "16",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "Blu-Ray",
+      "release_date": "2009-11-25T00:00:00.000Z",
+      "type": 5
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "PT",
+    "release_dates": [
+     {
+      "certification": "M/18",
+      "descriptors": [],
+      "iso_639_1": "en",
+      "note": "",
+      "release_date": "1999-11-12T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "GB",
+    "release_dates": [
+     {
+      "certification": "18",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-12T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "MT",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "release_date": "1999-11-24T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "JP",
+    "release_dates": [
+     {
+      "certification": "PG12 ",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-12-11T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "SI",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "release_date": "2000-02-24T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "IN",
+    "release_dates": [
+     {
+      "certification": "A",
+      "descriptors": [],
+      "iso_639_1": "en",
+      "note": "",
+      "release_date": "1999-10-15T00:00:00.000Z",
+      "type": 4
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "ID",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "2021-11-05T00:00:00.000Z",
+      "type": 6
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "FI",
+    "release_dates": [
+     {
+      "certification": "K-18",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-12T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "KR",
+    "release_dates": [
+     {
+      "certification": "18",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-13T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "CZ",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "Febio Film Festival",
+      "release_date": "2000-01-25T00:00:00.000Z",
+      "type": 1
+     },
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "release_date": "2000-02-10T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "ES",
+    "release_dates": [
+     {
+      "certification": "18",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-05T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "IT",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "Venice Film Festival",
+      "release_date": "1999-09-10T00:00:00.000Z",
+      "type": 1
+     },
+     {
+      "certification": "VM14",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-10-29T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "PH",
+    "release_dates": [
+     {
+      "certification": "R-18",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "Davao",
+      "release_date": "1999-11-17T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "AR",
+    "release_dates": [
+     {
+      "certification": "18",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-04T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "CA",
+    "release_dates": [
+     {
+      "certification": "18A",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-10-15T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "NZ",
+    "release_dates": [
+     {
+      "certification": "18",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "1999-11-11T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "RO",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "note": "",
+      "release_date": "2000-02-18T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   },
+   {
+    "iso_3166_1": "EG",
+    "release_dates": [
+     {
+      "certification": "",
+      "descriptors": [],
+      "iso_639_1": "",
+      "release_date": "2000-03-01T00:00:00.000Z",
+      "type": 3
+     }
+    ]
+   }
+  ]
+ },
+ "external_ids": {
+  "id": 550,
+  "imdb_id": "tt0137523",
+  "wikidata_id": null,
+  "facebook_id": "FightClub",
+  "instagram_id": null,
+  "twitter_id": null
+ },
+ "keywords": {
+  "keywords": [
+   {
+    "id": 818,
+    "name": "based on novel or book"
+   },
+   {
+    "id": 825,
+    "name": "support group"
+   },
+   {
+    "id": 851,
+    "name": "dual identity"
+   },
+   {
+    "id": 1541,
+    "name": "nihilism"
+   },
+   {
+    "id": 1721,
+    "name": "fight"
+   },
+   {
+    "id": 3927,
+    "name": "rage and hate"
+   },
+   {
+    "id": 4142,
+    "name": "insomnia"
+   },
+   {
+    "id": 4565,
+    "name": "dystopia"
+   },
+   {
+    "id": 9181,
+    "name": "alter ego"
+   },
+   {
+    "id": 11687,
+    "name": "breaking the fourth wall"
+   },
+   {
+    "id": 34117,
+    "name": "cult film"
+   },
+   {
+    "id": 156761,
+    "name": "split personality"
+   },
+   {
+    "id": 179173,
+    "name": "quitting a job"
+   },
+   {
+    "id": 212803,
+    "name": "dissociative identity disorder"
+   },
+   {
+    "id": 260426,
+    "name": "self destructiveness"
+   }
+  ]
+ }
+}

@@ -10,6 +10,7 @@ secrets/*.plain.*
 
 # Données locales
 pb_data/
+/data/
 *.sqlite
 *.db
 
@@ -29,3 +30,19 @@ target/
 
 # Claude Code : réglages locaux personnels
 .claude/settings.local.json
+
+# Go
+bin/
+
+# SPA copied by `make web` and embedded by internal/webui (only the keep file is tracked)
+!internal/webui/dist/
+internal/webui/dist/*
+!internal/webui/dist/.gitkeep
+
+# Heavy third-party skills (~54 MB of assets): reinstall with `kit project add design-ui brand`
+.claude/skills/design-taste-frontend/
+.claude/skills/logo-design/
+
+# Full-page design renders: regenerate with docs/design/tools/render.js
+docs/design/renders/*-full-*.jpg
+/gonema

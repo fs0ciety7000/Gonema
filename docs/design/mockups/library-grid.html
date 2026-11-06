@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Films · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: library grid */
+  .views { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); border-bottom: 1px solid var(--border); margin-bottom: var(--space-5); }
+  .views .tabs { border-bottom: 0; }
+  .views .tabs [role="tab"] { white-space: nowrap; }
+  .active-filters { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-6); flex-wrap: wrap; }
+  .active-filters .lbl { font: var(--type-caption); color: var(--text-muted); margin-right: 2px; }
+  .active-filters .btn-ghost { height: 28px; padding: 0 8px; font-size: 13px; font-weight: 500; }
+  .live-pill { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: var(--radius-pill); border: 1px solid var(--border); font: 500 13px/1 var(--font-ui); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .live-pill .status { font-size: 13px; }
+  .live-pill:hover { background: var(--bg-hover); text-decoration: none; color: var(--text-primary); }
+  .grid-end { margin-top: var(--space-10); text-align: center; color: var(--text-muted); font: var(--type-caption); }
+  .page { padding-bottom: 120px; }
+  @media (max-width: 1100px) {
+    .page-head { flex-direction: column; align-items: flex-start; gap: var(--space-4); }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar="films"></nav>
+  <div class="main">
+    <header class="topbar">
+      <label class="input search" aria-label="Search">
+        <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+        <input type="search" placeholder="Search films, people, releases…" aria-label="Search films, people, releases">
+        <span class="kbd" aria-hidden="true">⌘K</span>
+      </label>
+      <div class="spacer"></div>
+      <a class="live-pill hide-tablet" href="#" aria-label="Queue: 3 downloading at 18.4 megabytes per second">
+        <span class="status" data-status="downloading"><svg class="i" aria-hidden="true"><use href="#i-arrow-down-to-line"/></svg>3 downloading</span>
+        <span>18.4 MB/s</span>
+      </a>
+      <button class="icon-btn" type="button" aria-label="Notifications, 2 unread"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg><span class="dot" aria-hidden="true"></span></button>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+      <button class="btn btn-primary" type="button"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Add film</button>
+    </header>
+
+    <main id="main" class="page">
+      <div class="page-head">
+        <div>
+          <h1>Films</h1>
+          <p class="sub">1,284 films · 1,198 on disk · 9.7 TB</p>
+        </div>
+        <div class="toolbar" role="toolbar" aria-label="Library display">
+          <button class="btn btn-ghost btn-sm" type="button" aria-haspopup="dialog"><svg class="i" aria-hidden="true"><use href="#i-list-filter"/></svg>Filters <span class="badge" style="height:18px;padding:0 6px">2</span></button>
+          <button class="btn btn-ghost btn-sm" type="button" aria-haspopup="listbox"><svg class="i" aria-hidden="true"><use href="#i-arrow-up-down"/></svg><span class="lbl">Sort</span> <span class="val">Date added</span></button>
+          <button class="btn btn-ghost btn-sm" type="button" aria-haspopup="listbox"><svg class="i" aria-hidden="true"><use href="#i-layers"/></svg><span class="lbl">Group</span> <span class="val">None</span></button>
+          <span class="divider" aria-hidden="true"></span>
+          <div class="segmented icon-only" role="radiogroup" aria-label="Layout">
+            <button role="radio" aria-checked="true" aria-label="Posters" title="Posters  G"><svg class="i" aria-hidden="true"><use href="#i-layout-grid"/></svg></button>
+            <button role="radio" aria-checked="false" aria-label="Table" title="Table  T" onclick="location.href='library-table.html'"><svg class="i" aria-hidden="true"><use href="#i-rows-3"/></svg></button>
+          </div>
+          <div class="segmented" role="radiogroup" aria-label="Density">
+            <button role="radio" aria-checked="true">Airy</button>
+            <button role="radio" aria-checked="false">Compact</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="views">
+        <div class="tabs" role="tablist" aria-label="Saved views">
+          <button role="tab" aria-selected="true">All films <span class="count">1,284</span></button>
+          <button role="tab" aria-selected="false">4K HDR <span class="count">312</span></button>
+          <button role="tab" aria-selected="false">Wanted this year <span class="count">23</span></button>
+          <button role="tab" aria-selected="false" class="hide-tablet">Recently added <span class="count">40</span></button>
+        </div>
+        <button class="btn btn-ghost btn-sm" type="button" aria-label="Save current filters as a view" style="margin-right:auto"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>View</button>
+      </div>
+
+      <div class="active-filters" aria-label="Active filters">
+        <span class="lbl">Showing</span>
+        <span class="chip is-on"><span class="k">Monitored</span> Any <button class="remove" type="button" aria-label="Remove filter Monitored"><svg class="i i-xs" aria-hidden="true"><use href="#i-x"/></svg></button></span>
+        <span class="chip is-on"><span class="k">Year</span> 2012–2026 <button class="remove" type="button" aria-label="Remove filter Year"><svg class="i i-xs" aria-hidden="true"><use href="#i-x"/></svg></button></span>
+        <button class="btn btn-ghost" type="button">Clear all</button>
+      </div>
+
+      <section aria-label="Films, sorted by date added" class="poster-grid selecting" id="grid"></section>
+      <p class="grid-end">Loading 1,266 more films…</p>
+    </main>
+  </div>
+</div>
+
+<section aria-label="Selection"><div class="bulkbar" role="toolbar" aria-label="Bulk actions for 2 selected films">
+  <span class="count"><span class="n" style="background:var(--text-primary);color:var(--bg-base)">2</span>selected</span>
+  <span class="divider" aria-hidden="true"></span>
+  <button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-bookmark"/></svg>Monitor</button>
+  <button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-sliders-horizontal"/></svg>Quality profile</button>
+  <button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg>Search</button>
+  <button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-tag"/></svg>Tags</button>
+  <button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg>Move</button>
+  <span class="divider" aria-hidden="true"></span>
+  <button class="btn btn-ghost btn-sm" type="button" style="--btn-fg:var(--status-failed)"><svg class="i" aria-hidden="true"><use href="#i-trash-2"/></svg>Delete…</button>
+  <button class="icon-btn sm" type="button" aria-label="Clear selection (Esc)" title="Clear selection  Esc"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button>
+</div></section>
+
+<script src="../system/icons.js"></script>
+<script src="../system/posters.js"></script>
+<script src="../system/mock.js"></script>
+<script>
+  const cards = [
+    { film: 'halcyon-drift', state: 'upgraded', quality: '2160p WEB-DL', hdr: 'DV', selected: true },
+    { film: 'last-projectionist', state: 'downloading', progress: 0.42, eta: '12 min', speed: '18.4 MB/s', quality: '1080p Bluray' },
+    { film: 'quiet-meridian', state: 'available', quality: '2160p Remux', hdr: 'HDR10', hover: true },
+    { film: 'saltwater-hymn', state: 'available', quality: '1080p Bluray' },
+    { film: 'neon-orchard', state: 'missing', note: 'Searching daily' },
+    { film: 'ninefold', state: 'failed', note: 'Import failed' },
+    { film: 'room-without-weather', state: 'available', quality: '1080p WEB-DL', selected: true },
+    { film: 'coldharbour', state: 'unmonitored', note: 'Not monitored', quality: '720p HDTV' },
+    { film: 'velvet-static', state: 'missing', note: 'In cinemas' },
+    { film: 'glass-cartographer', state: 'available', quality: '2160p Bluray', hdr: 'HDR10+' },
+    { film: 'sundial', state: 'available', quality: '1080p Bluray' },
+    { film: 'ember-ash', state: 'available', quality: '1080p WEB-DL' },
+    { film: 'orbit-small-things', state: 'available', quality: '2160p WEB-DL', hdr: 'DV' },
+    { film: 'tidewater', state: 'upgraded', quality: '1080p Remux' },
+    { film: 'odeon-vale', state: 'available', quality: '1080p Bluray' },
+    { film: 'orchid-protocol', state: 'available', quality: '2160p WEB-DL', hdr: 'HDR10' },
+    { film: 'low-tide-high-noon', state: 'missing', note: 'Out 14 Nov' },
+    { film: 'parallax', state: 'available', quality: '2160p Remux', hdr: 'DV' },
+  ];
+  let html = cards.map(GN.card).join('');
+  for (let i = 0; i < 6; i++) html += GN.card({ state: 'skeleton', delay: i * 60 });
+  document.getElementById('grid').innerHTML = html;
+  GN.renderPosters();
+</script>
+</body>
+</html>

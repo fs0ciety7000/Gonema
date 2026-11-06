@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Empty states · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Catalogue of empty states. Each card stands for one screen: the mascot appears at most once per real screen. */
+  .page { padding-top: var(--space-6); max-width: none; }
+  .page-head p { color: var(--text-secondary); margin-top: 6px; max-width: 70ch; }
+  .cat { display: grid; grid-template-columns: 1.25fr 1fr 1fr; grid-template-rows: 1fr 1fr; gap: var(--space-4); height: max(620px, calc(100vh - var(--topbar-h) - 150px)); }
+  .page-head { margin-bottom: var(--space-4); }
+  .frame { border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--bg-raised); box-shadow: var(--elev-2); overflow: hidden; display: grid; grid-template-rows: auto 1fr; }
+  .frame .bar { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-bottom: 1px solid var(--border); font: 500 12px/1 var(--font-ui); color: var(--text-muted); }
+  .frame .bar .i { width: 14px; height: 14px; }
+  .frame .body { padding: var(--space-3); display: grid; place-items: center; min-height: 0; }
+  .frame .empty { border: 0; background: none; padding: var(--space-2) var(--space-4); gap: var(--space-2); }
+  .frame .empty p { font: var(--type-body-sm); }
+  .frame .empty .actions { margin-top: var(--space-1); }
+  .frame .empty h2 { font-size: 19px; line-height: 24px; }
+  .frame.big { grid-row: span 2; }
+  .frame.big .empty .mascot { height: 190px; }
+  .frame.big .empty h2 { font-size: 24px; line-height: 30px; }
+  .frame.big .empty p { font: var(--type-body); }
+  .glyph { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--bg-active); color: var(--text-secondary); margin-bottom: 4px; }
+  .glyph .i { width: 22px; height: 22px; }
+  .hintline { font: var(--type-caption); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar="films"></nav>
+  <div class="main">
+    <header class="topbar">
+      <label class="input search" aria-label="Search"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input type="search" placeholder="Search films, people, releases…" aria-label="Search films, people, releases"><span class="kbd" aria-hidden="true">⌘K</span></label>
+      <div class="spacer"></div>
+      <a class="btn btn-ghost btn-sm" href="404.html">404</a><a class="btn btn-ghost btn-sm" href="error.html">Server error</a><a class="btn btn-ghost btn-sm" href="failed-download.html">Failed download</a>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    </header>
+    <main id="main" class="page">
+      <div class="page-head"><div><h1>Empty states</h1><p>Short, helpful, one wink at most, and always a way forward. Each card is a different screen.</p></div></div>
+      <div class="cat">
+        <section class="frame big" aria-labelledby="e1">
+          <div class="bar"><svg class="i" aria-hidden="true"><use href="#i-film"/></svg>Films · first run</div>
+          <div class="body"><div class="empty">
+            <img class="mascot" src="../../brand/kit/mascot/kernel-empty-library.svg" alt="">
+            <h2 id="e1">The house is dark.</h2>
+            <p>Add a film and we’ll start the screening. Already have a collection on disk? Import the folder and Gonema will match each film.</p>
+            <div class="actions"><a class="btn btn-primary" href="add-film.html"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Add a film</a><button class="btn btn-secondary" type="button"><svg class="i" aria-hidden="true"><use href="#i-folder-open"/></svg>Import a folder</button></div>
+            <span class="hintline">Tip: press <span class="kbd">A</span> anywhere to add a film.</span>
+          </div></div>
+        </section>
+        <section class="frame" aria-labelledby="e2">
+          <div class="bar"><svg class="i" aria-hidden="true"><use href="#i-list-filter"/></svg>Films · filters return nothing</div>
+          <div class="body"><div class="empty">
+            <span class="glyph"><svg class="i" aria-hidden="true"><use href="#i-scan-search"/></svg></span>
+            <h2 id="e2">No films match.</h2>
+            <p>4K HDR, missing, from the 1950s: a rare double bill. Loosen a filter or look further afield.</p>
+            <div class="chips"><span class="chip is-on"><span class="k">Quality</span> 4K HDR</span><span class="chip is-on"><span class="k">Status</span> Missing</span><span class="chip is-on"><span class="k">Year</span> 1950–1959</span></div>
+            <div class="actions"><button class="btn btn-secondary btn-sm" type="button">Clear filters</button><a class="btn btn-ghost btn-sm" href="add-film.html">Search TMDB</a></div>
+          </div></div>
+        </section>
+        <section class="frame" aria-labelledby="e3">
+          <div class="bar"><svg class="i" aria-hidden="true"><use href="#i-arrow-down-to-line"/></svg>Queue</div>
+          <div class="body"><div class="empty">
+            <span class="glyph"><svg class="i" aria-hidden="true"><use href="#i-clapperboard"/></svg></span>
+            <h2 id="e3">Nothing in the projector.</h2>
+            <p>No downloads right now. Gonema checks your indexers every 15 minutes.</p>
+            <span class="hintline">Next RSS check in 6 min · 12 released films still wanted</span>
+            <div class="actions"><button class="btn btn-secondary btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg>Search the 12 now</button></div>
+          </div></div>
+        </section>
+        <section class="frame" aria-labelledby="e4">
+          <div class="bar"><svg class="i" aria-hidden="true"><use href="#i-history"/></svg>History</div>
+          <div class="body"><div class="empty">
+            <span class="glyph"><svg class="i" aria-hidden="true"><use href="#i-history"/></svg></span>
+            <h2 id="e4">No reels logged yet.</h2>
+            <p>Every grab, import, upgrade and failure will be written here, with the reason behind it.</p>
+            <div class="actions"><a class="btn btn-secondary btn-sm" href="add-film.html">Add a film</a></div>
+          </div></div>
+        </section>
+        <section class="frame" aria-labelledby="e5">
+          <div class="bar"><svg class="i" aria-hidden="true"><use href="#i-circle-dashed"/></svg>Wanted</div>
+          <div class="body"><div class="empty">
+            <img class="mascot" src="../../brand/kit/mascot/kernel-neutral.svg" alt="" style="height:84px">
+            <h2 id="e5">All clear in the booth.</h2>
+            <p>Every monitored film is on disk and at its cutoff. Gonema will tell you when something new comes out.</p>
+            <div class="actions"><a class="btn btn-secondary btn-sm" href="calendar.html">See what’s coming</a><a class="btn btn-ghost btn-sm" href="add-film.html?tab=discover">Discover</a></div>
+          </div></div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="../system/icons.js"></script>
+</body>
+</html>

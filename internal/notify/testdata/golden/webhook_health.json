@@ -1,0 +1,16 @@
+{
+  "schema": "gonema.v1",
+  "event": "health",
+  "time": "2026-11-05T20:15:00Z",
+  "title": "Health issue — Nebula NZB is not answering",
+  "body": "No answer for 10 minutes. Others keep searching.",
+  "summary": "Health issue — Nebula NZB is not answering",
+  "problem": true,
+  "movie": null,
+  "fields": [],
+  "data": {},
+  "health": {
+    "source": "indexers",
+    "id": 3
+  }
+}

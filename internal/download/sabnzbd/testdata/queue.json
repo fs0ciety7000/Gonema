@@ -1,0 +1,30 @@
+{
+    "queue": {
+        "status": "Downloading",
+        "speedlimit": "9",
+        "speedlimit_abs": "4718592.0",
+        "paused": false,
+        "noofslots_total": 5,
+        "noofslots": 5,
+        "limit": 10,
+        "start": 0,
+        "timeleft": "0:16:44",
+        "speed": "1.3 M",
+        "kbpersec": "1296.02",
+        "size": "1.2 GB",
+        "sizeleft": "1.2 GB",
+        "mb": "1277.65",
+        "mbleft": "1271.58",
+        "slots": [
+            {"status": "Downloading", "index": 0, "password": "", "avg_age": "2895d", "time_added": 1469172000, "script": "None", "direct_unpack": "10/30", "mb": "1277.65", "mbleft": "1271.59", "mbmissing": "0.0", "size": "1.2 GB", "sizeleft": "1.2 GB", "filename": "Movie.2016.1080p.BluRay.x264-GRP", "labels": [], "priority": "Normal", "cat": "movies", "timeleft": "0:16:44", "percentage": "0", "nzo_id": "SABnzbd_nzo_p86tgx", "unpackopts": "3"},
+            {"status": "Paused", "index": 1, "password": "", "avg_age": "2895d", "time_added": 1469171000, "script": "None", "direct_unpack": null, "mb": "1277.76", "mbleft": "1277.76", "mbmissing": "0.0", "size": "1.2 GB", "sizeleft": "1.2 GB", "filename": "Other.Movie.2017.720p.WEB-DL-GRP", "labels": ["TOO LARGE", "DUPLICATE"], "priority": "Normal", "cat": "movies", "timeleft": "0:00:00", "percentage": "0", "nzo_id": "SABnzbd_nzo_ksfai6", "unpackopts": "3"},
+            {"status": "Queued", "index": 2, "mb": "500.00", "mbleft": "500.00", "filename": "Queued.Movie.2018.1080p-GRP", "labels": [], "priority": "Normal", "cat": "movies", "timeleft": "0:00:00", "percentage": "0", "nzo_id": "SABnzbd_nzo_queued1"},
+            {"status": "Propagating", "index": 3, "mb": "700.00", "mbleft": "700.00", "filename": "Fresh.Movie.2024.2160p-GRP", "labels": ["PROPAGATING 5 min"], "priority": "Normal", "cat": "movies", "timeleft": "0:00:00", "percentage": "0", "nzo_id": "SABnzbd_nzo_prop1"},
+            {"status": "Downloading", "index": 4, "mb": "100.00", "mbleft": "50.00", "filename": "Locked.Movie.2019-GRP", "labels": ["ENCRYPTED"], "priority": "Normal", "cat": "movies", "timeleft": "1:02:03:04", "percentage": "50", "nzo_id": "SABnzbd_nzo_enc1"}
+        ],
+        "version": "5.x.x",
+        "finish": 2,
+        "paused_all": false,
+        "have_quota": false
+    }
+}

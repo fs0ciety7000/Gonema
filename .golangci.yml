@@ -1,0 +1,65 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: standard # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - revive
+    - gocritic
+    - misspell
+    - unparam
+    - unconvert
+    - errorlint
+    - bodyclose
+    - copyloopvar
+    - intrange
+    - nolintlint
+  settings:
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment # readability over a few bytes; hot structs are tuned by hand
+        - shadow
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+        - style
+      disabled-checks:
+        - hugeParam # extractor and tag are passed by value on purpose (stack-only scratch)
+    misspell:
+      locale: US
+      ignore-rules:
+        - favour
+        - initialisation
+        - normalise
+        - normalises
+        - recognised
+        - behaviour
+        - cancelled # jobs.status enum value (docs/data-model.md)
+    revive:
+      rules:
+        - name: exported
+        - name: package-comments
+        - name: var-naming
+        - name: indent-error-flow
+        - name: errorf
+        - name: unused-parameter
+        - name: unreachable-code
+        - name: redefines-builtin-id
+  exclusions:
+    generated: lax
+    presets:
+      - std-error-handling
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/fs0ciety7000/gonema

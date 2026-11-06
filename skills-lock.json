@@ -1,0 +1,239 @@
+{
+  "version": 1,
+  "skills": {
+    "60fps-animation": {
+      "source": "iart-ai/web-animation-skills",
+      "sourceType": "github",
+      "skillPath": "skills/60fps-animation/SKILL.md",
+      "computedHash": "d832ea4a0dc07c18483d4fd39352c65e4daa2f298998290730cf159df30f400e"
+    },
+    "accessible-animation": {
+      "source": "iart-ai/web-animation-skills",
+      "sourceType": "github",
+      "skillPath": "skills/accessible-animation/SKILL.md",
+      "computedHash": "46695e422851b64f2b680924584ba9f7690309c109b6d98925ef3021b139167c"
+    },
+    "animate": {
+      "source": "emilkowalski/skills",
+      "sourceType": "github",
+      "skillPath": "skills/animate/SKILL.md",
+      "computedHash": "f76ddd3d4446c3c56a143ea98650c370b3e8f88e6203d1e22082d2082bf1eed7"
+    },
+    "animation-performance": {
+      "source": "emilkowalski/skills",
+      "sourceType": "github",
+      "skillPath": "skills/animation-performance/SKILL.md",
+      "computedHash": "333f6a387124d0eda927614671f8be3a00d1ddeb9f43cf8b7fa7032630414311"
+    },
+    "break-ui": {
+      "source": "emilkowalski/skills",
+      "sourceType": "github",
+      "skillPath": "skills/break-ui/SKILL.md",
+      "computedHash": "60ada67662925f4df5e3c6ff41cac3ab241b66f8898100a5ffcd7ba7196cb868"
+    },
+    "design-taste-frontend": {
+      "source": "Leonxlnx/taste-skill",
+      "sourceType": "github",
+      "skillPath": "skills/taste-skill/SKILL.md",
+      "computedHash": "23b3930015c478034b222e1a015da03a962c8ab48aee9fb4f3f69d977034feaa"
+    },
+    "emil-design-eng": {
+      "source": "emilkowalski/skills",
+      "sourceType": "github",
+      "skillPath": "skills/emil-design-eng/SKILL.md",
+      "computedHash": "2483020b5bbaab030d6b3463bfba49c8d9c2cd8dea4d9fba836dbd471f1fb706"
+    },
+    "find-animation-opportunities": {
+      "source": "emilkowalski/skills",
+      "sourceType": "github",
+      "skillPath": "skills/find-animation-opportunities/SKILL.md",
+      "computedHash": "465d087c41768e4f14ed640dd049036009f613feb55baaa5831b68b33178f9d2"
+    },
+    "glassmorphism": {
+      "source": "iart-ai/web-animation-skills",
+      "sourceType": "github",
+      "skillPath": "skills/glassmorphism/SKILL.md",
+      "computedHash": "c98e77044561fea5e51116156d0ba600a56f9961ed18b498d72504d49aff7882"
+    },
+    "golang-cli": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-cli/SKILL.md",
+      "computedHash": "24db08f64df0fba352d24ebd23188ce6a697cd22387081f618bf170f67931808"
+    },
+    "golang-code-style": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-code-style/SKILL.md",
+      "computedHash": "8ce09e462ef435cedc78307c124adb0c83848366b4bc51cd0942d3c79fff1e71"
+    },
+    "golang-concurrency": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-concurrency/SKILL.md",
+      "computedHash": "f76a7af92805c94c91b7aea0f743e20c4613ca346203cbd7f0e9d296a7970385"
+    },
+    "golang-context": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-context/SKILL.md",
+      "computedHash": "5f4f7696bb5228139f200faf3918dcb8b796c94717ede72794d06e9da72f094f"
+    },
+    "golang-database": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-database/SKILL.md",
+      "computedHash": "ce43d8932ba59822fe7455a85ba20e1d861313a66d953d13476ff040a2ae9d45"
+    },
+    "golang-dependency-management": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-dependency-management/SKILL.md",
+      "computedHash": "263a39654c000a9406725901d482be83bedb5c87322edfe18a09a9c2bb19e7d8"
+    },
+    "golang-documentation": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-documentation/SKILL.md",
+      "computedHash": "30eb4877c93ed2aa84c374d4ca130b6c5ffd8a62be581fe4a11c285787a01677"
+    },
+    "golang-error-handling": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-error-handling/SKILL.md",
+      "computedHash": "7b872085d11457427db2d5559f530d9a7c4d93e09c4709a030731868084db6d3"
+    },
+    "golang-gopls": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-gopls/SKILL.md",
+      "computedHash": "3dec70d143315f5fcb02ac6a3ca9a797bb6cdb82dd34f12be5d15282f9d0b015"
+    },
+    "golang-how-to": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-how-to/SKILL.md",
+      "computedHash": "afc168dab3d9f54bd873c41f2095dd8de8d93f69dea9769962c148f8bb82dc00"
+    },
+    "golang-lint": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-lint/SKILL.md",
+      "computedHash": "386edc2ea3e124ead8c03adec369070aa569bf4fe6b0e02a5e59566a2991e665"
+    },
+    "golang-naming": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-naming/SKILL.md",
+      "computedHash": "cb920729431ee7a80a06779c4247744f778500a1f8b9fc26595c60e67c053a6f"
+    },
+    "golang-observability": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-observability/SKILL.md",
+      "computedHash": "0fbf2e9487a4c1b82b0d32de997eb886e4a9dd7910d3c6efa835f8b439691ea7"
+    },
+    "golang-performance": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-performance/SKILL.md",
+      "computedHash": "80d84fb4b2ca42ec2ec9f177ccc9b3d183b4fa900c1d52c40fd698b8f8b46452"
+    },
+    "golang-project-layout": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-project-layout/SKILL.md",
+      "computedHash": "33cb4d7b0ad983e521f4b70a8d03652fbf4e4f7bf026e2ca6bf94d8475755013"
+    },
+    "golang-safety": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-safety/SKILL.md",
+      "computedHash": "f0f2ae4454460c1df68085aac47a0ff13043d8546703ad627a703e55ace85705"
+    },
+    "golang-security": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-security/SKILL.md",
+      "computedHash": "9a3ddcef7515b6be2ebe20415e4c5fb16f79f5c26b5df6c69f5b54f81e85d7a0"
+    },
+    "golang-structs-interfaces": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-structs-interfaces/SKILL.md",
+      "computedHash": "150bb7cdb43e1efab246e90d17bde6a871c2fdbbc81eb7260b9914f7d45f52ac"
+    },
+    "golang-testing": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-testing/SKILL.md",
+      "computedHash": "31b691f568f4c00d8d7bedc65a38d9966d9f3d353712929a1a8805eaa3f88b00"
+    },
+    "golang-troubleshooting": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-troubleshooting/SKILL.md",
+      "computedHash": "5e754f70758a1096b9e0fd6c0b24cc2200e2808b4f0285ea8dcf2e6c4981fd2a"
+    },
+    "gsap-web": {
+      "source": "iart-ai/web-animation-skills",
+      "sourceType": "github",
+      "skillPath": "skills/gsap-web/SKILL.md",
+      "computedHash": "11585ce3142acae8db34c9d0eb57e03834972f1095643266eb2c41b432564b1d"
+    },
+    "improve-animations": {
+      "source": "emilkowalski/skills",
+      "sourceType": "github",
+      "skillPath": "skills/improve-animations/SKILL.md",
+      "computedHash": "f6652a3bb94950baa33c684cc0966c838eb65cf22ebb5769a4f51ea205c254fe"
+    },
+    "logo-design": {
+      "source": "kaankiziltug/logo-design-skill",
+      "sourceType": "github",
+      "skillPath": "skills/logo-design/SKILL.md",
+      "computedHash": "45703b93086ff2accb72fff8d3d9e184041bc7bd9f0d0d747f49b606d03af28e"
+    },
+    "lottie-animation": {
+      "source": "iart-ai/web-animation-skills",
+      "sourceType": "github",
+      "skillPath": "skills/lottie-animation/SKILL.md",
+      "computedHash": "3b9838145f5af19d03014a5eca9041ae0ba267b77e312332a129f3fe40078f68"
+    },
+    "micro-interaction": {
+      "source": "iart-ai/web-animation-skills",
+      "sourceType": "github",
+      "skillPath": "skills/micro-interaction/SKILL.md",
+      "computedHash": "f236bc97a9f4c0e9c9a045d0b591e3ca6b6b2aeb26e42b661c15211f652ac131"
+    },
+    "page-transition-animation": {
+      "source": "iart-ai/web-animation-skills",
+      "sourceType": "github",
+      "skillPath": "skills/page-transition-animation/SKILL.md",
+      "computedHash": "62e103e2313433e77db26c67fdcae1c425030e1a51d0f5ffc0fb6fdac6d36132"
+    },
+    "pick-ui-library": {
+      "source": "emilkowalski/skills",
+      "sourceType": "github",
+      "skillPath": "skills/pick-ui-library/SKILL.md",
+      "computedHash": "5d2a77bf0ecafbda85aa95fb49999b6d77945d9066ec83d970b62e5b388cd686"
+    },
+    "review-animations": {
+      "source": "emilkowalski/skills",
+      "sourceType": "github",
+      "skillPath": "skills/review-animations/SKILL.md",
+      "computedHash": "b1aca2c16876b8f00e2a1eb161714e63ec41099269d5f95c2f307230749b9dcd"
+    },
+    "svg-animation": {
+      "source": "iart-ai/web-animation-skills",
+      "sourceType": "github",
+      "skillPath": "skills/svg-animation/SKILL.md",
+      "computedHash": "b6902577f093a1cd724052b94e633154cb42020b5001138185982fb4ce230404"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/web-design-guidelines/SKILL.md",
+      "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Grabbed — Halcyon Drift (2024)",
+  "message": "Remux-2160p · 58.4 GB from Nebula NZB. Sent to SABnzbd.\nQuality: Remux-2160p\nSize: 58.4 GB\nIndexer: Nebula NZB\nRelease: Halcyon.Drift.2024.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-GRP \u003c@everyone\u003e \u0026 co",
+  "priority": 5,
+  "extras": {
+    "client::notification": {
+      "bigImageUrl": "https://image.tmdb.org/t/p/w342/poster.jpg",
+      "click": {
+        "url": "https://gonema.example.lan/movies/7"
+      }
+    }
+  }
+}

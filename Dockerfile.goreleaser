@@ -1,0 +1,19 @@
+# Image built by GoReleaser (dockers_v2) from the release binaries: the same
+# runtime as Dockerfile, without the build stages. The build context holds the
+# binary at $TARGETPLATFORM/gonema.
+FROM alpine:3 AS certs
+RUN apk add --no-cache ca-certificates && mkdir -p /out/data
+
+FROM scratch
+ARG TARGETPLATFORM
+COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=certs --chown=65532:65532 /out/data /data
+COPY $TARGETPLATFORM/gonema /gonema
+ENV GONEMA_DATA_DIR=/data \
+    GONEMA_BIND=0.0.0.0:7676
+USER 65532:65532
+VOLUME ["/data"]
+EXPOSE 7676
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD ["/gonema", "healthcheck"]
+ENTRYPOINT ["/gonema"]
+CMD ["serve"]

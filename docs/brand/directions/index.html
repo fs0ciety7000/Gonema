@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gonema — directions de marque (phase 2A)</title>
+<link rel="icon" href="a-salle/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&family=Archivo:wdth,wght@125,700&family=Geist:wght@400;500;600&family=Geist+Mono&family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,0..100,0..1&family=Figtree:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<style>
+html[data-theme="dark"] .dir-a{--bg-base:#12100E;--bg-raised:#1C1815;--surface-glass:rgba(42,35,30,0.72);--border:rgba(242,232,220,0.12);--text-primary:#F2E9DD;--text-secondary:#C9BBAB;--text-muted:#9C8D7D;--accent:#8F96FF;--accent-contrast:#0E0C1F;--status-downloading:#5EC4D6;--status-missing:#E8AE55;--status-upgraded:#D69AEA;--status-failed:#F27268;--status-available:#7FCC89}
+html[data-theme="light"] .dir-a{--bg-base:#F3EDE3;--bg-raised:#FBF8F2;--surface-glass:rgba(255,253,249,0.7);--border:rgba(42,32,24,0.14);--text-primary:#1C1713;--text-secondary:#4E443B;--text-muted:#6E6257;--accent:#3B3FD6;--accent-contrast:#FFFFFF;--status-downloading:#0B6E80;--status-missing:#8C5300;--status-upgraded:#86389F;--status-failed:#B42A22;--status-available:#2B7236}
+html[data-theme="dark"] .dir-b{--bg-base:#0F0E0D;--bg-raised:#181614;--surface-glass:rgba(35,32,29,0.7);--border:rgba(237,230,222,0.1);--text-primary:#EEEAE4;--text-secondary:#BDB6AD;--text-muted:#8F877E;--accent:#3ED1BA;--accent-contrast:#04201B;--status-downloading:#71A9FF;--status-missing:#F0B04B;--status-upgraded:#B4A0FF;--status-failed:#FF7070;--status-available:#9DD56B}
+html[data-theme="light"] .dir-b{--bg-base:#F2F1EE;--bg-raised:#FFFFFF;--surface-glass:rgba(255,255,255,0.72);--border:rgba(26,23,20,0.12);--text-primary:#161412;--text-secondary:#47423C;--text-muted:#69625A;--accent:#00756A;--accent-contrast:#FFFFFF;--status-downloading:#1D5FC2;--status-missing:#8A5300;--status-upgraded:#6542D6;--status-failed:#BE2B2B;--status-available:#3B7012}
+html[data-theme="dark"] .dir-c{--bg-base:#18110F;--bg-raised:#231916;--surface-glass:rgba(51,36,31,0.7);--border:rgba(255,230,216,0.12);--text-primary:#FBEDE3;--text-secondary:#D4BCAE;--text-muted:#A68E80;--accent:#F59DC3;--accent-contrast:#2A0B19;--status-downloading:#7DB7F3;--status-missing:#F3B55F;--status-upgraded:#80DEC0;--status-failed:#FF8259;--status-available:#AAD678}
+html[data-theme="light"] .dir-c{--bg-base:#FAF1E8;--bg-raised:#FFF9F3;--surface-glass:rgba(255,255,255,0.66);--border:rgba(58,34,24,0.13);--text-primary:#24160F;--text-secondary:#56423A;--text-muted:#77625A;--accent:#AE2F6B;--accent-contrast:#FFFFFF;--status-downloading:#1C62AE;--status-missing:#8E5600;--status-upgraded:#0B7457;--status-failed:#B93A12;--status-available:#47731A}
+
+html[data-theme="dark"]{--page:#110F0D;--ink:#EFE6DA;--ink2:#B9AC9D;--line:rgba(239,230,218,.12)}
+html[data-theme="light"]{--page:#F4EFE7;--ink:#1D1814;--ink2:#5A4F45;--line:rgba(29,24,20,.12)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:15px/1.5 'Instrument Sans',system-ui,sans-serif}
+.top{display:flex;justify-content:space-between;align-items:end;padding:40px 48px 8px;gap:24px}
+.top h1{font:400 44px/1.05 'Instrument Serif',serif;margin:0}
+.top p{margin:6px 0 0;color:var(--ink2);max-width:760px}
+#toggle{font:500 14px 'Instrument Sans';padding:10px 16px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+#toggle:focus-visible{outline:2px solid #8F96FF;outline-offset:2px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;padding:24px 48px}
+.dir{background:var(--bg-base);color:var(--text-primary);border:1px solid var(--border);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 24px 60px -30px rgba(0,0,0,.45)}
+.dir header h2{margin:2px 0 4px;font:600 26px/1.1 'Instrument Sans'}
+.kicker{margin:0;color:var(--text-muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.idea{margin:0;color:var(--text-secondary)}
+.card{background:var(--surface-glass);border:1px solid var(--border);border-radius:16px;padding:16px;backdrop-filter:blur(12px)}
+.hero{display:grid;place-items:center;padding:28px;background:var(--bg-raised)}
+.sizes{display:flex;gap:18px;justify-content:space-between;flex-wrap:wrap}
+.sizes div{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+.sizes small,.type small{width:100%;color:var(--text-muted);font-size:12px}
+.lock{border-radius:14px;padding:20px 24px;border:1px solid var(--border)}
+.lock img{display:block;height:56px;width:auto;max-width:100%}
+html[data-theme="dark"] .only-light, html[data-theme="light"] .only-dark{display:none}
+.type p{margin:0 0 6px}
+.disp{font-size:40px;line-height:1.05}
+.ui{font-size:15px;color:var(--text-secondary)}
+.mono-s{font-size:12.5px;color:var(--text-secondary);overflow-wrap:anywhere}
+.tnum{font-variant-numeric:tabular-nums;display:flex;gap:16px;font-size:15px}
+.statuses{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.st{font-size:13px;font-weight:500;color:var(--c);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);background:color-mix(in srgb,var(--c) 12%,transparent);padding:3px 10px;border-radius:999px}
+.st::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);margin-right:6px;vertical-align:1px}
+.btn{margin-left:auto;background:var(--accent);color:var(--accent-contrast);border:0;border-radius:10px;padding:8px 14px;font:600 13px 'Instrument Sans'}
+.palettes{display:grid;gap:10px}
+.pal{border-radius:14px;padding:12px;border:1px solid var(--border);background:var(--bg-raised)}
+.pal h5,.tone h5{margin:0 0 8px;font-size:13px}
+.pal table{width:100%;border-collapse:collapse;font-size:11.5px}
+.pal td{padding:2px 4px;vertical-align:middle}
+.sw{display:inline-block;width:18px;height:18px;border-radius:5px;border:1px solid rgba(128,128,128,.4)}
+.role{color:var(--text-secondary)}
+.mono{font-family:'IBM Plex Mono',monospace}
+.r{text-align:right;white-space:nowrap}
+.ok{color:var(--text-primary)} .bad{color:#fff;background:#B42A22;padding:0 3px;border-radius:3px}
+.dim{color:var(--text-muted)}
+.monoi{width:32px;height:32px;color:var(--text-primary)}
+.mascot{background:var(--bg-raised)} .mascot svg{width:100%;height:auto;display:block}
+.tone ul{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.tone li{display:grid;gap:1px} .tone b{font-size:11px;color:var(--text-muted);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.more{margin:0;font-size:13px} .more a{color:var(--accent)}
+.reco{margin:8px 48px 56px;padding:32px 36px;border:1px solid var(--line);border-radius:24px}
+.reco h2{font:400 38px/1.1 'Instrument Serif',serif;margin:0 0 12px}
+.reco p,.reco li{max-width:980px;color:var(--ink2)} .reco strong{color:var(--ink)}
+.foot{padding:0 48px 40px;color:var(--ink2);font-size:13px}
+@media (max-width:1100px){.grid{grid-template-columns:1fr}}
+</style></head>
+<body>
+<div class="top"><div><h1>Gonema — trois directions</h1>
+<p>Phase 2A. Chaque colonne utilise sa propre palette (sombre par défaut, bascule claire en haut à droite). Contrastes WCAG 2.1 mesurés par script ; texte courant ≥ 4,5:1.</p></div>
+<button id="toggle" type="button" aria-pressed="false">Thème clair</button></div>
+<div class="grid">
+<section class="dir dir-a">
+  <header><p class="kicker">Éditoriale, art et essai</p><h2>A — Salle</h2><p class="idea">Le G-ardoise à contraste didone, et le bras du clap qui s’ouvre à 15°.</p></header>
+  <div class="card hero">
+    <img class="only-dark" src="a-salle/mark-on-dark.svg" width="200" height="200" alt="A — Salle mark">
+    <img class="only-light" src="a-salle/mark.svg" width="200" height="200" alt="A — Salle mark">
+  </div>
+  <div class="card sizes">
+    <div><img src="a-salle/favicon.svg" width="16" height="16" alt=""><img src="a-salle/favicon.svg" width="32" height="32" alt=""><img src="a-salle/favicon.svg" width="64" height="64" alt=""><small>favicon 16 / 32 / 64</small></div>
+    <div><span class="only-dark"><img src="a-salle/mark-on-dark.svg" width="16" height="16" alt=""><img src="a-salle/mark-on-dark.svg" width="32" height="32" alt=""></span><span class="only-light"><img src="a-salle/mark.svg" width="16" height="16" alt=""><img src="a-salle/mark.svg" width="32" height="32" alt=""></span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" class="monoi">
+  <title>Gonema mark, one colour (currentColor)</title>
+  <path fill="currentColor" d="M132 86 A80 80 0 1 0 212 166 H212 V150 H138 V170 H176 A44 64 0 1 1 132 102 Z"/>
+  <path fill="currentColor" fill-rule="evenodd" d="M43.72 47.09 L186.67 8.79 L194.96 39.69 L52 78 Z M75.3 64.51 L92.69 59.85 L101.55 38.84 L84.17 43.5 Z M113.94 54.16 L131.33 49.5 L140.19 28.49 L122.8 33.15 Z M152.58 43.8 L169.96 39.14 L178.83 18.13 L161.44 22.79 Z"/>
+</svg>
+<small>marque 16 / 32, mono</small></div>
+  </div>
+  <div class="lock dark-bg" style="background:#12100E"><img src="a-salle/lockup-dark.svg" alt="lockup dark"></div>
+  <div class="lock light-bg" style="background:#F3EDE3"><img src="a-salle/lockup-light.svg" alt="lockup light"></div>
+  <div class="card type">
+    <p class="disp" style="font-family:'Instrument Serif', serif;text-transform:normal;">Paris, Texas</p>
+    <p class="ui" style="font-family:'Instrument Sans', sans-serif">Wanted · 1 984 films · Cutoff 2160p</p>
+    <p class="mono-s" style="font-family:'IBM Plex Mono', monospace">Paris.Texas.1984.2160p.UHD.BluRay.REMUX-GRP</p>
+    <p class="tnum" style="font-family:'Instrument Sans', sans-serif"><span>12.4 GB</span><span>87 pts</span><span>00:42:10</span></p>
+    <small>Instrument Serif · Instrument Sans · IBM Plex Mono — SIL OFL 1.1</small>
+  </div>
+  <div class="card statuses">
+    <span class="st" style="--c:var(--status-downloading)">Downloading 42 %</span>
+    <span class="st" style="--c:var(--status-missing)">Missing</span>
+    <span class="st" style="--c:var(--status-upgraded)">Upgraded</span>
+    <span class="st" style="--c:var(--status-failed)">Failed</span>
+    <span class="st" style="--c:var(--status-available)">Available</span>
+    <button class="btn">Search now</button>
+  </div>
+  <div class="palettes"><div class="pal pal-dark"><h5>Sombre <span class="dim">· ratio sur base / raised / glass</span></h5><table><tr><td><i class="sw" style="background:#12100E"></i></td><td class="role">bg-base</td><td class="mono">#12100E</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:#1C1815"></i></td><td class="role">bg-raised</td><td class="mono">#1C1815</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:rgba(42,35,30,0.72)"></i></td><td class="role">surface-glass</td><td class="mono">#2A231E @ 72 %</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:rgba(242,232,220,0.12)"></i></td><td class="role">border</td><td class="mono">#F2E8DC @ 12 %</td><td class="mono r"><span class="dim">1.37 (décoratif)</span></td></tr><tr><td><i class="sw" style="background:#F2E9DD"></i></td><td class="role">text-primary</td><td class="mono">#F2E9DD</td><td class="mono r"><span class="ok">15.80</span> / <span class="ok">14.67</span> / <span class="ok">13.74</span></td></tr><tr><td><i class="sw" style="background:#C9BBAB"></i></td><td class="role">text-secondary</td><td class="mono">#C9BBAB</td><td class="mono r"><span class="ok">10.11</span> / <span class="ok">9.39</span> / <span class="ok">8.79</span></td></tr><tr><td><i class="sw" style="background:#9C8D7D"></i></td><td class="role">text-muted</td><td class="mono">#9C8D7D</td><td class="mono r"><span class="ok">5.89</span> / <span class="ok">5.47</span> / <span class="ok">5.13</span></td></tr><tr><td><i class="sw" style="background:#8F96FF"></i></td><td class="role">accent</td><td class="mono">#8F96FF</td><td class="mono r"><span class="ok">7.21</span> / <span class="ok">6.70</span> / <span class="ok">6.27</span></td></tr><tr><td><i class="sw" style="background:#0E0C1F"></i></td><td class="role">accent-contrast</td><td class="mono">#0E0C1F</td><td class="mono r">on accent <span class="ok">7.31</span></td></tr><tr><td><i class="sw" style="background:#5EC4D6"></i></td><td class="role">status-downloading</td><td class="mono">#5EC4D6</td><td class="mono r"><span class="ok">9.35</span> / <span class="ok">8.69</span> / <span class="ok">8.13</span></td></tr><tr><td><i class="sw" style="background:#E8AE55"></i></td><td class="role">status-missing</td><td class="mono">#E8AE55</td><td class="mono r"><span class="ok">9.60</span> / <span class="ok">8.92</span> / <span class="ok">8.35</span></td></tr><tr><td><i class="sw" style="background:#D69AEA"></i></td><td class="role">status-upgraded</td><td class="mono">#D69AEA</td><td class="mono r"><span class="ok">8.74</span> / <span class="ok">8.12</span> / <span class="ok">7.60</span></td></tr><tr><td><i class="sw" style="background:#F27268"></i></td><td class="role">status-failed</td><td class="mono">#F27268</td><td class="mono r"><span class="ok">6.67</span> / <span class="ok">6.20</span> / <span class="ok">5.80</span></td></tr><tr><td><i class="sw" style="background:#7FCC89"></i></td><td class="role">status-available</td><td class="mono">#7FCC89</td><td class="mono r"><span class="ok">9.85</span> / <span class="ok">9.15</span> / <span class="ok">8.57</span></td></tr></table></div><div class="pal pal-light"><h5>Clair <span class="dim">· ratio sur base / raised / glass</span></h5><table><tr><td><i class="sw" style="background:#F3EDE3"></i></td><td class="role">bg-base</td><td class="mono">#F3EDE3</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:#FBF8F2"></i></td><td class="role">bg-raised</td><td class="mono">#FBF8F2</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:rgba(255,253,249,0.7)"></i></td><td class="role">surface-glass</td><td class="mono">#FFFDF9 @ 70 %</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:rgba(42,32,24,0.14)"></i></td><td class="role">border</td><td class="mono">#2A2018 @ 14 %</td><td class="mono r"><span class="dim">1.31 (décoratif)</span></td></tr><tr><td><i class="sw" style="background:#1C1713"></i></td><td class="role">text-primary</td><td class="mono">#1C1713</td><td class="mono r"><span class="ok">15.27</span> / <span class="ok">16.77</span> / <span class="ok">16.77</span></td></tr><tr><td><i class="sw" style="background:#4E443B"></i></td><td class="role">text-secondary</td><td class="mono">#4E443B</td><td class="mono r"><span class="ok">8.15</span> / <span class="ok">8.95</span> / <span class="ok">8.95</span></td></tr><tr><td><i class="sw" style="background:#6E6257"></i></td><td class="role">text-muted</td><td class="mono">#6E6257</td><td class="mono r"><span class="ok">5.08</span> / <span class="ok">5.58</span> / <span class="ok">5.58</span></td></tr><tr><td><i class="sw" style="background:#3B3FD6"></i></td><td class="role">accent</td><td class="mono">#3B3FD6</td><td class="mono r"><span class="ok">6.29</span> / <span class="ok">6.91</span> / <span class="ok">6.91</span></td></tr><tr><td><i class="sw" style="background:#FFFFFF"></i></td><td class="role">accent-contrast</td><td class="mono">#FFFFFF</td><td class="mono r">on accent <span class="ok">7.32</span></td></tr><tr><td><i class="sw" style="background:#0B6E80"></i></td><td class="role">status-downloading</td><td class="mono">#0B6E80</td><td class="mono r"><span class="ok">5.07</span> / <span class="ok">5.57</span> / <span class="ok">5.57</span></td></tr><tr><td><i class="sw" style="background:#8C5300"></i></td><td class="role">status-missing</td><td class="mono">#8C5300</td><td class="mono r"><span class="ok">5.38</span> / <span class="ok">5.91</span> / <span class="ok">5.91</span></td></tr><tr><td><i class="sw" style="background:#86389F"></i></td><td class="role">status-upgraded</td><td class="mono">#86389F</td><td class="mono r"><span class="ok">5.86</span> / <span class="ok">6.43</span> / <span class="ok">6.43</span></td></tr><tr><td><i class="sw" style="background:#B42A22"></i></td><td class="role">status-failed</td><td class="mono">#B42A22</td><td class="mono r"><span class="ok">5.47</span> / <span class="ok">6.01</span> / <span class="ok">6.01</span></td></tr><tr><td><i class="sw" style="background:#2B7236"></i></td><td class="role">status-available</td><td class="mono">#2B7236</td><td class="mono r"><span class="ok">5.06</span> / <span class="ok">5.56</span> / <span class="ok">5.56</span></td></tr></table></div></div>
+  <div class="card mascot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" role="img" class="">
+  <title>Kernel, the Gonema mascot (sketch)</title>
+  <g transform="translate(20 20) scale(1)">
+    <path d="M190 168 L330 110 Q350 180 330 250 Z" fill="#8F96FF" opacity="0.4"/><path d="M196 262 C224 262 236 244 230 230 C224 240 212 246 196 244 Z" fill="#E4D8C8" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="70" cy="60" r="18" fill="#F3EDE3" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="70" cy="60" r="8" fill="#EBC3B5"/>
+    <circle cx="170" cy="60" r="18" fill="#F3EDE3" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="170" cy="60" r="8" fill="#EBC3B5"/>
+    <path d="M120 38 C162 38 186 68 186 104 C186 124 182 136 188 150 C202 180 208 205 208 228 C208 262 172 282 120 282 C68 282 32 262 32 228 C32 205 38 180 52 150 C58 136 54 124 54 104 C54 68 78 38 120 38 Z" fill="#F3EDE3" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+    <ellipse cx="120" cy="222" rx="54" ry="50" fill="#FBF8F2"/>
+    <ellipse cx="74" cy="130" rx="22" ry="18" fill="#E4D8C8"/>
+    <ellipse cx="74" cy="132" rx="9" ry="6" fill="#EBC3B5" opacity="0.9"/>
+    <ellipse cx="166" cy="130" rx="22" ry="18" fill="#E4D8C8"/>
+    <ellipse cx="166" cy="132" rx="9" ry="6" fill="#EBC3B5" opacity="0.9"/>
+    <ellipse cx="120" cy="130" rx="32" ry="23" fill="#FBF8F2" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+    <ellipse cx="101" cy="99" rx="7" ry="9" fill="#1C1713"/>
+    <circle cx="103.5" cy="95.5" r="2.6" fill="#FFFFFF"/>
+    <ellipse cx="139" cy="99" rx="7" ry="9" fill="#1C1713"/>
+    <circle cx="141.5" cy="95.5" r="2.6" fill="#FFFFFF"/>
+    <path d="M111 117 Q120 112 129 117 Q126 125 120 126 Q114 125 111 117 Z" fill="#1C1713"/>
+    <path d="M120 126 V133 M108 133 Q114 139 120 133 Q126 139 132 133" fill="none" stroke="#1C1713" stroke-width="3" stroke-linecap="round"/>
+    <path d="M113.5 136 H119 V146 Q116 148 113.5 146 Z M121 136 H126.5 V146 Q124 148 121 146 Z" fill="#FFFFFF" stroke="#1C1713" stroke-width="2" stroke-linejoin="round"/>
+    <ellipse cx="88" cy="278" rx="26" ry="11" fill="#E4D8C8" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+    <ellipse cx="152" cy="278" rx="26" ry="11" fill="#E4D8C8" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/><path d="M140 168 L182 160 L186 182 L144 190 Z" fill="#E4D8C8" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/><path d="M182 154 L192 152 L198 186 L188 188 Z" fill="#3B3FD6" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/><ellipse cx="132" cy="182" rx="14" ry="11" fill="#E4D8C8" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/><ellipse cx="160" cy="182" rx="14" ry="11" fill="#E4D8C8" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/><path d="M92 50 Q120 30 150 46 L146 26 Q118 16 94 30 Z" fill="#3B3FD6" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/><path d="M90 50 Q120 40 152 48" fill="none" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(470 20) scale(1)">
+    <g transform="translate(-20 0)"><path d="M196 262 C224 262 236 244 230 230 C224 240 212 246 196 244 Z" fill="#E4D8C8" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="70" cy="60" r="18" fill="#F3EDE3" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="70" cy="60" r="8" fill="#EBC3B5"/>
+    <circle cx="170" cy="60" r="18" fill="#F3EDE3" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="170" cy="60" r="8" fill="#EBC3B5"/>
+    <path d="M120 38 C162 38 186 68 186 104 C186 124 182 136 188 150 C202 180 208 205 208 228 C208 262 172 282 120 282 C68 282 32 262 32 228 C32 205 38 180 52 150 C58 136 54 124 54 104 C54 68 78 38 120 38 Z" fill="#F3EDE3" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+    <ellipse cx="120" cy="222" rx="54" ry="50" fill="#FBF8F2"/>
+    <ellipse cx="74" cy="130" rx="22" ry="18" fill="#E4D8C8"/>
+    <ellipse cx="74" cy="132" rx="9" ry="6" fill="#EBC3B5" opacity="0.9"/>
+    <ellipse cx="166" cy="130" rx="22" ry="18" fill="#E4D8C8"/>
+    <ellipse cx="166" cy="132" rx="9" ry="6" fill="#EBC3B5" opacity="0.9"/>
+    <ellipse cx="120" cy="130" rx="32" ry="23" fill="#FBF8F2" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+    <ellipse cx="101" cy="99" rx="7" ry="9" fill="#1C1713"/>
+    <circle cx="103.5" cy="95.5" r="2.6" fill="#FFFFFF"/>
+    <ellipse cx="139" cy="99" rx="7" ry="9" fill="#1C1713"/>
+    <circle cx="141.5" cy="95.5" r="2.6" fill="#FFFFFF"/>
+    <path d="M92 86 L108 80 M148 86 L132 80" stroke="#1C1713" stroke-width="4" stroke-linecap="round"/>
+    <path d="M111 117 Q120 112 129 117 Q126 125 120 126 Q114 125 111 117 Z" fill="#1C1713"/>
+    <path d="M120 126 V133 M108 133 Q114 139 120 133 Q126 139 132 133" fill="none" stroke="#1C1713" stroke-width="3" stroke-linecap="round"/>
+    <path d="M113.5 136 H119 V146 Q116 148 113.5 146 Z M121 136 H126.5 V146 Q124 148 121 146 Z" fill="#FFFFFF" stroke="#1C1713" stroke-width="2" stroke-linejoin="round"/>
+    <ellipse cx="88" cy="278" rx="26" ry="11" fill="#E4D8C8" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+    <ellipse cx="152" cy="278" rx="26" ry="11" fill="#E4D8C8" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/></g><path d="M-90 -10 H70 C60 60 76 120 62 180 C52 230 70 266 64 296 Q20 306 -10 296 Q-50 306 -90 296 Z" fill="#3B3FD6" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/><path d="M-40 0 C-50 90 -30 190 -44 300 M10 0 C0 100 20 200 6 300" fill="none" stroke="#8F96FF" stroke-width="4" stroke-linecap="round" opacity="0.7"/><ellipse cx="64" cy="170" rx="13" ry="16" fill="#E4D8C8" stroke="#1C1713" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+  </g>
+</svg>
+</div>
+  <div class="card tone"><h5>Ton de voix</h5><ul><li><b>Bibliothèque vide</b><span>The house is dark. Add a film and we&#x27;ll start the screening.</span></li><li><b>404</b><span>This reel isn&#x27;t in the booth. Back to the programme?</span></li><li><b>Échec de téléchargement</b><span>The print arrived damaged. Blocklisted it, trying the next release.</span></li><li><b>Upgrade réussi</b><span>New print: 1080p → 2160p Remux. Same seat, better picture.</span></li></ul></div>
+  <p class="more"><a href="a-salle/README.md">README</a> · <a href="a-salle/tokens.json">tokens.json</a></p>
+</section>
+<section class="dir dir-b">
+  <header><p class="kicker">Moderne, technique, précise</p><h2>B — Sprocket</h2><p class="idea">Un G carré sur grille de 8, fût perforé comme une pellicule ; la barre en accent est la fenêtre de décision.</p></header>
+  <div class="card hero">
+    <img class="only-dark" src="b-sprocket/mark-on-dark.svg" width="200" height="200" alt="B — Sprocket mark">
+    <img class="only-light" src="b-sprocket/mark.svg" width="200" height="200" alt="B — Sprocket mark">
+  </div>
+  <div class="card sizes">
+    <div><img src="b-sprocket/favicon.svg" width="16" height="16" alt=""><img src="b-sprocket/favicon.svg" width="32" height="32" alt=""><img src="b-sprocket/favicon.svg" width="64" height="64" alt=""><small>favicon 16 / 32 / 64</small></div>
+    <div><span class="only-dark"><img src="b-sprocket/mark-on-dark.svg" width="16" height="16" alt=""><img src="b-sprocket/mark-on-dark.svg" width="32" height="32" alt=""></span><span class="only-light"><img src="b-sprocket/mark.svg" width="16" height="16" alt=""><img src="b-sprocket/mark.svg" width="32" height="32" alt=""></span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" class="monoi">
+  <title>Gonema mark, one colour (currentColor)</title>
+  <path fill="currentColor" fill-rule="evenodd" d="M212 24 H64 A40 40 0 0 0 24 64 V192 A40 40 0 0 0 64 232 H192 A40 40 0 0 0 232 192 V120 H188 V188 H68 V68 H212 Z M41 84 H51 A4 4 0 0 1 55 88 V100 A4 4 0 0 1 51 104 H41 A4 4 0 0 1 37 100 V88 A4 4 0 0 1 41 84 Z M41 118 H51 A4 4 0 0 1 55 122 V134 A4 4 0 0 1 51 138 H41 A4 4 0 0 1 37 134 V122 A4 4 0 0 1 41 118 Z M41 152 H51 A4 4 0 0 1 55 156 V168 A4 4 0 0 1 51 172 H41 A4 4 0 0 1 37 168 V156 A4 4 0 0 1 41 152 Z"/>
+  <path fill="currentColor" d="M132 120 H188 V160 H132 Z"/>
+</svg>
+<small>marque 16 / 32, mono</small></div>
+  </div>
+  <div class="lock dark-bg" style="background:#0F0E0D"><img src="b-sprocket/lockup-dark.svg" alt="lockup dark"></div>
+  <div class="lock light-bg" style="background:#F2F1EE"><img src="b-sprocket/lockup-light.svg" alt="lockup light"></div>
+  <div class="card type">
+    <p class="disp" style="font-family:'Archivo', sans-serif;text-transform:uppercase;font-stretch:125%;font-weight:700;letter-spacing:.04em;">Paris, Texas</p>
+    <p class="ui" style="font-family:'Geist', sans-serif">Wanted · 1 984 films · Cutoff 2160p</p>
+    <p class="mono-s" style="font-family:'Geist Mono', monospace">Paris.Texas.1984.2160p.UHD.BluRay.REMUX-GRP</p>
+    <p class="tnum" style="font-family:'Geist', sans-serif"><span>12.4 GB</span><span>87 pts</span><span>00:42:10</span></p>
+    <small>Archivo Expanded · Geist · Geist Mono — SIL OFL 1.1</small>
+  </div>
+  <div class="card statuses">
+    <span class="st" style="--c:var(--status-downloading)">Downloading 42 %</span>
+    <span class="st" style="--c:var(--status-missing)">Missing</span>
+    <span class="st" style="--c:var(--status-upgraded)">Upgraded</span>
+    <span class="st" style="--c:var(--status-failed)">Failed</span>
+    <span class="st" style="--c:var(--status-available)">Available</span>
+    <button class="btn">Search now</button>
+  </div>
+  <div class="palettes"><div class="pal pal-dark"><h5>Sombre <span class="dim">· ratio sur base / raised / glass</span></h5><table><tr><td><i class="sw" style="background:#0F0E0D"></i></td><td class="role">bg-base</td><td class="mono">#0F0E0D</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:#181614"></i></td><td class="role">bg-raised</td><td class="mono">#181614</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:rgba(35,32,29,0.7)"></i></td><td class="role">surface-glass</td><td class="mono">#23201D @ 70 %</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:rgba(237,230,222,0.1)"></i></td><td class="role">border</td><td class="mono">#EDE6DE @ 10 %</td><td class="mono r"><span class="dim">1.28 (décoratif)</span></td></tr><tr><td><i class="sw" style="background:#EEEAE4"></i></td><td class="role">text-primary</td><td class="mono">#EEEAE4</td><td class="mono r"><span class="ok">16.09</span> / <span class="ok">15.06</span> / <span class="ok">14.34</span></td></tr><tr><td><i class="sw" style="background:#BDB6AD"></i></td><td class="role">text-secondary</td><td class="mono">#BDB6AD</td><td class="mono r"><span class="ok">9.60</span> / <span class="ok">8.99</span> / <span class="ok">8.56</span></td></tr><tr><td><i class="sw" style="background:#8F877E"></i></td><td class="role">text-muted</td><td class="mono">#8F877E</td><td class="mono r"><span class="ok">5.45</span> / <span class="ok">5.10</span> / <span class="ok">4.86</span></td></tr><tr><td><i class="sw" style="background:#3ED1BA"></i></td><td class="role">accent</td><td class="mono">#3ED1BA</td><td class="mono r"><span class="ok">10.13</span> / <span class="ok">9.48</span> / <span class="ok">9.03</span></td></tr><tr><td><i class="sw" style="background:#04201B"></i></td><td class="role">accent-contrast</td><td class="mono">#04201B</td><td class="mono r">on accent <span class="ok">8.99</span></td></tr><tr><td><i class="sw" style="background:#71A9FF"></i></td><td class="role">status-downloading</td><td class="mono">#71A9FF</td><td class="mono r"><span class="ok">8.10</span> / <span class="ok">7.58</span> / <span class="ok">7.22</span></td></tr><tr><td><i class="sw" style="background:#F0B04B"></i></td><td class="role">status-missing</td><td class="mono">#F0B04B</td><td class="mono r"><span class="ok">10.12</span> / <span class="ok">9.47</span> / <span class="ok">9.01</span></td></tr><tr><td><i class="sw" style="background:#B4A0FF"></i></td><td class="role">status-upgraded</td><td class="mono">#B4A0FF</td><td class="mono r"><span class="ok">8.64</span> / <span class="ok">8.09</span> / <span class="ok">7.70</span></td></tr><tr><td><i class="sw" style="background:#FF7070"></i></td><td class="role">status-failed</td><td class="mono">#FF7070</td><td class="mono r"><span class="ok">7.17</span> / <span class="ok">6.71</span> / <span class="ok">6.38</span></td></tr><tr><td><i class="sw" style="background:#9DD56B"></i></td><td class="role">status-available</td><td class="mono">#9DD56B</td><td class="mono r"><span class="ok">11.17</span> / <span class="ok">10.45</span> / <span class="ok">9.95</span></td></tr></table></div><div class="pal pal-light"><h5>Clair <span class="dim">· ratio sur base / raised / glass</span></h5><table><tr><td><i class="sw" style="background:#F2F1EE"></i></td><td class="role">bg-base</td><td class="mono">#F2F1EE</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:#FFFFFF"></i></td><td class="role">bg-raised</td><td class="mono">#FFFFFF</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:rgba(255,255,255,0.72)"></i></td><td class="role">surface-glass</td><td class="mono">#FFFFFF @ 72 %</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:rgba(26,23,20,0.12)"></i></td><td class="role">border</td><td class="mono">#1A1714 @ 12 %</td><td class="mono r"><span class="dim">1.28 (décoratif)</span></td></tr><tr><td><i class="sw" style="background:#161412"></i></td><td class="role">text-primary</td><td class="mono">#161412</td><td class="mono r"><span class="ok">16.27</span> / <span class="ok">18.37</span> / <span class="ok">17.75</span></td></tr><tr><td><i class="sw" style="background:#47423C"></i></td><td class="role">text-secondary</td><td class="mono">#47423C</td><td class="mono r"><span class="ok">8.80</span> / <span class="ok">9.94</span> / <span class="ok">9.60</span></td></tr><tr><td><i class="sw" style="background:#69625A"></i></td><td class="role">text-muted</td><td class="mono">#69625A</td><td class="mono r"><span class="ok">5.32</span> / <span class="ok">6.01</span> / <span class="ok">5.80</span></td></tr><tr><td><i class="sw" style="background:#00756A"></i></td><td class="role">accent</td><td class="mono">#00756A</td><td class="mono r"><span class="ok">4.95</span> / <span class="ok">5.60</span> / <span class="ok">5.40</span></td></tr><tr><td><i class="sw" style="background:#FFFFFF"></i></td><td class="role">accent-contrast</td><td class="mono">#FFFFFF</td><td class="mono r">on accent <span class="ok">5.60</span></td></tr><tr><td><i class="sw" style="background:#1D5FC2"></i></td><td class="role">status-downloading</td><td class="mono">#1D5FC2</td><td class="mono r"><span class="ok">5.36</span> / <span class="ok">6.06</span> / <span class="ok">5.85</span></td></tr><tr><td><i class="sw" style="background:#8A5300"></i></td><td class="role">status-missing</td><td class="mono">#8A5300</td><td class="mono r"><span class="ok">5.60</span> / <span class="ok">6.33</span> / <span class="ok">6.11</span></td></tr><tr><td><i class="sw" style="background:#6542D6"></i></td><td class="role">status-upgraded</td><td class="mono">#6542D6</td><td class="mono r"><span class="ok">5.63</span> / <span class="ok">6.36</span> / <span class="ok">6.14</span></td></tr><tr><td><i class="sw" style="background:#BE2B2B"></i></td><td class="role">status-failed</td><td class="mono">#BE2B2B</td><td class="mono r"><span class="ok">5.21</span> / <span class="ok">5.88</span> / <span class="ok">5.68</span></td></tr><tr><td><i class="sw" style="background:#3B7012"></i></td><td class="role">status-available</td><td class="mono">#3B7012</td><td class="mono r"><span class="ok">5.29</span> / <span class="ok">5.98</span> / <span class="ok">5.77</span></td></tr></table></div></div>
+  <div class="card mascot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 330" role="img" class="">
+  <title>Kernel, the Gonema mascot (sketch)</title>
+  <g transform="translate(20 20) scale(1)">
+    <path d="M196 262 C224 262 236 244 230 230 C224 240 212 246 196 244 Z" fill="#9C8670"/>
+    <circle cx="70" cy="60" r="18" fill="#B9A48E"/>
+    <circle cx="70" cy="60" r="8" fill="#D9A898"/>
+    <circle cx="170" cy="60" r="18" fill="#B9A48E"/>
+    <circle cx="170" cy="60" r="8" fill="#D9A898"/>
+    <path d="M120 38 C162 38 186 68 186 104 C186 124 182 136 188 150 C202 180 208 205 208 228 C208 262 172 282 120 282 C68 282 32 262 32 228 C32 205 38 180 52 150 C58 136 54 124 54 104 C54 68 78 38 120 38 Z" fill="#B9A48E"/>
+    <ellipse cx="120" cy="222" rx="54" ry="50" fill="#EDE3D6"/>
+    <ellipse cx="74" cy="130" rx="22" ry="18" fill="#9C8670"/>
+    <ellipse cx="74" cy="132" rx="9" ry="6" fill="#D9A898" opacity="0.9"/>
+    <ellipse cx="166" cy="130" rx="22" ry="18" fill="#9C8670"/>
+    <ellipse cx="166" cy="132" rx="9" ry="6" fill="#D9A898" opacity="0.9"/>
+    <ellipse cx="120" cy="130" rx="32" ry="23" fill="#EDE3D6"/>
+    <ellipse cx="101" cy="99" rx="7" ry="9" fill="#161412"/>
+    <circle cx="103.5" cy="95.5" r="2.6" fill="#FFFFFF"/>
+    <ellipse cx="139" cy="99" rx="7" ry="9" fill="#161412"/>
+    <circle cx="141.5" cy="95.5" r="2.6" fill="#FFFFFF"/>
+    <path d="M111 117 Q120 112 129 117 Q126 125 120 126 Q114 125 111 117 Z" fill="#161412"/>
+    <path d="M120 126 V133 M108 133 Q114 139 120 133 Q126 139 132 133" fill="none" stroke="#161412" stroke-width="3" stroke-linecap="round"/>
+    <path d="M113.5 136 H119 V146 Q116 148 113.5 146 Z M121 136 H126.5 V146 Q124 148 121 146 Z" fill="#FFFFFF" stroke="#161412" stroke-width="2" stroke-linejoin="round"/>
+    <ellipse cx="88" cy="278" rx="26" ry="11" fill="#9C8670"/>
+    <ellipse cx="152" cy="278" rx="26" ry="11" fill="#9C8670"/><g transform="translate(0 30)"><g transform="rotate(-6 120 200)"><rect x="62" y="168" width="116" height="78" rx="6" fill="#23201D"/><rect x="74" y="190" width="92" height="4" rx="2" fill="#5C554D"/><rect x="74" y="206" width="60" height="4" rx="2" fill="#5C554D"/><rect x="74" y="222" width="76" height="4" rx="2" fill="#3ED1BA"/></g><g transform="rotate(-22 62 162)"><rect x="62" y="146" width="116" height="20" rx="4" fill="#23201D"/><path d="M78 146 H96 L86 166 H68 Z M114 146 H132 L122 166 H104 Z M150 146 H168 L158 166 H140 Z" fill="#3ED1BA"/></g></g><ellipse cx="66" cy="236" rx="13" ry="11" fill="#9C8670"/><ellipse cx="176" cy="236" rx="13" ry="11" fill="#9C8670"/>
+  </g>
+  <g transform="translate(400 20) scale(1)">
+    <path d="M196 262 C224 262 236 244 230 230 C224 240 212 246 196 244 Z" fill="#9C8670"/>
+    <circle cx="70" cy="60" r="18" fill="#B9A48E"/>
+    <circle cx="70" cy="60" r="8" fill="#D9A898"/>
+    <circle cx="170" cy="60" r="18" fill="#B9A48E"/>
+    <circle cx="170" cy="60" r="8" fill="#D9A898"/>
+    <path d="M120 38 C162 38 186 68 186 104 C186 124 182 136 188 150 C202 180 208 205 208 228 C208 262 172 282 120 282 C68 282 32 262 32 228 C32 205 38 180 52 150 C58 136 54 124 54 104 C54 68 78 38 120 38 Z" fill="#B9A48E"/>
+    <ellipse cx="120" cy="222" rx="54" ry="50" fill="#EDE3D6"/>
+    <ellipse cx="74" cy="130" rx="22" ry="18" fill="#9C8670"/>
+    <ellipse cx="74" cy="132" rx="9" ry="6" fill="#D9A898" opacity="0.9"/>
+    <ellipse cx="166" cy="130" rx="22" ry="18" fill="#9C8670"/>
+    <ellipse cx="166" cy="132" rx="9" ry="6" fill="#D9A898" opacity="0.9"/>
+    <ellipse cx="120" cy="130" rx="32" ry="23" fill="#EDE3D6"/>
+    <ellipse cx="101" cy="99" rx="7" ry="9" fill="#161412"/>
+    <circle cx="103.5" cy="95.5" r="2.6" fill="#FFFFFF"/>
+    <ellipse cx="139" cy="99" rx="7" ry="9" fill="#161412"/>
+    <circle cx="141.5" cy="95.5" r="2.6" fill="#FFFFFF"/>
+    <path d="M111 117 Q120 112 129 117 Q126 125 120 126 Q114 125 111 117 Z" fill="#161412"/>
+    <path d="M120 126 V133 M108 133 Q114 139 120 133 Q126 139 132 133" fill="none" stroke="#161412" stroke-width="3" stroke-linecap="round"/>
+    <path d="M113.5 136 H119 V146 Q116 148 113.5 146 Z M121 136 H126.5 V146 Q124 148 121 146 Z" fill="#FFFFFF" stroke="#161412" stroke-width="2" stroke-linejoin="round"/>
+    <ellipse cx="88" cy="278" rx="26" ry="11" fill="#9C8670"/>
+    <ellipse cx="152" cy="278" rx="26" ry="11" fill="#9C8670"/><g transform="translate(14 26)"><rect x="164" y="186" width="16" height="58" rx="8" fill="#23201D" transform="rotate(-40 172 215)"/><circle cx="150" cy="168" r="34" fill="#3ED1BA" opacity="0.22"/><circle cx="150" cy="168" r="34" fill="none" stroke="#23201D" stroke-width="12"/><circle cx="138" cy="156" r="7" fill="#FFFFFF" opacity="0.7"/></g><ellipse cx="108" cy="206" rx="14" ry="11" fill="#9C8670"/><ellipse cx="198" cy="238" rx="13" ry="11" fill="#9C8670"/>
+  </g>
+</svg>
+</div>
+  <div class="card tone"><h5>Ton de voix</h5><ul><li><b>Bibliothèque vide</b><span>0 films. Add one and Gonema starts watching the indexers.</span></li><li><b>404</b><span>Frame 404 not found. The rest of the reel is fine.</span></li><li><b>Échec de téléchargement</b><span>Download failed (CRC error). Release blocklisted, next candidate scored 87.</span></li><li><b>Upgrade réussi</b><span>Upgraded to WEB-DL 2160p, +40 points. Cutoff reached.</span></li></ul></div>
+  <p class="more"><a href="b-sprocket/README.md">README</a> · <a href="b-sprocket/tokens.json">tokens.json</a></p>
+</section>
+<section class="dir dir-c">
+  <header><p class="kicker">Chaleureuse, ludique, luxe doux</p><h2>C — Matinée</h2><p class="idea">Un « g » dont la panse est une bobine et la queue, la pellicule qui se déroule.</p></header>
+  <div class="card hero">
+    <img class="only-dark" src="c-matinee/mark-on-dark.svg" width="200" height="200" alt="C — Matinée mark">
+    <img class="only-light" src="c-matinee/mark.svg" width="200" height="200" alt="C — Matinée mark">
+  </div>
+  <div class="card sizes">
+    <div><img src="c-matinee/favicon.svg" width="16" height="16" alt=""><img src="c-matinee/favicon.svg" width="32" height="32" alt=""><img src="c-matinee/favicon.svg" width="64" height="64" alt=""><small>favicon 16 / 32 / 64</small></div>
+    <div><span class="only-dark"><img src="c-matinee/mark-on-dark.svg" width="16" height="16" alt=""><img src="c-matinee/mark-on-dark.svg" width="32" height="32" alt=""></span><span class="only-light"><img src="c-matinee/mark.svg" width="16" height="16" alt=""><img src="c-matinee/mark.svg" width="32" height="32" alt=""></span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" class="monoi">
+  <title>Gonema mark, one colour (currentColor)</title>
+  <path fill="currentColor" d="M177 28 H211 V186 A50 50 0 0 1 161 236 H77 A17.0 17.0 0 0 1 77 202 H161 A16 16 0 0 0 177 186 Z"/>
+  <path fill="currentColor" fill-rule="evenodd" d="M45 100 A80 80 0 1 1 205 100 A80 80 0 1 1 45 100 Z M112 100 A13 13 0 1 0 138 100 A13 13 0 1 0 112 100 Z M104 54 A21 21 0 1 0 146 54 A21 21 0 1 0 104 54 Z M143.84 123 A21 21 0 1 0 185.84 123 A21 21 0 1 0 143.84 123 Z M64.16 123 A21 21 0 1 0 106.16 123 A21 21 0 1 0 64.16 123 Z"/>
+</svg>
+<small>marque 16 / 32, mono</small></div>
+  </div>
+  <div class="lock dark-bg" style="background:#18110F"><img src="c-matinee/lockup-dark.svg" alt="lockup dark"></div>
+  <div class="lock light-bg" style="background:#FAF1E8"><img src="c-matinee/lockup-light.svg" alt="lockup light"></div>
+  <div class="card type">
+    <p class="disp" style="font-family:'Fraunces', serif;text-transform:normal;font-variation-settings:'SOFT' 100,'WONK' 1;font-weight:600;">Paris, Texas</p>
+    <p class="ui" style="font-family:'Figtree', sans-serif">Wanted · 1 984 films · Cutoff 2160p</p>
+    <p class="mono-s" style="font-family:'JetBrains Mono', monospace">Paris.Texas.1984.2160p.UHD.BluRay.REMUX-GRP</p>
+    <p class="tnum" style="font-family:'Figtree', sans-serif"><span>12.4 GB</span><span>87 pts</span><span>00:42:10</span></p>
+    <small>Fraunces · Figtree · JetBrains Mono — SIL OFL 1.1</small>
+  </div>
+  <div class="card statuses">
+    <span class="st" style="--c:var(--status-downloading)">Downloading 42 %</span>
+    <span class="st" style="--c:var(--status-missing)">Missing</span>
+    <span class="st" style="--c:var(--status-upgraded)">Upgraded</span>
+    <span class="st" style="--c:var(--status-failed)">Failed</span>
+    <span class="st" style="--c:var(--status-available)">Available</span>
+    <button class="btn">Search now</button>
+  </div>
+  <div class="palettes"><div class="pal pal-dark"><h5>Sombre <span class="dim">· ratio sur base / raised / glass</span></h5><table><tr><td><i class="sw" style="background:#18110F"></i></td><td class="role">bg-base</td><td class="mono">#18110F</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:#231916"></i></td><td class="role">bg-raised</td><td class="mono">#231916</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:rgba(51,36,31,0.7)"></i></td><td class="role">surface-glass</td><td class="mono">#33241F @ 70 %</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:rgba(255,230,216,0.12)"></i></td><td class="role">border</td><td class="mono">#FFE6D8 @ 12 %</td><td class="mono r"><span class="dim">1.38 (décoratif)</span></td></tr><tr><td><i class="sw" style="background:#FBEDE3"></i></td><td class="role">text-primary</td><td class="mono">#FBEDE3</td><td class="mono r"><span class="ok">16.28</span> / <span class="ok">14.99</span> / <span class="ok">14.06</span></td></tr><tr><td><i class="sw" style="background:#D4BCAE"></i></td><td class="role">text-secondary</td><td class="mono">#D4BCAE</td><td class="mono r"><span class="ok">10.31</span> / <span class="ok">9.50</span> / <span class="ok">8.90</span></td></tr><tr><td><i class="sw" style="background:#A68E80"></i></td><td class="role">text-muted</td><td class="mono">#A68E80</td><td class="mono r"><span class="ok">6.04</span> / <span class="ok">5.57</span> / <span class="ok">5.22</span></td></tr><tr><td><i class="sw" style="background:#F59DC3"></i></td><td class="role">accent</td><td class="mono">#F59DC3</td><td class="mono r"><span class="ok">9.32</span> / <span class="ok">8.59</span> / <span class="ok">8.05</span></td></tr><tr><td><i class="sw" style="background:#2A0B19"></i></td><td class="role">accent-contrast</td><td class="mono">#2A0B19</td><td class="mono r">on accent <span class="ok">9.04</span></td></tr><tr><td><i class="sw" style="background:#7DB7F3"></i></td><td class="role">status-downloading</td><td class="mono">#7DB7F3</td><td class="mono r"><span class="ok">8.83</span> / <span class="ok">8.13</span> / <span class="ok">7.63</span></td></tr><tr><td><i class="sw" style="background:#F3B55F"></i></td><td class="role">status-missing</td><td class="mono">#F3B55F</td><td class="mono r"><span class="ok">10.29</span> / <span class="ok">9.48</span> / <span class="ok">8.89</span></td></tr><tr><td><i class="sw" style="background:#80DEC0"></i></td><td class="role">status-upgraded</td><td class="mono">#80DEC0</td><td class="mono r"><span class="ok">11.66</span> / <span class="ok">10.74</span> / <span class="ok">10.07</span></td></tr><tr><td><i class="sw" style="background:#FF8259"></i></td><td class="role">status-failed</td><td class="mono">#FF8259</td><td class="mono r"><span class="ok">7.63</span> / <span class="ok">7.03</span> / <span class="ok">6.59</span></td></tr><tr><td><i class="sw" style="background:#AAD678"></i></td><td class="role">status-available</td><td class="mono">#AAD678</td><td class="mono r"><span class="ok">11.19</span> / <span class="ok">10.31</span> / <span class="ok">9.67</span></td></tr></table></div><div class="pal pal-light"><h5>Clair <span class="dim">· ratio sur base / raised / glass</span></h5><table><tr><td><i class="sw" style="background:#FAF1E8"></i></td><td class="role">bg-base</td><td class="mono">#FAF1E8</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:#FFF9F3"></i></td><td class="role">bg-raised</td><td class="mono">#FFF9F3</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:rgba(255,255,255,0.66)"></i></td><td class="role">surface-glass</td><td class="mono">#FFFFFF @ 66 %</td><td class="mono r"><span class="dim">fond</span></td></tr><tr><td><i class="sw" style="background:rgba(58,34,24,0.13)"></i></td><td class="role">border</td><td class="mono">#3A2218 @ 13 %</td><td class="mono r"><span class="dim">1.28 (décoratif)</span></td></tr><tr><td><i class="sw" style="background:#24160F"></i></td><td class="role">text-primary</td><td class="mono">#24160F</td><td class="mono r"><span class="ok">15.72</span> / <span class="ok">16.79</span> / <span class="ok">16.87</span></td></tr><tr><td><i class="sw" style="background:#56423A"></i></td><td class="role">text-secondary</td><td class="mono">#56423A</td><td class="mono r"><span class="ok">8.41</span> / <span class="ok">8.99</span> / <span class="ok">9.03</span></td></tr><tr><td><i class="sw" style="background:#77625A"></i></td><td class="role">text-muted</td><td class="mono">#77625A</td><td class="mono r"><span class="ok">5.11</span> / <span class="ok">5.46</span> / <span class="ok">5.49</span></td></tr><tr><td><i class="sw" style="background:#AE2F6B"></i></td><td class="role">accent</td><td class="mono">#AE2F6B</td><td class="mono r"><span class="ok">5.50</span> / <span class="ok">5.88</span> / <span class="ok">5.91</span></td></tr><tr><td><i class="sw" style="background:#FFFFFF"></i></td><td class="role">accent-contrast</td><td class="mono">#FFFFFF</td><td class="mono r">on accent <span class="ok">6.14</span></td></tr><tr><td><i class="sw" style="background:#1C62AE"></i></td><td class="role">status-downloading</td><td class="mono">#1C62AE</td><td class="mono r"><span class="ok">5.52</span> / <span class="ok">5.90</span> / <span class="ok">5.93</span></td></tr><tr><td><i class="sw" style="background:#8E5600"></i></td><td class="role">status-missing</td><td class="mono">#8E5600</td><td class="mono r"><span class="ok">5.40</span> / <span class="ok">5.77</span> / <span class="ok">5.80</span></td></tr><tr><td><i class="sw" style="background:#0B7457"></i></td><td class="role">status-upgraded</td><td class="mono">#0B7457</td><td class="mono r"><span class="ok">5.15</span> / <span class="ok">5.51</span> / <span class="ok">5.53</span></td></tr><tr><td><i class="sw" style="background:#B93A12"></i></td><td class="role">status-failed</td><td class="mono">#B93A12</td><td class="mono r"><span class="ok">5.12</span> / <span class="ok">5.47</span> / <span class="ok">5.49</span></td></tr><tr><td><i class="sw" style="background:#47731A"></i></td><td class="role">status-available</td><td class="mono">#47731A</td><td class="mono r"><span class="ok">5.04</span> / <span class="ok">5.38</span> / <span class="ok">5.41</span></td></tr></table></div></div>
+  <div class="card mascot"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 330" role="img" class="">
+  <title>Kernel, the Gonema mascot (sketch)</title>
+  <g transform="translate(20 20) scale(1)">
+    <path d="M196 262 C224 262 236 244 230 230 C224 240 212 246 196 244 Z" fill="#B07A45"/>
+    <circle cx="70" cy="60" r="18" fill="#D19A63"/>
+    <circle cx="70" cy="60" r="8" fill="#F2A0B5"/>
+    <circle cx="170" cy="60" r="18" fill="#D19A63"/>
+    <circle cx="170" cy="60" r="8" fill="#F2A0B5"/>
+    <path d="M120 38 C162 38 186 68 186 104 C186 124 182 136 188 150 C202 180 208 205 208 228 C208 262 172 282 120 282 C68 282 32 262 32 228 C32 205 38 180 52 150 C58 136 54 124 54 104 C54 68 78 38 120 38 Z" fill="#D19A63"/>
+    <ellipse cx="120" cy="222" rx="54" ry="50" fill="#F7E4CB"/>
+    <ellipse cx="74" cy="130" rx="22" ry="18" fill="#B07A45"/>
+    <ellipse cx="74" cy="132" rx="9" ry="6" fill="#F2A0B5" opacity="0.9"/>
+    <ellipse cx="166" cy="130" rx="22" ry="18" fill="#B07A45"/>
+    <ellipse cx="166" cy="132" rx="9" ry="6" fill="#F2A0B5" opacity="0.9"/>
+    <ellipse cx="72" cy="132" rx="26" ry="21" fill="#B07A45"/><circle cx="66" cy="124" r="5" fill="#FFF6E2" stroke="#E8C98F" stroke-width="1.5"/><ellipse cx="168" cy="132" rx="26" ry="21" fill="#B07A45"/><circle cx="174" cy="124" r="5" fill="#FFF6E2" stroke="#E8C98F" stroke-width="1.5"/><ellipse cx="120" cy="130" rx="32" ry="23" fill="#F7E4CB"/>
+    <ellipse cx="101" cy="99" rx="7" ry="9" fill="#24160F"/>
+    <circle cx="103.5" cy="95.5" r="2.6" fill="#FFFDF8"/>
+    <ellipse cx="139" cy="99" rx="7" ry="9" fill="#24160F"/>
+    <circle cx="141.5" cy="95.5" r="2.6" fill="#FFFDF8"/>
+    <path d="M111 117 Q120 112 129 117 Q126 125 120 126 Q114 125 111 117 Z" fill="#24160F"/>
+    <path d="M120 126 V133 M108 133 Q114 139 120 133 Q126 139 132 133" fill="none" stroke="#24160F" stroke-width="3" stroke-linecap="round"/>
+    <path d="M113.5 136 H119 V146 Q116 148 113.5 146 Z M121 136 H126.5 V146 Q124 148 121 146 Z" fill="#FFFDF8" stroke="#24160F" stroke-width="2" stroke-linejoin="round"/>
+    <ellipse cx="88" cy="278" rx="26" ry="11" fill="#B07A45"/>
+    <ellipse cx="152" cy="278" rx="26" ry="11" fill="#B07A45"/><circle cx="88" cy="168" r="13" fill="#FFF6E2" stroke="#E8C98F" stroke-width="2"/><circle cx="106" cy="160" r="14" fill="#FFF6E2" stroke="#E8C98F" stroke-width="2"/><circle cx="124" cy="158" r="13" fill="#FFF6E2" stroke="#E8C98F" stroke-width="2"/><circle cx="142" cy="162" r="14" fill="#FFF6E2" stroke="#E8C98F" stroke-width="2"/><circle cx="158" cy="170" r="12" fill="#FFF6E2" stroke="#E8C98F" stroke-width="2"/><circle cx="98" cy="152" r="10" fill="#FFF6E2" stroke="#E8C98F" stroke-width="2"/><circle cx="134" cy="148" r="11" fill="#FFF6E2" stroke="#E8C98F" stroke-width="2"/><circle cx="116" cy="146" r="10" fill="#FFF6E2" stroke="#E8C98F" stroke-width="2"/><circle cx="150" cy="152" r="9" fill="#FFF6E2" stroke="#E8C98F" stroke-width="2"/><path d="M76 176 H170 L158 262 H88 Z" fill="#FFF6E2"/><path d="M86 176 H104 L106 262 H95 Z M122 176 H140 L136 262 H124 Z M156 176 H170 L158 262 H152 Z" fill="#F59DC3"/><path d="M76 176 H170" stroke="#AE2F6B" stroke-width="6" stroke-linecap="round"/><ellipse cx="78" cy="206" rx="14" ry="12" fill="#B07A45"/><ellipse cx="166" cy="206" rx="14" ry="12" fill="#B07A45"/>
+  </g>
+  <g transform="translate(400 20) scale(1)">
+    <path d="M196 262 C224 262 236 244 230 230 C224 240 212 246 196 244 Z" fill="#B07A45"/>
+    <circle cx="70" cy="60" r="18" fill="#D19A63"/>
+    <circle cx="70" cy="60" r="8" fill="#F2A0B5"/>
+    <circle cx="170" cy="60" r="18" fill="#D19A63"/>
+    <circle cx="170" cy="60" r="8" fill="#F2A0B5"/>
+    <path d="M120 38 C162 38 186 68 186 104 C186 124 182 136 188 150 C202 180 208 205 208 228 C208 262 172 282 120 282 C68 282 32 262 32 228 C32 205 38 180 52 150 C58 136 54 124 54 104 C54 68 78 38 120 38 Z" fill="#D19A63"/>
+    <ellipse cx="120" cy="222" rx="54" ry="50" fill="#F7E4CB"/>
+    <ellipse cx="74" cy="130" rx="22" ry="18" fill="#B07A45"/>
+    <ellipse cx="74" cy="132" rx="9" ry="6" fill="#F2A0B5" opacity="0.9"/>
+    <ellipse cx="166" cy="130" rx="22" ry="18" fill="#B07A45"/>
+    <ellipse cx="166" cy="132" rx="9" ry="6" fill="#F2A0B5" opacity="0.9"/>
+    <ellipse cx="120" cy="130" rx="32" ry="23" fill="#F7E4CB"/>
+    <path d="M93 100 Q101 108 109 100" fill="none" stroke="#24160F" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M131 100 Q139 108 147 100" fill="none" stroke="#24160F" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M111 117 Q120 112 129 117 Q126 125 120 126 Q114 125 111 117 Z" fill="#24160F"/>
+    <path d="M120 126 V133 M108 133 Q114 139 120 133 Q126 139 132 133" fill="none" stroke="#24160F" stroke-width="3" stroke-linecap="round"/>
+    <path d="M113.5 136 H119 V146 Q116 148 113.5 146 Z M121 136 H126.5 V146 Q124 148 121 146 Z" fill="#FFFDF8" stroke="#24160F" stroke-width="2" stroke-linejoin="round"/>
+    <ellipse cx="88" cy="278" rx="26" ry="11" fill="#B07A45"/>
+    <ellipse cx="152" cy="278" rx="26" ry="11" fill="#B07A45"/><g transform="rotate(-12 120 200)"><path d="M70 176 H170 V194 A10 10 0 0 0 170 214 V232 H70 V214 A10 10 0 0 0 70 194 Z" fill="#F59DC3"/><path d="M140 180 V228" stroke="#FFFDF8" stroke-width="3" stroke-dasharray="5 5"/><circle cx="104" cy="204" r="12" fill="none" stroke="#FFFDF8" stroke-width="4"/></g><ellipse cx="80" cy="214" rx="14" ry="12" fill="#B07A45"/><ellipse cx="160" cy="196" rx="14" ry="12" fill="#B07A45"/><path d="M196 40 H216 L196 62 H216 M226 14 H240 L226 30 H240" fill="none" stroke="#F59DC3" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
+</div>
+  <div class="card tone"><h5>Ton de voix</h5><ul><li><b>Bibliothèque vide</b><span>Nothing on tonight&#x27;s bill yet. Pick a film, we&#x27;ll handle the popcorn.</span></li><li><b>404</b><span>Wrong screen. Kernel ate the page, sorry.</span></li><li><b>Échec de téléchargement</b><span>That copy didn&#x27;t make it. We&#x27;ve moved on to the next one.</span></li><li><b>Upgrade réussi</b><span>Swapped in the 4K print. Enjoy the upgrade.</span></li></ul></div>
+  <p class="more"><a href="c-matinee/README.md">README</a> · <a href="c-matinee/tokens.json">tokens.json</a></p>
+</section></div>
+<section class="reco">
+<h2>Recommandation : A — Salle</h2>
+<p><strong>Pourquoi.</strong> C’est la seule direction qui dit « salle de cinéma privée » avant même de lire le nom, et la plus éloignée de toute la catégorie (*arr, Plex, Jellyfin : jaunes, oranges, violets, chevrons, radars). Le G-ardoise est une idée en une phrase, un geste plutôt qu’un pictogramme ; l’outremer unique sur noirs chauds est rare, élégant et ne concurrence aucune couleur de statut. Instrument Serif donne aux titres de films la place d’une affiche, l’UI en Instrument Sans reste neutre.</p>
+<p><strong>À emprunter aux autres.</strong></p>
+<ul>
+<li><strong>De B :</strong> la discipline petite taille (favicon dessiné à part, grille de 8), Geist Mono ou IBM Plex Mono pour les releases et scores, et son ton factuel chiffré pour le moteur de décision, l’historique et les journaux.</li>
+<li><strong>De C :</strong> la mascotte en volume (peluche aux bajoues de pop-corn), plus chaleureuse que le trait d’encre, recolorée dans la palette A ; et une dose de son humour pour l’onboarding et les états vides.</li>
+</ul>
+<p><strong>Risques à traiter en phase 2B.</strong> Le bras du clap devient une barre à 16 px (tester un favicon sans rayures, déjà fourni) ; Instrument Serif réservé aux tailles ≥ 24 px ; vérifier les verres dépolis au-dessus d’affiches claires (prévoir un voile).</p>
+</section>
+<p class="foot">Polices : toutes sous SIL Open Font License 1.1 (Google Fonts). Wordmarks vectorisés depuis les fichiers OFL ; aucune balise &lt;text&gt; dans les marques. Recherche d’antériorité du nom « Gonema » : rien trouvé sur le web et GitHub (recherche sommaire, ce n’est pas une vérification juridique).</p>
+<script>
+const t=document.getElementById('toggle');
+t.addEventListener('click',()=>{const h=document.documentElement;const d=h.dataset.theme==='dark';h.dataset.theme=d?'light':'dark';t.textContent=d?'Thème sombre':'Thème clair';t.setAttribute('aria-pressed',String(d));});
+if(location.hash==='#light'){t.click();}
+</script>
+</body></html>

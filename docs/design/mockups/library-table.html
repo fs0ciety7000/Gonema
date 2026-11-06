@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-density="compact">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Films (table) · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: library table (compact, power users) */
+  .page { padding-top: var(--space-6); }
+  .page-head { margin-bottom: var(--space-4); }
+  .page-head h1 { font: var(--type-display-md); letter-spacing: var(--type-display-md-tracking); font-stretch: 125%; }
+  .table-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-3); }
+  .table-bar .sel { font: var(--type-body-sm); color: var(--text-secondary); font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: var(--space-3); }
+  .table-wrap { position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-raised); box-shadow: var(--elev-2); overflow: clip; }
+  .tbl { table-layout: fixed; }
+  .tbl thead th { background: color-mix(in srgb, var(--bg-sunken) 60%, var(--bg-raised)); }
+  .tbl tbody tr:last-child td { border-bottom: 0; }
+  .tbl .t-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .tbl .t-cell .name { font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; }
+  .tbl .t-cell .yr { color: var(--text-muted); flex: none; }
+  .tbl td .path { display: block; overflow: hidden; text-overflow: ellipsis; }
+  .tbl td.c-check, .tbl th.c-check { padding-right: 0; }
+  .tbl td .row-more { opacity: 0; }
+  .tbl tr:hover .row-more, .tbl tr.is-context .row-more, .tbl tr[aria-selected="true"] .row-more { opacity: 1; }
+  .tbl td.unmon .name { color: var(--text-secondary); }
+  .ctx { position: absolute; left: 640px; top: 140px; width: 264px; --origin: top left; }
+  .ctx .sub-wrap { position: relative; }
+  .submenu { position: absolute; left: calc(100% + 4px); top: -6px; width: 220px; }
+  .cursor { position: absolute; left: 632px; top: 120px; width: 16px; height: 22px; z-index: calc(var(--z-popover) + 1); pointer-events: none; filter: drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
+  .foot-note { display: flex; justify-content: space-between; margin-top: var(--space-3); font: var(--type-caption); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app">
+  <nav class="sidebar" aria-label="Main" data-shell-sidebar="films"></nav>
+  <div class="main">
+    <header class="topbar">
+      <label class="input search" aria-label="Search">
+        <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+        <input type="search" placeholder="Search films, people, releases…" aria-label="Search films, people, releases">
+        <span class="kbd" aria-hidden="true">⌘K</span>
+      </label>
+      <div class="spacer"></div>
+      <button class="icon-btn" type="button" aria-label="Notifications, 2 unread"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg><span class="dot" aria-hidden="true"></span></button>
+      <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+      <button class="btn btn-primary" type="button"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Add film</button>
+    </header>
+
+    <main id="main" class="page">
+      <div class="page-head">
+        <div>
+          <h1>Films</h1>
+          <p class="sub">1,284 films · 1,198 on disk · 9.7 TB</p>
+        </div>
+        <div class="toolbar" role="toolbar" aria-label="Library display">
+          <button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-list-filter"/></svg>Filters <span class="badge" style="height:18px;padding:0 6px">2</span></button>
+          <button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-layers"/></svg><span class="lbl">Group</span> <span class="val">None</span></button>
+          <button class="btn btn-ghost btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-list-checks"/></svg>Columns</button>
+          <span class="divider" aria-hidden="true"></span>
+          <div class="segmented icon-only" role="radiogroup" aria-label="Layout">
+            <button role="radio" aria-checked="false" aria-label="Posters" onclick="location.href='library-grid.html'"><svg class="i" aria-hidden="true"><use href="#i-layout-grid"/></svg></button>
+            <button role="radio" aria-checked="true" aria-label="Table"><svg class="i" aria-hidden="true"><use href="#i-rows-3"/></svg></button>
+          </div>
+          <div class="segmented" role="radiogroup" aria-label="Density">
+            <button role="radio" aria-checked="false">Airy</button>
+            <button role="radio" aria-checked="true">Compact</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-bar">
+        <div class="tabs" role="tablist" aria-label="Saved views" style="border:0">
+          <button role="tab" aria-selected="true">All films <span class="count">1,284</span></button>
+          <button role="tab" aria-selected="false">4K HDR <span class="count">312</span></button>
+          <button role="tab" aria-selected="false">Wanted this year <span class="count">23</span></button>
+          <button role="tab" aria-selected="false">Over 40 GB <span class="count">58</span></button>
+        </div>
+        <div class="sel"><span>1 selected</span><button class="btn btn-ghost btn-sm" type="button">Select all 1,284</button></div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="tbl" role="grid" aria-label="Films" aria-rowcount="1285" aria-multiselectable="true">
+          <colgroup>
+            <col style="width:44px"><col><col style="width:150px"><col style="width:92px"><col style="width:76px"><col style="width:148px"><col style="width:104px"><col style="width:220px"><col style="width:48px">
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="c-check"><label class="check"><input type="checkbox" aria-label="Select all films on screen"></label></th>
+              <th aria-sort="none"><button type="button">Title <svg class="i" aria-hidden="true"><use href="#i-arrow-up"/></svg></button></th>
+              <th aria-sort="none"><button type="button">Quality <svg class="i" aria-hidden="true"><use href="#i-arrow-up"/></svg></button></th>
+              <th class="r" aria-sort="none"><button type="button">Size <svg class="i" aria-hidden="true"><use href="#i-arrow-up"/></svg></button></th>
+              <th class="r" aria-sort="none"><button type="button">Score <svg class="i" aria-hidden="true"><use href="#i-arrow-up"/></svg></button></th>
+              <th aria-sort="none"><button type="button">Status <svg class="i" aria-hidden="true"><use href="#i-arrow-up"/></svg></button></th>
+              <th aria-sort="descending"><button type="button">Added <svg class="i" aria-hidden="true"><use href="#i-arrow-down"/></svg></button></th>
+              <th aria-sort="none"><button type="button">Path <span class="t-muted" style="font-weight:400">/data/movies</span> <svg class="i" aria-hidden="true"><use href="#i-arrow-up"/></svg></button></th>
+              <th><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+
+        <svg class="cursor" viewBox="0 0 16 22" aria-hidden="true"><path d="M1 1 L1 17 L5 13 L8 20 L11 19 L8 12 L14 12 Z" fill="#fff" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/></svg>
+        <div class="menu ctx" role="menu" aria-label="Actions for Orbit of Small Things">
+          <div class="menu-heading">Orbit of Small Things</div>
+          <button role="menuitem"><svg class="i" aria-hidden="true"><use href="#i-film"/></svg><span class="label">Open</span><span class="kbd-hint">↵</span></button>
+          <button role="menuitem"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><span class="label">Search now</span><span class="kbd-hint">S</span></button>
+          <button role="menuitem" class="is-hover"><svg class="i" aria-hidden="true"><use href="#i-scan-search"/></svg><span class="label">Interactive search…</span><span class="kbd-hint">I</span></button>
+          <div role="separator"></div>
+          <button role="menuitemcheckbox" aria-checked="true"><svg class="i" aria-hidden="true"><use href="#i-bookmark"/></svg><span class="label">Monitored</span><span class="check-mark"><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+          <div class="sub-wrap">
+            <button role="menuitem" aria-haspopup="menu" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-sliders-horizontal"/></svg><span class="label">Quality profile</span><svg class="i i-sm" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
+          </div>
+          <button role="menuitem"><svg class="i" aria-hidden="true"><use href="#i-tag"/></svg><span class="label">Edit tags…</span><span class="kbd-hint">⇧T</span></button>
+          <button role="menuitem"><svg class="i" aria-hidden="true"><use href="#i-pencil"/></svg><span class="label">Rename files…</span></button>
+          <button role="menuitem"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="label">Copy path</span><span class="kbd-hint">⌘⇧C</span></button>
+          <button role="menuitem" aria-disabled="true"><svg class="i" aria-hidden="true"><use href="#i-refresh-cw"/></svg><span class="label">Refresh metadata</span><span class="kbd-hint">Running</span></button>
+          <div role="separator"></div>
+          <button role="menuitem" class="danger"><svg class="i" aria-hidden="true"><use href="#i-trash-2"/></svg><span class="label">Remove from library…</span><span class="kbd-hint">⌫</span></button>
+        </div>
+      </div>
+      <div class="foot-note"><span>Showing 1–18 of 1,284 · virtualised</span><span>↑↓ move · Space select · ⇧ range · ↵ open · Shift+F10 menu</span></div>
+    </main>
+  </div>
+</div>
+
+<script src="../system/icons.js"></script>
+<script src="../system/posters.js"></script>
+<script src="../system/mock.js"></script>
+<script>
+  // film, quality, size, score, state, added, folder, opts
+  const R = [
+    ['halcyon-drift', '2160p WEB-DL', '21.7 GB', 70, 'upgraded', '3 Nov 2026'],
+    ['last-projectionist', '1080p Bluray', '12.4 GB', 40, 'downloading', '3 Nov 2026', { label: '42% · 12 min' }],
+    ['orbit-small-things', '2160p WEB-DL', '18.9 GB', 55, 'available', '2 Nov 2026', { selected: true, ctx: true }],
+    ['quiet-meridian', '2160p Remux', '61.3 GB', 120, 'available', '1 Nov 2026'],
+    ['saltwater-hymn', '1080p Bluray', '9.8 GB', 30, 'available', '31 Oct 2026'],
+    ['neon-orchard', null, null, null, 'missing', '30 Oct 2026'],
+    ['ninefold', '1080p WEB-DL', '6.2 GB', -15, 'failed', '28 Oct 2026', { label: 'Import failed' }],
+    ['room-without-weather', '1080p WEB-DL', '7.4 GB', 25, 'available', '27 Oct 2026'],
+    ['coldharbour', '720p HDTV', '3.1 GB', -40, 'unmonitored', '22 Oct 2026'],
+    ['velvet-static', null, null, null, 'missing', '20 Oct 2026', { label: 'In cinemas' }],
+    ['glass-cartographer', '2160p Bluray', '44.6 GB', 85, 'available', '18 Oct 2026'],
+    ['sundial', '1080p Bluray', '10.2 GB', 30, 'available', '15 Oct 2026'],
+    ['ember-ash', '1080p WEB-DL', '5.9 GB', 0, 'available', '14 Oct 2026'],
+    ['tidewater', '1080p Remux', '28.4 GB', 60, 'upgraded', '9 Oct 2026'],
+    ['odeon-vale', '1080p Bluray', '11.1 GB', 30, 'available', '5 Oct 2026'],
+    ['orchid-protocol', '2160p WEB-DL', '16.0 GB', 45, 'available', '1 Oct 2026'],
+    ['low-tide-high-noon', null, null, null, 'missing', '29 Sep 2026', { label: 'Out 14 Nov' }],
+    ['parallax', '2160p Remux', '58.8 GB', 120, 'available', '25 Sep 2026'],
+  ];
+  const ic = GN.ic;
+  document.getElementById('rows').innerHTML = R.map(([id, q, size, score, st, added, o = {}], i) => {
+    const f = GN.films[id];
+    const folder = f.title.replace(/[:']/g, '') + ' (' + f.year + ')/';
+    const meta = GN.STATUS[st];
+    const status = '<span class="status" data-status="' + st + '">' + ic(meta.icon) + (o.label || meta.label) + '</span>';
+    const sc = score === null ? '<span class="t-muted">—</span>' : '<span class="score ' + (score > 0 ? 'pos' : score < 0 ? 'neg' : '') + '">' + (score > 0 ? '+' : score < 0 ? '−' : '') + Math.abs(score) + '</span>';
+    return '<tr aria-rowindex="' + (i + 2) + '"' + (o.selected ? ' aria-selected="true"' : ' aria-selected="false"') + (o.ctx ? ' class="is-context"' : '') + '>' +
+      '<td class="c-check"><label class="check"><input type="checkbox"' + (o.selected ? ' checked' : '') + ' aria-label="Select ' + f.title + '"></label></td>' +
+      '<td class="' + (st === 'unmonitored' ? 'unmon' : '') + '"><div class="t-cell"><span class="thumb"><span class="poster-art" data-film="' + id + '"></span></span><a class="name" href="movie-detail.html" style="color:inherit">' + f.title + '</a><span class="yr">' + f.year + '</span></div></td>' +
+      '<td>' + (q ? GN.qbadge(q) : '<span class="t-muted">—</span>') + '</td>' +
+      '<td class="r">' + (size || '<span class="t-muted">—</span>') + '</td>' +
+      '<td class="r">' + sc + '</td>' +
+      '<td>' + status + '</td>' +
+      '<td class="muted">' + added + '</td>' +
+      '<td class="mono"><span class="path" title="/data/movies/' + folder + '"><span class="t-muted">…/</span>' + (q ? folder : '<span class="t-muted">' + folder + '</span>') + '</span></td>' +
+      '<td><button class="icon-btn sm row-more" type="button" aria-label="Actions for ' + f.title + '" aria-haspopup="menu"' + (o.ctx ? ' aria-expanded="true"' : '') + '>' + ic('ellipsis', 'i-sm') + '</button></td></tr>';
+  }).join('');
+  GN.renderPosters();
+</script>
+</body>
+</html>

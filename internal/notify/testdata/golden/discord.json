@@ -1,0 +1,43 @@
+{
+  "username": "Gonema",
+  "embeds": [
+    {
+      "title": "Grabbed — Halcyon Drift (2024)",
+      "description": "Remux-2160p · 58.4 GB from Nebula NZB. Sent to SABnzbd.",
+      "url": "https://gonema.example.lan/movies/7",
+      "color": 6210774,
+      "timestamp": "2026-11-05T20:15:00Z",
+      "thumbnail": {
+        "url": "https://image.tmdb.org/t/p/w342/poster.jpg"
+      },
+      "fields": [
+        {
+          "name": "Quality",
+          "value": "Remux-2160p",
+          "inline": true
+        },
+        {
+          "name": "Size",
+          "value": "58.4 GB",
+          "inline": true
+        },
+        {
+          "name": "Indexer",
+          "value": "Nebula NZB",
+          "inline": true
+        },
+        {
+          "name": "Release",
+          "value": "Halcyon.Drift.2024.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-GRP \u003c@everyone\u003e \u0026 co",
+          "inline": false
+        }
+      ],
+      "footer": {
+        "text": "Gonema"
+      }
+    }
+  ],
+  "allowed_mentions": {
+    "parse": []
+  }
+}

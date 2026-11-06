@@ -1,0 +1,11 @@
+/* Cascade: design system (tokens, base, components, shell) < screens < utilities.
+   docs/design/system/gonema.css is imported as is: it is the source of truth. */
+@layer theme, base, ds, screens, utilities;
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "./fonts.css" layer(base);
+/* gonema.css imports tokens.css with url(), which Tailwind does not inline:
+   import it here first; vite.config.ts drops the leftover nested @import. */
+@import "../../../docs/brand/kit/tokens.css" layer(ds);
+@import "../../../docs/design/system/gonema.css" layer(ds);
+@import "./theme.css";
+@import "./app-shell.css" layer(screens);

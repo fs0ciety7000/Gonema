@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gonema · design gallery</title>
+<link rel="icon" href="../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="system/gonema.css">
+<script src="system/shell.js"></script>
+<style>
+  .wrap { max-width: 1360px; margin: 0 auto; padding: 0 48px 96px; }
+  .top { display: flex; align-items: center; gap: var(--space-4); height: 72px; }
+  .top .brand { display: flex; align-items: center; gap: 10px; color: var(--text-primary); }
+  .top .brand svg { height: 26px; width: auto; } .top .brand .wm { height: 13px; }
+  .top .spacer { flex: 1; }
+  .hero { padding: var(--space-12) 0 var(--space-8); display: grid; gap: var(--space-3); }
+  .hero h1 { font: var(--type-display-xl); letter-spacing: var(--type-display-xl-tracking); font-stretch: 125%; }
+  .hero p { color: var(--text-secondary); font: var(--type-body-lg); max-width: 72ch; }
+  h2.sec { font: var(--type-display-md); letter-spacing: var(--type-display-md-tracking); font-stretch: 125%; margin: var(--space-10) 0 var(--space-4); }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6) var(--space-5); }
+  .item { display: grid; gap: 10px; color: inherit; text-decoration: none; }
+  .item:hover { text-decoration: none; }
+  .thumb { aspect-ratio: 16 / 10; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--elev-poster); background: var(--bg-raised); transition: transform var(--spring-gentle-dur) var(--spring-gentle), box-shadow var(--dur-slow) var(--ease-out); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+  .item:hover .thumb, .item:focus-visible .thumb { transform: translateY(-3px); box-shadow: var(--elev-poster-hover); }
+  .item:focus-visible { box-shadow: none; }
+  .item:focus-visible .thumb { box-shadow: var(--focus-ring); }
+  .item b { font: 600 15px/20px var(--font-ui); }
+  .item span { font: var(--type-body-sm); color: var(--text-secondary); }
+  .item code { font: var(--type-mono-sm); color: var(--text-muted); }
+  .docs { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><span class="brand" id="brand" role="img" aria-label="Gonema"></span><span class="t-caption t-muted">Design · phase 2B</span><div class="spacer"></div>
+    <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button></header>
+  <main>
+    <div class="hero">
+      <span class="t-overline">Mockups, system and motion</span>
+      <h1>The whole programme.</h1>
+      <p>Every screen is a static HTML page built on <code>system/gonema.css</code>, in dark and light (toggle at the top of each page, or <code>?theme=light</code>). Renders at 1440 × 900 live in <code>renders/</code>; regenerate them with <code>tools/render.js</code>.</p>
+      <div class="docs"><a class="btn btn-secondary btn-sm" href="../../DESIGN.md">DESIGN.md</a><a class="btn btn-secondary btn-sm" href="motion.md">motion.md</a><a class="btn btn-secondary btn-sm" href="../brand/kit/index.html">Brand kit</a></div>
+    </div>
+    <h2 class="sec">Foundations</h2>
+    <div class="grid" id="g1"></div>
+    <h2 class="sec">Library</h2>
+    <div class="grid" id="g2"></div>
+    <h2 class="sec">Getting films</h2>
+    <div class="grid" id="g3"></div>
+    <h2 class="sec">Setup and settings</h2>
+    <div class="grid" id="g4"></div>
+    <h2 class="sec">When things are empty or go wrong</h2>
+    <div class="grid" id="g5"></div>
+  </main>
+</div>
+<script src="system/icons.js"></script>
+<script>
+  document.getElementById('brand').innerHTML = GN.MARK + GN.WORDMARK;
+  const G = {
+    g1: [['system/index.html', 'design-system', 'Design system', 'Tokens, colours, type, motion, every component state'], ['motion/index.html', 'motion', 'Motion', 'Live demos: shared element, stagger, springs, toast, skeleton'], ['mockups/command-palette.html?state=query', 'command-palette-query', 'Command palette', 'Films, people, releases, actions · also ?state=recent, empty']],
+    g2: [['mockups/dashboard.html', 'dashboard', 'Home', 'Calm overview, one health alert speaking up'], ['mockups/library-grid.html', 'library-grid', 'Library · posters', 'Airy grid, mixed states, selection and bulk bar'], ['mockups/library-table.html', 'library-table', 'Library · table', 'Compact mode, sorting, context menu'], ['mockups/movie-detail.html', 'movie-detail', 'Film', 'Backdrop atmosphere, poster tint, file, history'], ['mockups/library-grid.html', 'library-grid-tablet', 'Library · tablet', '1024 px, sidebar as a rail'], ['mockups/movie-detail.html', 'movie-detail-tablet', 'Film · tablet', '1024 px, single column']],
+    g3: [['mockups/add-film.html', 'add-film', 'Add a film', 'TMDB search, in-library state, add options'], ['mockups/add-film.html?tab=discover', 'add-film-discover', 'Discover', 'Trending, upcoming, collections, filmography'], ['mockups/interactive-search.html', 'interactive-search', 'Interactive search', 'Streaming results, reasons, score breakdown'], ['mockups/queue.html', 'queue', 'Queue', 'Live downloads, auto-retry, Undo toast'], ['mockups/queue.html?tab=history', 'queue-history', 'History', 'Every action with its reason'], ['mockups/calendar.html', 'calendar', 'Calendar', 'Month view · also ?view=agenda']],
+    g4: [['mockups/onboarding.html?step=welcome', 'onboarding-welcome', 'Onboarding · welcome', '8 steps, ?step=welcome…film'], ['mockups/onboarding.html?step=client', 'onboarding-client-error', 'Onboarding · client error', 'Failed test with the likely fix'], ['mockups/onboarding.html?step=film', 'onboarding-grabbed', 'Onboarding · first grab', 'From zero to a film downloading'], ['mockups/settings-quality.html', 'settings-quality', 'Quality & scoring', 'Profiles, cutoff, rules, live tester'], ['mockups/settings-quality.html?section=index', 'settings-index', 'Settings overview', 'Indexers, clients, naming, paths, backups']],
+    g5: [['mockups/empty-states.html', 'empty-states', 'Empty states', 'Library, filters, queue, history, all clear'], ['mockups/404.html', '404', '404', 'Kernel behind the curtain'], ['mockups/error.html', 'error-offline', 'Server unreachable', 'Reconnecting, nothing lost'], ['mockups/failed-download.html', 'failed-download', 'Failed download', 'What happened, what Gonema does next']],
+  };
+  for (const [id, items] of Object.entries(G)) document.getElementById(id).innerHTML = items.map(([href, img, t, d]) =>
+    '<a class="item" href="' + href + '"><span class="thumb"><img class="only-dark" src="renders/' + img + '-dark.jpg" alt="" loading="lazy"><img class="only-light" src="renders/' + img + '-light.jpg" alt="" loading="lazy"></span><b>' + t + '</b><span>' + d + '</span><code>' + href + '</code></a>').join('');
+</script>
+</body>
+</html>

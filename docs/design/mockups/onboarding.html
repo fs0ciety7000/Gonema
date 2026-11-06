@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Set up Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../system/gonema.css">
+<script src="../system/shell.js"></script>
+<style>
+  /* Screen: onboarding. One step per frame: ?step=welcome|account|tmdb|folder|client|indexer|quality|film */
+  body { min-height: 100vh; overflow-x: hidden; }
+  .atmos { position: fixed; inset: 0; z-index: -1; overflow: hidden; }
+  .atmos .wall { position: absolute; inset: -40px; display: grid; grid-template-columns: repeat(10, 1fr); gap: 18px; transform: rotate(-8deg) scale(1.2); filter: blur(28px) saturate(1.1); opacity: .5; }
+  .atmos .wall .poster-art { aspect-ratio: 2/3; border-radius: 12px; overflow: hidden; }
+  .atmos .wall svg { width: 100%; height: 100%; }
+  .atmos::after { content: ""; position: absolute; inset: 0; background: radial-gradient(70% 70% at 50% 40%, color-mix(in srgb, var(--bg-base) 55%, transparent), var(--bg-base) 90%); }
+  [data-theme="light"] .atmos .wall { opacity: .35; }
+
+  .ob-top { display: flex; align-items: center; gap: var(--space-4); height: 72px; padding: 0 40px; }
+  .ob-top .brand { display: flex; align-items: center; gap: 10px; color: var(--text-primary); }
+  .ob-top .brand svg { height: 26px; width: auto; } .ob-top .brand .wm { height: 13px; }
+  .ob-top .spacer { flex: 1; }
+  .ob-top .time { font: var(--type-caption); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+  .ob { width: 1080px; max-width: calc(100vw - 48px); margin: 8px auto 40px; display: grid; grid-template-columns: 272px minmax(0, 1fr); border-radius: var(--radius-xl); overflow: hidden; min-height: 720px; }
+  .steps { padding: var(--space-6) var(--space-4); border-right: 1px solid var(--border); background: color-mix(in srgb, var(--bg-base) 40%, transparent); }
+  .steps ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .steps li a { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: center; padding: 8px 10px; border-radius: var(--radius-md); color: var(--text-secondary); font: 500 14px/18px var(--font-ui); }
+  .steps li a:hover { background: var(--bg-hover); text-decoration: none; color: var(--text-primary); }
+  .steps li a small { display: block; font: var(--type-caption); color: var(--text-muted); font-weight: 400; }
+  .steps .n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--border-control); font: 600 12px/1 var(--font-ui); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .steps .done .n { background: var(--status-available-bg); color: var(--status-available); border-color: transparent; }
+  .steps .done .n .i { width: 15px; height: 15px; stroke-width: 2; }
+  .steps .err .n { background: var(--status-failed-bg); color: var(--status-failed); border-color: transparent; }
+  .steps [aria-current="step"] { background: var(--bg-active); color: var(--text-primary); }
+  .steps [aria-current="step"] .n { border-color: var(--accent); color: var(--text-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
+  .steps .foot { margin-top: var(--space-6); padding: 0 10px; font: var(--type-caption); color: var(--text-muted); }
+  .steps .foot .progress { --c: var(--accent); margin: 8px 0 6px; height: 4px; }
+
+  .pane { padding: var(--space-10) var(--space-12) var(--space-8); display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
+  .pane[hidden] { display: none; }
+  .pane .t-overline { display: block; margin-bottom: 8px; }
+  .pane h1 { font: var(--type-display-lg); letter-spacing: var(--type-display-lg-tracking); font-stretch: 125%; }
+  .pane .intro { color: var(--text-secondary); font: var(--type-body-lg); max-width: 60ch; margin-top: 10px; }
+  .pane .form { display: grid; gap: var(--space-5); max-width: 560px; }
+  .pane .nav { margin-top: auto; display: flex; align-items: center; gap: var(--space-2); padding-top: var(--space-6); border-top: 1px solid var(--border); }
+  .pane .nav > :first-child:not(.hint) { margin-left: auto; }
+  .pane .nav .hint { margin-right: auto; font: var(--type-caption); color: var(--text-muted); display: flex; gap: 6px; align-items: center; }
+  .helper { display: grid; gap: 10px; padding: 16px 18px; border-radius: var(--radius-lg); background: var(--bg-sunken); border: 1px solid var(--border); max-width: 560px; }
+  .helper b { font: 500 14px/20px var(--font-ui); display: flex; gap: 8px; align-items: center; }
+  .helper ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; color: var(--text-secondary); font: var(--type-body-sm); }
+  .ok-line { display: flex; gap: 8px; align-items: center; font: var(--type-body-sm); color: var(--status-available); }
+  .ok-line .i { width: 16px; height: 16px; }
+  .preview-strip { display: flex; gap: 10px; }
+  .preview-strip .poster-art { width: 54px; aspect-ratio: 2/3; border-radius: 6px; overflow: hidden; box-shadow: var(--elev-poster); }
+  .preview-strip svg { width: 100%; height: 100%; }
+
+  .welcome { display: grid; grid-template-columns: 1fr 220px; gap: var(--space-8); align-items: center; }
+  .welcome img { width: 220px; height: auto; }
+  .checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; max-width: 520px; }
+  .checklist li { display: grid; grid-template-columns: 32px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--bg-raised) 70%, transparent); border: 1px solid var(--border); font: var(--type-body-sm); color: var(--text-secondary); }
+  .checklist li b { display: block; font: 500 14px/18px var(--font-ui); color: var(--text-primary); }
+  .checklist .ic { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: var(--bg-active); color: var(--text-secondary); }
+  .checklist .ic .i { width: 16px; height: 16px; }
+  .checklist .t { font: var(--type-caption); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+  .choice { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+  .choice label { position: relative; display: grid; gap: 6px; padding: 14px; border-radius: var(--radius-lg); border: 1px solid var(--border-strong); background: color-mix(in srgb, var(--bg-raised) 70%, transparent); cursor: pointer; font: var(--type-body-sm); color: var(--text-secondary); transition: border-color var(--dur-fast), background-color var(--dur-fast); }
+  .choice label:hover { border-color: var(--border-control); }
+  .choice label b { font: 600 14px/20px var(--font-ui); color: var(--text-primary); display: flex; justify-content: space-between; align-items: center; }
+  .choice input { position: absolute; opacity: 0; pointer-events: none; }
+  .choice label:has(input:checked) { border-color: var(--accent); background: var(--bg-selected); box-shadow: 0 0 0 1px var(--accent); }
+  .choice label:has(input:focus-visible) { box-shadow: var(--focus-ring); }
+  .choice .radio { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--border-control); display: grid; place-items: center; }
+  .choice label:has(input:checked) .radio { border-color: var(--accent); }
+  .choice label:has(input:checked) .radio::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .choice .qs { font: var(--type-mono-sm); color: var(--text-muted); }
+
+  .conn { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-2); }
+  .conn button { display: grid; justify-items: center; gap: 6px; padding: 12px 6px; border-radius: var(--radius-md); border: 1px solid var(--border-strong); background: transparent; font: 500 13px/1 var(--font-ui); color: var(--text-secondary); }
+  .conn button .i { width: 20px; height: 20px; }
+  .conn button[aria-pressed="true"] { border-color: var(--accent); background: var(--bg-selected); color: var(--text-primary); box-shadow: 0 0 0 1px var(--accent); }
+  .row2 { display: grid; grid-template-columns: 1fr 140px; gap: var(--space-3); }
+  .test-result { display: grid; gap: 10px; }
+  .fix { display: block; padding: 12px 14px; border-radius: var(--radius-md); background: var(--bg-sunken); border: 1px solid var(--border); font: var(--type-body-sm); color: var(--text-secondary); }
+  .fix code { font: var(--type-mono-sm); color: var(--text-primary); }
+
+  .grabbed { display: grid; grid-template-columns: 180px 1fr; gap: var(--space-8); align-items: start; }
+  .grabbed .big { aspect-ratio: 2/3; border-radius: 14px; overflow: hidden; box-shadow: var(--elev-poster-hover); }
+  .grabbed .big svg { width: 100%; height: 100%; }
+  .flow { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .flow li { display: grid; grid-template-columns: 28px 1fr auto; gap: 12px; align-items: center; font: var(--type-body-sm); color: var(--text-secondary); }
+  .flow li b { color: var(--text-primary); font-weight: 500; }
+  .flow .d { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--status-available-bg); color: var(--status-available); }
+  .flow .d .i { width: 15px; height: 15px; }
+  .flow .live .d { background: var(--status-downloading-bg); color: var(--status-downloading); }
+  .flow .t { font: var(--type-caption); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .search-hit { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--accent); background: var(--bg-selected); }
+  .search-hit .poster-art { aspect-ratio: 2/3; border-radius: 5px; overflow: hidden; } .search-hit svg { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<div class="atmos" aria-hidden="true"><div class="wall" id="wall"></div></div>
+<header class="ob-top">
+  <span class="brand" id="brand" role="img" aria-label="Gonema"></span>
+  <span class="time">Setup · about 5 minutes</span>
+  <div class="spacer"></div>
+  <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+  <a class="btn btn-ghost btn-sm" href="dashboard.html">Skip for now</a>
+</header>
+
+<main class="ob glass-2" id="main">
+  <nav class="steps" aria-label="Setup steps">
+    <ol id="steps"></ol>
+    <div class="foot"><div class="progress" id="prog" style="--p:.1"><div class="fill"></div></div><span id="prog-t">Step 1 of 8</span> · progress is saved, you can leave anytime.</div>
+  </nav>
+
+  <!-- 1 Welcome -->
+  <section class="pane" data-step="welcome" aria-labelledby="h-welcome">
+    <div class="welcome">
+      <div>
+        <span class="t-overline">Welcome</span>
+        <h1 id="h-welcome">Your private cinema is almost open.</h1>
+        <p class="intro">Seven short steps and Gonema will be finding films for you. You’ll need your download client and one indexer at hand.</p>
+      </div>
+      <img src="../../brand/kit/mascot/kernel-welcome.svg" alt="Kernel, the Gonema gopher, waving from the projection booth">
+    </div>
+    <ul class="checklist">
+      <li><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg></span><span><b>Secure the booth</b>Create the admin account</span><span class="t">30 s</span></li>
+      <li><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-film"/></svg></span><span><b>Connect film metadata</b>A free TMDB key for posters and dates</span><span class="t">1 min</span></li>
+      <li><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-hard-drive"/></svg></span><span><b>Choose where films live</b>Your library folder</span><span class="t">30 s</span></li>
+      <li><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-arrow-down-to-line"/></svg></span><span><b>Connect a client and an indexer</b>SABnzbd, NZBGet, qBittorrent, Deluge or Transmission</span><span class="t">2 min</span></li>
+      <li><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg></span><span><b>Pick a quality, add a film</b>And watch the first grab happen</span><span class="t">1 min</span></li>
+    </ul>
+    <div class="nav"><span class="hint"><svg class="i i-sm" aria-hidden="true"><use href="#i-info"/></svg>Already have a backup? <a href="#">Restore it instead</a></span><button class="btn btn-primary btn-lg" type="button">Let’s begin<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></div>
+  </section>
+
+  <!-- 2 Account -->
+  <section class="pane" data-step="account" aria-labelledby="h-account" hidden>
+    <div><span class="t-overline">Step 2 · Security</span><h1 id="h-account">Secure the booth</h1><p class="intro">One admin account protects the web interface and the API. You can add more people later.</p></div>
+    <div class="form">
+      <div class="field"><label class="field-label" for="u">Username</label><label class="input"><input id="u" value="margaux" autocomplete="username"></label></div>
+      <div class="field"><label class="field-label" for="pw">Password <span class="t-muted" style="font-weight:400">strong</span></label><label class="input"><input id="pw" type="password" value="correct-horse-battery" autocomplete="new-password"><button class="icon-btn sm" type="button" aria-label="Show password"><svg class="i i-sm" aria-hidden="true"><use href="#i-eye"/></svg></button></label><div class="progress" style="--p:.9;--c:var(--status-available);height:4px"><div class="fill"></div></div><span class="field-hint">At least 12 characters. A passphrase is easiest.</span></div>
+      <div class="field"><span class="field-label" id="auth-l">Sign-in method</span><button class="input select" type="button" aria-haspopup="listbox" aria-labelledby="auth-l auth-v"><span class="value" id="auth-v">Login page (recommended)</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button><span class="field-hint">Behind a reverse proxy with its own auth? Choose “External” later in Settings › Security.</span></div>
+    </div>
+    <div class="nav"><button class="btn btn-ghost" type="button">Back</button><button class="btn btn-primary btn-lg" type="button">Continue<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></div>
+  </section>
+
+  <!-- 3 TMDB -->
+  <section class="pane" data-step="tmdb" aria-labelledby="h-tmdb" hidden>
+    <div><span class="t-overline">Step 3 · Metadata</span><h1 id="h-tmdb">Connect film metadata</h1><p class="intro">Gonema uses The Movie Database for posters, cast, collections and release dates. The key is yours, free, and stays encrypted on this server.</p></div>
+    <div class="helper">
+      <b><svg class="i i-sm" aria-hidden="true"><use href="#i-info"/></svg>How to get a key (2 minutes)</b>
+      <ol><li>Create a free account on themoviedb.org.</li><li>Open Settings › API and request a “Developer” key. Any short description is fine.</li><li>Copy the <b style="display:inline">API Read Access Token</b> (the long one) and paste it below.</li></ol>
+      <a class="btn btn-secondary btn-sm" href="#" style="justify-self:start">Open TMDB API settings<svg class="i" aria-hidden="true"><use href="#i-external-link"/></svg></a>
+    </div>
+    <div class="form">
+      <div class="field">
+        <label class="field-label" for="tk">API Read Access Token</label>
+        <label class="input mono" style="border-color:var(--status-available)"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg><input id="tk" value="eyJhbGciOiJIUzI1NiJ9.••••••••••••••••••••.k3Lr" aria-describedby="tk-ok"><svg class="i" aria-hidden="true" style="color:var(--status-available)"><use href="#i-circle-check"/></svg></label>
+        <span class="ok-line" id="tk-ok" role="status"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>Key works. Showing posters in English (US); change the language in Settings.</span>
+      </div>
+      <div class="preview-strip" role="group" aria-label="Preview: posters loaded with your key"><div class="poster-art" data-film="quiet-meridian"></div><div class="poster-art" data-film="saltwater-hymn"></div><div class="poster-art" data-film="neon-orchard"></div><div class="poster-art" data-film="sundial"></div><div class="poster-art" data-film="tidewater"></div></div>
+    </div>
+    <div class="nav"><button class="btn btn-ghost" type="button">Back</button><button class="btn btn-primary btn-lg" type="button">Continue<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></div>
+  </section>
+
+  <!-- 4 Folder -->
+  <section class="pane" data-step="folder" aria-labelledby="h-folder" hidden>
+    <div><span class="t-overline">Step 4 · Library</span><h1 id="h-folder">Choose where films live</h1><p class="intro">Each film gets its own folder here. Gonema hardlinks finished downloads into it, so nothing is copied twice.</p></div>
+    <div class="form">
+      <div class="field"><label class="field-label" for="rf">Root folder <span class="t-muted" style="font-weight:400">as seen by Gonema</span></label><label class="input mono" style="border-color:var(--status-available)"><svg class="i" aria-hidden="true"><use href="#i-folder"/></svg><input id="rf" value="/data/movies"><span class="suffix">6.3 TB free of 16 TB</span></label>
+        <div class="progress" style="--p:.61;--c:var(--text-secondary);height:4px"><div class="fill"></div></div>
+        <span class="ok-line"><svg class="i" aria-hidden="true"><use href="#i-circle-check"/></svg>Writable. Same disk as /data/downloads, so hardlinks will work.</span></div>
+      <div class="notice" data-tone="info"><svg class="i" aria-hidden="true"><use href="#i-server"/></svg><div class="grow"><div class="ntitle">Running in Docker?</div><div class="nbody">Mount one parent folder (for example <code>/data</code>) into both Gonema and your download client, at the same path. If your client sees <code>/downloads</code> while Gonema sees <code>/data/downloads</code>, add a remote path mapping in the next step.</div></div></div>
+    </div>
+    <div class="nav"><button class="btn btn-ghost" type="button">Back</button><button class="btn btn-primary btn-lg" type="button">Continue<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></div>
+  </section>
+
+  <!-- 5 Client (error state) -->
+  <section class="pane" data-step="client" aria-labelledby="h-client" hidden>
+    <div><span class="t-overline">Step 5 · Download client</span><h1 id="h-client">Connect your download client</h1><p class="intro">Gonema sends releases here and watches them until they’re ready to import.</p></div>
+    <div class="form" style="max-width:640px">
+      <div class="conn" role="group" aria-label="Client type">
+        <button type="button" aria-pressed="false"><svg class="i" aria-hidden="true"><use href="#i-newspaper"/></svg>SABnzbd</button>
+        <button type="button" aria-pressed="false"><svg class="i" aria-hidden="true"><use href="#i-newspaper"/></svg>NZBGet</button>
+        <button type="button" aria-pressed="true"><svg class="i" aria-hidden="true"><use href="#i-magnet"/></svg>qBittorrent</button>
+        <button type="button" aria-pressed="false"><svg class="i" aria-hidden="true"><use href="#i-magnet"/></svg>Deluge</button>
+        <button type="button" aria-pressed="false"><svg class="i" aria-hidden="true"><use href="#i-magnet"/></svg>Transmission</button>
+      </div>
+      <div class="row2">
+        <div class="field"><label class="field-label" for="h">Host</label><label class="input mono"><input id="h" value="qbittorrent"></label></div>
+        <div class="field"><label class="field-label" for="pt">Port</label><label class="input mono"><input id="pt" value="8080" inputmode="numeric"></label></div>
+      </div>
+      <div class="row2" style="grid-template-columns:1fr 1fr">
+        <div class="field"><label class="field-label" for="cu">Username</label><label class="input"><input id="cu" value="admin"></label></div>
+        <div class="field"><label class="field-label" for="cp">Password</label><label class="input" aria-invalid="true"><input id="cp" type="password" value="adminadmin" aria-describedby="cp-e"></label></div>
+      </div>
+      <div class="test-result" role="alert">
+        <div class="notice" data-tone="failed"><svg class="i" aria-hidden="true"><use href="#i-circle-x"/></svg><div class="grow"><div class="ntitle" id="cp-e">qBittorrent answered, but refused the login.</div><div class="nbody">Reached http://qbittorrent:8080 in 38 ms, then got “Fails.” (HTTP 200) on sign-in.</div></div></div>
+        <div class="fix"><b style="display:block;color:var(--text-primary);font-weight:500;margin-bottom:4px">Most likely fix</b>Recent qBittorrent versions generate a random password on first start. Find it in the container log (<code>docker logs qbittorrent</code>), or set one in qBittorrent › Options › Web UI, then test again.</div>
+      </div>
+      <div class="row"><button class="btn btn-secondary" type="button"><svg class="i" aria-hidden="true"><use href="#i-refresh-cw"/></svg>Test again</button><span class="t-caption t-muted">Category <span class="t-mono-sm">movies</span> will be created for you.</span></div>
+    </div>
+    <div class="nav"><span class="hint"><svg class="i i-sm" aria-hidden="true"><use href="#i-info"/></svg>You can add more clients later.</span><button class="btn btn-ghost" type="button">Back</button><button class="btn btn-primary btn-lg" type="button" disabled>Continue<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></div>
+  </section>
+
+  <!-- 6 Indexer (testing) -->
+  <section class="pane" data-step="indexer" aria-labelledby="h-indexer" hidden>
+    <div><span class="t-overline">Step 6 · Indexer</span><h1 id="h-indexer">Add an indexer</h1><p class="intro">Where Gonema looks for releases: any Newznab (Usenet) or Torznab (torrent) indexer. Paste its API URL and key.</p></div>
+    <div class="form">
+      <div class="field"><label class="field-label" for="iu">API URL</label><label class="input mono"><svg class="i" aria-hidden="true"><use href="#i-globe"/></svg><input id="iu" value="https://api.nebula-nzb.example/api"></label><span class="field-hint">Detected: Newznab · Usenet</span></div>
+      <div class="field"><label class="field-label" for="ik">API key</label><label class="input mono"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg><input id="ik" value="••••••••••••••••a91c"></label></div>
+      <div class="field"><span class="field-label">Connection</span>
+        <div class="input" style="position:relative;overflow:hidden;background:transparent" role="status" aria-live="polite" aria-busy="true"><span class="t-body-sm t-secondary grow">Testing… asking for capabilities and a sample search</span><span class="t-caption t-muted tnum">1.4 s</span><span class="skeleton" style="position:absolute;inset:auto 0 0 0;height:2px;border-radius:0"></span></div>
+      </div>
+    </div>
+    <div class="nav"><button class="btn btn-ghost" type="button">Back</button><button class="btn btn-primary btn-lg" type="button" aria-busy="true">Testing…</button></div>
+  </section>
+
+  <!-- 7 Quality -->
+  <section class="pane" data-step="quality" aria-labelledby="h-quality" hidden>
+    <div><span class="t-overline">Step 7 · Quality</span><h1 id="h-quality">How should your films look?</h1><p class="intro">Pick a starting point. Gonema grabs the first good copy, then keeps upgrading until it reaches the target. You can fine-tune everything later.</p></div>
+    <fieldset class="choice" style="border:0;padding:0;margin:0"><legend class="sr-only">Quality profile</legend>
+      <label><input type="radio" name="q"><b>Space saver <span class="radio"></span></b>Good 1080p web releases, about 4–8 GB a film.<span class="qs">1080p WEB → stop</span></label>
+      <label><input type="radio" name="q" checked><b>Cinema HD <span class="radio"></span></b>1080p Blu-ray when it exists, upgrading from web copies. About 10–20 GB.<span class="qs">1080p WEB → 1080p Bluray</span></label>
+      <label><input type="radio" name="q"><b>Cinema UHD <span class="radio"></span></b>4K with HDR and lossless audio, for big screens. About 20–80 GB.<span class="qs">1080p → 2160p Remux</span></label>
+    </fieldset>
+    <div class="notice" data-tone="info"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><div class="grow"><div class="ntitle">What this means in practice</div><div class="nbody">Nothing below 1080p is accepted. If a better copy appears later (say, the Blu-ray), Gonema replaces the file and tells you why in the film’s history.</div></div></div>
+    <div class="nav"><button class="btn btn-ghost" type="button">Back</button><button class="btn btn-primary btn-lg" type="button">Continue<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></div>
+  </section>
+
+  <!-- 8 First film -->
+  <section class="pane" data-step="film" aria-labelledby="h-film" hidden>
+    <div><span class="t-overline">Step 8 · First screening</span><h1 id="h-film">The first print is on its way.</h1><p class="intro">You added Saltwater Hymn. Gonema searched 1 indexer, picked the best release and sent it to qBittorrent.</p></div>
+    <div class="grabbed">
+      <div class="big poster-art" data-film="saltwater-hymn"></div>
+      <div class="stack" style="gap:var(--space-5)">
+        <div class="search-hit"><div class="poster-art" data-film="saltwater-hymn"></div><div><b style="font:500 14px/20px var(--font-ui)">Saltwater Hymn</b><div class="t-caption t-muted">2021 · Drama · 1 h 54 min</div></div><span class="badge" data-status="downloading"><svg class="i" aria-hidden="true"><use href="#i-arrow-down-to-line"/></svg>Downloading</span></div>
+        <ol class="flow">
+          <li><span class="d"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><span><b>Added</b> to /data/movies, Cinema HD</span><span class="t">0.0 s</span></li>
+          <li><span class="d"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><span><b>Searched</b> Nebula NZB: 18 releases, 5 accepted</span><span class="t">1.3 s</span></li>
+          <li><span class="d"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><span><b>Picked</b> <span class="t-mono-sm">Saltwater.Hymn.2021.1080p.BluRay.x264-LUMEN</span> <span class="score pos">+30</span></span><span class="t">1.4 s</span></li>
+          <li class="live"><span class="d"><svg class="i" aria-hidden="true"><use href="#i-arrow-down-to-line"/></svg></span><span><b>Downloading</b> 9.8 GB · 21.6 MB/s</span><span class="t">8 min</span></li>
+        </ol>
+        <div><div class="progress live" style="--p:.06" role="progressbar" aria-label="Saltwater Hymn download" aria-valuemin="0" aria-valuemax="100" aria-valuenow="6"><div class="fill"></div></div><div class="progress-meta"><span>0.6 of 9.8 GB</span><span>about 8 min left</span></div></div>
+      </div>
+    </div>
+    <div class="nav"><span class="hint">You’ll get a note when it’s ready to watch.</span><a class="btn btn-secondary btn-lg" href="add-film.html">Add more films</a><a class="btn btn-primary btn-lg" href="dashboard.html">Open my cinema<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></a></div>
+  </section>
+</main>
+
+<script src="../system/icons.js"></script>
+<script src="../system/posters.js"></script>
+<script src="../system/mock.js"></script>
+<script>
+  const STEPS = [['welcome', 'Welcome', ''], ['account', 'Account', 'Admin login'], ['tmdb', 'Metadata', 'TMDB key'], ['folder', 'Library folder', '/data/movies'], ['client', 'Download client', 'qBittorrent'], ['indexer', 'Indexer', 'Newznab or Torznab'], ['quality', 'Quality', 'Starting profile'], ['film', 'First film', 'Search and grab']];
+  const cur = new URLSearchParams(location.search).get('step') || 'welcome';
+  const idx = Math.max(0, STEPS.findIndex(s => s[0] === cur));
+  const errAt = cur === 'client' ? 4 : -1;
+  document.getElementById('steps').innerHTML = STEPS.map(([id, label, sub], i) => {
+    const cls = i === errAt ? 'err' : i < idx ? 'done' : '';
+    const n = i < idx ? GN.ic('check') : i === errAt ? GN.ic('x') : (i + 1);
+    return '<li class="' + cls + '"><a href="?step=' + id + '"' + (i === idx ? ' aria-current="step"' : '') + '><span class="n">' + n + '</span><span>' + label + (sub ? '<small>' + (i === errAt ? 'Needs attention' : sub) + '</small>' : '') + '</span></a></li>';
+  }).join('');
+  document.getElementById('prog').style.setProperty('--p', (idx + 1) / STEPS.length);
+  document.getElementById('prog-t').textContent = 'Step ' + (idx + 1) + ' of ' + STEPS.length;
+  document.querySelectorAll('.pane').forEach(p => p.hidden = p.dataset.step !== STEPS[idx][0]);
+  document.getElementById('brand').innerHTML = GN.MARK + GN.WORDMARK;
+  document.getElementById('wall').innerHTML = Object.keys(GN.films).slice(0, 30).map(id => '<div class="poster-art" data-film="' + id + '"></div>').join('');
+  GN.renderPosters();
+</script>
+</body>
+</html>

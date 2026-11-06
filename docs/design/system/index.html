@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design system · Gonema</title>
+<link rel="icon" href="../../brand/kit/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="gonema.css">
+<script src="shell.js"></script>
+<style>
+  /* Sheet layout only (not part of the system) */
+  .ds { max-width: 1360px; margin: 0 auto; padding: 0 48px 96px; }
+  .ds-top { position: sticky; top: 0; z-index: var(--z-topbar); display: flex; align-items: center; gap: var(--space-4); height: 64px; margin: 0 -48px; padding: 0 48px; background: var(--glass-1); backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2); border-bottom: 1px solid var(--border); }
+  .ds-top .brand { display: flex; align-items: center; gap: 10px; color: var(--text-primary); }
+  .ds-top .brand svg { height: 24px; width: auto; } .ds-top .brand .wm { height: 12px; }
+  .ds-top nav { display: flex; gap: 2px; margin-left: var(--space-6); overflow-x: auto; }
+  .ds-top nav a { padding: 6px 10px; border-radius: var(--radius-sm); color: var(--text-secondary); font: 500 13px/1 var(--font-ui); white-space: nowrap; }
+  .ds-top nav a:hover { background: var(--bg-hover); color: var(--text-primary); text-decoration: none; }
+  .ds-hero { padding: var(--space-16) 0 var(--space-10); display: grid; gap: var(--space-3); }
+  .ds-hero h1 { font: var(--type-display-xl); letter-spacing: var(--type-display-xl-tracking); font-stretch: 125%; }
+  .ds-hero p { max-width: 72ch; color: var(--text-secondary); font: var(--type-body-lg); }
+  .ds section { padding-top: var(--space-12); scroll-margin-top: 72px; }
+  .ds h2.sec { font: var(--type-display-md); letter-spacing: var(--type-display-md-tracking); font-stretch: 125%; margin-bottom: 6px; }
+  .ds .lead { color: var(--text-secondary); max-width: 80ch; margin-bottom: var(--space-6); }
+  .ds h3.sub { font: var(--type-title-md); margin: var(--space-8) 0 var(--space-3); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+  .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+  .themebox { border-radius: var(--radius-xl); border: 1px solid var(--border); background: var(--bg-base); color: var(--text-primary); padding: var(--space-5); }
+  .themebox > .t-overline { margin-bottom: var(--space-3); display: block; }
+  .sw-list { display: grid; gap: 0; }
+  .sw { display: grid; grid-template-columns: 36px 1fr auto auto; gap: var(--space-3); align-items: center; padding: 8px 0; border-top: 1px solid var(--border); font: var(--type-body-sm); }
+  .sw .chip-c { width: 36px; height: 28px; border-radius: 8px; border: 1px solid var(--border-strong); }
+  .sw .nm { display: grid; } .sw .nm code { font: var(--type-mono-sm); color: var(--text-muted); }
+  .sw .hex { font: var(--type-mono-sm); color: var(--text-secondary); }
+  .ratio { font: 600 12px/1 var(--font-mono); padding: 4px 6px; border-radius: 5px; background: var(--bg-active); min-width: 64px; text-align: center; }
+  .ratio.fail { color: var(--status-failed); }
+  .stage { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+  .states { display: grid; grid-template-columns: 120px repeat(6, minmax(0, 1fr)); gap: var(--space-3) var(--space-4); align-items: center; }
+  .states .h { font: var(--type-caption); color: var(--text-muted); }
+  .states .rl { font: 500 13px/18px var(--font-ui); color: var(--text-secondary); }
+  .demo-card { border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--bg-raised); padding: var(--space-5); }
+  .type-row { display: grid; grid-template-columns: 220px 1fr; gap: var(--space-6); align-items: baseline; padding: 14px 0; border-top: 1px solid var(--border); overflow: hidden; }
+  .type-row .spec { font: var(--type-mono-sm); color: var(--text-muted); } .type-row .spec b { color: var(--text-secondary); font-weight: 500; display: block; font-family: var(--font-ui); }
+  .space-row { display: grid; grid-template-columns: 110px 60px 1fr; gap: var(--space-3); align-items: center; font: var(--type-mono-sm); color: var(--text-secondary); padding: 3px 0; }
+  .space-row .bar { height: 12px; background: color-mix(in srgb, var(--accent) 50%, transparent); border-radius: 3px; }
+  .radius-demo { display: flex; gap: var(--space-4); flex-wrap: wrap; }
+  .radius-demo div { width: 96px; height: 72px; border: 1px solid var(--border-strong); background: var(--bg-raised); display: grid; place-items: end start; padding: 8px; font: var(--type-mono-sm); color: var(--text-secondary); }
+  .elev-demo { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-5); }
+  .elev-demo div { height: 96px; border-radius: var(--radius-lg); background: var(--bg-raised); border: 1px solid var(--border); display: grid; place-items: end start; padding: 10px; font: var(--type-mono-sm); color: var(--text-secondary); }
+  .glass-stage { position: relative; border-radius: var(--radius-xl); overflow: hidden; height: 300px; }
+  .glass-stage .backdrop-art { position: absolute; inset: 0; } .glass-stage .backdrop-art svg { width: 100%; height: 100%; }
+  .glass-stage .panes { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); padding: var(--space-8); align-items: center; }
+  .glass-stage .pane { border-radius: var(--radius-lg); padding: var(--space-5); min-height: 150px; display: grid; align-content: space-between; }
+  .glass-stage .pane b { font: var(--type-title-md); } .glass-stage .pane span { font: var(--type-body-sm); color: var(--text-secondary); }
+  .motion-row { display: grid; grid-template-columns: 170px 110px 1fr 84px; gap: var(--space-4); align-items: center; padding: 10px 0; border-top: 1px solid var(--border); font: var(--type-body-sm); }
+  .motion-row code { font: var(--type-mono-sm); color: var(--text-muted); }
+  .track-m { position: relative; height: 32px; border-radius: var(--radius-sm); background: var(--bg-sunken); border: 1px solid var(--border); }
+  .track-m .ball { position: absolute; left: 4px; top: 4px; width: 22px; height: 22px; border-radius: 6px; background: var(--text-primary); }
+  .track-m.go .ball { transform: translateX(calc(var(--w, 400px) - 30px)); }
+  .curve { width: 110px; height: 64px; }
+  .curve path.c { fill: none; stroke: var(--accent); stroke-width: 2; }
+  .curve path.g { fill: none; stroke: var(--border-strong); stroke-width: 1; }
+  .pc-demo { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: var(--space-4); }
+  .pc-demo .lab { font: var(--type-caption); color: var(--text-muted); margin-top: 6px; text-align: center; }
+  .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 2px; }
+  .icon-grid div { display: grid; justify-items: center; gap: 8px; padding: 14px 6px; border-radius: var(--radius-md); font: 400 11px/1.2 var(--font-mono); color: var(--text-muted); text-align: center; word-break: break-all; }
+  .icon-grid div:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .icon-grid .i { width: 22px; height: 22px; color: var(--text-primary); }
+  .tint-row { display: grid; grid-template-columns: 52px 1fr; gap: var(--space-4); align-items: center; padding: 10px 0; border-top: 1px solid var(--border); }
+  .tint-row .mini-p { width: 52px; aspect-ratio: 2/3; border-radius: 6px; overflow: hidden; box-shadow: var(--elev-1); } .tint-row .mini-p svg { width: 100%; height: 100%; }
+  .tint-row .line { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; font: var(--type-mono-sm); color: var(--text-secondary); }
+  .tint-row .dotc { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--border-strong); }
+  .tint-row .tint-text { color: var(--movie-tint); font: 600 14px/1 var(--font-ui); }
+  .menu-stage { position: relative; display: flex; gap: var(--space-6); align-items: flex-start; flex-wrap: wrap; }
+  .menu-stage .menu, .menu-stage .dialog, .menu-stage .toast, .menu-stage .popover { position: relative; animation: none; }
+  .note { font: var(--type-body-sm); color: var(--text-muted); margin-top: var(--space-3); max-width: 90ch; }
+  .focus-demo { display: flex; gap: var(--space-5); align-items: center; flex-wrap: wrap; }
+  .tbl-demo { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-raised); }
+  .tbl-demo .tbl thead th { background: var(--bg-raised); }
+  @media (max-width: 1100px) { .two, .three { grid-template-columns: 1fr; } .pc-demo { grid-template-columns: repeat(4, 1fr); } .states { grid-template-columns: 100px repeat(3, 1fr); } }
+</style>
+</head>
+<body>
+<div class="ds">
+  <header class="ds-top">
+    <a class="brand" href="#" aria-label="Gonema design system" id="ds-brand"></a>
+    <nav aria-label="Sections">
+      <a href="#color">Colour</a><a href="#status">Status</a><a href="#tint">Movie tint</a><a href="#type">Type</a><a href="#space">Space</a><a href="#surface">Surfaces</a><a href="#motion">Motion</a><a href="#focus">Focus</a><a href="#controls">Controls</a><a href="#data">Data display</a><a href="#overlays">Overlays</a><a href="#posters">Posters</a><a href="#icons">Icons</a>
+    </nav>
+    <div class="spacer" style="flex:1"></div>
+    <a class="btn btn-ghost btn-sm" href="../mockups/library-grid.html">Mockups<svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg></a>
+    <button class="icon-btn" type="button" data-theme-toggle><svg class="i only-dark" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i only-light" aria-hidden="true"><use href="#i-moon"/></svg></button>
+  </header>
+
+  <main id="main">
+  <div class="ds-hero">
+    <span class="t-overline">Gonema · design system v0.1 · phase 2B</span>
+    <h1>A private cinema, built from parts.</h1>
+    <p>Tokens extend the approved brand kit (<code>docs/brand/kit/tokens.css</code>); nothing here contradicts it. Source: <code>docs/design/system/gonema.css</code>, organised as tokens → base → components → shell. Every component below is shown in all of its states; forced states use <code>.is-hover</code>, <code>.is-active</code>, <code>.is-focus</code> so they can be screenshotted.</p>
+  </div>
+
+  <!-- COLOUR -->
+  <section id="color" aria-labelledby="h-color">
+    <h2 class="sec" id="h-color">Colour roles</h2>
+    <p class="lead">Warm blacks and bone paper, one ultramarine accent. Ratios are computed live in this page against <code>bg-base</code> (composited for translucent values). Light is an equal citizen: the same roles, re-tuned.</p>
+    <div class="two">
+      <div class="themebox" data-theme="dark"><span class="t-overline">Dark (default)</span><div class="sw-list" data-swatches="roles"></div></div>
+      <div class="themebox" data-theme="light"><span class="t-overline">Light</span><div class="sw-list" data-swatches="roles"></div></div>
+    </div>
+    <p class="note">Accent rule (brand): at most one solid accent element per view (the primary button). Elsewhere accent is for focus, selection and links. <code>border</code> is decorative only; controls use <code>border-control</code> (≥ 3:1, WCAG 1.4.11).</p>
+  </section>
+
+  <!-- STATUS -->
+  <section id="status" aria-labelledby="h-status">
+    <h2 class="sec" id="h-status">Status colours</h2>
+    <p class="lead">Five library states, always carried by an icon and a label, never by colour alone. Badge = status text on a 14 % tint of itself. On posters the badge becomes a glass pill with a coloured icon, so it reads on any artwork.</p>
+    <div class="two">
+      <div class="themebox" data-theme="dark"><span class="t-overline">Dark</span>
+        <div class="stage" data-badges></div><div class="stage" style="margin-top:14px" data-inline></div><div class="sw-list" style="margin-top:14px" data-swatches="status"></div></div>
+      <div class="themebox" data-theme="light"><span class="t-overline">Light</span>
+        <div class="stage" data-badges></div><div class="stage" style="margin-top:14px" data-inline></div><div class="sw-list" style="margin-top:14px" data-swatches="status"></div></div>
+    </div>
+    <h3 class="sub">On artwork</h3>
+    <div class="glass-stage" style="height:120px"><div class="backdrop-art" data-film="neon-orchard"></div><div class="stage" style="position:absolute;inset:0;padding:40px;gap:12px" data-badges-media></div></div>
+  </section>
+
+  <!-- TINT -->
+  <section id="tint" aria-labelledby="h-tint">
+    <h2 class="sec" id="h-tint">Movie tint</h2>
+    <p class="lead"><code>movies.dominant_color</code> is extracted from the poster at import. CSS derives <code>--movie-tint</code> with relative colour syntax: keep the poster’s <b>hue</b>, clamp <b>chroma</b> (≤ 0.10 dark, ≤ 0.13 light) and pin <b>lightness</b> (OKLCH L 0.80 dark, 0.47 light). That guarantees ≥ 4.5:1 on <code>bg-base</code> for any input, verified below. The tint drives the movie page atmosphere, its primary action, rating rings and hairlines. Focus rings, links and statuses stay brand colours.</p>
+    <pre class="t-mono-sm" style="padding:14px 16px;border-radius:var(--radius-md);background:var(--bg-sunken);border:1px solid var(--border);overflow:auto;color:var(--text-secondary)">.movie-scope { --movie-tint: oklch(from var(--movie-dominant) 0.8 min(c, 0.1) h); }          /* dark  */
+[data-theme="light"] .movie-scope { --movie-tint: oklch(from var(--movie-dominant) 0.47 min(c, 0.13) h); }</pre>
+    <div class="two" style="margin-top:16px">
+      <div class="themebox" data-theme="dark"><span class="t-overline">Dark</span><div data-tints></div></div>
+      <div class="themebox" data-theme="light"><span class="t-overline">Light</span><div data-tints></div></div>
+    </div>
+  </section>
+
+  <!-- TYPE -->
+  <section id="type" aria-labelledby="h-type">
+    <h2 class="sec" id="h-type">Typography</h2>
+    <p class="lead">Archivo Expanded for titles, Geist for interface, Geist Mono for releases, paths, scores and sizes. Numbers that align use tabular figures. Film titles in title case.</p>
+    <div id="type-rows"></div>
+  </section>
+
+  <!-- SPACE -->
+  <section id="space" aria-labelledby="h-space">
+    <h2 class="sec" id="h-space">Spacing, radius, density, layout</h2>
+    <div class="two">
+      <div>
+        <h3 class="sub" style="margin-top:0">Spacing (4 px base)</h3>
+        <div id="space-rows"></div>
+      </div>
+      <div>
+        <h3 class="sub" style="margin-top:0">Radius</h3>
+        <div class="radius-demo">
+          <div style="border-radius:var(--radius-xs)">xs 4</div><div style="border-radius:var(--radius-sm)">sm 6</div><div style="border-radius:var(--radius-md)">md 10</div><div style="border-radius:var(--radius-poster)">poster 12</div><div style="border-radius:var(--radius-lg)">lg 16</div><div style="border-radius:var(--radius-xl)">xl 24</div>
+        </div>
+        <h3 class="sub">Density</h3>
+        <dl class="dl" style="max-width:560px">
+          <dt>Airy (default, browsing)</dt><dd>poster ≥ 168 px · gap 24/32 · row 56 px</dd>
+          <dt>Compact (tables, power use)</dt><dd>poster ≥ 128 px · gap 16/20 · row 36 px</dd>
+        </dl>
+        <h3 class="sub">Layout grid</h3>
+        <dl class="dl" style="max-width:560px">
+          <dt>Design width</dt><dd>1440 × 900, tablet 1024</dd>
+          <dt>Sidebar</dt><dd>248 px · rail 72 px (≤ 1100 px or on demand)</dd>
+          <dt>Top bar</dt><dd>64 px, glass level 1, sticky</dd>
+          <dt>Gutter</dt><dd>32 px (24 px tablet)</dd>
+          <dt>Content max</dt><dd>1600 px</dd>
+          <dt>Controls</dt><dd>28 / 36 / 44 px</dd>
+          <dt>Z layers</dt><dd>sticky 10 · sidebar 20 · topbar 30 · bulk 40 · popover 50 · scrim 60 · dialog 70 · toast 80 · tooltip 90</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- SURFACES -->
+  <section id="surface" aria-labelledby="h-surface">
+    <h2 class="sec" id="h-surface">Elevation and glass</h2>
+    <p class="lead">Shadows are warm and soft; in dark they carry a 1 px top highlight instead of growing darker. Glass is reserved for things that float above content (top bar, bulk bar, menus, dialogs, toasts) and never stacks on glass. With <code>prefers-reduced-transparency</code> every glass layer becomes solid.</p>
+    <div class="elev-demo">
+      <div style="box-shadow:none">elev-0</div><div style="box-shadow:var(--elev-1)">elev-1 rows</div><div style="box-shadow:var(--elev-2)">elev-2 cards</div><div style="box-shadow:var(--elev-3)">elev-3 popover</div><div style="box-shadow:var(--elev-4)">elev-4 dialog</div>
+    </div>
+    <div class="glass-stage" style="margin-top:24px"><div class="backdrop-art" data-film="glass-cartographer"></div>
+      <div class="panes">
+        <div class="pane glass-1"><b>Glass 1 · chrome</b><span>Top bar, sidebar over media. Blur 16, 72 %.</span></div>
+        <div class="pane glass-2"><b>Glass 2 · panels</b><span>Brand surface-glass. Blur 20, 72 %, lit edge.</span></div>
+        <div class="pane glass-3"><b>Glass 3 · overlays</b><span>Menus, dialogs, toasts, palette. Blur 32, 86 %.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MOTION -->
+  <section id="motion" aria-labelledby="h-motion">
+    <h2 class="sec" id="h-motion">Motion tokens</h2>
+    <p class="lead">Purposeful and short: 150–300 ms, ease-out for arrivals, springs for things you touch. Keyboard-initiated actions (palette, list navigation) do not animate. Press a row to play it. Full spec: <code>docs/design/motion.md</code>, live demos: <a href="../motion/index.html">motion/index.html</a>.</p>
+    <div class="row" style="margin-bottom:8px"><button class="btn btn-secondary btn-sm" type="button" id="play-all"><svg class="i" aria-hidden="true"><use href="#i-play"/></svg>Play all</button><span class="t-caption t-muted">Reduced motion: movement removed, fades kept ≤ 150 ms.</span></div>
+    <div id="motion-rows"></div>
+  </section>
+
+  <!-- FOCUS -->
+  <section id="focus" aria-labelledby="h-focus">
+    <h2 class="sec" id="h-focus">Focus ring</h2>
+    <p class="lead">2 px accent ring with a 2 px gap in the surface colour (<code>--focus-ring</code>), shown for keyboard focus only (<code>:focus-visible</code>). It never animates in, never disappears, and the movie tint never replaces it. Tab through this row.</p>
+    <div class="focus-demo">
+      <button class="btn btn-primary is-focus" type="button">Primary</button>
+      <button class="btn btn-secondary is-focus" type="button">Secondary</button>
+      <label class="input is-focus" style="width:220px"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input placeholder="Input (focus)" aria-label="Focused input"></label>
+      <button class="icon-btn is-focus" type="button" aria-label="Icon button"><svg class="i" aria-hidden="true"><use href="#i-ellipsis"/></svg></button>
+      <button class="switch is-focus" role="switch" aria-checked="true" type="button"><span class="track" aria-hidden="true"></span>Switch</button>
+      <label class="check is-focus"><input type="checkbox" checked aria-label="Checkbox">Checkbox</label>
+      <a class="nav-item" href="#" style="box-shadow:var(--focus-ring);width:180px"><svg class="i" aria-hidden="true"><use href="#i-film"/></svg>Nav item</a>
+    </div>
+  </section>
+
+  <!-- CONTROLS -->
+  <section id="controls" aria-labelledby="h-controls">
+    <h2 class="sec" id="h-controls">Controls</h2>
+    <h3 class="sub">Buttons</h3>
+    <div class="states" id="btn-states"></div>
+    <h3 class="sub">Icon buttons</h3>
+    <div class="states" id="icon-states"></div>
+    <h3 class="sub">Inputs and select</h3>
+    <div class="three">
+      <div class="field"><label class="field-label" for="f1">Default</label><label class="input"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input id="f1" placeholder="Search releases…"></label><span class="field-hint">Matches title, group or tag</span></div>
+      <div class="field"><label class="field-label" for="f2">Hover</label><label class="input is-hover"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input id="f2" value="Halcyon"></label></div>
+      <div class="field"><label class="field-label" for="f3">Focus</label><label class="input is-focus"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input id="f3" value="Halcyon Drift"></label></div>
+      <div class="field"><label class="field-label" for="f4">Error</label><label class="input mono" aria-invalid="true"><input id="f4" value="http://nebula.local:808O" aria-describedby="f4e"></label><span class="field-error" id="f4e"><svg class="i i-sm" aria-hidden="true"><use href="#i-circle-x"/></svg>Port must be a number (found the letter O).</span></div>
+      <div class="field"><label class="field-label" for="f5">Disabled</label><label class="input is-disabled"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg><input id="f5" value="Managed by environment" disabled></label><span class="field-hint">Set by GONEMA_BASE_URL</span></div>
+      <div class="field"><label class="field-label" for="f6">Loading <span class="t-muted" style="font-weight:400">testing connection</span></label><label class="input mono" style="position:relative;overflow:hidden"><input id="f6" value="http://sabnzbd:8080" aria-busy="true"><span class="skeleton" style="position:absolute;inset:auto 0 0 0;height:2px;border-radius:0"></span></label></div>
+      <div class="field"><span class="field-label" id="s1">Select</span><button class="input select" type="button" aria-haspopup="listbox" aria-labelledby="s1 s1v"><span class="value" id="s1v">Cinema UHD</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button></div>
+      <div class="field"><span class="field-label" id="s2">Select · open</span><button class="input select is-focus" type="button" aria-haspopup="listbox" aria-expanded="true" aria-labelledby="s2 s2v"><span class="value" id="s2v">Released</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button>
+        <div class="menu" role="listbox" aria-label="Minimum availability" style="position:relative;animation:none;margin-top:4px">
+          <div role="option" aria-selected="false"><span class="check-mark"></span><span class="label">Announced</span></div>
+          <div role="option" aria-selected="false" class="is-hover"><span class="check-mark"></span><span class="label">In cinemas</span></div>
+          <div role="option" aria-selected="true"><span class="check-mark"><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg></span><span class="label">Released</span></div>
+        </div></div>
+      <div class="field"><span class="field-label" id="s3">Select · disabled</span><button class="input select is-disabled" type="button" disabled aria-labelledby="s3 s3v"><span class="value" id="s3v">/data/movies</span><svg class="i" aria-hidden="true"><use href="#i-chevrons-up-down"/></svg></button></div>
+    </div>
+    <h3 class="sub">Toggle, checkbox, segmented, tabs</h3>
+    <div class="states" id="sel-states"></div>
+    <div class="two" style="margin-top:24px">
+      <div class="stack" style="justify-items:start">
+        <div class="segmented" role="radiogroup" aria-label="Layout"><button role="radio" aria-checked="true"><svg class="i" aria-hidden="true"><use href="#i-layout-grid"/></svg>Posters</button><button role="radio" aria-checked="false"><svg class="i" aria-hidden="true"><use href="#i-rows-3"/></svg>Table</button><button role="radio" aria-checked="false" disabled>Calendar</button></div>
+        <div class="segmented" role="radiogroup" aria-label="Density"><button role="radio" aria-checked="false">Airy</button><button role="radio" aria-checked="true">Compact</button></div>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Example tabs"><button role="tab" aria-selected="true">Overview</button><button role="tab" aria-selected="false">Files <span class="count">1</span></button><button role="tab" aria-selected="false" style="color:var(--text-primary)">History <span class="count">7</span></button><button role="tab" aria-selected="false" disabled>Extras</button></div>
+    </div>
+    <h3 class="sub">Chips and tags</h3>
+    <div class="stage">
+      <button class="chip" type="button"><span class="k">Quality</span> Any<svg class="i" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+      <button class="chip is-hover" type="button"><span class="k">Year</span> Any<svg class="i" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+      <span class="chip is-on"><span class="k">Monitored</span> Yes <button class="remove" type="button" aria-label="Remove filter"><svg class="i i-xs" aria-hidden="true"><use href="#i-x"/></svg></button></span>
+      <button class="chip" type="button" aria-pressed="true"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>HDR only</button>
+      <button class="chip" type="button" disabled>Disabled</button>
+      <span class="tag">sci-fi</span><span class="tag">4k-hdr</span><span class="tag plain">Usenet</span>
+    </div>
+  </section>
+
+  <!-- DATA DISPLAY -->
+  <section id="data" aria-labelledby="h-data">
+    <h2 class="sec" id="h-data">Data display</h2>
+    <div class="two">
+      <div class="demo-card">
+        <h3 class="sub" style="margin-top:0">Quality badge</h3>
+        <div class="stage" id="qb"></div>
+        <h3 class="sub">Score pill</h3>
+        <div class="stage"><span class="score pos">+110</span><span class="score pos">+20</span><span class="score">0</span><span class="score neg">−15</span><span class="score neg">−990</span><button class="score pos" type="button" style="box-shadow:inset 0 0 0 1px currentColor">+70</button><span class="t-caption t-muted">hover = button, opens breakdown</span></div>
+        <h3 class="sub">Tooltip</h3>
+        <div class="stage" style="padding-top:8px"><span class="tooltip static">Search now <span class="kbd">S</span></span><span class="tooltip static">58.4 GB · 442 MB/min</span></div>
+      </div>
+      <div class="demo-card">
+        <h3 class="sub" style="margin-top:0">Progress (live)</h3>
+        <div class="stack" style="gap:18px">
+          <div><div class="row" style="justify-content:space-between;font:var(--type-body-sm)"><span>The Last Projectionist</span><span class="tnum t-secondary" id="live-pct">42%</span></div>
+            <div class="progress live" id="live-bar" role="progressbar" aria-label="The Last Projectionist" aria-valuemin="0" aria-valuemax="100" aria-valuenow="42" style="--p:.42;margin-top:8px"><div class="fill"></div></div>
+            <div class="progress-meta"><span>5.2 of 12.4 GB</span><span>18.4 MB/s · 12 min left</span></div></div>
+          <div><div class="row" style="justify-content:space-between;font:var(--type-body-sm)"><span>Paused</span><span class="tnum t-secondary">67%</span></div><div class="progress paused" style="--p:.67;margin-top:8px"><div class="fill"></div></div></div>
+          <div><div class="row" style="justify-content:space-between;font:var(--type-body-sm)"><span class="status" data-status="failed"><svg class="i" aria-hidden="true"><use href="#i-triangle-alert"/></svg>Failed at 88%</span><span class="tnum t-secondary">88%</span></div><div class="progress failed" style="--p:.88;margin-top:8px"><div class="fill"></div></div></div>
+          <div><div class="row" style="justify-content:space-between;font:var(--type-body-sm)"><span>Loading (unknown size)</span></div><div class="skeleton" style="height:6px;border-radius:999px;margin-top:8px"></div></div>
+        </div>
+      </div>
+    </div>
+    <h3 class="sub">Table row · airy and compact</h3>
+    <div class="two">
+      <div class="tbl-demo" data-density="airy"><table class="tbl" id="tbl-a" aria-label="Airy table example"></table></div>
+      <div class="tbl-demo" data-density="compact"><table class="tbl" id="tbl-c" aria-label="Compact table example"></table></div>
+    </div>
+    <h3 class="sub">Sidebar nav item</h3>
+    <div class="stage" style="align-items:flex-start">
+      <div class="demo-card" style="width:260px;padding:12px;display:grid;gap:2px">
+        <a class="nav-item" href="#"><svg class="i" aria-hidden="true"><use href="#i-calendar"/></svg><span class="label">Default</span></a>
+        <a class="nav-item is-hover" href="#"><svg class="i" aria-hidden="true"><use href="#i-compass"/></svg><span class="label">Hover</span></a>
+        <a class="nav-item" href="#" aria-current="page"><svg class="i" aria-hidden="true"><use href="#i-film"/></svg><span class="label">Current</span><span class="count">1,284</span></a>
+        <a class="nav-item" href="#"><svg class="i" aria-hidden="true"><use href="#i-arrow-down-to-line"/></svg><span class="label">Live count</span><span class="count live">3</span></a>
+        <a class="nav-item" href="#"><svg class="i" aria-hidden="true"><use href="#i-activity"/></svg><span class="label">Needs attention</span><span class="count warn">1</span></a>
+        <a class="nav-item is-disabled" href="#" aria-disabled="true"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg><span class="label">Disabled</span></a>
+      </div>
+      <div class="empty" style="flex:1;min-width:320px">
+        <img class="mascot" src="../../brand/kit/mascot/kernel-empty-library.svg" alt="">
+        <h3>The house is dark.</h3>
+        <p>Add a film and we’ll start the screening. Or import an existing folder; Gonema will match what it finds.</p>
+        <div class="actions"><button class="btn btn-primary" type="button"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Add a film</button><button class="btn btn-secondary" type="button"><svg class="i" aria-hidden="true"><use href="#i-folder-open"/></svg>Import a folder</button></div>
+      </div>
+    </div>
+    <h3 class="sub">Inline notice</h3>
+    <div class="two">
+      <div class="notice" data-tone="failed"><svg class="i" aria-hidden="true"><use href="#i-cloud-off"/></svg><div class="grow"><div class="ntitle">Nebula NZB hasn’t answered for 10 minutes.</div><div class="nbody">Others keep searching. Gonema retries every 5 minutes.</div></div><button class="btn btn-secondary btn-sm" type="button">Retry now</button></div>
+      <div class="notice" data-tone="info"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><div class="grow"><div class="ntitle">Demo mode</div><div class="nbody">Everything you see is sample data. Nothing is downloaded.</div></div></div>
+    </div>
+  </section>
+
+  <!-- OVERLAYS -->
+  <section id="overlays" aria-labelledby="h-overlays">
+    <h2 class="sec" id="h-overlays">Menus, dialogs, toasts</h2>
+    <p class="lead">Menus scale from their trigger (transform-origin), dialogs from centre. Destructive actions are optimistic with Undo when the action is reversible (unmonitor, remove from library, blocklist); a confirmation dialog only when files on disk would be deleted.</p>
+    <div class="menu-stage">
+      <div class="menu" role="menu" aria-label="Context menu example">
+        <div class="menu-heading">The Quiet Meridian</div>
+        <button role="menuitem"><svg class="i" aria-hidden="true"><use href="#i-film"/></svg><span class="label">Open</span><span class="kbd-hint">↵</span></button>
+        <button role="menuitem" class="is-hover"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><span class="label">Search now</span><span class="kbd-hint">S</span></button>
+        <button role="menuitemcheckbox" aria-checked="true"><svg class="i" aria-hidden="true"><use href="#i-bookmark"/></svg><span class="label">Monitored</span><span class="check-mark"><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+        <button role="menuitem" aria-haspopup="menu"><svg class="i" aria-hidden="true"><use href="#i-sliders-horizontal"/></svg><span class="label">Quality profile</span><svg class="i i-sm" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
+        <button role="menuitem" aria-disabled="true"><svg class="i" aria-hidden="true"><use href="#i-refresh-cw"/></svg><span class="label">Refresh metadata</span><span class="kbd-hint">Running</span></button>
+        <div role="separator"></div>
+        <button role="menuitem" class="danger"><svg class="i" aria-hidden="true"><use href="#i-trash-2"/></svg><span class="label">Remove from library…</span><span class="kbd-hint">⌫</span></button>
+      </div>
+      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-h" aria-describedby="dlg-d">
+        <div class="icon-head"><svg class="i i-lg" aria-hidden="true"><use href="#i-trash-2"/></svg></div>
+        <h2 id="dlg-h">Delete 2 films and their files?</h2>
+        <p id="dlg-d">Halcyon Drift and A Room Without Weather will be removed from the library and <b style="color:var(--text-primary)">29.1 GB</b> moves to the recycle bin (kept 7 days).</p>
+        <label class="check" style="margin-top:16px"><input type="checkbox">Also add them to the import exclusion list</label>
+        <div class="actions"><button class="btn btn-ghost" type="button">Cancel</button><button class="btn btn-danger btn-solid" type="button"><svg class="i" aria-hidden="true"><use href="#i-trash-2"/></svg>Delete 2 films</button></div>
+      </div>
+      <div class="stack" style="gap:14px">
+        <div class="toast" role="status" aria-live="polite">
+          <span class="ticon"><svg class="i" aria-hidden="true"><use href="#i-eye-off"/></svg></span>
+          <div><div class="ttitle">Stopped monitoring 2 films</div><div class="tbody">They stay in your library.</div></div>
+          <div class="tactions"><button class="btn btn-secondary btn-sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-undo-2"/></svg>Undo <span class="kbd">⌘Z</span></button><button class="icon-btn sm" type="button" aria-label="Dismiss"><svg class="i i-sm" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+          <span class="timer" aria-hidden="true"></span>
+        </div>
+        <div class="toast" role="status">
+          <span class="ticon" style="color:var(--status-upgraded);background:var(--status-upgraded-bg)"><svg class="i" aria-hidden="true"><use href="#i-circle-arrow-up"/></svg></span>
+          <div><div class="ttitle">New print: 1080p → 2160p</div><div class="tbody">Halcyon Drift. Same seat, better picture.</div></div>
+          <div class="tactions"><button class="btn btn-ghost btn-sm" type="button">View</button></div>
+        </div>
+        <div class="toast" role="alert">
+          <span class="ticon" style="color:var(--status-failed);background:var(--status-failed-bg)"><svg class="i" aria-hidden="true"><use href="#i-triangle-alert"/></svg></span>
+          <div><div class="ttitle">The print arrived damaged</div><div class="tbody">Ninefold: blocklisted it, trying the next release.</div></div>
+          <div class="tactions"><button class="btn btn-ghost btn-sm" type="button">Details</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- POSTERS -->
+  <section id="posters" aria-labelledby="h-posters">
+    <h2 class="sec" id="h-posters">Poster card</h2>
+    <p class="lead">The poster is the hero: 2:3, radius 12, soft depth. Chrome (select, quick actions, quality) appears on hover or keyboard focus. Only states that need attention sit on the artwork; the rest live in the meta line. Hover lift uses the gentle spring; selection scales to 0.97 with a 2 px accent ring.</p>
+    <div class="pc-demo" id="pc-demo"></div>
+  </section>
+
+  <!-- ICONS -->
+  <section id="icons" aria-labelledby="h-icons">
+    <h2 class="sec" id="h-icons">Icons</h2>
+    <p class="lead">Lucide v0.460.0 (ISC licence, © Lucide Contributors; portions © Cole Bemis, Feather, MIT), embedded inline as an SVG sprite (<code>icons.js</code>). One stroke for everything: 1.5 px at 18 px (1.75 in badges). Sizes 14 / 16 / 18 / 20 / 24. Icons are decorative (<code>aria-hidden</code>); the control carries the label.</p>
+    <div class="icon-grid" id="icon-grid"></div>
+  </section>
+  </main>
+</div>
+
+<script src="icons.js"></script>
+<script src="posters.js"></script>
+<script src="mock.js"></script>
+<script>
+(function () {
+  const ic = GN.ic;
+  document.getElementById('ds-brand').innerHTML = GN.MARK + GN.WORDMARK;
+
+  /* ---- colour measurement (canvas resolves any CSS colour, incl. oklch / color-mix) ---- */
+  const cv = document.createElement('canvas'); cv.width = cv.height = 1; const cx = cv.getContext('2d', { willReadFrequently: true });
+  function rgbOf(color, over) { cx.clearRect(0, 0, 1, 1); if (over) { cx.fillStyle = over; cx.fillRect(0, 0, 1, 1); } cx.fillStyle = '#000'; cx.fillStyle = color; cx.fillRect(0, 0, 1, 1); const d = cx.getImageData(0, 0, 1, 1).data; return [d[0], d[1], d[2]]; }
+  const lum = c => { const a = c.map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2]; };
+  const ratio = (a, b) => { const l1 = lum(a), l2 = lum(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); };
+  const hex = c => '#' + c.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+  function resolve(el, v) { const p = document.createElement('span'); p.style.color = 'var(' + v + ')'; el.appendChild(p); const c = getComputedStyle(p).color; p.remove(); return c; }
+  function resolveBg(el, v) { const p = document.createElement('span'); p.style.backgroundColor = 'var(' + v + ')'; el.appendChild(p); const c = getComputedStyle(p).backgroundColor; p.remove(); return c; }
+
+  const ROLES = [['bg-base', 'App background', false], ['bg-raised', 'Cards, sidebar, menus', false], ['bg-sunken', 'Wells, inputs (new)', false], ['surface-glass', 'Glass 2 (brand)', false], ['border-control', 'Control outlines (new), 3:1', true], ['text-primary', 'Titles, body', true], ['text-secondary', 'Labels, support', true], ['text-muted', 'Metadata ≥ 12 px', true], ['accent', 'Primary action, focus, links', true], ['accent-contrast', 'Text on accent', 'acc']];
+  const STATUSES = ['downloading', 'missing', 'upgraded', 'failed', 'available'];
+  document.querySelectorAll('[data-swatches]').forEach(list => {
+    const box = list.closest('[data-theme]');
+    const base = rgbOf(resolve(box, '--bg-base'));
+    const items = list.dataset.swatches === 'roles' ? ROLES : STATUSES.flatMap(s => [['status-' + s, s[0].toUpperCase() + s.slice(1) + ' on bg-base', true], ['status-' + s + '-bg', 'badge: text on 14 % tint', 'badge:' + s]]);
+    list.innerHTML = items.map(([v, desc, measure]) => {
+      const raw = resolve(box, '--' + v); const c = rgbOf(raw, hex(base));
+      let r = '';
+      if (measure === true) { const x = ratio(c, base); const min = v === 'border-control' ? 3 : 4.5; r = '<span class="ratio' + (x < min ? ' fail' : '') + '">' + x.toFixed(2) + ':1</span>'; }
+      else if (measure === 'acc') { const x = ratio(c, rgbOf(resolve(box, '--accent'))); r = '<span class="ratio">' + x.toFixed(2) + ':1</span>'; }
+      else if (typeof measure === 'string' && measure.startsWith('badge:')) { const fg = rgbOf(resolve(box, '--status-' + measure.slice(6))); const x = ratio(fg, c); r = '<span class="ratio' + (x < 4.5 ? ' fail' : '') + '">' + x.toFixed(2) + ':1</span>'; }
+      else r = '<span class="ratio" style="opacity:.5">—</span>';
+      return '<div class="sw"><span class="chip-c" style="background:var(--' + v + ')"></span><span class="nm"><span>' + desc + '</span><code>--' + v + '</code></span><span class="hex">' + hex(c) + '</span>' + r + '</div>';
+    }).join('');
+  });
+
+  /* ---- status badges ---- */
+  document.querySelectorAll('[data-badges]').forEach(el => el.innerHTML = STATUSES.map(s => GN.badge(s)).join('') + GN.badge('unmonitored'));
+  document.querySelectorAll('[data-inline]').forEach(el => el.innerHTML = STATUSES.concat('unmonitored').map(s => '<span class="status" data-status="' + s + '">' + ic(GN.STATUS[s].icon) + GN.STATUS[s].label + '</span>').join(''));
+  document.querySelectorAll('[data-badges-media]').forEach(el => el.innerHTML = STATUSES.map(s => GN.badge(s, { media: true })).join('') + GN.badge('unmonitored', { media: true }));
+
+  /* ---- movie tints ---- */
+  const TINTS = ['halcyon-drift', 'quiet-meridian', 'neon-orchard', 'sundial', 'orbit-small-things', 'concrete-psalms'];
+  document.querySelectorAll('[data-tints]').forEach(el => {
+    el.innerHTML = TINTS.map(id => '<div class="tint-row movie-scope" style="--movie-dominant:' + GN.films[id].dom + '"><div class="mini-p poster-art" data-film="' + id + '"></div><div class="stack" style="gap:8px"><div class="line"><span class="dotc" style="background:var(--movie-dominant)"></span>' + GN.films[id].dom + ' <svg class="i i-sm" aria-hidden="true"><use href="#i-move-right"/></svg><span class="dotc" style="background:var(--movie-tint)"></span><span class="tv"></span><span class="ratio-t"></span></div><div class="line"><button class="btn btn-tint btn-sm" type="button">Search now</button><span class="tint-text">Rating ring 78</span></div></div></div>').join('');
+    const box = el.closest('[data-theme]'); const base = rgbOf(resolve(box, '--bg-base'));
+    el.querySelectorAll('.tint-row').forEach(row => {
+      const t = rgbOf(resolve(row, '--movie-tint')); const ink = rgbOf(resolve(row, '--movie-tint-ink'));
+      row.querySelector('.tv').textContent = hex(t);
+      const a = ratio(t, base), b = ratio(ink, t);
+      row.querySelector('.ratio-t').innerHTML = '<span class="t-caption t-muted">on bg</span> <span class="ratio' + (a < 4.5 ? ' fail' : '') + '" title="tint on bg-base">' + a.toFixed(2) + ':1</span> <span class="ratio' + (b < 4.5 ? ' fail' : '') + '" title="ink on tint">' + b.toFixed(2) + ':1</span>';
+    });
+  });
+
+  /* ---- type ---- */
+  const TYPE = [
+    ['display-2xl', '64/68 · 600 · −0.02em', 't-display-2xl', 'Halcyon Drift'],
+    ['display-xl', '48/52 · 600', 't-display-xl', 'The Drift Saga'],
+    ['display-lg', '36/40 · 600', 't-display-lg', 'Films'],
+    ['display-md', '28/34 · 600', 't-display-md', 'Interactive search'],
+    ['overline', '11/16 · Archivo 600 · +0.12em', 't-overline', 'Science fiction · Drama'],
+    ['title-lg', '20/28 · Geist 600', 't-title-lg', 'Release dates'],
+    ['title-md', '16/24 · Geist 600', 't-title-md', 'Quality profile'],
+    ['body-lg', '16/24 · Geist 400', 't-body-lg', 'Fourteen years after the generation ship settled a tidally locked world…'],
+    ['body', '14/20 · Geist 400', 't-body', 'Gonema found 34 releases; 4 match your profile.'],
+    ['body-sm', '13/18 · Geist 400', 't-body-sm', '720p is below your profile’s floor (1080p).'],
+    ['caption', '12/16 · Geist 500', 't-caption', '3 Nov · 21:14 · 12.4k votes'],
+    ['mono', '13/20 · Geist Mono', 't-mono', 'Halcyon.Drift.2024.2160p.UHD.BluRay.REMUX.DV-BOBiNE'],
+    ['mono-sm', '12/16 · Geist Mono', 't-mono-sm', '58.4 GB  +110  /data/movies/Halcyon Drift (2024)/'],
+  ];
+  document.getElementById('type-rows').innerHTML = TYPE.map(t => '<div class="type-row"><div class="spec"><b>' + t[0] + '</b>' + t[1] + '</div><div class="' + t[2] + ' truncate">' + t[3] + '</div></div>').join('') +
+    '<div class="type-row"><div class="spec"><b>tabular figures</b>font-variant-numeric</div><div class="t-body tnum" style="display:grid;grid-template-columns:repeat(3,120px);text-align:right;gap:4px 16px"><span>58.4 GB</span><span>+110</span><span>12 d</span><span>5.9 GB</span><span>−990</span><span>130 d</span></div></div>';
+
+  /* ---- spacing ---- */
+  document.getElementById('space-rows').innerHTML = [1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20].map(n => '<div class="space-row"><span>--space-' + n + '</span><span>' + (n * 4) + 'px</span><span class="bar" style="width:' + (n * 4) + 'px"></span></div>').join('');
+
+  /* ---- motion ---- */
+  const MOT = [
+    ['--dur-instant', '100 ms', 'Press feedback, colour', 'var(--dur-instant)', 'var(--ease-out)', [0.23, 1, 0.32, 1]],
+    ['--dur-fast', '150 ms', 'Hover, tooltip, menu out', 'var(--dur-fast)', 'var(--ease-out)', [0.23, 1, 0.32, 1]],
+    ['--dur-base', '200 ms', 'Menu in, popover, tabs', 'var(--dur-base)', 'var(--ease-out)', [0.23, 1, 0.32, 1]],
+    ['--dur-slow', '250 ms', 'Dialog, toast in', 'var(--dur-slow)', 'var(--ease-out)', [0.23, 1, 0.32, 1]],
+    ['--dur-slower', '300 ms', 'Shared element (in-out)', 'var(--dur-slower)', 'var(--ease-in-out)', [0.77, 0, 0.175, 1]],
+    ['--ease-standard', '200 ms', 'Colour, opacity', 'var(--dur-base)', 'var(--ease-standard)', [0.2, 0, 0, 1]],
+    ['--spring-snappy', '230 ms', 'Press, toggles. No overshoot', 'var(--spring-snappy-dur)', 'var(--spring-snappy)', 'snappy'],
+    ['--spring-gentle', '330 ms', 'Hover lift, cards. 3.6 %', 'var(--spring-gentle-dur)', 'var(--spring-gentle)', 'gentle'],
+    ['--spring-pop', '380 ms', 'Checkmark, selection, toast. 9 %', 'var(--spring-pop-dur)', 'var(--spring-pop)', 'pop'],
+  ];
+  const SPR = { snappy: [1400, 70], gentle: [700, 38], pop: [900, 36] };
+  function curvePath(e) {
+    let pts = [];
+    if (typeof e === 'string') { const [k, c] = SPR[e]; let x = 0, v = 0; const dt = 1 / 1000; for (let i = 0; i < 400; i++) { const a = -k * (x - 1) - c * v; v += a * dt; x += v * dt; if (i % 8 === 0) pts.push([i / 400, x]); } }
+    else { const [x1, y1, x2, y2] = e; for (let t = 0; t <= 1.0001; t += 0.04) { const bx = 3 * (1 - t) ** 2 * t * x1 + 3 * (1 - t) * t * t * x2 + t ** 3, by = 3 * (1 - t) ** 2 * t * y1 + 3 * (1 - t) * t * t * y2 + t ** 3; pts.push([bx, by]); } }
+    return pts.map((p, i) => (i ? 'L' : 'M') + (4 + p[0] * 102).toFixed(1) + ' ' + (56 - p[1] * 44).toFixed(1)).join(' ');
+  }
+  document.getElementById('motion-rows').innerHTML = MOT.map((m, i) => '<div class="motion-row"><div><b style="font-weight:500">' + m[2] + '</b><br><code>' + m[0] + '</code></div><svg class="curve" viewBox="0 0 110 64" aria-hidden="true"><path class="g" d="M4 56 H106 M4 12 H106"/><path class="c" d="' + curvePath(m[5]) + '"/></svg><div class="track-m" data-m="' + i + '"><span class="ball" style="transition:transform ' + m[3] + ' ' + m[4] + '"></span></div><button class="btn btn-ghost btn-sm" type="button" data-play="' + i + '" aria-label="Play ' + m[0] + '">' + ic('play') + m[1] + '</button></div>').join('');
+  const play = i => { const t = document.querySelector('[data-m="' + i + '"]'); t.style.setProperty('--w', t.clientWidth + 'px'); t.classList.toggle('go'); };
+  document.querySelectorAll('[data-play]').forEach(b => b.addEventListener('click', () => play(b.dataset.play)));
+  document.getElementById('play-all').addEventListener('click', () => MOT.forEach((_, i) => play(i)));
+
+  /* ---- buttons and states ---- */
+  const COLS = ['Default', 'Hover', 'Active', 'Focus', 'Disabled', 'Loading'];
+  const head = '<span></span>' + COLS.map(c => '<span class="h">' + c + '</span>').join('');
+  const BTN = [['Primary', 'btn-primary', 'Add film', 'plus'], ['Secondary', 'btn-secondary', 'Interactive search', 'scan-search'], ['Ghost', 'btn-ghost', 'Clear all', null], ['Danger', 'btn-danger', 'Delete…', 'trash-2'], ['Movie tint', 'btn-tint', 'Search now', 'search']];
+  const st = ['', ' is-hover', ' is-active', ' is-focus', '', ''];
+  document.getElementById('btn-states').innerHTML = head + BTN.map(([n, cls, label, icon]) => '<span class="rl">' + n + '</span>' + st.map((s, j) =>
+    '<span' + (cls === 'btn-tint' ? ' class="movie-scope" style="--movie-dominant:#B8643C"' : '') + '><button class="btn ' + cls + s + '" type="button"' + (j === 4 ? ' disabled' : '') + (j === 5 ? ' aria-busy="true"' : '') + '>' + (icon ? ic(icon) : '') + (j === 5 ? (cls === 'btn-danger' ? 'Deleting…' : 'Working…') : label) + '</button></span>').join('')).join('') +
+    '<span class="rl">Sizes</span><span style="grid-column:span 6" class="stage"><button class="btn btn-secondary btn-sm" type="button">Small 28</button><button class="btn btn-secondary" type="button">Default 36</button><button class="btn btn-secondary btn-lg" type="button">Large 44</button><button class="btn btn-secondary" type="button">' + ic('search') + 'Search <span class="kbd">S</span></button></span>';
+  document.getElementById('icon-states').innerHTML = '<span></span>' + ['Default', 'Hover', 'Active', 'Focus', 'Disabled', 'Toggled'].map(c => '<span class="h">' + c + '</span>').join('') + [['Ghost', ''], ['Outlined', ' outlined'], ['On media', ' on-media']].map(([n, c]) => '<span class="rl">' + n + '</span>' + st.map((s, j) => '<span' + (c === ' on-media' ? ' style="background:linear-gradient(135deg,#3a1d14,#b8643c);border-radius:12px;padding:6px;display:inline-flex"' : '') + '><button class="icon-btn' + c + s + '" type="button" aria-label="More"' + (j === 4 ? ' disabled' : '') + (j === 5 ? ' aria-pressed="true"' : '') + '>' + ic(j === 5 ? 'bookmark' : 'ellipsis') + '</button></span>').join('')).join('');
+  const SEL = ['Default', 'Hover', 'On', 'Focus', 'Disabled', 'Mixed (checkbox)'];
+  document.getElementById('sel-states').innerHTML = '<span></span>' + SEL.map(c => '<span class="h">' + c + '</span>').join('') +
+    '<span class="rl">Toggle</span>' + ['', ' is-hover', '', ' is-focus', ' is-disabled', ''].map((s, j) => j === 5 ? '<span></span>' : '<span><button class="switch' + s + '" role="switch" type="button" aria-checked="' + (j === 2 || j === 3) + '"' + (j === 4 ? ' disabled' : '') + ' aria-label="Toggle example"><span class="track" aria-hidden="true"></span></button></span>').join('') +
+    '<span class="rl">Checkbox</span>' + ['', ' is-hover', '', ' is-focus', '', ''].map((s, j) => '<span><label class="check' + s + '"><input type="checkbox"' + (j === 2 || j === 3 ? ' checked' : '') + (j === 4 ? ' disabled' : '') + (j === 5 ? ' data-ind' : '') + ' aria-label="Checkbox example"></label></span>').join('');
+  document.querySelectorAll('[data-ind]').forEach(i => i.indeterminate = true);
+
+  /* ---- quality badges ---- */
+  document.getElementById('qb').innerHTML = ['2160p Remux', '2160p WEB-DL', '1080p Bluray', '720p HDTV', '480p DVD'].map(GN.qbadge).join('') + '<span class="hdr-flag">DV</span><span class="hdr-flag">HDR10+</span><span class="hdr-flag">ATMOS</span>';
+
+  /* ---- tables ---- */
+  const trow = (id, q, size, score, s, sel, hov) => { const f = GN.films[id]; const m = GN.STATUS[s]; return '<tr aria-selected="' + !!sel + '"' + (hov ? ' class="is-hover"' : '') + '><td><label class="check"><input type="checkbox"' + (sel ? ' checked' : '') + ' aria-label="Select ' + f.title + '"></label></td><td><div class="row"><span class="thumb"><span class="poster-art" data-film="' + id + '"></span></span>' + f.title + '</div></td><td>' + GN.qbadge(q) + '</td><td class="r"><span class="score pos">+' + score + '</span></td><td><span class="status" data-status="' + s + '">' + ic(m.icon) + m.label + '</span></td></tr>'; };
+  const thead = '<thead><tr><th style="width:40px"><span class="sr-only">Select</span></th><th aria-sort="ascending"><button type="button">Title ' + ic('arrow-up') + '</button></th><th>Quality</th><th class="r">Score</th><th>Status</th></tr></thead>';
+  const body = '<tbody>' + trow('quiet-meridian', '2160p Remux', '61.3 GB', 120, 'available') + trow('saltwater-hymn', '1080p Bluray', '9.8 GB', 30, 'available', false, true) + trow('sundial', '1080p Bluray', '10.2 GB', 30, 'available', true) + '</tbody>';
+  document.getElementById('tbl-a').innerHTML = thead + body; document.getElementById('tbl-c').innerHTML = thead + body;
+
+  /* ---- poster states ---- */
+  const P = [
+    [{ film: 'quiet-meridian', quality: '2160p Remux', hdr: 'HDR10' }, 'Default · available'],
+    [{ film: 'saltwater-hymn', quality: '1080p Bluray', hover: true }, 'Hover / focus'],
+    [{ film: 'sundial', quality: '1080p Bluray', selected: true }, 'Selected'],
+    [{ film: 'neon-orchard', state: 'missing', note: 'Searching daily' }, 'Missing'],
+    [{ film: 'last-projectionist', state: 'downloading', progress: 0.42, eta: '12 min', speed: '18.4 MB/s' }, 'Downloading 42 %'],
+    [{ film: 'ninefold', state: 'failed', note: 'Import failed' }, 'Failed'],
+    [{ film: 'halcyon-drift', state: 'upgraded', quality: '2160p WEB-DL' }, 'Upgraded'],
+    [{ film: 'coldharbour', state: 'unmonitored', note: 'Not monitored' }, 'Unmonitored'],
+    [{ state: 'skeleton' }, 'Skeleton'],
+  ];
+  document.getElementById('pc-demo').innerHTML = P.map(([o, l]) => '<div>' + GN.card(o) + '<div class="lab">' + l + '</div></div>').join('');
+
+  /* ---- icons ---- */
+  document.getElementById('icon-grid').innerHTML = [...document.querySelectorAll('symbol')].map(s => '<div>' + ic(s.id.slice(2)) + s.id.slice(2) + '</div>').join('');
+
+  /* ---- live progress demo ---- */
+  let p = 42; const bar = document.getElementById('live-bar'), pct = document.getElementById('live-pct');
+  if (!new URLSearchParams(location.search).get('freeze')) setInterval(() => { p = p >= 99 ? 42 : p + 1; bar.style.setProperty('--p', p / 100); bar.setAttribute('aria-valuenow', p); pct.textContent = p + '%'; }, 1500);
+
+  GN.renderPosters();
+  // re-measure after theme switch
+  const mo = new MutationObserver(() => {}); mo.observe(document.documentElement, { attributes: true });
+})();
+</script>
+</body>
+</html>
