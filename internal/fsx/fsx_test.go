@@ -595,3 +595,52 @@ func TestRemoveEmptyDir(t *testing.T) {
 		t.Errorf("empty folder still there: %v", err)
 	}
 }
+
+// TestRecycleOnlyOwnItems: a bin folder that also holds files Gonema did not
+// recycle (misconfigured bin, files dropped there by hand) lists and purges
+// only the items with the name pattern and a matching manifest.
+func TestRecycleOnlyOwnItems(t *testing.T) {
+	ctx := context.Background()
+	root := t.TempDir()
+	bin := filepath.Join(root, "bin")
+	if err := os.MkdirAll(bin, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+	o := fsx.New(nil, fsx.Options{Now: func() time.Time { return now }})
+	src := filepath.Join(root, "Movie (2020).mkv")
+	write(t, src, 100)
+	own, err := o.Recycle(ctx, src, bin, fsx.Manifest{Reason: "upgrade"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	precious := map[string][]byte{
+		"precious.mkv": write(t, filepath.Join(bin, "precious.mkv"), 10),
+		"20200101T000000Z-00000000-no-manifest.mkv": write(t, filepath.Join(bin, "20200101T000000Z-00000000-no-manifest.mkv"), 10),
+		"20200101T000000Z-0000000a-wrong-size.mkv":  write(t, filepath.Join(bin, "20200101T000000Z-0000000a-wrong-size.mkv"), 10),
+	}
+	m := `{"originalPath":"/movies/x.mkv","reason":"r","recycledAt":"2020-01-01T00:00:00Z","size":999}`
+	if err := os.WriteFile(filepath.Join(bin, "20200101T000000Z-0000000a-wrong-size.mkv"+fsx.ManifestSuffix), []byte(m), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	items, err := o.ListRecycle(bin)
+	if err != nil || len(items) != 1 || items[0].Name != own.Name {
+		t.Fatalf("ListRecycle = %+v, %v", items, err)
+	}
+	if n, err := o.ForeignEntries(bin); err != nil || n != 4 {
+		t.Errorf("ForeignEntries = %d, %v; want 4", n, err)
+	}
+	if _, err := o.RestoreRecycled(ctx, bin, "precious.mkv", nil); !errors.Is(err, fsx.ErrInvalidName) {
+		t.Errorf("restore of a foreign file: %v", err)
+	}
+	purged, err := o.PurgeRecycle(bin, now.Add(time.Hour), true)
+	if err != nil || len(purged) != 1 || purged[0].Name != own.Name {
+		t.Fatalf("purge = %+v, %v", purged, err)
+	}
+	for name, data := range precious {
+		sameContent(t, filepath.Join(bin, name), data)
+	}
+	if n, _ := o.ForeignEntries(filepath.Join(root, "missing")); n != 0 {
+		t.Errorf("missing folder: %d foreign entries", n)
+	}
+}

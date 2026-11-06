@@ -318,3 +318,54 @@ func TestSearchMissingAndSkips(t *testing.T) {
 		t.Errorf("unmonitored search = %+v, %v", out, err)
 	}
 }
+
+// TestFetchReleaseScope: a public indexer cannot make Gonema download from the
+// LAN, and a LAN indexer may only point back to itself, also through
+// redirects. Refusals do not name the address.
+func TestFetchReleaseScope(t *testing.T) {
+	e := newEnv(t)
+	torrent, _ := acquiretest.MakeTorrent("x")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/t":
+			_, _ = w.Write(torrent)
+		case "/to-other-lan-host":
+			http.Redirect(w, r, "http://127.0.0.2:8080/admin", http.StatusFound)
+		case "/to-metadata":
+			http.Redirect(w, r, "http://169.254.169.254/latest/meta-data/", http.StatusFound)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	key := "K"
+	public, err := e.svc.CreateIndexer(e.ctx, IndexerInput{Name: "Public", Kind: "torznab", BaseURL: "http://93.184.216.34", APIKey: &key})
+	if err != nil {
+		t.Fatal(err)
+	}
+	lan, err := e.svc.CreateIndexer(e.ctx, IndexerInput{Name: "LAN", Kind: "torznab", BaseURL: srv.URL, APIKey: &key})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel := func(ix Indexer, path string) *indexer.Release {
+		return &indexer.Release{Title: "M", Protocol: decision.Torrent, IndexerID: ix.ID, IndexerName: ix.Name, DownloadURL: srv.URL + path}
+	}
+	if _, err := e.svc.fetchRelease(e.ctx, rel(lan, "/t")); err != nil {
+		t.Fatalf("LAN indexer, own link: %v", err)
+	}
+	for name, r := range map[string]*indexer.Release{
+		"public indexer, LAN link":        rel(public, "/t"),
+		"LAN indexer, other LAN host":     rel(lan, "/to-other-lan-host"),
+		"LAN indexer, metadata redirect":  rel(lan, "/to-metadata"),
+		"public indexer, metadata direct": {Title: "M", Protocol: decision.Torrent, IndexerID: public.ID, IndexerName: "Public", DownloadURL: "http://169.254.169.254/x"},
+	} {
+		_, err := e.svc.fetchRelease(e.ctx, r)
+		if !errors.Is(err, ErrUpstream) || !strings.Contains(err.Error(), "does not download from") {
+			t.Errorf("%s: %v", name, err)
+			continue
+		}
+		for _, leak := range []string{"127.0.0", "169.254", "HTTP", "private", "loopback"} {
+			if strings.Contains(err.Error(), leak) {
+				t.Errorf("%s: the error tells %q: %v", name, leak, err)
+			}
+		}
+	}
+}

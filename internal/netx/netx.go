@@ -38,7 +38,7 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
-	"sync"
+	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -75,11 +75,17 @@ const (
 	// Webhook is for generic webhooks and chat webhooks (Discord, Slack). Public
 	// only by default.
 	Webhook
+	// Public is for fixed public services (TMDB and its image server): public
+	// addresses only, whatever the configuration.
+	Public
 )
 
 func (c Class) String() string {
-	if c == Webhook {
+	switch c {
+	case Webhook:
 		return "webhook"
+	case Public:
+		return "public"
 	}
 	return "integration"
 }
@@ -116,8 +122,11 @@ func Current() Config { return *current.Load() }
 // Policy returns the current policy of the class.
 func (c Class) Policy() Policy {
 	cfg := current.Load()
-	if c == Webhook {
+	switch c {
+	case Webhook:
 		return cfg.Webhook
+	case Public:
+		return Policy{}
 	}
 	return cfg.Integration
 }
@@ -183,11 +192,14 @@ var (
 		netip.MustParsePrefix("198.18.0.0/15"), // benchmarking, used by some local DNS proxies
 		netip.MustParsePrefix("fec0::/10"),     // deprecated site-local
 	}
-	nat64Prefixes = []netip.Prefix{
-		netip.MustParsePrefix("64:ff9b::/96"),
-		netip.MustParsePrefix("64:ff9b:1::/48"),
-	}
-	sixToFour = netip.MustParsePrefix("2002::/16")
+	nat64WellKnown = netip.MustParsePrefix("64:ff9b::/96")
+	// nat64Local is the local-use NAT64 prefix (RFC 8215). Its operators pick
+	// the prefix length (/48 to /96), so the IPv4 address may sit anywhere:
+	// only the /96 form 64:ff9b:1::a.b.c.d is judged by its embedded address,
+	// the rest is refused.
+	nat64Local   = netip.MustParsePrefix("64:ff9b:1::/48")
+	nat64Local96 = netip.MustParsePrefix("64:ff9b:1::/96")
+	sixToFour    = netip.MustParsePrefix("2002::/16")
 )
 
 // classify returns the category of ip and a description for errors.
@@ -198,10 +210,11 @@ func classify(ip netip.Addr) (cat category, why string) {
 	}
 	if ip.Is6() {
 		b := ip.As16()
-		for _, p := range nat64Prefixes {
-			if p.Contains(ip) {
-				return classify(netip.AddrFrom4([4]byte(b[12:16])))
-			}
+		if nat64WellKnown.Contains(ip) || nat64Local96.Contains(ip) {
+			return classify(netip.AddrFrom4([4]byte(b[12:16])))
+		}
+		if nat64Local.Contains(ip) {
+			return catNever, "a local-use NAT64 address"
 		}
 		if sixToFour.Contains(ip) {
 			return classify(netip.AddrFrom4([4]byte(b[2:6])))
@@ -240,6 +253,13 @@ func classify(ip netip.Addr) (cat category, why string) {
 	return catPublic, ""
 }
 
+// IsPublic reports whether ip is a public address (neither loopback, private
+// nor always refused).
+func IsPublic(ip netip.Addr) bool {
+	cat, _ := classify(ip)
+	return cat == catPublic
+}
+
 // CheckAddr returns nil when the policy allows connecting to ip, a
 // *BlockedError otherwise.
 func CheckAddr(p Policy, ip netip.Addr) error {
@@ -266,6 +286,9 @@ func checkAddr(p Policy, ip netip.Addr, hint string) error {
 }
 
 func hintFor(c Class) string {
+	if c == Public {
+		return ""
+	}
 	if c == Webhook {
 		return "webhooks reach public addresses only; set GONEMA_WEBHOOK_ALLOW_PRIVATE=true to allow local ones"
 	}
@@ -286,7 +309,14 @@ func CheckURL(u *url.URL) error {
 // Control returns a net.Dialer Control function enforcing the policy of class
 // on the address actually dialed (after DNS resolution).
 func Control(class Class) func(network, address string, _ syscall.RawConn) error {
-	return func(network, address string, _ syscall.RawConn) error {
+	return func(network, address string, c syscall.RawConn) error {
+		return controlContext(class)(context.Background(), network, address, c)
+	}
+}
+
+// controlContext is Control with the Scope of the dial context.
+func controlContext(class Class) func(ctx context.Context, network, address string, _ syscall.RawConn) error {
+	return func(ctx context.Context, network, address string, _ syscall.RawConn) error {
 		switch network {
 		case "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6":
 		default:
@@ -296,13 +326,79 @@ func Control(class Class) func(network, address string, _ syscall.RawConn) error
 		if err != nil {
 			return &BlockedError{Reason: "an address that cannot be parsed"}
 		}
-		return checkAddr(class.Policy(), ap.Addr(), hintFor(class))
+		return checkScoped(ctx, class, ap.Addr())
 	}
 }
 
-// NewDialer returns a dialer enforcing the policy of class.
+// checkScoped applies the policy of class, then the Scope of ctx if any.
+func checkScoped(ctx context.Context, class Class, ip netip.Addr) error {
+	if err := checkAddr(class.Policy(), ip, hintFor(class)); err != nil {
+		return err
+	}
+	sc, ok := ctx.Value(scopeKey{}).(*Scope)
+	if !ok || sc == nil {
+		return nil
+	}
+	if cat, _ := classify(ip); cat == catPublic {
+		return nil
+	}
+	u := ip.Unmap().WithZone("")
+	for _, a := range sc.allow {
+		if a == u {
+			return nil
+		}
+	}
+	return &BlockedError{Addr: u, Reason: "a local address other than the one of the service that gave the link"}
+}
+
+// Scope narrows the destinations of the requests made with a context (see
+// WithScope): public addresses stay allowed; a loopback or private address
+// only when it is one of the scope's addresses (and the class policy allows
+// it). It serves links handed out by a remote service, such as the download
+// links of an indexer: a public indexer must not make Gonema fetch from the
+// LAN, a LAN indexer may only point back to itself.
+type Scope struct {
+	allow []netip.Addr
+}
+
+type scopeKey struct{}
+
+// WithScope returns a context whose requests and dials follow sc.
+func WithScope(ctx context.Context, sc *Scope) context.Context {
+	return context.WithValue(ctx, scopeKey{}, sc)
+}
+
+// ScopeOfHost returns the Scope of links given by the service at host: no
+// local address when host resolves to public addresses only, else the local
+// addresses host resolves to.
+func ScopeOfHost(ctx context.Context, host string) (*Scope, error) {
+	var ips []netip.Addr
+	if ip, err := netip.ParseAddr(strings.Trim(host, "[]")); err == nil {
+		ips = []netip.Addr{ip}
+	} else {
+		ctx, cancel := context.WithTimeout(ctx, dialTimeout)
+		defer cancel()
+		ips, err = net.DefaultResolver.LookupNetIP(ctx, "ip", host)
+		if err != nil {
+			return nil, fmt.Errorf("netx: resolve %s: %w", host, err)
+		}
+	}
+	sc := &Scope{}
+	for _, ip := range ips {
+		if cat, _ := classify(ip); cat != catPublic {
+			sc.allow = append(sc.allow, ip.Unmap().WithZone(""))
+		}
+	}
+	return sc, nil
+}
+
+// PublicOnly reports whether the scope allows public addresses only.
+func (sc *Scope) PublicOnly() bool { return len(sc.allow) == 0 }
+
+// NewDialer returns a dialer enforcing the policy of class (and the Scope of
+// the dial context, if any).
 func NewDialer(class Class) *net.Dialer {
-	return &net.Dialer{Timeout: dialTimeout, KeepAlive: 30 * time.Second, Control: Control(class)}
+	return &net.Dialer{Timeout: dialTimeout, KeepAlive: 30 * time.Second, ControlContext: controlContext(class)}
 }
 
 // NewTransport returns an HTTP transport whose connections follow the policy
@@ -315,7 +411,6 @@ func NewTransport(class Class) *http.Transport {
 func newTransport(class Class, envProxy func(*http.Request) (*url.URL, error)) *http.Transport {
 	guarded := NewDialer(class)
 	plain := &net.Dialer{Timeout: dialTimeout, KeepAlive: 30 * time.Second}
-	var proxies sync.Map // "host:port" of the proxies in use: dialed without checks
 	tr := &http.Transport{
 		Proxy: func(req *http.Request) (*url.URL, error) {
 			pu, err := envProxy(req)
@@ -327,12 +422,22 @@ func newTransport(class Class, envProxy func(*http.Request) (*url.URL, error)) *
 			if err := precheckHost(req.Context(), class, req.URL.Hostname()); err != nil {
 				return nil, err
 			}
-			proxies.Store(canonicalAddr(pu), struct{}{})
+			// Only requests that went through Wrap carry a mark: the proxy
+			// connection of other requests is checked like any destination.
+			if m, ok := req.Context().Value(proxyMarkKey{}).(*proxyMark); ok {
+				m.addr.Store(canonicalAddr(pu))
+			}
 			return pu, nil
 		},
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			if _, ok := proxies.Load(addr); ok {
-				return plain.DialContext(ctx, network, addr)
+			// The dial context carries the values of the request that asked for
+			// the connection: only the proxy connection of a request whose
+			// Proxy function chose that proxy skips the check (L3). A direct
+			// connection to the same address does not.
+			if m, ok := ctx.Value(proxyMarkKey{}).(*proxyMark); ok {
+				if p, _ := m.addr.Load().(string); p != "" && p == addr {
+					return plain.DialContext(ctx, network, addr)
+				}
 			}
 			return guarded.DialContext(ctx, network, addr)
 		},
@@ -348,27 +453,38 @@ func newTransport(class Class, envProxy func(*http.Request) (*url.URL, error)) *
 	return tr
 }
 
+// proxyMark records, per request, the proxy its Proxy function chose.
+type proxyMark struct{ addr atomic.Value } // string "host:port"
+
+type proxyMarkKey struct{}
+
 func defaultTLS() *tls.Config { return &tls.Config{MinVersion: tls.VersionTLS12} }
 
 // precheckHost resolves host and checks every address (requests through a
-// proxy only).
+// proxy, redirects of scoped requests).
 func precheckHost(ctx context.Context, class Class, host string) error {
-	p := class.Policy()
 	if ip, err := netip.ParseAddr(host); err == nil {
-		return checkAddr(p, ip, hintFor(class))
+		return checkScoped(ctx, class, ip)
 	}
-	ctx, cancel := context.WithTimeout(ctx, dialTimeout)
+	rctx, cancel := context.WithTimeout(ctx, dialTimeout)
 	defer cancel()
-	ips, err := net.DefaultResolver.LookupNetIP(ctx, "ip", host)
+	ips, err := net.DefaultResolver.LookupNetIP(rctx, "ip", host)
 	if err != nil {
 		return fmt.Errorf("netx: resolve %s: %w", host, err)
 	}
 	for _, ip := range ips {
-		if err := checkAddr(p, ip, hintFor(class)); err != nil {
+		if err := checkScoped(ctx, class, ip); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// CheckHost resolves host and checks every address against the policy of
+// class and the Scope of ctx. The dialer checks again at connection time; this
+// early check also covers connections reused from the pool.
+func CheckHost(ctx context.Context, class Class, host string) error {
+	return precheckHost(ctx, class, host)
 }
 
 func canonicalAddr(u *url.URL) string {
@@ -401,6 +517,7 @@ func (g *guard) RoundTrip(req *http.Request) (*http.Response, error) {
 		}
 		return nil, err
 	}
+	req = req.WithContext(context.WithValue(req.Context(), proxyMarkKey{}, &proxyMark{}))
 	resp, err := g.next.RoundTrip(req)
 	if err != nil {
 		return nil, err

@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/fs0ciety7000/gonema/internal/flight"
+	"github.com/fs0ciety7000/gonema/internal/netx"
 )
 
 // Kind is the kind of image.
@@ -68,7 +69,7 @@ type BaseURLSource interface {
 
 // Options configures a Cache. Zero values select defaults.
 type Options struct {
-	HTTPClient *http.Client  // default: plain client (a timeout applies per download)
+	HTTPClient *http.Client  // default: a netx client, public addresses only (a timeout applies per download)
 	Timeout    time.Duration // per download, default 30 s
 	MaxBytes   int64         // default 10 MiB
 	MaxPixels  int           // decoded size limit, default 40 megapixels
@@ -101,7 +102,8 @@ func New(cacheDir string, base BaseURLSource, opts Options) (*Cache, error) {
 		timeout: opts.Timeout, maxBytes: opts.MaxBytes, maxPixels: opts.MaxPixels, ua: opts.UserAgent,
 	}
 	if c.http == nil {
-		c.http = &http.Client{}
+		// Public addresses only (image.tmdb.org): checked at connection time.
+		c.http = netx.NewClient(netx.Public)
 	}
 	if c.timeout <= 0 {
 		c.timeout = 30 * time.Second

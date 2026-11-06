@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
@@ -15,6 +16,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/fs0ciety7000/gonema/internal/metadata"
+	"github.com/fs0ciety7000/gonema/internal/netx"
 )
 
 func TestParseCredential(t *testing.T) {
@@ -925,5 +927,21 @@ func TestSearchPeopleAndPerson(t *testing.T) {
 	}
 	if _, err := c.Person(t.Context(), 0); !errors.Is(err, ErrInvalidArgument) {
 		t.Errorf("id 0: %v", err)
+	}
+}
+
+// TestDefaultClientPublicOnly: the default HTTP client goes through netx with
+// the public-only policy.
+func TestDefaultClientPublicOnly(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"success":true}`))
+	}))
+	t.Cleanup(srv.Close)
+	c, err := New(testAPIKey, Options{BaseURL: srv.URL, MaxAttempts: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := c.ValidateKey(t.Context()); !errors.Is(err, netx.ErrBlocked) {
+		t.Fatalf("ValidateKey against loopback = %v, want blocked", err)
 	}
 }

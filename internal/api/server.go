@@ -12,6 +12,8 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -57,6 +59,9 @@ type Deps struct {
 
 	// SSEHeartbeat is the period of SSE keep-alive comments; default 15 s.
 	SSEHeartbeat time.Duration
+	// MaxStreams and MaxStreamsPerCaller cap the open SSE connections
+	// (/events and /logs/stream); defaults 64 and 8.
+	MaxStreams, MaxStreamsPerCaller int
 
 	// Auth authenticates the callers. Without it every protected route
 	// answers 401 (fail closed). See auth_middleware.go.
@@ -78,6 +83,16 @@ type Server struct {
 	// http.Server.Shutdown can complete.
 	streams      context.Context
 	closeStreams context.CancelFunc
+	// streamSlots caps the open SSE connections (sse_limit.go).
+	streamSlots *streamLimiter
+
+	// Scheme warnings of GONEMA_COOKIE_SECURE=auto (auth_middleware.go).
+	httpsOrigins bool // a trusted origin is https
+	sawHTTPS     atomic.Bool
+	warnedProto  atomic.Bool
+	warnedHTTPS  atomic.Bool
+	// setupTokenLogged: the setup token was logged again after a refusal.
+	setupTokenLogged atomic.Bool
 }
 
 // New builds the API.
@@ -88,8 +103,19 @@ func New(d Deps) *Server {
 	if d.SSEHeartbeat <= 0 {
 		d.SSEHeartbeat = 15 * time.Second
 	}
-	s := &Server{d: d, log: d.Logger}
+	if d.MaxStreams <= 0 {
+		d.MaxStreams = maxStreams
+	}
+	if d.MaxStreamsPerCaller <= 0 {
+		d.MaxStreamsPerCaller = maxStreamsPerCaller
+	}
+	s := &Server{d: d, log: d.Logger, streamSlots: newStreamLimiter(d.MaxStreams, d.MaxStreamsPerCaller)}
 	s.streams, s.closeStreams = context.WithCancel(context.Background())
+	for _, o := range d.Security.TrustedOrigins {
+		if strings.HasPrefix(o, "https://") {
+			s.httpsOrigins = true
+		}
+	}
 
 	mux := http.NewServeMux()
 	cfg := huma.DefaultConfig("Gonema API", d.Version)

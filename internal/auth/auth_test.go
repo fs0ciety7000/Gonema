@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -203,14 +204,15 @@ func TestChangePasswordAndSessions(t *testing.T) {
 	}
 	p, _ := s.SessionPrincipal(ctx, cr.Token)
 	var inv *InvalidError
-	if _, _, err := s.ChangePassword(ctx, p, "not the password", "a brand new password", ci); !errors.As(err, &inv) || inv.Field != "currentPassword" {
+	if _, err := s.ChangePassword(ctx, p, "not the password", "a brand new password", ci, false); !errors.As(err, &inv) || inv.Field != "currentPassword" {
 		t.Fatalf("wrong current: %v", err)
 	}
-	if _, _, err := s.ChangePassword(ctx, p, "long enough password", "short", ci); !errors.As(err, &inv) || inv.Field != "password" {
+	if _, err := s.ChangePassword(ctx, p, "long enough password", "short", ci, false); !errors.As(err, &inv) || inv.Field != "password" {
 		t.Fatalf("short new: %v", err)
 	}
-	tok, info, err := s.ChangePassword(ctx, p, "long enough password", "a brand new password", ci)
-	if err != nil || tok == "" || info.ID == 0 {
+	ch, err := s.ChangePassword(ctx, p, "long enough password", "a brand new password", ci, false)
+	tok, info := ch.Token, ch.Session
+	if err != nil || tok == "" || info.ID == 0 || ch.APIKey != "" {
 		t.Fatalf("change = %q %v", tok, err)
 	}
 	for _, old := range []string{cr.Token, other} {
@@ -248,8 +250,8 @@ func TestChangePasswordAndSessions(t *testing.T) {
 	}
 	if p, err := s.APIKeyPrincipal(ctx, key); err != nil {
 		t.Errorf("new key: %v", err)
-	} else if tok, _, err := s.ChangePassword(ctx, p, "a brand new password", "yet another password", ci); err != nil || tok != "" {
-		t.Errorf("change by API key = %q %v", tok, err)
+	} else if ch, err := s.ChangePassword(ctx, p, "a brand new password", "yet another password", ci, false); err != nil || ch.Token != "" {
+		t.Errorf("change by API key = %+v %v", ch, err)
 	}
 	if info, ok, err := s.APIKey(ctx, cr.User.ID); !ok || err != nil || info.LastUsedAt == nil {
 		t.Errorf("key info = %+v %v %v", info, ok, err)
@@ -293,5 +295,178 @@ func TestLimiterBounded(t *testing.T) {
 	}
 	if w := l.wait("a", now.Add(61*time.Second)); w != 0 {
 		t.Errorf("wait after = %s", w)
+	}
+}
+
+// TestLoginConcurrentAttempts: attempts made at the same time cannot exceed
+// the per-address limit: they are reserved before the password is hashed.
+func TestLoginConcurrentAttempts(t *testing.T) {
+	s, _, _ := newTest(t)
+	ctx := context.Background()
+	if _, err := s.Setup(ctx, "admin", "long enough password", ClientInfo{IP: "192.0.2.50"}); err != nil {
+		t.Fatal(err)
+	}
+	// One hash slot, a large waiting room, held: every attempt that gets
+	// through the limiter waits for it.
+	s.gate = newHashGate(1, 1000, time.Minute)
+	s.gate.slots <- struct{}{}
+	const n = 3 * ipFailures
+	results := make(chan error, n)
+	for range n {
+		go func() {
+			_, _, _, err := s.Login(ctx, "admin", "wrong password!!", ci, "")
+			results <- err
+		}()
+	}
+	var limited, creds int
+	count := func(err error) {
+		var rl *RateLimitedError
+		switch {
+		case errors.As(err, &rl):
+			limited++
+		case errors.Is(err, ErrCredentials):
+			creds++
+		default:
+			t.Errorf("unexpected error %v", err)
+		}
+	}
+	// The attempts beyond the limit are refused while the others wait.
+	for range n - ipFailures {
+		count(<-results)
+	}
+	<-s.gate.slots
+	for range ipFailures {
+		count(<-results)
+	}
+	if creds != ipFailures || limited != n-ipFailures {
+		t.Errorf("checked %d, throttled %d; want %d and %d", creds, limited, ipFailures, n-ipFailures)
+	}
+	if got := len(s.byIP.inflight); got != 0 {
+		t.Errorf("%d attempts still in flight", got)
+	}
+	var rl *RateLimitedError
+	if _, _, _, err := s.Login(ctx, "admin", "long enough password", ci, ""); !errors.As(err, &rl) {
+		t.Errorf("after the burst: %v, want throttled", err)
+	}
+}
+
+// TestLoginBusyNotCounted: an attempt refused because the hash gate is full
+// is not a failure.
+func TestLoginBusyNotCounted(t *testing.T) {
+	s, _, _ := newTest(t)
+	ctx := context.Background()
+	if _, err := s.Setup(ctx, "admin", "long enough password", ClientInfo{IP: "192.0.2.50"}); err != nil {
+		t.Fatal(err)
+	}
+	s.gate = newHashGate(1, 0, time.Minute)
+	s.gate.slots <- struct{}{}
+	for range 2 * ipFailures {
+		if _, _, _, err := s.Login(ctx, "admin", "wrong password!!", ci, ""); !errors.Is(err, ErrBusy) {
+			t.Fatalf("busy gate: %v", err)
+		}
+	}
+	<-s.gate.slots
+	if _, _, _, err := s.Login(ctx, "admin", "long enough password", ci, ""); err != nil {
+		t.Errorf("right password after busy refusals: %v", err)
+	}
+}
+
+// TestLoginKnownAddressNotLockedOut: an address that signed in recently is
+// exempt from the per-account limit.
+func TestLoginKnownAddressNotLockedOut(t *testing.T) {
+	s, c, _ := newTest(t)
+	ctx := context.Background()
+	home := ClientInfo{IP: "192.0.2.10"}
+	if _, err := s.Setup(ctx, "admin", "long enough password", home); err != nil {
+		t.Fatal(err)
+	}
+	c.add(time.Hour)
+	for i := range accountFailures {
+		_, _, _, _ = s.Login(ctx, "admin", "wrong password!!", ClientInfo{IP: "203.0.113." + strconv.Itoa(i)}, "")
+	}
+	var rl *RateLimitedError
+	if _, _, _, err := s.Login(ctx, "admin", "long enough password", ClientInfo{IP: "198.51.100.3"}, ""); !errors.As(err, &rl) {
+		t.Fatalf("unknown address = %v, want throttled", err)
+	}
+	if _, _, _, err := s.Login(ctx, "admin", "long enough password", home, ""); err != nil {
+		t.Fatalf("known address = %v", err)
+	}
+	// The exemption ends after trustedIPFor.
+	c.add(trustedIPFor)
+	for i := range accountFailures {
+		_, _, _, _ = s.Login(ctx, "admin", "wrong password!!", ClientInfo{IP: "203.0.113." + strconv.Itoa(100+i)}, "")
+	}
+	if _, _, _, err := s.Login(ctx, "admin", "long enough password", home, ""); !errors.As(err, &rl) {
+		t.Fatalf("stale known address = %v, want throttled", err)
+	}
+}
+
+func TestHashGateRejectsWhenFull(t *testing.T) {
+	g := newHashGate(1, 1, 50*time.Millisecond)
+	g.slots <- struct{}{}
+	start := time.Now()
+	if err := g.run(context.Background(), func() {}); !errors.Is(err, ErrBusy) || time.Since(start) > time.Second {
+		t.Fatalf("timed out wait = %v after %s", err, time.Since(start))
+	}
+	g.waiting.Store(1) // the waiting room is full: refused at once
+	start = time.Now()
+	if err := g.run(context.Background(), func() {}); !errors.Is(err, ErrBusy) || time.Since(start) > 20*time.Millisecond {
+		t.Fatalf("full = %v after %s", err, time.Since(start))
+	}
+	g.waiting.Store(0)
+	<-g.slots
+	ran := false
+	if err := g.run(context.Background(), func() { ran = true }); err != nil || !ran {
+		t.Fatalf("free = %v %v", err, ran)
+	}
+}
+
+func TestChangePasswordRegeneratesAPIKey(t *testing.T) {
+	s, _, _ := newTest(t)
+	ctx := context.Background()
+	cr, err := s.Setup(ctx, "admin", "long enough password", ci)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, _ := s.SessionPrincipal(ctx, cr.Token)
+	ch, err := s.ChangePassword(ctx, p, "long enough password", "a brand new password", ci, true)
+	if err != nil || ch.APIKey == "" || ch.APIKey == cr.APIKey || ch.KeyInfo.Last4 != ch.APIKey[len(ch.APIKey)-4:] {
+		t.Fatalf("change = %+v %v", ch, err)
+	}
+	if _, err := s.APIKeyPrincipal(ctx, cr.APIKey); !errors.Is(err, ErrUnauthenticated) {
+		t.Errorf("old key still works: %v", err)
+	}
+	if _, err := s.APIKeyPrincipal(ctx, ch.APIKey); err != nil {
+		t.Errorf("new key: %v", err)
+	}
+}
+
+func TestSetupToken(t *testing.T) {
+	s, _, _ := newTest(t)
+	ctx := context.Background()
+	if s.CheckSetupToken("") || s.CheckSetupToken("anything") {
+		t.Fatal("a token is accepted before one exists")
+	}
+	tok, err := s.SetupToken(ctx)
+	if err != nil || len(tok) != 29 {
+		t.Fatalf("token = %q %v", tok, err)
+	}
+	if again, _ := s.SetupToken(ctx); again != tok {
+		t.Errorf("token changed: %q then %q", tok, again)
+	}
+	if !s.CheckSetupToken(tok) || !s.CheckSetupToken(" "+strings.ToLower(strings.ReplaceAll(tok, "-", ""))+" ") {
+		t.Error("the token is refused")
+	}
+	if s.CheckSetupToken(tok[:len(tok)-1]+"X") || s.CheckSetupToken("") {
+		t.Error("a wrong token is accepted")
+	}
+	if _, err := s.Setup(ctx, "admin", "long enough password", ci); err != nil {
+		t.Fatal(err)
+	}
+	if s.CheckSetupToken(tok) {
+		t.Error("the token survives the setup")
+	}
+	if tok, err := s.SetupToken(ctx); tok != "" || err != nil {
+		t.Errorf("token after setup = %q %v", tok, err)
 	}
 }

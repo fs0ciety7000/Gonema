@@ -60,7 +60,7 @@ The image holds the binary, the CA certificates and the time zone database (set 
 
 ## First run
 
-1. Open the web interface and **create the admin account** (first screen). Until it exists, anyone who reaches the instance can create it: do it before exposing Gonema. The setup shows an **API key once**, for scripts (header `X-Api-Key`); store it; `POST /api/v1/auth/api-key` replaces it later.
+1. Open the web interface and **create the admin account** (first screen). From another machine than the server, the screen asks for the one-time **setup token** printed in the logs at start-up (`setup=XXXX-XXXX-XXXX-XXXX-XXXX-XXXX`, `docker logs gonema` in a container); from the server itself (`http://localhost:7676`) it is not needed. Create the account before exposing Gonema. The setup shows an **API key once**, for scripts (header `X-Api-Key`); store it; `POST /api/v1/auth/api-key` replaces it later.
 2. Add your TMDB API key (free, from themoviedb.org): Gonema uses your key, not a shared one.
 3. Add a root folder (where films live), a download client and indexers, and the folders downloads can be imported from.
 4. Add films, or import an existing library folder.
@@ -83,9 +83,11 @@ Flags or environment variables (a flag wins). Full table: [`docs/configuration.m
 | `GONEMA_LOG_FILE` | `-log-file` | empty | rotating log file (relative: inside the data directory) |
 | `GONEMA_LOG_MAX_SIZE_MB` / `GONEMA_LOG_KEEP` | `-log-max-size` / `-log-keep` | `10` / `5` | rotation |
 | `GONEMA_LOG_BUFFER` | `-log-buffer` | `2000` | entries kept for the Logs screen |
-| `GONEMA_AUTH` | `-auth` | `enabled` | `disabled_for_local`: no login for direct requests from loopback or private addresses (never for requests carrying proxy headers) |
-| `GONEMA_COOKIE_SECURE` | `-cookie-secure` | `auto` | `auto`, `true`, `false`: `Secure` session cookie |
-| `GONEMA_TRUSTED_ORIGINS` | `-trusted-origins` | empty | extra origins for the cross-site request check (proxy rewriting `Host`) |
+| `GONEMA_AUTH` | `-auth` | `enabled` | `disabled_for_local`: no login for direct requests from loopback or private addresses with an IP, `localhost` or allowed `Host` (never through a proxy; unsafe with Docker/Podman port publishing) |
+| `GONEMA_COOKIE_SECURE` | `-cookie-secure` | `auto` | `auto`, `true`, `false`: `Secure` session cookie (`__Host-gonema_session` over HTTPS at the root) |
+| `GONEMA_TRUSTED_ORIGINS` | `-trusted-origins` | empty | extra origins for the cross-site request check (proxy rewriting `Host`); their hosts are also allowed hosts |
+| `GONEMA_ALLOWED_HOSTS` | `-allowed-hosts` | empty | host names Gonema answers to besides IP addresses and `localhost` (DNS rebinding protection); when set, browser requests with another `Host` get `403` |
+| `GONEMA_TRUSTED_PROXIES` | `-trusted-proxies` | empty | addresses or CIDR ranges of the reverse proxies whose `X-Forwarded-For` / `X-Forwarded-Proto` are believed |
 | `GONEMA_OUTBOUND_ALLOW_LOOPBACK` | `-outbound-allow-loopback` | `true` | integrations may reach loopback |
 | `GONEMA_OUTBOUND_ALLOW_PRIVATE` | `-outbound-allow-private` | `true` | integrations may reach the LAN |
 | `GONEMA_WEBHOOK_ALLOW_PRIVATE` | `-webhook-allow-private` | `false` | webhooks may reach loopback and the LAN |
@@ -112,9 +114,11 @@ All of it, with the recovery of interrupted imports and the logs: [`docs/operati
 Gonema serves plain HTTP; put TLS on a reverse proxy. Things that matter:
 
 - **Server-Sent Events**: `/api/v1/events` and `/api/v1/logs/stream` are long-lived streams. The proxy must not buffer them nor time them out quickly. Gonema sends `X-Accel-Buffering: no` and a comment every 15 seconds.
-- **Secure cookie**: behind HTTPS, the session cookie must be `Secure`. With `GONEMA_COOKIE_SECURE=auto` (default) Gonema relies on `X-Forwarded-Proto: https` from the proxy; send it, or set `GONEMA_COOKIE_SECURE=true`.
-- **Origin check**: if the proxy rewrites `Host`, list the public origin in `GONEMA_TRUSTED_ORIGINS`.
-- **`GONEMA_AUTH=disabled_for_local`** does not open the instance to the proxy's clients: requests carrying proxy headers always need a login.
+- **Trusted proxy**: set `GONEMA_TRUSTED_PROXIES` to the proxy's address (`127.0.0.1`, or the Docker network such as `172.18.0.0/16`). Only then are `X-Forwarded-For` (login throttling, session list) and `X-Forwarded-Proto` believed.
+- **Secure cookie**: behind HTTPS, the session cookie must be `Secure`. With `GONEMA_COOKIE_SECURE=auto` (default) Gonema relies on `X-Forwarded-Proto: https` from a trusted proxy; set `GONEMA_TRUSTED_PROXIES`, or `GONEMA_COOKIE_SECURE=true`. Over HTTPS at the root the cookie is named `__Host-gonema_session`.
+- **Host names**: list the public name in `GONEMA_ALLOWED_HOSTS` (or its origin in `GONEMA_TRUSTED_ORIGINS`); if the proxy rewrites `Host`, list the public origin in `GONEMA_TRUSTED_ORIGINS`.
+- **First run**: creating the account from another machine needs the one-time **setup token** printed in the logs (`setup=XXXX-XXXX-…` on the line "no account exists yet"; `docker logs gonema`). From the server itself (`http://localhost:7676`) it is not needed.
+- **`GONEMA_AUTH=disabled_for_local`** does not open the instance to the proxy's clients: requests carrying proxy headers, or coming from a trusted proxy, always need a login. Do not use it with Docker/Podman port publishing (see `docs/security.md`).
 - Bind Gonema to `127.0.0.1` (or a private Docker network) so only the proxy reaches it.
 
 ### Caddy
@@ -185,6 +189,8 @@ Traefik streams responses without buffering by default and sets `X-Forwarded-Pro
 | `401` on every API call from a script | send the API key in the `X-Api-Key` header (never in the URL: refused) |
 | Logged out at once behind HTTPS, or login loops | cookie `Secure` mismatch: proxy must send `X-Forwarded-Proto`, or set `GONEMA_COOKIE_SECURE` |
 | `403` on changes behind a proxy | origin check: add the public origin to `GONEMA_TRUSTED_ORIGINS` |
+| `403` "does not answer to this host name" | add the name to `GONEMA_ALLOWED_HOSTS` (or its origin to `GONEMA_TRUSTED_ORIGINS`) |
+| `403` "setup token" on the first run | copy the `setup=` value from the logs, or open `http://localhost:7676` on the server |
 | Live updates stop, the queue does not move | the proxy buffers Server-Sent Events: see [Reverse proxy](#reverse-proxy) |
 | Imports copy instead of hard linking | downloads and library on different file systems or different Docker mounts |
 | "Permission denied" in the container | the `user:` UID/GID cannot write `/data` or the media folders |

@@ -34,14 +34,18 @@ Details and the threat model: [`docs/security.md`](security.md) (in French).
 
 | Flag | Variable | Default | Description |
 |---|---|---|---|
-| `-auth` | `GONEMA_AUTH` | `enabled` | `enabled`: every `/api` request needs the session cookie (web interface) or the `X-Api-Key` header (scripts). `disabled_for_local`: requests that come **directly** from a loopback or private address skip the login. A request carrying a proxy header (`X-Forwarded-For`, `X-Real-IP`, `Forwarded`, `X-Forwarded-Host`, `CF-Connecting-IP`, `True-Client-IP`) is never treated as local, so this mode does not open an instance published through a reverse proxy. Use it only on a trusted LAN. |
-| `-cookie-secure` | `GONEMA_COOKIE_SECURE` | `auto` | `Secure` attribute of the session cookie. `auto`: set when the request came over HTTPS or the proxy sends `X-Forwarded-Proto: https`. `true` / `false` force it. Behind an HTTPS reverse proxy, make sure it sends `X-Forwarded-Proto` or set `true`. |
-| `-trusted-origins` | `GONEMA_TRUSTED_ORIGINS` | empty | Comma-separated origins (`https://media.example.org`) accepted by the cross-site request check besides the request's own host. Needed when a reverse proxy rewrites the `Host` header. |
+| `-auth` | `GONEMA_AUTH` | `enabled` | `enabled`: every `/api` request needs the session cookie (web interface) or the `X-Api-Key` header (scripts). `disabled_for_local`: requests that come **directly** from a loopback or private address skip the login, if their `Host` header is an IP address, `localhost` or an allowed host (DNS rebinding). A request carrying a proxy header (`X-Forwarded-For`, `X-Forwarded-Proto`, `X-Real-IP`, `Forwarded`, `X-Forwarded-Host`, `CF-Connecting-IP`, `True-Client-IP`), or coming from a trusted proxy, is never treated as local. **Unsafe with Docker or Podman port publishing** (userland `docker-proxy`, rootless networking): every client may then appear to come from the bridge gateway, a private address. Gonema logs a warning when it runs in a container with this mode. Use it only on a trusted LAN, with host networking or a bare binary. |
+| `-cookie-secure` | `GONEMA_COOKIE_SECURE` | `auto` | `Secure` attribute of the session cookie. `auto`: set when the request came over HTTPS or a **trusted proxy** sends `X-Forwarded-Proto: https`. `true` / `false` force it. Over HTTPS without a base URL the cookie is named `__Host-gonema_session` (the old `gonema_session` is still read, and cleared at the next sign-in). With `auto`, a warning is logged when `X-Forwarded-Proto` arrives from a peer that is not a trusted proxy, or when the trusted origins are `https` but sign-ins arrive over plain HTTP. |
+| `-trusted-origins` | `GONEMA_TRUSTED_ORIGINS` | empty | Comma-separated origins (`https://media.example.org`) accepted by the cross-site request check besides the request's own host. Needed when a reverse proxy rewrites the `Host` header. Their host names are also accepted as `Host`. |
+| `-allowed-hosts` | `GONEMA_ALLOWED_HOSTS` | empty | Comma-separated host names (`media.example.org,gonema.lan`, no scheme or port) the server answers to besides IP addresses and `localhost`. Always used for `disabled_for_local` and the account creation; when set, every `/api` request without an API key must use one of them (else `403`). |
+| `-trusted-proxies` | `GONEMA_TRUSTED_PROXIES` | empty | Comma-separated addresses or CIDR ranges (`127.0.0.1,172.18.0.0/16`) of the reverse proxies. Only their `X-Forwarded-For` (right-most address that is not a trusted proxy) and `X-Forwarded-Proto` are read. Empty: the connection peer is the client. |
 | `-outbound-allow-loopback` | `GONEMA_OUTBOUND_ALLOW_LOOPBACK` | `true` | Integrations (indexers, download clients, media servers, notifications) may connect to `127.0.0.0/8` and `::1`. |
 | `-outbound-allow-private` | `GONEMA_OUTBOUND_ALLOW_PRIVATE` | `true` | Integrations may connect to private ranges (RFC 1918, `fc00::/7`, `100.64.0.0/10`). |
 | `-webhook-allow-private` | `GONEMA_WEBHOOK_ALLOW_PRIVATE` | `false` | Webhooks (generic, Discord, Slack) may connect to loopback and private addresses. Off by default: webhooks reach public addresses only. |
 
-Cloud metadata addresses, link-local, multicast and reserved ranges are always refused, whatever these options say.
+Cloud metadata addresses, link-local, multicast and reserved ranges are always refused, whatever these options say. TMDB and its images use public addresses only. The download links an indexer returns (and their redirects) may reach public addresses, and the indexer's own address when it is on the LAN: never another LAN host.
+
+**First run.** While no account exists, Gonema logs a one-time setup token (`setup=XXXX-XXXX-XXXX-XXXX-XXXX-XXXX` on the line "no account exists yet"). Creating the account from another machine requires it; from the server itself (loopback connection with `Host` `localhost`, `127.0.0.1` or `::1`) it is optional. With Docker: `docker logs gonema`.
 
 ## Settings stored in the database
 
@@ -50,7 +54,7 @@ Changed while running, in the web interface or through the API (`/api/v1/openapi
 | Setting | Where | Default |
 |---|---|---|
 | Scheduled backups: on/off, interval, number kept, include the master key | `GET`/`PUT /api/v1/settings/backups` | on, every 168 hours (weekly), keep 4, key not included |
-| Import mode (move or copy), torrent mode (hard link or copy), allowed import folders, recycle bin | Settings > Library (`/api/v1/import/settings`) | move; hard link; none; `.gonema-recycle` in each root folder |
+| Import mode (move or copy), torrent mode (hard link or copy), allowed import folders, recycle bin | Settings > Library (`/api/v1/import/settings`) | move; hard link; none; `.gonema-recycle` in each root folder. A single bin must be a folder of its own: not `/`, the data folder, a root or movie folder (except `<root>/.gonema-recycle`), nor a folder holding other files. Only files Gonema recycled (with their manifest) are listed and purged. |
 | Remote path mappings | Settings > Download clients | none |
 | Health thresholds | Settings > Health | see the screen |
 

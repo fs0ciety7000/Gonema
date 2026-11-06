@@ -96,6 +96,8 @@ type Options struct {
 	FS          FS           // default OSFS
 	Logger      *slog.Logger // default discards
 	Now         func() time.Time
+	// DataDir, optional, is the data directory: it cannot be (in) a root folder.
+	DataDir string
 }
 
 // Service is the library service. It is safe for concurrent use.
@@ -114,6 +116,10 @@ type Service struct {
 	images   Images
 
 	matcher matcher
+
+	dataDir    string
+	reservedMu sync.RWMutex
+	reserved   func(ctx context.Context) []string // more folders a root folder may not overlap
 
 	healthMu sync.Mutex
 	health   map[int64]string // root folder id -> last error ("" = ok)
@@ -136,7 +142,7 @@ func New(opts Options) (*Service, error) {
 	s := &Service{
 		st: opts.Store, box: opts.Box, factory: opts.NewProvider, jobs: opts.Jobs,
 		bus: opts.Bus, fs: opts.FS, log: opts.Logger, now: opts.Now, images: opts.Images,
-		health: make(map[int64]string),
+		health: make(map[int64]string), dataDir: opts.DataDir,
 	}
 	if s.fs == nil {
 		s.fs = OSFS{}

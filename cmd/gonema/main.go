@@ -122,6 +122,11 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, outs *logO
 	netx.Configure(cfg.Security.Outbound)
 	if cfg.Security.AuthMode == config.AuthDisabledForLocal {
 		log.Warn("GONEMA_AUTH=disabled_for_local: requests from loopback and private addresses skip the login; anyone on the LAN can use Gonema")
+		if inContainer() {
+			log.Warn("GONEMA_AUTH=disabled_for_local in a container: with Docker or Podman port publishing (docker-proxy, rootless " +
+				"networking), every client can appear to come from the bridge gateway, a private address, and skip the login. " +
+				"Prefer GONEMA_AUTH=enabled, or use host networking on a trusted LAN only (see docs/security.md)")
+		}
 	}
 
 	if err := os.MkdirAll(cfg.DataDir, 0o750); err != nil {
@@ -157,7 +162,7 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, outs *logO
 	runner := jobs.New(st, jobs.Options{Workers: cfg.Workers, Logger: log, Bus: bus})
 
 	lib, err := library.New(library.Options{
-		Store: st, Box: box, Jobs: runner, Bus: bus, Logger: log,
+		Store: st, Box: box, Jobs: runner, Bus: bus, Logger: log, DataDir: cfg.DataDir,
 		NewProvider: func(key string) (library.KeyedProvider, error) {
 			c, err := tmdb.New(key, tmdb.Options{Version: version, Logger: log})
 			if err != nil {
@@ -195,10 +200,16 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, outs *logO
 		log.Warn("this binary has no web interface (built without `make web`): a placeholder page is served")
 	}
 
-	imp, err := importer.New(importer.Options{Store: st, Matcher: lib, Library: lib, Bus: bus, Logger: log})
+	imp, err := importer.New(importer.Options{Store: st, Matcher: lib, Library: lib, Bus: bus, Logger: log, DataDir: cfg.DataDir})
 	if err != nil {
 		return err
 	}
+	lib.SetReservedFolders(func(ctx context.Context) []string { // a root folder cannot be (in) the recycle bin
+		if set, err := imp.Settings(ctx); err == nil && set.RecycleBin != "" {
+			return []string{set.RecycleBin}
+		}
+		return nil
+	})
 	if _, err := imp.Recover(ctx); err != nil { // before the queue tracker resumes imports
 		return err
 	}
@@ -232,8 +243,15 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, outs *logO
 	if need, err := authSvc.NeedsSetup(ctx); err != nil {
 		return err
 	} else if need {
-		log.Warn("no account exists yet: open the web interface to create the admin account; until then anyone who reaches it can create it",
-			slog.String("bind", cfg.Bind))
+		tok, err := authSvc.SetupToken(ctx)
+		if err != nil {
+			return err
+		}
+		// The token is logged under a key the redaction does not hide: reading
+		// the logs is what proves the right to create the account remotely.
+		log.Warn("no account exists yet: open the web interface to create the admin account. From another machine, "+
+			"enter this one-time setup token; from the server itself (http://localhost) it is not needed",
+			slog.String("setup", tok), slog.String("bind", cfg.Bind))
 	}
 	srv := newAPI(api.Deps{
 		Library: lib, Acquire: acq, Jobs: runner, Bus: bus, Store: st, Logger: log, Version: version,

@@ -131,6 +131,12 @@ func newTestEnv(t *testing.T, baseURL string) *testEnv {
 // account (and its API key, sent by do).
 func newTestEnvWith(t *testing.T, baseURL string, sec *config.Security, setup bool) *testEnv {
 	t.Helper()
+	return newTestEnvDeps(t, baseURL, sec, setup, nil)
+}
+
+// newTestEnvDeps is newTestEnvWith with a last change of the dependencies.
+func newTestEnvDeps(t *testing.T, baseURL string, sec *config.Security, setup bool, mod func(*Deps)) *testEnv {
+	t.Helper()
 	st := storetest.New(t)
 	key, _ := secretbox.NewKey()
 	box, _ := secretbox.New(key)
@@ -174,6 +180,9 @@ func newTestEnvWith(t *testing.T, baseURL string, sec *config.Security, setup bo
 	}
 	if sec != nil {
 		deps.Security = *sec
+	}
+	if mod != nil {
+		mod(&deps)
 	}
 	var apiKey string
 	if setup {
@@ -543,4 +552,63 @@ func itoa(n int64) string { return strconv.FormatInt(n, 10) }
 func quote(s string) string {
 	b, _ := json.Marshal(s)
 	return string(b)
+}
+
+// TestSSECaps: the open event streams are capped per caller and in total;
+// beyond, 429 with Retry-After. A closed stream frees its slot.
+func TestSSECaps(t *testing.T) {
+	e := newTestEnvDeps(t, "", nil, true, func(d *Deps) { d.MaxStreams, d.MaxStreamsPerCaller = 3, 2 })
+	type stream struct {
+		status     int
+		retryAfter string
+	}
+	// open starts a stream and keeps it open until cancel (or the end of the test).
+	open := func(header ...string) (stream, context.CancelFunc) {
+		t.Helper()
+		ctx, cancel := context.WithCancel(context.Background())
+		t.Cleanup(cancel)
+		req, _ := http.NewRequestWithContext(ctx, "GET", e.ts.URL+"/api/v1/events", http.NoBody)
+		for i := 0; i+1 < len(header); i += 2 {
+			req.Header.Set(header[i], header[i+1])
+		}
+		resp, err := http.DefaultTransport.RoundTrip(req) //nolint:bodyclose // closed by the reader goroutine below
+		if err != nil {
+			t.Fatal(err)
+		}
+		go func() {
+			defer resp.Body.Close()
+			_, _ = io.Copy(io.Discard, resp.Body)
+		}()
+		return stream{resp.StatusCode, resp.Header.Get("Retry-After")}, cancel
+	}
+	key := []string{APIKeyHeader, e.apiKey}
+	first, closeFirst := open(key...)
+	second, _ := open(key...)
+	third, _ := open(key...)
+	if first.status != 200 || second.status != 200 || third.status != 429 || third.retryAfter == "" {
+		t.Fatalf("per caller: %d %d %d", first.status, second.status, third.status)
+	}
+	// Another caller (a browser session) gets the last global slot, then no more.
+	b := &browser{t: t, base: e.ts.URL}
+	b.do("POST", "/api/v1/auth/login", `{"username":"admin","password":"`+testPassword+`"}`)
+	cookie := []string{"Cookie", SessionCookie + "=" + b.cookie}
+	if r, _ := open(cookie...); r.status != 200 {
+		t.Fatalf("session stream = %d", r.status)
+	}
+	if r, _ := open(cookie...); r.status != 429 {
+		t.Fatalf("over the global cap = %d", r.status)
+	}
+	closeFirst()
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		r, cancel := open(cookie...)
+		if r.status == 200 {
+			break
+		}
+		cancel()
+		if time.Now().After(deadline) {
+			t.Fatalf("the closed stream never freed its slot: %d", r.status)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
 }

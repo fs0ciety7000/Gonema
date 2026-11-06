@@ -8,7 +8,7 @@ require (
 	github.com/danielgtaylor/huma/v2 v2.40.0
 	github.com/google/go-cmp v0.7.0
 	github.com/pressly/goose/v3 v3.29.0
-	golang.org/x/crypto v0.58.0
+	golang.org/x/crypto v0.58.1-0.20261009181718-2f1f834330b2
 	golang.org/x/sys v0.49.0
 	modernc.org/sqlite v1.61.1
 	pgregory.net/rapid v1.3.0

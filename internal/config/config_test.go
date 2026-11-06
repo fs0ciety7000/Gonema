@@ -5,6 +5,7 @@ import (
 	"flag"
 	"io"
 	"log/slog"
+	"net/netip"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -74,6 +75,18 @@ func TestLoad(t *testing.T) {
 					Outbound:       netx.Config{Webhook: netx.Policy{AllowLoopback: true, AllowPrivate: true}}},
 				Log: DefaultLogOutput()},
 		},
+		{
+			name: "hosts and proxies",
+			env: map[string]string{
+				EnvAllowedHosts: "Media.Example.org., gonema.lan,media.example.org", EnvTrustedProxies: "172.18.0.0/16, 10.0.0.7 ,::ffff:192.168.1.2",
+			},
+			want: Config{DataDir: abs("./data"), Bind: "127.0.0.1:7676", LogLevel: slog.LevelInfo, LogFormat: "text", Workers: 4,
+				Security: Security{AuthMode: AuthEnabled, CookieSecure: CookieSecureAuto, Outbound: netx.DefaultConfig(),
+					AllowedHosts: []string{"media.example.org", "gonema.lan"},
+					TrustedProxies: []netip.Prefix{netip.MustParsePrefix("172.18.0.0/16"), netip.MustParsePrefix("10.0.0.7/32"),
+						netip.MustParsePrefix("192.168.1.2/32")}},
+				Log: DefaultLogOutput()},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -81,7 +94,7 @@ func TestLoad(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Load: %v", err)
 			}
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+			if diff := cmp.Diff(tt.want, got, cmp.Comparer(func(a, b netip.Prefix) bool { return a == b })); diff != "" {
 				t.Errorf("config (-want +got):\n%s", diff)
 			}
 		})
@@ -108,6 +121,9 @@ func TestLoadErrors(t *testing.T) {
 		{"auth mode", nil, map[string]string{EnvAuth: "off"}, "disabled_for_local"},
 		{"cookie secure", []string{"-cookie-secure", "maybe"}, nil, "cookie-secure"},
 		{"trusted origin", nil, map[string]string{EnvTrustedOrigins: "media.example.org"}, "trusted origin"},
+		{"allowed host with scheme", nil, map[string]string{EnvAllowedHosts: "https://media.example.org"}, "allowed host"},
+		{"allowed host with port", nil, map[string]string{EnvAllowedHosts: "media.example.org:443"}, "allowed host"},
+		{"trusted proxy", nil, map[string]string{EnvTrustedProxies: "proxy.lan"}, "trusted proxy"},
 		{"outbound bool", nil, map[string]string{EnvOutboundAllowPrivate: "yes please"}, "outbound-allow-private"},
 	}
 	for _, tt := range tests {
@@ -139,6 +155,15 @@ func TestIsLoopback(t *testing.T) {
 		c := Config{Bind: bind}
 		if got := c.IsLoopback(); got != want {
 			t.Errorf("IsLoopback(%q) = %v, want %v", bind, got, want)
+		}
+	}
+}
+
+func TestProxyTrusted(t *testing.T) {
+	s := Security{TrustedProxies: []netip.Prefix{netip.MustParsePrefix("172.18.0.0/16"), netip.MustParsePrefix("::1/128")}}
+	for a, want := range map[string]bool{"172.18.3.4": true, "::ffff:172.18.0.1": true, "::1": true, "172.19.0.1": false, "127.0.0.1": false} {
+		if got := s.ProxyTrusted(netip.MustParseAddr(a)); got != want {
+			t.Errorf("ProxyTrusted(%s) = %v", a, got)
 		}
 	}
 }

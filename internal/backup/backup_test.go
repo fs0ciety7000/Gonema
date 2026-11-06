@@ -481,3 +481,44 @@ func TestValidName(t *testing.T) {
 		}
 	}
 }
+
+func TestUploadLimit(t *testing.T) {
+	dir := t.TempDir()
+	free := uint64(100 << 30)
+	s, err := New(Options{DataDir: dir, MaxDBSize: 8 << 30, FreeSpace: func(string) (uint64, error) { return free, nil }})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := s.UploadLimit(); got != MinUploadLimit {
+		t.Errorf("limit without a database = %d", got)
+	}
+	// A 700 MiB database (sparse file): twice its size.
+	f, err := os.Create(filepath.Join(dir, DBFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Truncate(700 << 20); err != nil {
+		t.Fatal(err)
+	}
+	_ = f.Close()
+	if got := s.UploadLimit(); got != 1400<<20 {
+		t.Errorf("limit = %d, want %d", got, 1400<<20)
+	}
+	if err := s.CheckUpload(1400 << 20); err != nil {
+		t.Errorf("at the limit: %v", err)
+	}
+	if err := s.CheckUpload(1400<<20 + 1); !errors.Is(err, ErrTooLarge) {
+		t.Errorf("above the limit: %v", err)
+	}
+	free = 1 << 30 // room for less than the archive and its extraction
+	if err := s.CheckUpload(600 << 20); !errors.Is(err, ErrNoSpace) {
+		t.Errorf("no room: %v", err)
+	}
+	if err := s.CheckUpload(-1); !errors.Is(err, ErrNoSpace) {
+		t.Errorf("unknown length, no room for the limit: %v", err)
+	}
+	free = 100 << 30
+	if err := s.CheckUpload(-1); err != nil {
+		t.Errorf("unknown length with room: %v", err)
+	}
+}

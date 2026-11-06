@@ -28,8 +28,17 @@ type opsEnv struct {
 
 func newOpsEnv(t *testing.T) *opsEnv {
 	t.Helper()
+	return newOpsEnvWith(t, nil)
+}
+
+func newOpsEnvWith(t *testing.T, mod func(*backup.Options)) *opsEnv {
+	t.Helper()
 	e := newTestEnv(t, "")
-	bk, err := backup.New(backup.Options{DataDir: t.TempDir(), Store: e.st, Version: "test"})
+	opts := backup.Options{DataDir: t.TempDir(), Store: e.st, Version: "test"}
+	if mod != nil {
+		mod(&opts)
+	}
+	bk, err := backup.New(opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +106,7 @@ func TestBackupRoutes(t *testing.T) {
 	if r.status != 422 {
 		t.Errorf("upload without a body = %d", r.status)
 	}
-	r = e.doBody(t, "POST", "/api/v1/backups/upload", mw.FormDataContentType(), body.Bytes())
+	r = e.uploadBackup(t, mw.FormDataContentType(), body.Bytes())
 	uploaded := decode[BackupInfo](t, r)
 	if r.status != 201 || !strings.HasSuffix(uploaded.Name, "-uploaded.zip") {
 		t.Fatalf("upload = %d %s", r.status, r.body)
@@ -107,7 +116,7 @@ func TestBackupRoutes(t *testing.T) {
 	fw, _ = mw.CreateFormFile("file", "junk.zip")
 	_, _ = io.WriteString(fw, "not a zip")
 	_ = mw.Close()
-	problemOK(t, e.doBody(t, "POST", "/api/v1/backups/upload", mw.FormDataContentType(), body.Bytes()), 422)
+	problemOK(t, e.uploadBackup(t, mw.FormDataContentType(), body.Bytes()), 422)
 
 	// Restore: confirm required, then staged (202), visible in the list, cancelable.
 	problemOK(t, e.do(t, "POST", "/api/v1/backups/restore", `{"name":"`+uploaded.Name+`","confirm":false}`), 422)
@@ -145,10 +154,10 @@ func TestBackupRoutes(t *testing.T) {
 	}
 }
 
-// doBody sends a raw body with a content type.
-func (e *testEnv) doBody(t *testing.T, method, path, contentType string, body []byte) response {
+// uploadBackup posts a raw body with a content type to the backup upload.
+func (e *testEnv) uploadBackup(t *testing.T, contentType string, body []byte) response {
 	t.Helper()
-	req, err := http.NewRequestWithContext(context.Background(), method, e.ts.URL+path, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, e.ts.URL+"/api/v1/backups/upload", bytes.NewReader(body))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -285,5 +294,29 @@ func TestOpsRoutesNeedAuth(t *testing.T) {
 		if resp.StatusCode != http.StatusUnauthorized {
 			t.Errorf("%s without credentials = %d", p, resp.StatusCode)
 		}
+	}
+}
+
+// TestBackupUploadLimit: the upload is refused before its body is read when
+// it is larger than the limit (413) or the disk has no room for it (507).
+func TestBackupUploadLimit(t *testing.T) {
+	var mw *multipart.Writer
+	body := func() []byte {
+		var b bytes.Buffer
+		mw = multipart.NewWriter(&b)
+		fw, _ := mw.CreateFormFile("file", "x.zip")
+		_, _ = fw.Write(bytes.Repeat([]byte("z"), 4<<10))
+		_ = mw.Close()
+		return b.Bytes()
+	}
+	small := newOpsEnvWith(t, func(o *backup.Options) { o.MaxDBSize = 1 << 10 }) // limit 1 KiB
+	data := body()
+	if d := problemOK(t, small.uploadBackup(t, mw.FormDataContentType(), data), 413); !strings.Contains(d, "larger than") {
+		t.Errorf("413 detail = %q", d)
+	}
+	full := newOpsEnvWith(t, func(o *backup.Options) { o.FreeSpace = func(string) (uint64, error) { return 1 << 20, nil } })
+	data = body()
+	if d := problemOK(t, full.uploadBackup(t, mw.FormDataContentType(), data), 507); !strings.Contains(d, "free space") {
+		t.Errorf("507 detail = %q", d)
 	}
 }

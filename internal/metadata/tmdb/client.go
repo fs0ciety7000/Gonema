@@ -17,6 +17,7 @@ import (
 
 	"github.com/fs0ciety7000/gonema/internal/flight"
 	"github.com/fs0ciety7000/gonema/internal/metadata"
+	"github.com/fs0ciety7000/gonema/internal/netx"
 	"github.com/fs0ciety7000/gonema/internal/ratelimit"
 )
 
@@ -33,7 +34,7 @@ const (
 
 // Options configures a Client. The zero value of every field selects its default.
 type Options struct {
-	HTTPClient *http.Client // default: a client without global timeout (per-attempt timeouts apply)
+	HTTPClient *http.Client // default: a netx client, public addresses only, without global timeout (per-attempt timeouts apply)
 	BaseURL    string       // default DefaultBaseURL
 	Language   string       // default "en-US"
 	Region     string       // ISO 3166-1, default "US": release dates, certification, upcoming/now playing
@@ -182,7 +183,9 @@ func New(key string, opts Options) (*Client, error) {
 		sleep:       sleepCtx,
 	}
 	if c.http == nil {
-		c.http = &http.Client{}
+		// Public addresses only: TMDB is on the Internet, and a hostile DNS
+		// answer must not turn its hosts into a way into the LAN.
+		c.http = netx.NewClient(netx.Public)
 	}
 	if c.limiter == nil {
 		c.limiter = ratelimit.New(orDefault(opts.RateLimit, 20), orDefault(opts.Burst, 10))

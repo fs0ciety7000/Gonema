@@ -16,6 +16,8 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
+	"encoding/base32"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -41,6 +43,16 @@ const (
 	ipFailures      = 10
 	accountFailures = 20
 	failureWindow   = 15 * time.Minute
+	// trustedIPFor: an address that signed in successfully this recently is
+	// exempt from the per-account limit, so that an attacker hammering the
+	// account cannot lock the admin out (the per-address limit still applies).
+	trustedIPFor = DefaultSessionTTL
+
+	// Argon2 computations: 2 at a time, at most 8 callers waiting up to 3 s
+	// for a slot; beyond that, ErrBusy (429).
+	hashSlots   = 2
+	hashWaiters = 8
+	hashWaitMax = 3 * time.Second
 
 	// APIKeyPrefix starts every API key, so it is recognizable in a config
 	// file or a secret scanner.
@@ -55,7 +67,12 @@ var (
 	// ErrUnauthenticated: no valid session or API key.
 	ErrUnauthenticated = errors.New("not signed in")
 	ErrNotFound        = errors.New("not found")
+	// ErrBusy: too many password checks at once; retry in a moment.
+	ErrBusy = errors.New("the server is busy checking other sign-ins: try again in a moment")
 )
+
+// BusyRetry is the Retry-After advised with ErrBusy.
+const BusyRetry = 2 * time.Second
 
 // InvalidError is a rejected input; Field names it.
 type InvalidError struct{ Field, Msg string }
@@ -137,12 +154,17 @@ type Service struct {
 	ttl    time.Duration
 	idle   time.Duration
 
-	gate      hashGate
+	gate      *hashGate
 	byIP      *limiter
 	byAccount *limiter
 	dummy     func() string // hash compared when the username is unknown
 
-	setupMu sync.Mutex
+	goodMu  sync.Mutex
+	goodIPs map[string]time.Time // last successful sign-in per client address
+
+	setupMu    sync.Mutex
+	tokenMu    sync.Mutex
+	setupToken string // one-time setup token while no account exists
 }
 
 // New returns a service. It does no I/O (startup stays fast).
@@ -152,7 +174,7 @@ func New(o Options) (*Service, error) {
 	}
 	s := &Service{
 		st: o.Store, log: o.Logger, now: o.Now, params: o.Params, ttl: o.SessionTTL, idle: o.IdleTimeout,
-		gate: make(hashGate, 2), byIP: newLimiter(ipFailures, failureWindow), byAccount: newLimiter(accountFailures, failureWindow),
+		gate: newHashGate(hashSlots, hashWaiters, hashWaitMax), goodIPs: make(map[string]time.Time), byIP: newLimiter(ipFailures, failureWindow), byAccount: newLimiter(accountFailures, failureWindow),
 	}
 	if s.log == nil {
 		s.log = slog.New(slog.DiscardHandler)
@@ -265,6 +287,10 @@ func (s *Service) Setup(ctx context.Context, username, password string, ci Clien
 	if err != nil {
 		return nil, fmt.Errorf("auth: setup: %w", err)
 	}
+	s.markGood(ci.IP, now)
+	s.tokenMu.Lock()
+	s.setupToken = ""
+	s.tokenMu.Unlock()
 	s.log.Info("admin account created")
 	return out, nil
 }
@@ -273,16 +299,37 @@ func (s *Service) Setup(ctx context.Context, username, password string, ci Clien
 
 // Login checks the credentials and opens a new session. oldToken, the session
 // the client presented if any, is ended (session rotation).
+//
+// Throttling: the attempt is reserved in the per-address and per-account
+// limiters before the password is hashed, so concurrent attempts cannot exceed
+// the limits. An address that signed in successfully recently is exempt from
+// the per-account limit (an attacker cannot lock the admin out).
 func (s *Service) Login(ctx context.Context, username, password string, ci ClientInfo, oldToken string) (string, SessionInfo, User, error) {
 	now := s.now()
 	username = strings.TrimSpace(username)
 	acct := "u:" + strings.ToLower(username)
 	ipKey := "ip:" + ci.IP
-	if w := max(s.byIP.wait(ipKey, now), s.byAccount.wait(acct, now)); w > 0 {
+	if w := s.byIP.reserve(ipKey, now); w > 0 {
 		return "", SessionInfo{}, User{}, &RateLimitedError{RetryAfter: w}
 	}
+	result := aborted
+	useAcct := !s.isGood(ci.IP, now)
+	if useAcct {
+		if w := s.byAccount.reserve(acct, now); w > 0 {
+			s.byIP.end(ipKey, now, aborted)
+			return "", SessionInfo{}, User{}, &RateLimitedError{RetryAfter: w}
+		}
+	}
+	defer func() {
+		s.byIP.end(ipKey, now, result)
+		if useAcct {
+			s.byAccount.end(acct, now, result)
+		} else if result == succeeded {
+			s.byAccount.reset(acct)
+		}
+	}()
 	if len(password) > MaxPasswordLen || len(username) > 256 {
-		s.fail(ipKey, acct, now)
+		result = failed
 		return "", SessionInfo{}, User{}, ErrCredentials
 	}
 	if need, err := s.NeedsSetup(ctx); err != nil {
@@ -308,14 +355,14 @@ func (s *Service) Login(ctx context.Context, username, password string, ci Clien
 		s.log.Error("stored password hash is unreadable", slog.Int64("user_id", u.ID), slog.Any("error", verr))
 	}
 	if !known || !ok || verr != nil {
-		s.fail(ipKey, acct, now)
+		result = failed
 		// The client address is logged on purpose (fail2ban and the like); the
 		// username typed is not (it may be a password typed in the wrong field).
 		s.log.Warn("failed login", slog.String("ip", ci.IP))
 		return "", SessionInfo{}, User{}, ErrCredentials
 	}
-	s.byIP.reset(ipKey)
-	s.byAccount.reset(acct)
+	result = succeeded
+	s.markGood(ci.IP, now)
 
 	token, tokenHash := newSecret("")
 	var sess db.Session
@@ -344,9 +391,32 @@ func (s *Service) Login(ctx context.Context, username, password string, ci Clien
 	return token, sessionOf(&sess), userOf(&u), nil
 }
 
-func (s *Service) fail(ipKey, acct string, now time.Time) {
-	s.byIP.fail(ipKey, now)
-	s.byAccount.fail(acct, now)
+// markGood records a successful sign-in from ip.
+func (s *Service) markGood(ip string, now time.Time) {
+	if ip == "" {
+		return
+	}
+	s.goodMu.Lock()
+	defer s.goodMu.Unlock()
+	if len(s.goodIPs) >= maxKeys {
+		for k, t := range s.goodIPs {
+			if now.Sub(t) >= trustedIPFor || len(s.goodIPs) >= maxKeys {
+				delete(s.goodIPs, k)
+			}
+		}
+	}
+	s.goodIPs[ip] = now
+}
+
+// isGood reports whether ip signed in successfully recently.
+func (s *Service) isGood(ip string, now time.Time) bool {
+	if ip == "" {
+		return false
+	}
+	s.goodMu.Lock()
+	defer s.goodMu.Unlock()
+	t, ok := s.goodIPs[ip]
+	return ok && now.Sub(t) < trustedIPFor
 }
 
 // Logout ends the session of token (no error when it does not exist).
@@ -443,50 +513,64 @@ func (s *Service) Admin(ctx context.Context) (User, bool, error) {
 	return userOf(&u), true, nil
 }
 
+// PasswordChange is the outcome of ChangePassword.
+type PasswordChange struct {
+	// Token and Session are the new session of a session caller (it stays
+	// signed in with a fresh token); empty otherwise.
+	Token   string
+	Session SessionInfo
+	// APIKey is the new API key when it was regenerated (shown once).
+	APIKey  string
+	KeyInfo APIKeyInfo
+}
+
 // ChangePassword checks current, stores next and ends every session of the
-// user. For a session caller a new session is opened and its token returned
-// (the caller stays signed in, with a fresh token); "" otherwise.
-func (s *Service) ChangePassword(ctx context.Context, p Principal, current, next string, ci ClientInfo) (string, SessionInfo, error) {
+// user. For a session caller a new session is opened and its token returned.
+// With regenerateKey, the API key is replaced in the same transaction (the
+// old one stops working) and the new one returned.
+func (s *Service) ChangePassword(ctx context.Context, p Principal, current, next string, ci ClientInfo, regenerateKey bool) (PasswordChange, error) {
 	if p.UserID == 0 {
-		return "", SessionInfo{}, ErrNeedsSetup
+		return PasswordChange{}, ErrNeedsSetup
 	}
 	now := s.now()
 	acct := "pw:" + fmt.Sprint(p.UserID)
-	if w := s.byAccount.wait(acct, now); w > 0 {
-		return "", SessionInfo{}, &RateLimitedError{RetryAfter: w}
+	if w := s.byAccount.reserve(acct, now); w > 0 {
+		return PasswordChange{}, &RateLimitedError{RetryAfter: w}
 	}
+	result := aborted
+	defer func() { s.byAccount.end(acct, now, result) }()
 	u, err := s.st.Read().GetUser(ctx, p.UserID)
 	if err != nil {
-		return "", SessionInfo{}, store.MapError(fmt.Errorf("auth: read user: %w", err))
+		return PasswordChange{}, store.MapError(fmt.Errorf("auth: read user: %w", err))
 	}
+	wrong := &InvalidError{Field: "currentPassword", Msg: "The current password is not correct."}
 	if len(current) > MaxPasswordLen {
-		s.byAccount.fail(acct, now)
-		return "", SessionInfo{}, &InvalidError{Field: "currentPassword", Msg: "The current password is not correct."}
+		result = failed
+		return PasswordChange{}, wrong
 	}
 	var ok bool
 	var verr error
 	if err := s.gate.run(ctx, func() { ok, verr = verifyPassword(u.PasswordHash, current) }); err != nil {
-		return "", SessionInfo{}, err
+		return PasswordChange{}, err
 	}
 	if verr != nil || !ok {
-		s.byAccount.fail(acct, now)
-		return "", SessionInfo{}, &InvalidError{Field: "currentPassword", Msg: "The current password is not correct."}
+		result = failed
+		return PasswordChange{}, wrong
 	}
 	if err := validPassword(next, u.Username); err != nil {
-		return "", SessionInfo{}, err
+		return PasswordChange{}, err
 	}
 	if next == current {
-		return "", SessionInfo{}, &InvalidError{Field: "newPassword", Msg: "The new password must differ from the current one."}
+		return PasswordChange{}, &InvalidError{Field: "newPassword", Msg: "The new password must differ from the current one."}
 	}
 	var hash string
 	if err := s.gate.run(ctx, func() { hash, err = hashPassword(s.params, next) }); err != nil {
-		return "", SessionInfo{}, err
+		return PasswordChange{}, err
 	}
 	if err != nil {
-		return "", SessionInfo{}, err
+		return PasswordChange{}, err
 	}
-	var token string
-	var info SessionInfo
+	var out PasswordChange
 	err = s.st.WithTx(ctx, func(q *db.Queries) error {
 		if _, err := q.SetUserPassword(ctx, db.SetUserPasswordParams{PasswordHash: hash, ChangedAt: store.Millis(now), ID: u.ID}); err != nil {
 			return err
@@ -494,21 +578,94 @@ func (s *Service) ChangePassword(ctx context.Context, p Principal, current, next
 		if _, err := q.DeleteUserSessionsExcept(ctx, db.DeleteUserSessionsExceptParams{UserID: u.ID, KeepID: 0}); err != nil {
 			return err
 		}
+		if regenerateKey {
+			key, h := newSecret(APIKeyPrefix)
+			if _, err := q.DeleteUserAPIKey(ctx, u.ID); err != nil {
+				return err
+			}
+			k, err := q.CreateAPIKey(ctx, db.CreateAPIKeyParams{UserID: u.ID, KeyHash: h, Last4: last4(key), CreatedAt: store.Millis(now)})
+			if err != nil {
+				return err
+			}
+			out.APIKey, out.KeyInfo = key, keyInfoOf(&k)
+		}
 		if p.Method != MethodSession {
 			return nil
 		}
 		var h []byte
-		token, h = newSecret("")
+		out.Token, h = newSecret("")
 		sess, err := q.CreateSession(ctx, s.sessionParams(h, u.ID, now, ci))
-		info = sessionOf(&sess)
+		out.Session = sessionOf(&sess)
 		return err
 	})
 	if err != nil {
-		return "", SessionInfo{}, fmt.Errorf("auth: change password: %w", err)
+		return PasswordChange{}, fmt.Errorf("auth: change password: %w", err)
 	}
-	s.byAccount.reset(acct)
-	s.log.Info("password changed; every other session ended", slog.Int64("user_id", u.ID))
-	return token, info, nil
+	result = succeeded
+	s.log.Info("password changed; every other session ended", slog.Int64("user_id", u.ID), slog.Bool("api_key_regenerated", regenerateKey))
+	return out, nil
+}
+
+// ----------------------------------------------------------------- setup token
+
+// SetupToken returns the one-time setup token, created on first use, while no
+// account exists ("" once it exists). It is meant to be printed in the server
+// logs: whoever creates the account remotely must have read them. Setup
+// clears it.
+func (s *Service) SetupToken(ctx context.Context) (string, error) {
+	need, err := s.NeedsSetup(ctx)
+	if err != nil || !need {
+		return "", err
+	}
+	s.tokenMu.Lock()
+	defer s.tokenMu.Unlock()
+	if s.setupToken == "" {
+		s.setupToken = newSetupToken()
+	}
+	return s.setupToken, nil
+}
+
+// CheckSetupToken reports whether tok is the current setup token (case,
+// spaces and dashes ignored; constant-time comparison).
+func (s *Service) CheckSetupToken(tok string) bool {
+	s.tokenMu.Lock()
+	want := s.setupToken
+	s.tokenMu.Unlock()
+	if want == "" {
+		return false
+	}
+	norm := func(x string) []byte {
+		return []byte(strings.Map(func(r rune) rune {
+			switch {
+			case r == '-' || unicode.IsSpace(r):
+				return -1
+			case r >= 'a' && r <= 'z':
+				return r - 'a' + 'A'
+			}
+			return r
+		}, x))
+	}
+	got := norm(tok)
+	if len(got) > 64 {
+		return false
+	}
+	return subtle.ConstantTimeCompare(got, norm(want)) == 1
+}
+
+// newSetupToken returns 120 random bits as 24 base32 characters in groups of
+// four (easy to copy from a log line).
+func newSetupToken() string {
+	var b [15]byte
+	_, _ = rand.Read(b[:])
+	raw := base32.StdEncoding.EncodeToString(b[:])
+	var out strings.Builder
+	for i := 0; i < len(raw); i += 4 {
+		if i > 0 {
+			out.WriteByte('-')
+		}
+		out.WriteString(raw[i : i+4])
+	}
+	return out.String()
 }
 
 // Sessions lists the live sessions of the user, most recently used first.

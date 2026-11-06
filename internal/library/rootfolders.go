@@ -85,26 +85,48 @@ func within(p, root string) bool {
 	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
+// SetReservedFolders sets a function returning more folders a root folder may
+// not overlap (the recycle bin of the import settings).
+func (s *Service) SetReservedFolders(f func(ctx context.Context) []string) {
+	s.reservedMu.Lock()
+	defer s.reservedMu.Unlock()
+	s.reserved = f
+}
+
 // AddRootFolder registers a folder movies are stored in. It must be absolute,
-// exist, be a directory, be writable, and not overlap another root folder.
+// exist, be a directory, be writable, and not overlap another root folder,
+// the data directory or the recycle bin; it cannot be /. Every refusal that
+// depends on the file system gives the same message, so that the setting
+// cannot be used to probe what exists on the server.
 func (s *Service) AddRootFolder(ctx context.Context, path string) (RootFolder, error) {
 	p, err := cleanRootPath(path)
 	if err != nil {
 		return RootFolder{}, err
 	}
+	refuse := invalid("path", "%s cannot be used as a root folder: it must be an existing folder that Gonema can read and write "+
+		"(check the volume mapping in Docker), other than /, the data folder and the recycle bin", p)
+	if filepath.Dir(p) == p {
+		return RootFolder{}, refuse
+	}
+	reserved := s.reservedFolders(ctx)
+	for _, r := range reserved {
+		if within(p, r) || within(r, p) {
+			return RootFolder{}, refuse
+		}
+	}
 	fi, err := s.fs.Stat(p)
-	switch {
-	case errors.Is(err, fs.ErrNotExist):
-		return RootFolder{}, invalid("path", "the folder %s does not exist; create it first (or check the volume mapping in Docker)", p)
-	case errors.Is(err, fs.ErrPermission):
-		return RootFolder{}, invalid("path", "Gonema is not allowed to read %s; check its permissions", p)
-	case err != nil:
-		return RootFolder{}, invalid("path", "the folder %s cannot be read: %v", p, err)
-	case !fi.IsDir():
-		return RootFolder{}, invalid("path", "%s is a file, not a folder", p)
+	if err != nil || !fi.IsDir() {
+		return RootFolder{}, refuse
 	}
 	if err := s.fs.CheckWritable(p); err != nil {
-		return RootFolder{}, invalid("path", "Gonema cannot write in %s; check its permissions (user and group Gonema runs as)", p)
+		return RootFolder{}, refuse
+	}
+	if resolved, err := filepath.EvalSymlinks(p); err == nil && resolved != p {
+		for _, r := range reserved {
+			if within(resolved, r) || within(r, resolved) {
+				return RootFolder{}, refuse
+			}
+		}
 	}
 	existing, err := s.st.Read().ListRootFolders(ctx)
 	if err != nil {
@@ -123,6 +145,25 @@ func (s *Service) AddRootFolder(ctx context.Context, path string) (RootFolder, e
 	s.log.Info("root folder added", slog.Int64("root_folder_id", row.ID), slog.String("path", p))
 	s.publish(events.Event{Type: events.RootFolderAdded, Data: map[string]any{"id": row.ID, "path": p}})
 	return rf, nil
+}
+
+// reservedFolders are the folders a root folder may not overlap.
+func (s *Service) reservedFolders(ctx context.Context) []string {
+	var out []string
+	if s.dataDir != "" {
+		out = append(out, filepath.Clean(s.dataDir))
+	}
+	s.reservedMu.RLock()
+	f := s.reserved
+	s.reservedMu.RUnlock()
+	if f != nil {
+		for _, r := range f(ctx) {
+			if r != "" && filepath.IsAbs(r) {
+				out = append(out, filepath.Clean(r))
+			}
+		}
+	}
+	return out
 }
 
 // measure reads the free space of a folder, stores it and returns the live

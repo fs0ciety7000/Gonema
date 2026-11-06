@@ -40,6 +40,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/fs0ciety7000/gonema/internal/fsx"
 	"github.com/fs0ciety7000/gonema/internal/secretbox"
 	"github.com/fs0ciety7000/gonema/internal/store"
 )
@@ -169,6 +170,9 @@ type Options struct {
 	Now        func() time.Time
 	// MaxDBSize bounds the database extracted from an archive; default 64 GiB.
 	MaxDBSize int64
+	// FreeSpace returns the free bytes of the file system of a folder;
+	// default the real one (tests replace it).
+	FreeSpace func(dir string) (uint64, error)
 }
 
 // Service manages the backups of one data directory. It is safe for
@@ -182,6 +186,7 @@ type Service struct {
 	log        *slog.Logger
 	now        func() time.Time
 	maxDB      int64
+	freeSpace  func(dir string) (uint64, error)
 
 	mu sync.Mutex // one create, import, delete or restore at a time
 
@@ -195,7 +200,10 @@ func New(opts Options) (*Service, error) {
 	}
 	s := &Service{
 		dataDir: opts.DataDir, src: opts.Store, version: opts.Version, keyFromEnv: opts.KeyFromEnv,
-		log: opts.Logger, now: opts.Now, maxDB: opts.MaxDBSize,
+		log: opts.Logger, now: opts.Now, maxDB: opts.MaxDBSize, freeSpace: opts.FreeSpace,
+	}
+	if s.freeSpace == nil {
+		s.freeSpace = fsx.OS{}.FreeSpace
 	}
 	if opts.Key != (secretbox.Key{}) {
 		s.keyFP = Fingerprint(opts.Key)

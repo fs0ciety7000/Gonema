@@ -220,8 +220,12 @@ func New(opts Options) (*Service, error) {
 	}
 	if s.http == nil {
 		// Release downloads follow the links indexers return: destinations
-		// checked at dial time (netx integration policy).
-		s.http = netx.NewClient(netx.Integration)
+		// checked at dial time (netx integration policy, narrowed per indexer
+		// by a netx.Scope, see fetch.go). No keep-alive: a connection opened
+		// for one indexer is never reused for the link of another.
+		tr := netx.NewTransport(netx.Integration)
+		tr.DisableKeepAlives = true
+		s.http = &http.Client{Transport: netx.Wrap(tr), CheckRedirect: netx.CheckRedirect}
 	}
 	if s.newIx == nil {
 		s.newIx = defaultIndexerFactory(s.version, s.log)

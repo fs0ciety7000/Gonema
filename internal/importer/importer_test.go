@@ -729,3 +729,50 @@ func TestSingleRecycleBin(t *testing.T) {
 		t.Fatalf("items = %+v, %v", items, err)
 	}
 }
+
+// TestRecycleBinSettingRefused: the single recycle bin cannot be a folder
+// whose other files a purge could take for recycled ones.
+func TestRecycleBinSettingRefused(t *testing.T) {
+	e := newEnv(t)
+	data := t.TempDir()
+	svc, err := importer.New(importer.Options{Store: e.st, DataDir: data, FS: fsx.New(nil, fsx.Options{})})
+	if err != nil {
+		t.Fatal(err)
+	}
+	busy := t.TempDir()
+	e.file(filepath.Join(busy, "family photos.jpg"), 10)
+	empty := t.TempDir()
+	cases := map[string]string{
+		"root":                  "/",
+		"data dir":              data,
+		"inside the data dir":   filepath.Join(data, "bin"),
+		"holding the data dir":  filepath.Dir(data),
+		"root folder":           e.root,
+		"movie folder":          filepath.Join(e.root, "Fight Club (1999)"),
+		"holding a root folder": filepath.Dir(e.root),
+		"folder with files":     busy,
+	}
+	var msg string
+	for name, bin := range cases {
+		set := importer.DefaultSettings()
+		set.RecycleBin = bin
+		_, err := svc.SetSettings(e.ctx, set)
+		if !errors.Is(err, importer.ErrInvalid) {
+			t.Errorf("%s (%s): err = %v", name, bin, err)
+			continue
+		}
+		m := strings.Replace(err.Error(), bin, "<bin>", 1)
+		if msg == "" {
+			msg = m
+		} else if m != msg {
+			t.Errorf("%s: message %q differs from %q", name, m, msg)
+		}
+	}
+	for _, ok := range []string{empty, filepath.Join(empty, "new"), filepath.Join(e.root, importer.RecycleDirName)} {
+		set := importer.DefaultSettings()
+		set.RecycleBin = ok
+		if _, err := svc.SetSettings(e.ctx, set); err != nil {
+			t.Errorf("%s refused: %v", ok, err)
+		}
+	}
+}

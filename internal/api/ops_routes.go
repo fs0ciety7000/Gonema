@@ -136,8 +136,28 @@ type uploadForm struct {
 	File huma.FormFile `form:"file" contentType:"application/zip,application/x-zip-compressed,application/octet-stream" required:"true" doc:"A backup archive made by Gonema"`
 }
 
-// maxUpload bounds an uploaded archive.
+// maxUpload is the static bound of an uploaded archive; the effective limit is
+// backup.Service.UploadLimit (twice the database, at least 1 GiB), checked by
+// limitUpload before the body is read.
 const maxUpload = 16 << 30
+
+// limitUpload refuses an archive above the upload limit or without room on
+// disk before its body is read, and caps the body at the limit.
+func (r *opsRoutes) limitUpload(ctx huma.Context, next func(huma.Context)) {
+	req, w := humago.Unwrap(ctx)
+	svc := r.d.Backups
+	err := svc.CheckUpload(req.ContentLength)
+	switch {
+	case errors.Is(err, backup.ErrTooLarge):
+		_ = huma.WriteErr(r.s.api, ctx, http.StatusRequestEntityTooLarge, errText(err))
+		return
+	case err != nil:
+		_ = huma.WriteErr(r.s.api, ctx, http.StatusInsufficientStorage, errText(err))
+		return
+	}
+	req.Body = http.MaxBytesReader(w, req.Body, svc.UploadLimit())
+	next(ctx)
+}
 
 func (r *opsRoutes) backups() {
 	tags := []string{"Backups"}
@@ -219,8 +239,11 @@ func (r *opsRoutes) backups() {
 	huma.Register(r.s.api, huma.Operation{
 		OperationID: "upload-backup", Method: http.MethodPost, Path: "/backups/upload", Summary: "Add a backup archive from this computer",
 		Description: "multipart/form-data with a file field. The archive is validated (manifest, checksum, database integrity, " +
-			"schema version not newer than this Gonema) and stored as kind uploaded; restore it by name.",
+			"schema version not newer than this Gonema) and stored as kind uploaded; restore it by name. " +
+			"Size limit: twice the current database, at least 1 GiB (413 above); 507 when the disk has no room for it.",
 		Tags: tags, DefaultStatus: http.StatusCreated, MaxBodyBytes: maxUpload, BodyReadTimeout: 30 * time.Minute,
+		Errors:      []int{http.StatusRequestEntityTooLarge, http.StatusInsufficientStorage, http.StatusUnprocessableEntity},
+		Middlewares: huma.Middlewares{r.limitUpload},
 	}, func(ctx context.Context, in *struct {
 		RawBody huma.MultipartFormFiles[uploadForm]
 	}) (*struct{ Body BackupInfo }, error) {
@@ -367,8 +390,14 @@ func (r *opsRoutes) logs() {
 				"text/event-stream": {Schema: &huma.Schema{Type: huma.TypeString}},
 			}},
 		},
-	}, func(_ context.Context, in *logStreamInput) (*huma.StreamResponse, error) {
+		Errors: []int{http.StatusTooManyRequests},
+	}, func(ctx context.Context, in *logStreamInput) (*huma.StreamResponse, error) {
+		release, err := r.s.openStream(ctx)
+		if err != nil {
+			return nil, err
+		}
 		return &huma.StreamResponse{Body: func(hctx huma.Context) {
+			defer release()
 			req, w := humago.Unwrap(hctx)
 			r.streamLogs(req, w, in)
 		}}, nil

@@ -395,3 +395,32 @@ func mustJSON(t *testing.T, v any) string {
 	}
 	return string(b)
 }
+
+func TestCSVSafe(t *testing.T) {
+	for in, want := range map[string]string{
+		"":               "",
+		"Fight Club":     "Fight Club",
+		"-12":            "-12",
+		"+3.5":           "+3.5",
+		"=1+1":           "'=1+1",
+		"+cmd":           "'+cmd",
+		"-2+3":           "'-2+3",
+		"@SUM(A1)":       "'@SUM(A1)",
+		"\t=1":           "'\t=1",
+		"\r=1":           "'\r=1",
+		"\tplain":        "'\tplain",
+		" =HYPERLINK(1)": "' =HYPERLINK(1)",
+		"\x00\x1f=1":     "'\x00\x1f=1",
+		" =1":            "' =1",
+		"＝1+1":           "'＝1+1",
+		"＋1":             "'＋1",
+		"－1":             "'－1",
+		"＠A1":            "'＠A1",
+		"  Fight Club":   "  Fight Club",
+		"a=b":            "a=b",
+	} {
+		if got := csvSafe([]string{in})[0]; got != want {
+			t.Errorf("csvSafe(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

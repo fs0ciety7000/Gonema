@@ -1,12 +1,14 @@
 package api
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"regexp"
 	"slices"
 	"strconv"
@@ -69,6 +71,7 @@ type browser struct {
 	t      *testing.T
 	base   string
 	cookie string
+	name   string // cookie name; default SessionCookie
 }
 
 func (b *browser) do(method, path, body string, header ...string) response {
@@ -87,9 +90,13 @@ func (b *browser) do(method, path, body string, header ...string) response {
 	req.Header.Set("Sec-Fetch-Site", "same-origin")
 	req.Header.Set("Origin", b.base)
 	if b.cookie != "" {
-		req.Header.Set("Cookie", SessionCookie+"="+b.cookie)
+		req.Header.Set("Cookie", cmp.Or(b.name, SessionCookie)+"="+b.cookie)
 	}
 	for i := 0; i+1 < len(header); i += 2 {
+		if header[i] == "Host" {
+			req.Host = header[i+1]
+			continue
+		}
 		if header[i+1] == "" {
 			req.Header.Del(header[i])
 		} else {
@@ -103,14 +110,24 @@ func (b *browser) do(method, path, body string, header ...string) response {
 	defer resp.Body.Close()
 	data, _ := io.ReadAll(resp.Body)
 	for _, c := range resp.Cookies() {
-		if c.Name == SessionCookie {
-			b.cookie = c.Value
-			if c.MaxAge < 0 {
-				b.cookie = ""
-			}
+		if (c.Name == SessionCookie || c.Name == HostSessionCookie) && c.MaxAge >= 0 {
+			b.cookie, b.name = c.Value, c.Name
+		} else if c.Name == cmp.Or(b.name, SessionCookie) && c.MaxAge < 0 {
+			b.cookie = ""
 		}
 	}
 	return response{status: resp.StatusCode, header: resp.Header, body: string(data)}
+}
+
+// setupBody is the body of POST /auth/setup with the setup token (needed
+// unless the request is a direct loopback one).
+func setupBody(t *testing.T, e *testEnv) string {
+	t.Helper()
+	tok, err := e.srv.d.Auth.SetupToken(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return `{"username":"admin","password":"` + testPassword + `","setupToken":"` + tok + `"}`
 }
 
 // newFreshEnv is a test server whose account is not created yet.
@@ -242,22 +259,36 @@ func TestAuthFlow(t *testing.T) {
 }
 
 func TestLoginThrottled(t *testing.T) {
-	e := newFreshEnv(t, config.DefaultSecurity())
-	b := &browser{t: t, base: e.ts.URL}
-	b.do("POST", "/api/v1/auth/setup", `{"username":"admin","password":"`+testPassword+`"}`)
-	b.cookie = ""
-	var r response
-	for range 11 {
-		r = b.do("POST", "/api/v1/auth/login", `{"username":"admin","password":"not the password"}`)
-	}
-	problemOK(t, r, 429)
-	if ra, err := strconv.Atoi(r.header.Get("Retry-After")); err != nil || ra < 1 || ra > 15*60+1 {
-		t.Errorf("Retry-After = %q", r.header.Get("Retry-After"))
-	}
-	// A different client behind the same reverse proxy (loopback peer) is
-	// told apart by the X-Forwarded-For the proxy adds.
-	if r := b.do("POST", "/api/v1/auth/login", `{"username":"admin","password":"`+testPassword+`"}`, "X-Forwarded-For", "203.0.113.9"); r.status != 200 {
-		t.Errorf("other client = %d %s", r.status, r.body)
+	for _, trusted := range []bool{false, true} {
+		sec := config.DefaultSecurity()
+		if trusted {
+			sec.TrustedProxies = []netip.Prefix{netip.MustParsePrefix("127.0.0.1/32")}
+		}
+		e := newFreshEnv(t, sec)
+		b := &browser{t: t, base: e.ts.URL}
+		b.do("POST", "/api/v1/auth/setup", setupBody(t, e))
+		b.cookie = ""
+		var r response
+		for i := range 11 {
+			// The client rotates a forged X-Forwarded-For: ignored unless the
+			// peer is a trusted proxy.
+			r = b.do("POST", "/api/v1/auth/login", `{"username":"admin","password":"not the password"}`, "X-Forwarded-For", "198.51.100."+strconv.Itoa(i)+", 192.0.2.1")
+		}
+		if !trusted {
+			problemOK(t, r, 429)
+			if ra, err := strconv.Atoi(r.header.Get("Retry-After")); err != nil || ra < 1 || ra > 15*60+1 {
+				t.Errorf("Retry-After = %q", r.header.Get("Retry-After"))
+			}
+			// Without GONEMA_TRUSTED_PROXIES, another X-Forwarded-For changes nothing.
+			problemOK(t, b.do("POST", "/api/v1/auth/login", `{"username":"admin","password":"`+testPassword+`"}`, "X-Forwarded-For", "203.0.113.9"), 429)
+			continue
+		}
+		// Behind a trusted proxy, the right-most untrusted entry is the client:
+		// 192.0.2.1 failed 11 times, 203.0.113.9 is another client.
+		problemOK(t, r, 429)
+		if r := b.do("POST", "/api/v1/auth/login", `{"username":"admin","password":"`+testPassword+`"}`, "X-Forwarded-For", "203.0.113.9"); r.status != 200 {
+			t.Errorf("other client behind the trusted proxy = %d %s", r.status, r.body)
+		}
 	}
 }
 
@@ -322,32 +353,75 @@ func TestAuthDisabledForLocal(t *testing.T) {
 }
 
 func TestSecureCookie(t *testing.T) {
+	loopProxy := []netip.Prefix{netip.MustParsePrefix("127.0.0.1/32")}
 	for _, tc := range []struct {
-		mode   string
-		header []string
-		want   bool
+		mode    string
+		proxies []netip.Prefix
+		base    string
+		header  []string
+		want    bool
+		name    string
 	}{
-		{config.CookieSecureAuto, nil, false},
-		{config.CookieSecureAuto, []string{"X-Forwarded-Proto", "https"}, true},
-		{config.CookieSecureAlways, nil, true},
-		{config.CookieSecureNever, []string{"X-Forwarded-Proto", "https"}, false},
+		{config.CookieSecureAuto, nil, "", nil, false, SessionCookie},
+		// X-Forwarded-Proto is believed from a trusted proxy only.
+		{config.CookieSecureAuto, nil, "", []string{"X-Forwarded-Proto", "https"}, false, SessionCookie},
+		{config.CookieSecureAuto, loopProxy, "", []string{"X-Forwarded-Proto", "https"}, true, HostSessionCookie},
+		{config.CookieSecureAlways, nil, "", nil, true, HostSessionCookie},
+		// __Host- requires Path=/: not under a base URL.
+		{config.CookieSecureAlways, nil, "/gonema", nil, true, SessionCookie},
+		{config.CookieSecureNever, loopProxy, "", []string{"X-Forwarded-Proto", "https"}, false, SessionCookie},
 	} {
-		e := newFreshEnv(t, config.Security{AuthMode: config.AuthEnabled, CookieSecure: tc.mode})
-		b := &browser{t: t, base: e.ts.URL}
-		r := b.do("POST", "/api/v1/auth/setup", `{"username":"admin","password":"`+testPassword+`"}`, tc.header...)
-		if got := strings.Contains(r.header.Get("Set-Cookie"), "; Secure"); got != tc.want {
-			t.Errorf("%s %v: cookie %q", tc.mode, tc.header, r.header.Get("Set-Cookie"))
+		sec := config.Security{AuthMode: config.AuthEnabled, CookieSecure: tc.mode, TrustedProxies: tc.proxies}
+		e := newTestEnvWith(t, tc.base, &sec, false)
+		b := &browser{t: t, base: e.ts.URL + tc.base}
+		r := b.do("POST", "/api/v1/auth/setup", setupBody(t, e), tc.header...)
+		set := r.header.Get("Set-Cookie")
+		if got := strings.Contains(set, "; Secure"); got != tc.want || !strings.HasPrefix(set, tc.name+"=") || r.status != 201 {
+			t.Errorf("%s %v %q: %d cookie %q", tc.mode, tc.header, tc.base, r.status, set)
 		}
+	}
+}
+
+// TestHostCookieTransition: over HTTPS the cookie is __Host-gonema_session;
+// the old name is still read, and replaced (cleared) at the next sign-in.
+func TestHostCookieTransition(t *testing.T) {
+	e := newFreshEnv(t, config.Security{AuthMode: config.AuthEnabled, CookieSecure: config.CookieSecureAlways})
+	b := &browser{t: t, base: e.ts.URL}
+	b.do("POST", "/api/v1/auth/setup", `{"username":"admin","password":"`+testPassword+`"}`)
+	if b.name != HostSessionCookie || b.cookie == "" {
+		t.Fatalf("cookie %q=%q", b.name, b.cookie)
+	}
+	// A browser that still holds the old name (session opened before the
+	// upgrade) stays signed in.
+	b.name = SessionCookie
+	if r := b.do("GET", "/api/v1/movies", ""); r.status != 200 {
+		t.Fatalf("old cookie name = %d", r.status)
+	}
+	r := b.do("POST", "/api/v1/auth/login", `{"username":"admin","password":"`+testPassword+`"}`)
+	var cleared, set bool
+	for _, v := range r.header.Values("Set-Cookie") {
+		cleared = cleared || (strings.HasPrefix(v, SessionCookie+"=;") && strings.Contains(v, "Max-Age=0"))
+		set = set || (strings.HasPrefix(v, HostSessionCookie+"=") && strings.Contains(v, "; Secure") && strings.Contains(v, "Path=/;"))
+	}
+	if r.status != 200 || !cleared || !set {
+		t.Errorf("login = %d %v", r.status, r.header.Values("Set-Cookie"))
 	}
 }
 
 // TestEveryRouteRequiresAuth calls every operation of the OpenAPI document
 // without credentials: only the public auth endpoints answer something else
-// than 401. /health and the web interface stay public.
+// than 401. /health and the web interface stay public. It runs at the root
+// and under a base URL (the auth handler must wrap both).
 func TestEveryRouteRequiresAuth(t *testing.T) {
-	e := newAcquireEnv(t)
+	for _, base := range []string{"", "/gonema"} {
+		t.Run("base="+base, func(t *testing.T) { everyRouteRequiresAuth(t, base) })
+	}
+}
+
+func everyRouteRequiresAuth(t *testing.T, base string) {
+	e := newAcquireEnvBase(t, base)
 	newIntegrationRoutes(t, e.testEnv)
-	b := &browser{t: t, base: e.ts.URL}
+	b := &browser{t: t, base: e.ts.URL + base}
 	doc, err := json.Marshal(e.srv.OpenAPI())
 	if err != nil {
 		t.Fatal(err)
@@ -386,8 +460,147 @@ func TestEveryRouteRequiresAuth(t *testing.T) {
 			t.Errorf("GET %s = %d", p, r.status)
 		}
 	}
-	if r := b.do("GET", "/health", ""); r.status != 200 {
+	if r := (&browser{t: t, base: e.ts.URL}).do("GET", "/health", ""); r.status != 200 {
 		t.Errorf("/health = %d", r.status)
+	}
+}
+
+// TestBaseURLAuth is the regression test of the base URL handler that served
+// the raw mux: under GONEMA_BASE_URL, requests without credentials get 401
+// and cross-site writes get 403, as at the root.
+func TestBaseURLAuth(t *testing.T) {
+	e := newTestEnvWith(t, "/gonema", nil, false)
+	b := &browser{t: t, base: e.ts.URL + "/gonema"}
+	problemOK(t, b.do("GET", "/api/v1/movies", ""), 401)
+	problemOK(t, b.do("GET", "/api/v1/openapi.json", ""), 401)
+	if r := b.do("POST", "/api/v1/auth/setup", `{"username":"admin","password":"`+testPassword+`"}`); r.status != 201 {
+		t.Fatalf("setup = %d %s", r.status, r.body)
+	}
+	if !strings.Contains(b.do("GET", "/api/v1/auth/status", "").body, `"authenticated":true`) {
+		t.Fatal("the setup session is not accepted under the base URL")
+	}
+	if d := problemOK(t, b.do("POST", "/api/v1/tags", `{"label":"x"}`, "Sec-Fetch-Site", "cross-site", "Origin", "https://evil.example"), 403); !strings.Contains(d, "cross-site") {
+		t.Errorf("cross-site detail = %q", d)
+	}
+	problemOK(t, b.do("POST", "/api/v1/auth/logout", "", "Sec-Fetch-Site", "cross-site", "Origin", "https://evil.example"), 403)
+	if r := b.do("POST", "/api/v1/tags", `{"label":"x"}`); r.status/100 != 2 {
+		t.Errorf("same-origin write = %d %s", r.status, r.body)
+	}
+}
+
+// TestHostHeader covers DNS rebinding: a page of evil.example whose name
+// resolves to the LAN address of Gonema talks to it with Host evil.example.
+func TestHostHeader(t *testing.T) {
+	t.Run("local mode", func(t *testing.T) {
+		e := newFreshEnv(t, config.Security{AuthMode: config.AuthDisabledForLocal, AllowedHosts: []string{"gonema.lan"},
+			TrustedOrigins: []string{"https://media.example.org"}})
+		b := &browser{t: t, base: e.ts.URL}
+		for _, h := range []string{"", "localhost:7676", "gonema.lan", "GONEMA.LAN.", "media.example.org", "[::1]:7676", "192.168.1.5"} {
+			hdr := []string{}
+			if h != "" {
+				hdr = []string{"Host", h}
+			}
+			if r := b.do("GET", "/api/v1/movies", "", hdr...); r.status != 200 {
+				t.Errorf("Host %q = %d", h, r.status)
+			}
+		}
+		problemOK(t, b.do("GET", "/api/v1/movies", "", "Host", "evil.example"), 403) // ALLOWED_HOSTS set: refused outright
+		problemOK(t, b.do("POST", "/api/v1/auth/setup", `{"username":"admin","password":"`+testPassword+`"}`, "Host", "evil.example"), 403)
+		if st := decode[AuthStatus](t, b.do("GET", "/api/v1/auth/status", "")); !st.SetupRequired {
+			t.Fatal("the account was created through a rebound name")
+		}
+	})
+	t.Run("local mode without allowed hosts", func(t *testing.T) {
+		e := newFreshEnv(t, config.Security{AuthMode: config.AuthDisabledForLocal})
+		b := &browser{t: t, base: e.ts.URL}
+		problemOK(t, b.do("GET", "/api/v1/movies", "", "Host", "evil.example:7676"), 401)
+		if st := decode[AuthStatus](t, b.do("GET", "/api/v1/auth/status", "", "Host", "evil.example")); st.Authenticated {
+			t.Errorf("status through a rebound name = %+v", st)
+		}
+		if d := problemOK(t, b.do("POST", "/api/v1/auth/setup", setupBody(t, e), "Host", "evil.example"), 403); !strings.Contains(d, "GONEMA_ALLOWED_HOSTS") {
+			t.Errorf("setup detail = %q", d)
+		}
+	})
+	t.Run("allowed hosts with sessions", func(t *testing.T) {
+		e := newFreshEnv(t, config.Security{AuthMode: config.AuthEnabled, AllowedHosts: []string{"gonema.lan"}})
+		b := &browser{t: t, base: e.ts.URL}
+		r := b.do("POST", "/api/v1/auth/setup", setupBody(t, e), "Host", "gonema.lan")
+		if r.status != 201 {
+			t.Fatalf("setup = %d %s", r.status, r.body)
+		}
+		key := decode[SetupResult](t, r).APIKey
+		if r := b.do("GET", "/api/v1/movies", "", "Host", "gonema.lan"); r.status != 200 {
+			t.Errorf("allowed host = %d", r.status)
+		}
+		problemOK(t, b.do("GET", "/api/v1/movies", "", "Host", "evil.example"), 403)
+		// API key callers are not browsers: any Host.
+		if r := b.do("GET", "/api/v1/movies", "", "Host", "evil.example", "Cookie", "", APIKeyHeader, key); r.status != 200 {
+			t.Errorf("API key with another Host = %d", r.status)
+		}
+	})
+}
+
+// TestSetupToken: from another machine (anything but a direct loopback
+// connection with a loopback Host), the setup needs the token of the logs.
+func TestSetupToken(t *testing.T) {
+	e := newFreshEnv(t, config.Security{AuthMode: config.AuthEnabled, AllowedHosts: []string{"gonema.lan"}})
+	b := &browser{t: t, base: e.ts.URL}
+	if st := decode[AuthStatus](t, b.do("GET", "/api/v1/auth/status", "")); st.SetupTokenRequired {
+		t.Errorf("loopback status = %+v", st)
+	}
+	if st := decode[AuthStatus](t, b.do("GET", "/api/v1/auth/status", "", "Host", "gonema.lan")); !st.SetupTokenRequired || !st.SetupRequired {
+		t.Errorf("remote status = %+v", st)
+	}
+	body := func(tok string) string {
+		return `{"username":"admin","password":"` + testPassword + `","setupToken":"` + tok + `"}`
+	}
+	for _, h := range [][]string{{"Host", "gonema.lan"}, {"X-Forwarded-For", "203.0.113.4"}} {
+		if d := problemOK(t, b.do("POST", "/api/v1/auth/setup", body(""), h...), 403); !strings.Contains(d, "setup token") {
+			t.Errorf("%v without token: %q", h, d)
+		}
+		problemOK(t, b.do("POST", "/api/v1/auth/setup", body("AAAA-BBBB-CCCC-DDDD-EEEE-FFFF"), h...), 403)
+	}
+	tok, _ := e.srv.d.Auth.SetupToken(context.Background())
+	if r := b.do("POST", "/api/v1/auth/setup", body(strings.ToLower(tok)), "Host", "gonema.lan"); r.status != 201 {
+		t.Fatalf("setup with the token = %d %s", r.status, r.body)
+	}
+	problemOK(t, b.do("POST", "/api/v1/auth/setup", body(tok), "Host", "gonema.lan"), 409)
+	if st := decode[AuthStatus](t, b.do("GET", "/api/v1/auth/status", "", "Host", "gonema.lan")); st.SetupTokenRequired {
+		t.Errorf("status after setup = %+v", st)
+	}
+}
+
+// TestLocalModeBehindTrustedProxy: a trusted reverse proxy is never "local",
+// even without forwarding headers (Docker's userland proxy adds none).
+func TestLocalModeBehindTrustedProxy(t *testing.T) {
+	e := newFreshEnv(t, config.Security{AuthMode: config.AuthDisabledForLocal, TrustedProxies: []netip.Prefix{netip.MustParsePrefix("127.0.0.0/8")}})
+	b := &browser{t: t, base: e.ts.URL}
+	problemOK(t, b.do("GET", "/api/v1/movies", ""), 401)
+	e2 := newFreshEnv(t, config.Security{AuthMode: config.AuthDisabledForLocal, TrustedProxies: []netip.Prefix{netip.MustParsePrefix("10.0.0.0/8")}})
+	if r := (&browser{t: t, base: e2.ts.URL}).do("GET", "/api/v1/movies", ""); r.status != 200 {
+		t.Errorf("untrusted local peer = %d", r.status)
+	}
+}
+
+// TestPasswordChangeRegeneratesKey: PUT /auth/password with regenerateApiKey.
+func TestPasswordChangeRegeneratesKey(t *testing.T) {
+	e := newFreshEnv(t, config.DefaultSecurity())
+	b := &browser{t: t, base: e.ts.URL}
+	key := decode[SetupResult](t, b.do("POST", "/api/v1/auth/setup", `{"username":"admin","password":"`+testPassword+`"}`)).APIKey
+	r := b.do("PUT", "/api/v1/auth/password", `{"currentPassword":"`+testPassword+`","newPassword":"a new long password","regenerateApiKey":true}`)
+	got := decode[PasswordChanged](t, r)
+	if r.status != 200 || !strings.HasPrefix(got.APIKey, auth.APIKeyPrefix) || got.APIKey == key || got.APIKeyLast4 != got.APIKey[len(got.APIKey)-4:] {
+		t.Fatalf("change = %d %s", r.status, r.body)
+	}
+	api := &browser{t: t, base: e.ts.URL}
+	problemOK(t, api.do("GET", "/api/v1/movies", "", APIKeyHeader, key), 401)
+	if r := api.do("GET", "/api/v1/movies", "", APIKeyHeader, got.APIKey); r.status != 200 {
+		t.Errorf("new key = %d", r.status)
+	}
+	// Without the option the key is kept and not returned.
+	r = b.do("PUT", "/api/v1/auth/password", `{"currentPassword":"a new long password","newPassword":"another long password"}`)
+	if r.status != 200 || strings.Contains(r.body, "apiKey") {
+		t.Errorf("change without the option = %d %s", r.status, r.body)
 	}
 }
 

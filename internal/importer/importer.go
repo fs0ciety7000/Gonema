@@ -183,6 +183,9 @@ type Options struct {
 	// ExtraRoots, optional, returns more folders imports may read from (e.g. the
 	// download folders reported by the download clients).
 	ExtraRoots func(ctx context.Context) []string
+	// DataDir, optional, is the data directory: the recycle bin may not be in
+	// it (nor contain it).
+	DataDir string
 	// Fault, for tests only, is called between the steps of an import (see
 	// the Fault* constants); an error stops the import there as a crash
 	// would: nothing is undone and the journal entry stays pending.
@@ -201,6 +204,7 @@ type Service struct {
 	now        func() time.Time
 	extraRoots func(ctx context.Context) []string
 	fault      func(step string) error
+	dataDir    string
 
 	locks sync.Map // movie id -> *sync.Mutex
 }
@@ -212,7 +216,7 @@ func New(opts Options) (*Service, error) {
 	}
 	s := &Service{
 		st: opts.Store, fs: opts.FS, matcher: opts.Matcher, lib: opts.Library, bus: opts.Bus,
-		log: opts.Logger, now: opts.Now, extraRoots: opts.ExtraRoots, fault: opts.Fault,
+		log: opts.Logger, now: opts.Now, extraRoots: opts.ExtraRoots, fault: opts.Fault, dataDir: opts.DataDir,
 	}
 	if s.now == nil {
 		s.now = time.Now
@@ -273,11 +277,57 @@ func (s *Service) SetSettings(ctx context.Context, set Settings) (Settings, erro
 			return Settings{}, userErr(ErrInvalid, nil, "the import folder %s does not exist or is not a folder (check the volume mapping in Docker)", r)
 		}
 	}
+	if set.RecycleBin != "" {
+		if err := s.checkRecycleBin(ctx, set.RecycleBin); err != nil {
+			return Settings{}, err
+		}
+	}
 	if err := store.SetSetting(ctx, s.st, SettingImport, set); err != nil {
 		return Settings{}, fmt.Errorf("importer: save settings: %w", err)
 	}
 	s.publish(events.Event{Type: events.SettingsChanged, Data: map[string]any{"key": SettingImport}})
 	return set, nil
+}
+
+// checkRecycleBin refuses a single recycle bin that could mix Gonema's
+// recycled files with other files: /, the data directory (or a folder holding
+// it), a root folder, a folder inside one (movie folders included) or
+// holding one, or an existing folder that holds anything but recycled files.
+// Only <root folder>/.gonema-recycle, the default bin of that root folder, is
+// accepted inside a root folder. Every refusal gives the same message: the
+// setting must not tell what exists on the server.
+func (s *Service) checkRecycleBin(ctx context.Context, bin string) error {
+	refuse := userErr(ErrInvalid, nil, "%s cannot be the recycle bin: choose a folder used only for it (empty, or holding only files "+
+		"Gonema recycled), outside the data folder and the root folders, and not /", bin)
+	paths := []string{filepath.Clean(bin)}
+	if r, err := s.fs.EvalSymlinks(bin); err == nil && r != paths[0] {
+		paths = append(paths, r)
+	}
+	rfs, err := s.st.Read().ListRootFolders(ctx)
+	if err != nil {
+		return store.MapError(fmt.Errorf("importer: list root folders: %w", err))
+	}
+	overlaps := func(p, dir string) bool { return fsx.Within(dir, p) || fsx.Within(p, dir) }
+	for _, p := range paths {
+		if filepath.Dir(p) == p { // "/" or a volume root
+			return refuse
+		}
+		if s.dataDir != "" && overlaps(p, filepath.Clean(s.dataDir)) {
+			return refuse
+		}
+		for _, rf := range rfs {
+			if p == filepath.Join(rf.Path, RecycleDirName) {
+				continue
+			}
+			if overlaps(p, rf.Path) {
+				return refuse
+			}
+		}
+	}
+	if n, err := s.fs.ForeignEntries(bin); err != nil || n > 0 {
+		return refuse
+	}
+	return nil
 }
 
 // allowedRoots returns the folders imports may read from.

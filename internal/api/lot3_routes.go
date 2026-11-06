@@ -11,8 +11,11 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
@@ -743,10 +746,25 @@ func csvRow(r *HistoryRow) []string {
 	}
 }
 
-// csvSafe neutralizes cells a spreadsheet would read as a formula.
+// csvSafe neutralizes cells a spreadsheet would read as a formula: those
+// whose first character, after leading spaces and control characters, is
+// = + - @ (or their full-width forms ＝ ＋ － ＠), and those starting with a tab
+// or a carriage return. Plain numbers ("-12", "+3.5") are kept.
 func csvSafe(cells []string) []string {
 	for i, c := range cells {
-		if c != "" && (c[0] == '=' || c[0] == '+' || c[0] == '-' || c[0] == '@' || c[0] == '\t' || c[0] == '\r') {
+		if c == "" {
+			continue
+		}
+		if c[0] == '\t' || c[0] == '\r' {
+			cells[i] = "'" + c
+			continue
+		}
+		t := strings.TrimLeftFunc(c, func(r rune) bool { return unicode.IsSpace(r) || unicode.IsControl(r) })
+		if t == "" {
+			continue
+		}
+		r, _ := utf8.DecodeRuneInString(t)
+		if strings.ContainsRune("=+-@＝＋－＠", r) {
 			if _, err := strconv.ParseFloat(c, 64); err != nil {
 				cells[i] = "'" + c
 			}

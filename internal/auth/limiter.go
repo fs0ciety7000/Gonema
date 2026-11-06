@@ -13,8 +13,9 @@ type limiter struct {
 	window time.Duration
 	max    int
 
-	mu   sync.Mutex
-	hits map[string][]time.Time
+	mu       sync.Mutex
+	hits     map[string][]time.Time
+	inflight map[string]int // attempts reserved and not yet ended
 }
 
 // maxKeys bounds the memory of the limiter (an attacker rotating IPv6
@@ -22,7 +23,7 @@ type limiter struct {
 const maxKeys = 10_000
 
 func newLimiter(limit int, window time.Duration) *limiter {
-	return &limiter{window: window, max: limit, hits: make(map[string][]time.Time)}
+	return &limiter{window: window, max: limit, hits: make(map[string][]time.Time), inflight: make(map[string]int)}
 }
 
 func (l *limiter) live(key string, now time.Time) []time.Time {
@@ -51,6 +52,54 @@ func (l *limiter) wait(key string, now time.Time) time.Duration {
 		return 0
 	}
 	return h[len(h)-l.max].Add(l.window).Sub(now)
+}
+
+// inflightRetry is the Retry-After of an attempt refused because others of
+// the same key are still being checked.
+const inflightRetry = time.Second
+
+// reserve claims an attempt for key before the password is checked. It is
+// refused (wait > 0) when the failures of the window plus the attempts in
+// flight reach the limit: concurrent attempts cannot exceed it. A reserved
+// attempt must be ended with end.
+func (l *limiter) reserve(key string, now time.Time) time.Duration {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	h := l.live(key, now)
+	if len(h)+l.inflight[key] >= l.max {
+		if len(h) >= l.max {
+			return h[len(h)-l.max].Add(l.window).Sub(now)
+		}
+		return inflightRetry
+	}
+	l.inflight[key]++
+	return 0
+}
+
+// outcome ends a reserved attempt.
+type outcome int
+
+const (
+	aborted   outcome = iota // not a password check (error, busy server): nothing recorded
+	failed                   // wrong credentials: a failure is recorded
+	succeeded                // right credentials: the failures of the key are forgotten
+)
+
+// end ends an attempt reserved with reserve.
+func (l *limiter) end(key string, now time.Time, o outcome) {
+	l.mu.Lock()
+	if n := l.inflight[key] - 1; n > 0 {
+		l.inflight[key] = n
+	} else {
+		delete(l.inflight, key)
+	}
+	l.mu.Unlock()
+	switch o {
+	case failed:
+		l.fail(key, now)
+	case succeeded:
+		l.reset(key)
+	}
 }
 
 // fail records a failure of key.

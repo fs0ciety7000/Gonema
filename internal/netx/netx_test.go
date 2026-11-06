@@ -34,8 +34,12 @@ func TestCheckAddr(t *testing.T) {
 		{"100.101.102.103", true, false, "private"}, // CGNAT / Tailscale
 		{"fd12:3456::1", true, false, "private"},
 		{"::ffff:192.168.1.1", true, false, "private"},
-		{"64:ff9b::c0a8:0101", true, false, "private"}, // NAT64 of 192.168.1.1
-		{"2002:c0a8:0101::1", true, false, "private"},  // 6to4 of 192.168.1.1
+		{"64:ff9b::c0a8:0101", true, false, "private"},    // NAT64 of 192.168.1.1
+		{"2002:c0a8:0101::1", true, false, "private"},     // 6to4 of 192.168.1.1
+		{"64:ff9b:1::c0a8:0101", true, false, "private"},  // local-use NAT64, /96 form, of 192.168.1.1
+		{"64:ff9b:1::5db8:d822", true, true, ""},          // local-use NAT64, /96 form, of 93.184.216.34
+		{"64:ff9b:1:c0a8:1:100::", false, false, "NAT64"}, // local-use NAT64, /48 form: refused
+		{"64:ff9b:1:ffff::a9fe:a9fe", false, false, "NAT64"},
 		{"169.254.169.254", false, false, "metadata"},
 		{"::ffff:169.254.169.254", false, false, "metadata"},
 		{"64:ff9b::a9fe:a9fe", false, false, "metadata"}, // NAT64 of 169.254.169.254
@@ -243,5 +247,78 @@ func TestProxyTargetChecked(t *testing.T) {
 	}
 	if proxied != 1 {
 		t.Errorf("proxied = %d", proxied)
+	}
+}
+
+// TestProxyDialOnlyForProxiedRequests: the unchecked dial to the proxy is only
+// for requests the Proxy function sent to it; a direct request to the same
+// address (NO_PROXY, loopback targets) is checked like any other.
+func TestProxyDialOnlyForProxiedRequests(t *testing.T) {
+	withConfig(t, Config{Integration: Policy{}, Webhook: Policy{}})
+	proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = io.WriteString(w, "proxy")
+	}))
+	defer proxy.Close()
+	pu, _ := url.Parse(proxy.URL)
+	env := func(r *http.Request) (*url.URL, error) {
+		if r.URL.Hostname() == pu.Hostname() { // like ProxyFromEnvironment: no proxy for loopback
+			return nil, nil
+		}
+		return pu, nil
+	}
+	c := &http.Client{Transport: Wrap(newTransport(Webhook, env))}
+	if body, err := get(t, c, "http://93.184.216.34/"); err != nil || body != "proxy" {
+		t.Fatalf("proxied: %q %v", body, err)
+	}
+	if _, err := get(t, c, proxy.URL+"/admin"); !errors.Is(err, ErrBlocked) {
+		t.Fatalf("direct request to the proxy address: %v, want blocked", err)
+	}
+	// Without Wrap there is no mark: the proxy connection itself is checked.
+	raw := &http.Client{Transport: newTransport(Webhook, func(*http.Request) (*url.URL, error) { return pu, nil })}
+	if _, err := get(t, raw, "http://93.184.216.34/"); !errors.Is(err, ErrBlocked) {
+		t.Fatalf("unwrapped transport: %v, want blocked", err)
+	}
+}
+
+func TestPublicClass(t *testing.T) {
+	withConfig(t, Config{Integration: Policy{AllowLoopback: true, AllowPrivate: true}, Webhook: Policy{AllowLoopback: true, AllowPrivate: true}})
+	if p := Public.Policy(); p.AllowLoopback || p.AllowPrivate {
+		t.Fatalf("public policy = %+v", p)
+	}
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = io.WriteString(w, "ok") }))
+	defer ts.Close()
+	if _, err := get(t, NewClient(Public), ts.URL); !errors.Is(err, ErrBlocked) {
+		t.Fatalf("public client to loopback: %v", err)
+	}
+}
+
+func TestScope(t *testing.T) {
+	withConfig(t, DefaultConfig())
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = io.WriteString(w, "ok") }))
+	defer ts.Close()
+	c := NewClient(Integration)
+	fetch := func(scopeHost string) error {
+		sc, err := ScopeOfHost(context.Background(), scopeHost)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req, _ := http.NewRequestWithContext(WithScope(context.Background(), sc), "GET", ts.URL, http.NoBody)
+		resp, err := c.Do(req)
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+		return err
+	}
+	if err := fetch("93.184.216.34"); !errors.Is(err, ErrBlocked) {
+		t.Errorf("public service, local link: %v", err)
+	}
+	if err := fetch("127.0.0.2"); !errors.Is(err, ErrBlocked) {
+		t.Errorf("another local service: %v", err)
+	}
+	if err := fetch("127.0.0.1"); err != nil {
+		t.Errorf("same local service: %v", err)
+	}
+	if err := CheckHost(WithScope(context.Background(), &Scope{}), Integration, "127.0.0.1"); !errors.Is(err, ErrBlocked) {
+		t.Errorf("CheckHost: %v", err)
 	}
 }

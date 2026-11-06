@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"golang.org/x/crypto/argon2"
 )
@@ -102,18 +104,50 @@ func decodeHash(encoded string) (p Params, salt, key []byte, err error) {
 }
 
 // hashGate bounds the concurrent argon2 computations: each one holds Memory
-// KiB, so a burst of logins must not exhaust the server's memory.
-type hashGate chan struct{}
+// KiB, so a burst of logins must not exhaust the server's memory. Callers
+// beyond the free slots wait, but only a few of them and not for long: the
+// others are refused at once with ErrBusy (429) instead of piling up.
+type hashGate struct {
+	slots   chan struct{}
+	waiting atomic.Int32
+	maxWait int32         // callers allowed to wait for a slot
+	timeout time.Duration // longest wait
+}
 
-func (g hashGate) run(ctx context.Context, fn func()) error {
+func newHashGate(slots, maxWait int, timeout time.Duration) *hashGate {
+	return &hashGate{slots: make(chan struct{}, slots), maxWait: int32(maxWait), timeout: timeout} //nolint:gosec // small constants
+}
+
+func (g *hashGate) run(ctx context.Context, fn func()) error {
+	if err := g.acquire(ctx); err != nil {
+		return err
+	}
+	defer func() { <-g.slots }()
+	fn()
+	return nil
+}
+
+func (g *hashGate) acquire(ctx context.Context) error {
 	select {
-	case g <- struct{}{}:
+	case g.slots <- struct{}{}:
+		return nil
+	default:
+	}
+	if g.waiting.Add(1) > g.maxWait {
+		g.waiting.Add(-1)
+		return ErrBusy
+	}
+	defer g.waiting.Add(-1)
+	t := time.NewTimer(g.timeout)
+	defer t.Stop()
+	select {
+	case g.slots <- struct{}{}:
+		return nil
+	case <-t.C:
+		return ErrBusy
 	case <-ctx.Done():
 		return ctx.Err()
 	}
-	defer func() { <-g }()
-	fn()
-	return nil
 }
 
 // FastParams are cheap parameters for tests only: never use them in production.

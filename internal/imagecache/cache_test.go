@@ -17,6 +17,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/fs0ciety7000/gonema/internal/netx"
 )
 
 type staticBase string
@@ -307,5 +309,18 @@ func TestNewValidates(t *testing.T) {
 	}
 	if got := Sizes(Poster); len(got) != 2 || got[0] != "w342" || got[1] != "w780" {
 		t.Errorf("Sizes(Poster) = %v", got)
+	}
+}
+
+// TestDefaultClientPublicOnly: without an injected client, downloads go
+// through netx with the public-only policy (TMDB is on the Internet).
+func TestDefaultClientPublicOnly(t *testing.T) {
+	is := newImageServer(t)
+	c, err := New(t.TempDir(), staticBase(is.srv.URL+"/t/p/"), Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.Fetch(t.Context(), Poster, "w342", "/abc123.jpg"); !errors.Is(err, netx.ErrBlocked) {
+		t.Fatalf("fetch from loopback = %v, want blocked", err)
 	}
 }

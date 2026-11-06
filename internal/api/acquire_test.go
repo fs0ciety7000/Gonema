@@ -52,6 +52,12 @@ type acqEnv struct {
 
 func newAcquireEnv(t *testing.T) *acqEnv {
 	t.Helper()
+	return newAcquireEnvBase(t, "")
+}
+
+// newAcquireEnvBase is newAcquireEnv served under the base URL base.
+func newAcquireEnvBase(t *testing.T, base string) *acqEnv {
+	t.Helper()
 	st := storetest.New(t)
 	key, _ := secretbox.NewKey()
 	box, _ := secretbox.New(key)
@@ -100,7 +106,7 @@ func newAcquireEnv(t *testing.T) *acqEnv {
 	}
 	deps := Deps{
 		Library: lib, Acquire: acq, Jobs: runner, Bus: bus, Store: st, Logger: log, Version: "test",
-		StartedAt: time.Now(), DataDir: t.TempDir(), SSEHeartbeat: 50 * time.Millisecond,
+		StartedAt: time.Now(), DataDir: t.TempDir(), SSEHeartbeat: 50 * time.Millisecond, BaseURL: base,
 	}
 	apiKey := withTestAuth(t, &deps)
 	srv := New(deps)

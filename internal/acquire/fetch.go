@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptrace"
+	"net/netip"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/fs0ciety7000/gonema/internal/decision"
@@ -52,7 +55,13 @@ func (s *Service) fetchRelease(ctx context.Context, rel *indexer.Release) (paylo
 	if link == "" {
 		return payload{}, newError(ErrUpstream, nil, "%s gave no download link for this release.", rel.IndexerName)
 	}
-	data, redirect, err := s.get(ctx, link, maxBytes(rel.Protocol))
+	data, redirect, hidden, err := s.get(s.linkScope(ctx, rel, link), link, maxBytes(rel.Protocol))
+	kind := func() string {
+		if hidden {
+			return "the answer of a local address it redirected to"
+		}
+		return sniffKind(data)
+	}
 	switch {
 	case err != nil && rel.Protocol == decision.Torrent && magnet != "":
 		// The .torrent is unavailable but the indexer also gave a magnet.
@@ -72,12 +81,12 @@ func (s *Service) fetchRelease(ctx context.Context, rel *indexer.Release) (paylo
 			if magnet != "" {
 				return magnetPayload(magnet), nil
 			}
-			return payload{}, newError(ErrUpstream, err, "%s sent something that is not a torrent file (%s).", rel.IndexerName, sniffKind(data))
+			return payload{}, newError(ErrUpstream, err, "%s sent something that is not a torrent file (%s).", rel.IndexerName, kind())
 		}
 		return payload{data: data, filename: name + ".torrent", infoHash: hash}, nil
 	}
 	if !looksLikeNZB(data) {
-		return payload{}, newError(ErrUpstream, nil, "%s sent something that is not an NZB file (%s).", rel.IndexerName, sniffKind(data))
+		return payload{}, newError(ErrUpstream, nil, "%s sent something that is not an NZB file (%s).", rel.IndexerName, kind())
 	}
 	return payload{data: data, filename: name + ".nzb"}, nil
 }
@@ -97,6 +106,33 @@ func maxBytes(p decision.Protocol) int64 {
 	return maxNZBBytes
 }
 
+// linkScope narrows the destinations of a release download to what the
+// indexer that gave the link may point to (netx.Scope): public addresses only
+// when the indexer itself is public, or the indexer's own local address when
+// it is on the LAN. An indexer cannot make Gonema fetch from other LAN hosts,
+// directly or through a redirect. Without a known indexer, the host of the
+// link stands for it.
+func (s *Service) linkScope(ctx context.Context, rel *indexer.Release, link string) context.Context {
+	host := ""
+	if rel.IndexerID != 0 {
+		if row, err := s.st.Read().GetIndexer(ctx, rel.IndexerID); err == nil {
+			if u, err := url.Parse(row.BaseUrl); err == nil {
+				host = u.Hostname()
+			}
+		}
+	}
+	if host == "" {
+		if u, err := url.Parse(link); err == nil {
+			host = u.Hostname()
+		}
+	}
+	sc, err := netx.ScopeOfHost(ctx, host)
+	if err != nil {
+		sc = &netx.Scope{} // unresolvable indexer: public destinations only
+	}
+	return netx.WithScope(ctx, sc)
+}
+
 // errTooLarge reports a release file above the size cap.
 var errTooLarge = errors.New("file too large")
 
@@ -106,14 +142,23 @@ type fetchError struct {
 	msg    string
 }
 
+// Messages that say nothing of the destination: a link to a refused or local
+// address must not tell what answers there.
+const (
+	msgBlocked     = "the link leads to an address Gonema does not download from (see Settings > Security)"
+	msgNoBodyLocal = "the link was redirected to a local address that did not provide the file"
+)
+
 func (e *fetchError) Error() string { return e.msg }
 
 // get downloads link. When the server redirects to a magnet URI, it is
-// returned as redirect instead of being followed.
-func (s *Service) get(ctx context.Context, link string, limit int64) (data []byte, redirect string, err error) {
+// returned as redirect instead of being followed. hidden is true when the
+// answer came from a local address through a cross-host redirect: callers
+// must not describe it.
+func (s *Service) get(ctx context.Context, link string, limit int64) (data []byte, redirect string, hidden bool, err error) {
 	u, err := url.Parse(link)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return nil, "", &fetchError{msg: "the download link is not an http(s) URL"}
+		return nil, "", false, &fetchError{msg: "the download link is not an http(s) URL"}
 	}
 	ctx, cancel := context.WithTimeout(ctx, fetchTimeout)
 	defer cancel()
@@ -128,11 +173,23 @@ func (s *Service) get(ctx context.Context, link string, limit int64) (data []byt
 		if req.URL.Scheme != "http" && req.URL.Scheme != "https" {
 			return &fetchError{msg: "redirected to an unsupported link"}
 		}
-		return nil
+		// Every hop is checked against the scope before any connection
+		// (the dialer checks again at connection time).
+		return netx.CheckHost(req.Context(), netx.Integration, req.URL.Hostname())
 	}
+	if err := netx.CheckHost(ctx, netx.Integration, u.Hostname()); errors.Is(err, netx.ErrBlocked) {
+		return nil, "", false, &fetchError{msg: msgBlocked}
+	}
+	var remote atomic.Pointer[netip.Addr] // address of the last connection used
+	ctx = httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{GotConn: func(info httptrace.GotConnInfo) {
+		if ap, err := netip.ParseAddrPort(info.Conn.RemoteAddr().String()); err == nil {
+			a := ap.Addr().Unmap()
+			remote.Store(&a)
+		}
+	}})
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), http.NoBody)
 	if err != nil {
-		return nil, "", &fetchError{msg: "invalid download link"}
+		return nil, "", false, &fetchError{msg: "invalid download link"}
 	}
 	req.Header.Set("User-Agent", "Gonema/"+s.version+" (+https://github.com/fs0ciety7000/gonema)")
 	req.Header.Set("Accept", "application/x-nzb, application/x-bittorrent, application/octet-stream;q=0.9, */*;q=0.1")
@@ -146,30 +203,39 @@ func (s *Service) get(ctx context.Context, link string, limit int64) (data []byt
 		var blocked *netx.BlockedError
 		switch {
 		case errors.As(err, &fe):
-			return nil, "", fe
+			return nil, "", false, fe
 		case errors.As(err, &blocked):
-			return nil, "", &fetchError{msg: blocked.Error()}
+			return nil, "", false, &fetchError{msg: msgBlocked}
 		case errors.Is(err, context.DeadlineExceeded) || ctx.Err() != nil:
-			return nil, "", &fetchError{msg: "no answer in time"}
+			return nil, "", false, &fetchError{msg: "no answer in time"}
 		default:
-			return nil, "", &fetchError{msg: "the indexer could not be reached"}
+			return nil, "", false, &fetchError{msg: "the indexer could not be reached"}
 		}
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if loc := resp.Header.Get("Location"); resp.StatusCode/100 == 3 && download.IsMagnet(loc) {
-		return nil, loc, nil
+		return nil, loc, false, nil
+	}
+	// A response from a local address reached through a redirect gets no
+	// detail (status, content): it would describe a LAN service.
+	hide := false
+	if a := remote.Load(); a != nil && !netx.IsPublic(*a) && !strings.EqualFold(resp.Request.URL.Host, u.Host) {
+		hide = true
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, "", &fetchError{status: resp.StatusCode, msg: fmt.Sprintf("HTTP %d", resp.StatusCode)}
+		if hide {
+			return nil, "", true, &fetchError{msg: msgNoBodyLocal}
+		}
+		return nil, "", false, &fetchError{status: resp.StatusCode, msg: fmt.Sprintf("HTTP %d", resp.StatusCode)}
 	}
 	data, err = io.ReadAll(io.LimitReader(resp.Body, limit+1))
 	if err != nil {
-		return nil, "", &fetchError{msg: "the download was interrupted"}
+		return nil, "", false, &fetchError{msg: "the download was interrupted"}
 	}
 	if int64(len(data)) > limit {
-		return nil, "", &fetchError{msg: errTooLarge.Error()}
+		return nil, "", false, &fetchError{msg: errTooLarge.Error()}
 	}
-	return data, "", nil
+	return data, "", hide, nil
 }
 
 func fetchReason(err error) string {

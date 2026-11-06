@@ -31,7 +31,11 @@ services:
     environment:
       TZ: Europe/Paris # time zone of the logs and schedules (tzdata is built in)
       GONEMA_LOG_FILE: logs/gonema.log # optional, rotated, inside /data
-      # GONEMA_AUTH: disabled_for_local      # skip the login on a trusted LAN only (see docs/configuration.md)
+      # First run: from another machine, the account creation asks for the
+      # one-time setup token printed in the logs (`docker logs gonema`, setup=...).
+      # GONEMA_AUTH: disabled_for_local      # NOT with published ports (docker-proxy): see docs/configuration.md
+      # GONEMA_ALLOWED_HOSTS: gonema.example.org,gonema.lan  # host names besides IP addresses and localhost
+      # GONEMA_TRUSTED_PROXIES: 172.18.0.0/16 # the reverse proxy (its X-Forwarded-For / -Proto are believed)
       # GONEMA_BASE_URL: /gonema             # when served under a sub-path by a reverse proxy
       # GONEMA_TRUSTED_ORIGINS: https://gonema.example.org  # when the proxy rewrites Host
     volumes:

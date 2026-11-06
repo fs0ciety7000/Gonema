@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -42,11 +43,20 @@ type RecycledItem struct {
 	Name string `json:"name"`
 	Path string `json:"path"`
 	Size int64  `json:"size"`
-	// Manifest is nil for a file without a readable manifest: it cannot be
-	// restored automatically.
+	// Manifest records the origin of the file. Only files with a valid
+	// manifest are items: anything else in the folder is not Gonema's.
 	Manifest *Manifest `json:"manifest,omitempty"`
-	// RecycledAt comes from the manifest, or from the name prefix.
+	// RecycledAt comes from the manifest.
 	RecycledAt time.Time `json:"recycledAt"`
+}
+
+// itemPattern is the name Recycle gives: time stamp, 8 hex digits, original
+// base name.
+var itemPattern = regexp.MustCompile(`^\d{8}T\d{6}Z-[0-9a-f]{8}-.`)
+
+// IsItemName reports whether name has the form of a recycled file name.
+func IsItemName(name string) bool {
+	return itemPattern.MatchString(name) && !strings.HasSuffix(name, ManifestSuffix)
 }
 
 // Recycle moves the regular file path into binDir (created if needed) under a
@@ -154,7 +164,10 @@ func (o *Ops) readManifest(name string) (*Manifest, error) {
 }
 
 // ListRecycle returns the items of a recycle bin, oldest first. A missing bin is
-// empty. Manifests and temporary files are not items.
+// empty. Only files Gonema recycled are items: a regular file with the name
+// Recycle gives, next to a valid manifest whose size matches. Everything else
+// (manifests, temporary files, files put there by someone else) is ignored,
+// so that a purge never deletes a file Gonema did not recycle.
 func (o *Ops) ListRecycle(binDir string) ([]RecycledItem, error) {
 	entries, err := o.fs.ReadDir(binDir)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -165,27 +178,10 @@ func (o *Ops) ListRecycle(binDir string) ([]RecycledItem, error) {
 	}
 	out := make([]RecycledItem, 0, len(entries))
 	for _, e := range entries {
-		name := e.Name()
-		if strings.HasSuffix(name, ManifestSuffix) || strings.HasPrefix(name, tempPrefix) {
-			continue
+		it, ok := o.item(binDir, e)
+		if ok {
+			out = append(out, it)
 		}
-		if !e.Type().IsRegular() {
-			continue
-		}
-		fi, err := e.Info()
-		if err != nil {
-			continue // removed meanwhile
-		}
-		it := RecycledItem{Name: name, Path: filepath.Join(binDir, name), Size: fi.Size()}
-		if m, err := o.readManifest(it.Path + ManifestSuffix); err == nil {
-			it.Manifest = m
-			it.RecycledAt = m.RecycledAt
-		} else if t, ok := nameTime(name); ok {
-			it.RecycledAt = t
-		} else {
-			it.RecycledAt = fi.ModTime().UTC()
-		}
-		out = append(out, it)
 	}
 	slices.SortStableFunc(out, func(a, b RecycledItem) int {
 		return cmp.Or(a.RecycledAt.Compare(b.RecycledAt), cmp.Compare(a.Name, b.Name))
@@ -193,19 +189,60 @@ func (o *Ops) ListRecycle(binDir string) ([]RecycledItem, error) {
 	return out, nil
 }
 
-// nameTime reads the timestamp prefix of a recycled file name.
-func nameTime(name string) (time.Time, bool) {
-	if len(name) < len(recycleTimeLayout) {
-		return time.Time{}, false
+// item returns the recycled item of entry e of binDir, ok false when e is not
+// one (see ListRecycle).
+func (o *Ops) item(binDir string, e fs.DirEntry) (RecycledItem, bool) {
+	name := e.Name()
+	if !IsItemName(name) || !e.Type().IsRegular() {
+		return RecycledItem{}, false
 	}
-	t, err := time.Parse(recycleTimeLayout, name[:len(recycleTimeLayout)])
-	return t, err == nil
+	fi, err := e.Info()
+	if err != nil {
+		return RecycledItem{}, false // removed meanwhile
+	}
+	p := filepath.Join(binDir, name)
+	m, err := o.readManifest(p + ManifestSuffix)
+	if err != nil || m.Size != fi.Size() || m.RecycledAt.IsZero() {
+		return RecycledItem{}, false
+	}
+	return RecycledItem{Name: name, Path: p, Size: fi.Size(), Manifest: m, RecycledAt: m.RecycledAt}, true
 }
 
-// checkItemName accepts plain file names only.
+// ForeignEntries counts the entries of binDir that are neither recycled items
+// (see ListRecycle), their manifests, nor temporary files of this package. A
+// folder with foreign entries is not a recycle bin of Gonema. A missing
+// folder has none.
+func (o *Ops) ForeignEntries(binDir string) (int, error) {
+	entries, err := o.fs.ReadDir(binDir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	items := map[string]bool{}
+	for _, e := range entries {
+		if _, ok := o.item(binDir, e); ok {
+			items[e.Name()] = true
+		}
+	}
+	n := 0
+	for _, e := range entries {
+		name := e.Name()
+		switch {
+		case items[name], strings.HasPrefix(name, tempPrefix) && e.Type().IsRegular():
+		case strings.HasSuffix(name, ManifestSuffix) && items[strings.TrimSuffix(name, ManifestSuffix)]:
+		default:
+			n++
+		}
+	}
+	return n, nil
+}
+
+// checkItemName accepts plain file names of recycled items only.
 func checkItemName(name string) error {
 	if name == "" || name == "." || name == ".." || strings.ContainsAny(name, `/\`+"\x00") ||
-		filepath.Base(name) != name || strings.HasSuffix(name, ManifestSuffix) || strings.HasPrefix(name, tempPrefix) {
+		filepath.Base(name) != name || !IsItemName(name) || strings.HasPrefix(name, tempPrefix) {
 		return fmt.Errorf("%w: %q", ErrInvalidName, name)
 	}
 	return nil
@@ -264,7 +301,10 @@ func (o *Ops) PurgeRecycle(binDir string, olderThan time.Time, confirm bool) ([]
 		if !it.RecycledAt.Before(olderThan) {
 			continue
 		}
-		if _, err := o.regular(it.Path); err != nil {
+		// Checked again just before the deletion: still a regular file of the
+		// size its manifest records.
+		fi, err := o.regular(it.Path)
+		if err != nil || it.Manifest == nil || fi.Size() != it.Manifest.Size {
 			continue
 		}
 		if err := o.fs.Remove(it.Path); err != nil {

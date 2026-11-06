@@ -7,6 +7,8 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -27,7 +29,14 @@ import (
 //     which ends up in proxy logs and browser history;
 //  2. the session cookie set by login or setup (the web interface);
 //  3. with GONEMA_AUTH=disabled_for_local only, a direct connection from a
-//     loopback or private address without proxy headers.
+//     loopback or private address (not a trusted proxy) without proxy
+//     headers, whose Host header is an IP literal, localhost or an allowed
+//     host (DNS rebinding: a public name that resolves to a LAN address must
+//     not reach the instance with the browser's blessing).
+//
+// Host header: when GONEMA_ALLOWED_HOSTS is set, every /api request that does
+// not carry an API key must name an allowed host (or an IP literal, or
+// localhost); see hostAllowed.
 //
 // Cross-site request forgery: state-changing requests authenticated by the
 // cookie (or by the local mode, which a browser on the LAN also carries) must
@@ -35,8 +44,15 @@ import (
 // Host; GONEMA_TRUSTED_ORIGINS adds origins). API key requests are exempt:
 // browsers never add that header by themselves.
 
-// SessionCookie is the name of the session cookie.
+// SessionCookie is the name of the session cookie over plain HTTP or under a
+// base URL.
 const SessionCookie = "gonema_session"
+
+// HostSessionCookie is the name of the session cookie over HTTPS at the root
+// of the host: the __Host- prefix makes browsers refuse it unless it is
+// Secure, has Path=/ and no Domain, so a sibling subdomain cannot plant or
+// overwrite it. Both names are read (transition from SessionCookie).
+const HostSessionCookie = "__Host-gonema_session"
 
 // APIKeyHeader carries the API key.
 const APIKeyHeader = "X-Api-Key"
@@ -59,6 +75,13 @@ type client struct {
 	UserAgent string
 	Secure    bool   // the session cookie gets the Secure attribute
 	Token     string // the session cookie presented, "" if none
+	// CookieName is the cookie Token came in ("" if none).
+	CookieName string
+	// HostOK: the Host header is an IP literal, localhost or an allowed host.
+	HostOK bool
+	// Loopback: a direct connection from a loopback address (not a trusted
+	// proxy, no proxy header) with a loopback Host (localhost, 127.0.0.1, ::1).
+	Loopback bool
 }
 
 // PrincipalOf returns the authenticated caller of ctx.
@@ -118,6 +141,10 @@ func (s *Server) withAuth(next http.Handler) http.Handler {
 			writeProblem(w, r, http.StatusBadRequest, "Send the API key in the "+APIKeyHeader+" header, never in the URL.")
 			return
 		}
+		if len(s.d.Security.AllowedHosts) > 0 && !c.HostOK && r.Header.Get(APIKeyHeader) == "" {
+			writeProblem(w, r, http.StatusForbidden, hostRefused)
+			return
+		}
 
 		p, err := s.identify(r, c)
 		switch {
@@ -159,7 +186,7 @@ func (s *Server) identify(r *http.Request, c client) (auth.Principal, error) {
 			return p, err
 		}
 	}
-	if s.d.Security.AuthMode == config.AuthDisabledForLocal && directLocal(r) {
+	if s.d.Security.AuthMode == config.AuthDisabledForLocal && c.HostOK && s.directLocal(r) {
 		p := auth.Principal{Method: auth.MethodLocal}
 		if u, ok, err := a.Admin(ctx); err != nil {
 			return auth.Principal{}, err
@@ -170,6 +197,10 @@ func (s *Server) identify(r *http.Request, c client) (auth.Principal, error) {
 	}
 	return auth.Principal{}, auth.ErrUnauthenticated
 }
+
+// hostRefused is the detail of a request whose Host header is not accepted.
+const hostRefused = "This server does not answer to this host name. Use its IP address or localhost, " +
+	"or add the name to GONEMA_ALLOWED_HOSTS (or its origin to GONEMA_TRUSTED_ORIGINS)."
 
 // remoteAddr returns the address of the peer of the connection.
 func remoteAddr(r *http.Request) (netip.Addr, bool) {
@@ -187,64 +218,185 @@ func remoteAddr(r *http.Request) (netip.Addr, bool) {
 
 func localAddr(a netip.Addr) bool { return a.IsLoopback() || a.IsPrivate() }
 
-// directLocal reports whether r comes straight (no proxy header) from a
-// loopback or private address. A request relayed by a reverse proxy on the
-// same host would otherwise look local whatever its real origin.
-func directLocal(r *http.Request) bool {
-	a, ok := remoteAddr(r)
-	if !ok || !localAddr(a) {
-		return false
-	}
-	for _, h := range []string{"X-Forwarded-For", "X-Real-Ip", "Forwarded", "X-Forwarded-Host", "Cf-Connecting-Ip", "True-Client-Ip"} {
+// proxyHeaders are the headers a reverse proxy adds.
+var proxyHeaders = []string{"X-Forwarded-For", "X-Real-Ip", "Forwarded", "X-Forwarded-Host", "X-Forwarded-Proto", "Cf-Connecting-Ip", "True-Client-Ip"}
+
+func hasProxyHeader(r *http.Request) bool {
+	for _, h := range proxyHeaders {
 		if r.Header.Get(h) != "" {
-			return false
+			return true
 		}
 	}
-	return true
+	return false
+}
+
+// directLocal reports whether r comes straight (no proxy header) from a
+// loopback or private address that is not a trusted proxy. A request relayed
+// by a reverse proxy on the same host would otherwise look local whatever its
+// real origin.
+func (s *Server) directLocal(r *http.Request) bool {
+	a, ok := remoteAddr(r)
+	if !ok || !localAddr(a) || s.d.Security.ProxyTrusted(a) {
+		return false
+	}
+	return !hasProxyHeader(r)
+}
+
+// requestHost returns the host of the Host header, lower case, without port,
+// brackets or trailing dot.
+func requestHost(r *http.Request) string {
+	h := r.Host
+	if host, _, err := net.SplitHostPort(h); err == nil {
+		h = host
+	}
+	h = strings.TrimSuffix(strings.TrimPrefix(strings.TrimSuffix(h, "]"), "["), ".")
+	return strings.ToLower(h)
+}
+
+// hostAllowed reports whether the Host header of r is an IP literal,
+// localhost, a host of GONEMA_ALLOWED_HOSTS or the host of a trusted origin.
+// A DNS rebinding attack reaches the server under the attacker's name: it is
+// none of these.
+func (s *Server) hostAllowed(r *http.Request) bool {
+	h := requestHost(r)
+	if h == "" {
+		return false
+	}
+	if _, err := netip.ParseAddr(h); err == nil {
+		return true
+	}
+	if h == "localhost" {
+		return true
+	}
+	if slices.Contains(s.d.Security.AllowedHosts, h) {
+		return true
+	}
+	for _, o := range s.d.Security.TrustedOrigins {
+		if u, err := url.Parse(o); err == nil && strings.EqualFold(strings.TrimSuffix(u.Hostname(), "."), h) {
+			return true
+		}
+	}
+	return false
+}
+
+// loopbackHost reports whether the Host header names this machine.
+func loopbackHost(r *http.Request) bool {
+	h := requestHost(r)
+	if h == "localhost" {
+		return true
+	}
+	a, err := netip.ParseAddr(h)
+	return err == nil && a.Unmap().IsLoopback()
 }
 
 // clientInfo reads the client of r. The IP is the connection peer; when that
-// peer is a loopback or private address (a reverse proxy), the last
-// X-Forwarded-For entry (the one the proxy added) is used instead. It only
-// serves login throttling and the session list, never an access decision.
+// peer is a trusted proxy (GONEMA_TRUSTED_PROXIES), the right-most
+// X-Forwarded-For entry that is not itself a trusted proxy is used instead.
+// It only serves login throttling and the session list, never an access
+// decision. X-Forwarded-Proto is read from trusted proxies only.
 func (s *Server) clientInfo(r *http.Request) client {
-	c := client{UserAgent: r.UserAgent()}
-	if a, ok := remoteAddr(r); ok {
-		c.IP = a.String()
-		if localAddr(a) {
-			if xff := r.Header.Values("X-Forwarded-For"); len(xff) > 0 {
-				parts := strings.Split(xff[len(xff)-1], ",")
-				if fa, err := netip.ParseAddr(strings.TrimSpace(parts[len(parts)-1])); err == nil {
-					c.IP = fa.Unmap().String()
-				}
-			}
+	c := client{UserAgent: r.UserAgent(), HostOK: s.hostAllowed(r)}
+	sec := &s.d.Security
+	peer, ok := remoteAddr(r)
+	trusted := ok && sec.ProxyTrusted(peer)
+	if ok {
+		c.IP = peer.String()
+		c.Loopback = peer.IsLoopback() && !trusted && !hasProxyHeader(r) && loopbackHost(r)
+	}
+	if trusted {
+		if ip, ok := forwardedFor(r, sec); ok {
+			c.IP = ip.String()
 		}
 	}
-	switch s.d.Security.CookieSecure {
+	httpsProto := strings.EqualFold(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")), "https")
+	switch sec.CookieSecure {
 	case config.CookieSecureAlways:
 		c.Secure = true
 	case config.CookieSecureNever:
 	default:
-		c.Secure = r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+		c.Secure = r.TLS != nil || (trusted && httpsProto)
+		s.noteScheme(r, c.Secure, httpsProto && !trusted)
 	}
-	if ck, err := r.Cookie(SessionCookie); err == nil {
-		c.Token = ck.Value
+	for _, name := range []string{HostSessionCookie, SessionCookie} {
+		if ck, err := r.Cookie(name); err == nil && ck.Value != "" {
+			c.Token, c.CookieName = ck.Value, name
+			break
+		}
 	}
 	return c
 }
 
-// sessionCookie returns the Set-Cookie value of a session (token "" clears it).
-func (s *Server) sessionCookie(c client, token string, ttl time.Duration) string {
+// forwardedFor walks X-Forwarded-For from the right and returns the first
+// address that is not a trusted proxy (the client as seen by the outermost
+// trusted proxy).
+func forwardedFor(r *http.Request, sec *config.Security) (netip.Addr, bool) {
+	vals := r.Header.Values("X-Forwarded-For")
+	var parts []string
+	for _, v := range vals {
+		parts = append(parts, strings.Split(v, ",")...)
+	}
+	for i := len(parts) - 1; i >= 0; i-- {
+		a, err := netip.ParseAddr(strings.TrimSpace(parts[i]))
+		if err != nil {
+			return netip.Addr{}, false
+		}
+		a = a.Unmap()
+		if !sec.ProxyTrusted(a) {
+			return a, true
+		}
+	}
+	return netip.Addr{}, false
+}
+
+// noteScheme warns once (GONEMA_COOKIE_SECURE=auto) when X-Forwarded-Proto
+// comes from a peer that is not a trusted proxy (ignored, the cookie may lose
+// Secure), and once when HTTPS trusted origins are configured but the first
+// requests never arrive over HTTPS.
+func (s *Server) noteScheme(r *http.Request, secure, untrustedProto bool) {
+	if untrustedProto && s.warnedProto.CompareAndSwap(false, true) {
+		s.log.Warn("X-Forwarded-Proto ignored: the request does not come from a trusted proxy. With GONEMA_COOKIE_SECURE=auto the session " +
+			"cookie is not marked Secure. Set GONEMA_TRUSTED_PROXIES to the address of the reverse proxy, or GONEMA_COOKIE_SECURE=true.")
+	}
+	if secure {
+		s.sawHTTPS.Store(true)
+		return
+	}
+	if r.URL.Path == "/api/v1/auth/login" || r.URL.Path == "/api/v1/auth/setup" {
+		if s.httpsOrigins && !s.sawHTTPS.Load() && s.warnedHTTPS.CompareAndSwap(false, true) {
+			s.log.Warn("GONEMA_TRUSTED_ORIGINS lists https origins but this sign-in arrived over plain HTTP as far as Gonema can tell: " +
+				"the session cookie is not marked Secure. Set GONEMA_TRUSTED_PROXIES to the address of the reverse proxy, or GONEMA_COOKIE_SECURE=true.")
+		}
+	}
+}
+
+// cookieName is the session cookie name for a response to c.
+func (s *Server) cookieName(c client) string {
+	if c.Secure && s.d.BaseURL == "" {
+		return HostSessionCookie
+	}
+	return SessionCookie
+}
+
+// sessionCookies returns the Set-Cookie values of a session (token "" clears
+// it). The other cookie name, if the browser still has it, is cleared.
+func (s *Server) sessionCookies(c client, token string, ttl time.Duration) []string {
+	name := s.cookieName(c)
 	ck := &http.Cookie{
-		Name: SessionCookie, Value: token, Path: s.d.BaseURL + "/",
-		HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: c.Secure,
+		Name: name, Value: token, Path: s.d.BaseURL + "/",
+		HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: c.Secure || name == HostSessionCookie,
 	}
 	if token == "" {
 		ck.MaxAge = -1
 	} else {
 		ck.MaxAge = int(ttl.Seconds())
 	}
-	return ck.String()
+	out := []string{ck.String()}
+	if c.CookieName != "" && c.CookieName != name {
+		old := &http.Cookie{Name: c.CookieName, Path: s.d.BaseURL + "/", HttpOnly: true, SameSite: http.SameSiteLaxMode,
+			Secure: c.CookieName == HostSessionCookie, MaxAge: -1}
+		out = append(out, old.String())
+	}
+	return out
 }
 
 // withSecurityHeaders sets the hardening headers of every response. API

@@ -488,15 +488,28 @@ func TestRootFolders(t *testing.T) {
 	e.fs.dirs["ro"] = e.fs.dirs["movies"]
 	e.fs.readOnly["/ro"] = true
 
+	e.svc.dataDir = "/config"
+	e.svc.SetReservedFolders(func(context.Context) []string { return []string{"/srv/recycle"} })
+	for _, d := range []string{"config", "config/sub", "srv/recycle", "srv"} {
+		e.fs.dirs[d] = e.fs.dirs["movies"]
+	}
+	// One message for every refusal that depends on the file system: the
+	// answer must not tell whether a path exists or is writable.
+	const refused = "cannot be used as a root folder"
 	tests := []struct {
 		path string
 		want string // substring of the error; "" = success
 	}{
 		{"relative/path", "absolute"},
-		{"/missing", "does not exist"},
-		{"/ro", "cannot write"},
+		{"/missing", refused},
+		{"/file.txt", refused},
+		{"/ro", refused},
+		{"/", refused},
+		{"/config", refused},     // the data directory
+		{"/config/sub", refused}, // inside it
+		{"/srv/recycle", refused},
+		{"/srv", refused},           // holds the recycle bin
 		{"/movies/sub", "overlaps"}, // /movies is a root folder (storetest)
-		{"/", "overlaps"},
 		{"/srv/media/", ""},
 	}
 	e.fs.dirs["movies/sub"] = e.fs.dirs["movies"]

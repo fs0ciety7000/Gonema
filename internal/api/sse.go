@@ -46,8 +46,14 @@ func (s *Server) registerEvents() {
 				"text/event-stream": {Schema: &huma.Schema{Type: huma.TypeString}},
 			}},
 		},
-	}, func(_ context.Context, in *eventsInput) (*huma.StreamResponse, error) {
+		Errors: []int{http.StatusTooManyRequests},
+	}, func(ctx context.Context, in *eventsInput) (*huma.StreamResponse, error) {
+		release, err := s.openStream(ctx)
+		if err != nil {
+			return nil, err
+		}
 		return &huma.StreamResponse{Body: func(hctx huma.Context) {
+			defer release()
 			r, w := humago.Unwrap(hctx)
 			s.stream(r, w, in.LastEventID)
 		}}, nil
