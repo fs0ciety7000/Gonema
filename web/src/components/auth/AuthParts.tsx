@@ -13,6 +13,7 @@ export const MAX_PASSWORD = 256;
 /** Password input with a show / hide toggle (the toggle is a real button with a pressed state). */
 export function PasswordInput({
   invalid,
+  disabled,
   ...rest
 }: Omit<ComponentPropsWithRef<'input'>, 'type' | 'size'> & { invalid?: boolean }) {
   const [shown, setShown] = useState(false);
@@ -21,6 +22,7 @@ export function PasswordInput({
       {...rest}
       type={shown ? 'text' : 'password'}
       invalid={invalid}
+      disabled={disabled}
       spellCheck={false}
       autoCapitalize="none"
       suffix={
@@ -28,6 +30,7 @@ export function PasswordInput({
           size="sm"
           label="Show password"
           aria-pressed={shown}
+          disabled={disabled}
           onClick={() => setShown((s) => !s)}
           className="pw-toggle"
         >
@@ -45,6 +48,17 @@ export function passwordStrength(pw: string): { level: 0 | 1 | 2 | 3; label: str
   if (pw.length >= 16 || (pw.length >= 12 && kinds >= 3)) return { level: 3, label: 'strong' };
   if (pw.length >= 12 || kinds >= 3) return { level: 2, label: 'good' };
   return { level: 1, label: 'fair' };
+}
+
+/** The strength word next to the field label ("strong"), coloured like the meter. */
+export function StrengthLabel({ password }: { password: string }) {
+  const s = passwordStrength(password);
+  if (!s.label) return undefined;
+  return (
+    <span className="pw-lvl" data-level={s.level}>
+      {s.label}
+    </span>
+  );
 }
 
 export function StrengthMeter({ password }: { password: string }) {
@@ -109,33 +123,37 @@ async function copyText(text: string, field: HTMLInputElement | null): Promise<b
 }
 
 /** The API key, shown once: copy it, and know it will not be shown again. The key lives only in
- *  this component's props (never stored, never logged). */
+ *  this component's props (never stored, never logged). onboarding.html `?step=account&state=key`. */
 export function ApiKeyReveal({ apiKey }: { apiKey: string }) {
   const id = useId();
   const field = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState<'yes' | 'no' | null>(null);
   return (
     <section className="key-reveal" aria-labelledby={`${id}-h`}>
-      <h2 id={`${id}-h`}>
-        <KeyRound className="i i-sm" aria-hidden="true" />
-        Your API key
-      </h2>
-      <p>
-        <strong>You won’t see it again.</strong> Copy it now into the app that needs it (a request manager, a script).
-        Gonema keeps only a fingerprint of it.
-      </p>
-      <div className="key-row">
-        <Input
+      <div className="kr-hd">
+        <span className="kr-ic" aria-hidden="true">
+          <KeyRound className="i" />
+        </span>
+        <div>
+          <h2 id={`${id}-h`}>Your API key</h2>
+          <span>
+            For apps and scripts that talk to Gonema, in the <code className="inl">X-Api-Key</code> header.
+          </span>
+        </div>
+      </div>
+      <div className="kr-val">
+        <input
           ref={field}
           id={`${id}-key`}
-          mono
+          className="t-mono"
           readOnly
           value={apiKey}
           aria-label="API key"
+          spellCheck={false}
           onFocus={(ev) => ev.currentTarget.select()}
-          wrapperClassName="key-field"
         />
         <Button
+          size="sm"
           icon={
             copied === 'yes' ? <Check className="i" aria-hidden="true" /> : <Copy className="i" aria-hidden="true" />
           }
@@ -144,13 +162,42 @@ export function ApiKeyReveal({ apiKey }: { apiKey: string }) {
           {copied === 'yes' ? 'Copied' : 'Copy'}
         </Button>
       </div>
-      <p className="t-caption t-muted" role="status">
+      <p className="kr-once">
+        <EyeOff className="i" aria-hidden="true" />
+        <span>
+          <b>You won’t see it again.</b> Gonema keeps only a fingerprint. Copy it now; you can make a new one later in
+          Settings › Security.
+        </span>
+      </p>
+      <p className="sr-only" role="status">
         {copied === 'yes'
           ? 'Copied to the clipboard.'
           : copied === 'no'
             ? 'This browser blocked the copy: the key is selected, press Ctrl+C (⌘C on a Mac).'
-            : 'Lost it later? Make a new one in Settings › Security; the old one then stops working.'}
+            : ''}
       </p>
+      {copied === 'no' && (
+        <p className="t-caption t-muted" aria-hidden="true">
+          This browser blocked the copy: the key is selected, press Ctrl+C (⌘C on a Mac).
+        </p>
+      )}
     </section>
+  );
+}
+
+/** Posters seen through frosted glass, without posters: the sign-in page cannot read the library,
+ *  so the wall is tiles in the brand's own colours, blurred like onboarding.html's poster wall.
+ *  Decorative only (no data). */
+const WALL_TONES = ['missing', 'downloading', 'upgraded', 'available', 'failed', 'accent'] as const;
+export function AtmosphereWall({ count = 30 }: { count?: number }) {
+  return (
+    <div className="atmos" aria-hidden="true">
+      <div className="wall">
+        {Array.from({ length: count }, (_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: static decorative tiles
+          <div key={i} className="poster-art wall-tile" data-tone={WALL_TONES[(i * 7 + (i >> 2)) % 6]} />
+        ))}
+      </div>
+    </div>
   );
 }

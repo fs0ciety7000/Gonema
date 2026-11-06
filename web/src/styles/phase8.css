@@ -2,51 +2,128 @@
    Derived from onboarding.html and settings-quality.html (no dedicated mockup; see e2e/fidelity.md).
    Loaded with these lazy screens only. */
 @layer screens {
-  /* ------------------------------------------------------------ sign-in (from onboarding.html) */
+  /* ------------------------------------------------------------ sign-in (login.html) */
   .login-page {
     display: flex;
     flex-direction: column;
   }
+  .login-page .ob-top {
+    flex: none;
+  }
+  .login-stage {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    padding: 16px 24px 56px;
+  }
   .login {
-    width: 440px;
-    max-width: calc(100vw - 32px);
-    margin: clamp(16px, 10vh, 120px) auto 40px;
+    width: 500px;
+    max-width: 100%;
     border-radius: var(--radius-xl);
     padding: var(--space-10) var(--space-10) var(--space-8);
-  }
-  .login-form {
     display: grid;
     gap: var(--space-5);
   }
-  .login-form .t-overline {
+  .login .t-overline {
     display: block;
     margin-bottom: 8px;
   }
-  .login-form h1 {
-    font: var(--type-display-md);
-    letter-spacing: var(--type-display-md-tracking);
+  .login h1 {
+    font: var(--type-display-lg);
+    letter-spacing: var(--type-display-lg-tracking);
     font-stretch: 125%;
   }
-  .login-form .intro {
+  .login .intro {
     margin-top: 8px;
     color: var(--text-secondary);
-    font: var(--type-body);
+  }
+  .login-form {
+    display: grid;
+    gap: var(--space-4);
   }
   .login-submit {
     width: 100%;
     justify-content: center;
   }
-  .login-help {
-    border-top: 1px solid var(--border);
-    padding-top: var(--space-4);
+  .countdown {
+    font-variant-numeric: tabular-nums;
+  }
+  /* calm countdown: a slow amber ring, the time in mono, no red */
+  .login-wait {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 14px;
+    align-items: center;
+    padding: 14px 16px;
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--bg-sunken) 75%, transparent);
+    border: 1px solid var(--border);
+  }
+  .login-wait .ring {
+    position: relative;
+    width: 56px;
+    height: 56px;
+  }
+  .login-wait .ring svg {
+    width: 56px;
+    height: 56px;
+    transform: rotate(-90deg);
+  }
+  .login-wait .ring circle {
+    fill: none;
+    stroke-width: 3;
+  }
+  .login-wait .ring .bg {
+    stroke: var(--bg-active);
+  }
+  .login-wait .ring .fg {
+    stroke: var(--status-missing);
+    stroke-linecap: round;
+    stroke-dasharray: 163.4;
+    transition: stroke-dashoffset 1s linear;
+  }
+  .login-wait .ring .t {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font: 600 13px / 1 var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+  }
+  .login-wait b {
+    display: block;
+    font: 500 14px / 20px var(--font-ui);
+  }
+  .login-wait .d {
     font: var(--type-body-sm);
     color: var(--text-secondary);
   }
+  .login-help {
+    border-top: 1px solid var(--border);
+    padding-top: var(--space-4);
+  }
   .login-help summary {
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     cursor: pointer;
+    font: 500 13px / 20px var(--font-ui);
     color: var(--text-secondary);
     border-radius: var(--radius-xs);
-    width: fit-content;
+  }
+  .login-help summary::-webkit-details-marker {
+    display: none;
+  }
+  .login-help summary .i {
+    width: 15px;
+    height: 15px;
+    color: var(--text-muted);
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .login-help[open] summary .i {
+    transform: rotate(90deg);
   }
   .login-help summary:hover {
     color: var(--text-primary);
@@ -55,33 +132,101 @@
     box-shadow: var(--focus-ring);
     outline: none;
   }
-  .login-help p {
-    margin-top: var(--space-2);
+  .login-help .help-bd {
+    margin-top: var(--space-3);
+    display: grid;
+    gap: 10px;
+    font: var(--type-body-sm);
+    color: var(--text-secondary);
   }
-  .countdown {
-    font-variant-numeric: tabular-nums;
+  .login-help ol {
+    margin: 0;
+    padding-left: 20px;
+    display: grid;
+    gap: 4px;
+  }
+  .login-help code {
+    font: var(--type-mono-sm);
     color: var(--text-primary);
+  }
+  .login-help .keep {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    font: var(--type-caption);
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .login-help .keep .i {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    margin-top: 1px;
   }
   @media (max-width: 520px) {
     .login {
       padding: var(--space-6);
     }
   }
+  @media (prefers-reduced-motion: reduce) {
+    .login-wait .ring .fg,
+    .login-help summary .i {
+      transition: none;
+    }
+  }
+  /* decorative wall (no library signed out): brand colours, blurred like the poster wall */
+  .wall-tile {
+    background: linear-gradient(160deg, var(--c), color-mix(in srgb, var(--c) 30%, var(--bg-base)));
+  }
+  .wall-tile[data-tone="missing"] {
+    --c: var(--status-missing);
+  }
+  .wall-tile[data-tone="downloading"] {
+    --c: var(--status-downloading);
+  }
+  .wall-tile[data-tone="upgraded"] {
+    --c: var(--status-upgraded);
+  }
+  .wall-tile[data-tone="available"] {
+    --c: var(--status-available);
+  }
+  .wall-tile[data-tone="failed"] {
+    --c: var(--status-failed);
+  }
+  .wall-tile[data-tone="accent"] {
+    --c: var(--accent);
+  }
+  .ob-page .atmos .wall:has(.wall-tile) {
+    opacity: 0.22;
+  }
+  [data-theme="light"] .ob-page .atmos .wall:has(.wall-tile) {
+    opacity: 0.16;
+  }
 
   /* ------------------------------------------------------------ password field + strength */
   .input .pw-toggle {
     margin-right: -6px;
+  }
+  .pw-lvl {
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+  .pw-lvl[data-level="1"],
+  .pw-lvl[data-level="2"] {
+    color: var(--status-missing);
+  }
+  .pw-lvl[data-level="3"] {
+    color: var(--status-available);
   }
   .pw-meter {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 4px;
     height: 4px;
-    max-width: 240px;
   }
   .pw-meter span {
-    border-radius: var(--radius-pill);
-    background: var(--border-control);
+    border-radius: 2px;
+    background: var(--bg-active);
   }
   .pw-meter[data-level="1"] span:nth-child(-n + 1),
   .pw-meter[data-level="2"] span:nth-child(-n + 2) {
@@ -94,35 +239,84 @@
   /* ------------------------------------------------------------ API key, shown once */
   .key-reveal {
     display: grid;
-    gap: 10px;
-    padding: 16px 18px;
+    gap: 14px;
+    padding: 18px;
     border-radius: var(--radius-lg);
     background: var(--bg-sunken);
-    border: 1px solid var(--border-control);
-    max-width: 640px;
+    border: 1px solid var(--border-strong);
+    max-width: 600px;
   }
-  .key-reveal h2 {
-    display: flex;
-    gap: 8px;
+  .kr-hd {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 12px;
     align-items: center;
-    font: 500 14px / 20px var(--font-ui);
   }
-  .key-reveal p {
+  .kr-ic {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    background: var(--bg-active);
+    color: var(--text-primary);
+  }
+  .kr-ic .i {
+    width: 20px;
+    height: 20px;
+  }
+  .kr-hd h2 {
+    font: 600 15px / 20px var(--font-ui);
+  }
+  .kr-hd span {
     font: var(--type-body-sm);
     color: var(--text-secondary);
   }
-  .key-reveal p strong {
+  .key-reveal code.inl {
+    font: var(--type-mono-sm);
     color: var(--text-primary);
-    font-weight: 600;
   }
-  .key-row {
+  .kr-val {
     display: flex;
-    gap: var(--space-2);
     align-items: center;
+    gap: 12px;
+    padding: 6px 10px 6px 14px;
+    border-radius: var(--radius-md);
+    background: var(--bg-raised);
+    border: 1px dashed var(--border-control);
   }
-  .key-row .key-field {
+  .kr-val input {
     flex: 1;
     min-width: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font: var(--type-mono);
+    letter-spacing: 0.01em;
+    padding: 4px 0;
+    border-radius: var(--radius-xs);
+    text-overflow: ellipsis;
+  }
+  .kr-val input:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+  .kr-once {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 10px;
+    font: var(--type-body-sm);
+    color: var(--text-secondary);
+  }
+  .kr-once .i {
+    width: 16px;
+    height: 16px;
+    color: var(--status-missing);
+    margin-top: 1px;
+  }
+  .kr-once b {
+    color: var(--text-primary);
+    font-weight: 600;
   }
 
   /* ------------------------------------------------------------ settings: security, backups, logs, about */
@@ -152,58 +346,6 @@
     font: var(--type-mono-sm);
     color: var(--text-primary);
   }
-  .sessions li {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-  }
-  .sessions .this {
-    font: var(--type-caption);
-    color: var(--text-secondary);
-    padding: 2px 8px;
-    border-radius: var(--radius-pill);
-    border: 1px solid var(--border-control);
-  }
-  .policy {
-    width: 100%;
-    border-collapse: collapse;
-    font: var(--type-body-sm);
-  }
-  .policy th,
-  .policy td {
-    text-align: left;
-    padding: 8px 10px 8px 0;
-    border-bottom: 1px solid var(--border);
-    vertical-align: top;
-  }
-  .policy thead th {
-    font: 500 12px / 1 var(--font-ui);
-    color: var(--text-muted);
-  }
-  .policy tbody th {
-    font-weight: 500;
-  }
-  .policy tbody th small {
-    display: block;
-    font: var(--type-caption);
-    color: var(--text-muted);
-    font-weight: 400;
-  }
-  .blocked-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  .blocked-list li {
-    font: var(--type-mono-sm);
-    color: var(--text-secondary);
-    padding: 2px 8px;
-    border-radius: var(--radius-sm);
-    background: var(--bg-sunken);
-    border: 1px solid var(--border);
-  }
-
   .backups li {
     grid-template-columns: minmax(0, 1fr) auto auto auto;
   }
@@ -395,5 +537,24 @@
   }
   .ob .pane .form .pw-meter {
     margin-top: 2px;
+  }
+}
+
+@layer screens {
+  /* setup token help (onboarding.html ?step=account) */
+  .tok-help {
+    display: grid;
+    gap: 6px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: var(--bg-sunken);
+    border: 1px solid var(--border);
+    font: var(--type-caption);
+    font-weight: 400;
+    color: var(--text-secondary);
+  }
+  .tok-help code {
+    font: var(--type-mono-sm);
+    color: var(--text-primary);
   }
 }

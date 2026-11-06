@@ -3695,6 +3695,8 @@ export interface components {
             attrs?: {
                 [key: string]: string;
             };
+            /** @description Part of Gonema that logged (indexer, download, import...); empty when unknown */
+            component: string;
             /** Format: int64 */
             id: number;
             /** @enum {string} */
@@ -7934,6 +7936,8 @@ export interface operations {
                 since?: string;
                 /** @description Case-insensitive text in the message or the attributes */
                 q?: string;
+                /** @description Components, comma-separated (indexer,download...); all when absent */
+                component?: string[] | null;
                 limit?: number;
             };
             header?: never;
@@ -7996,6 +8000,8 @@ export interface operations {
             query?: {
                 /** @description Minimum level */
                 level?: "debug" | "info" | "warn" | "error";
+                /** @description Components, comma-separated (indexer,download...); all when absent */
+                component?: string[] | null;
             };
             header?: {
                 /** @description Id of the last entry received; newer entries still in memory are replayed */

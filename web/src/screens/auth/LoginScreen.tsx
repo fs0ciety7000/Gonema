@@ -2,11 +2,17 @@ import '@/styles/lot3.css';
 import '@/styles/phase8.css';
 import { useQueryClient } from '@tanstack/react-query';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
-import { Clock, LogIn, TriangleAlert } from 'lucide-react';
+import { ChevronRight, Clock, Info, LogIn, TriangleAlert } from 'lucide-react';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { authStatusQuery, safeRedirect } from '@/api/auth';
 import { api } from '@/api/client';
-import { formatCountdown, PasswordInput, retryAfterSeconds, useSecondsLeft } from '@/components/auth/AuthParts';
+import {
+  AtmosphereWall,
+  formatCountdown,
+  PasswordInput,
+  retryAfterSeconds,
+  useSecondsLeft,
+} from '@/components/auth/AuthParts';
 import { Mark, Wordmark } from '@/components/shell/Logo';
 import { ThemeToggle } from '@/components/shell/Topbar';
 import { Button } from '@/components/ui/Button';
@@ -15,9 +21,12 @@ import { Field, Input } from '@/components/ui/Field';
 
 const route = getRouteApi('/login');
 
-type Problem = { kind: 'wrong' | 'invalid' | 'offline' | 'server'; text: string } | null;
+type Problem = { kind: 'wrong' | 'invalid' | 'offline' | 'server'; title: string; body?: string } | null;
 
-/** Sign-in page (no mockup: derived from onboarding.html, see e2e/fidelity.md). */
+/** Circumference of the countdown ring (r = 26). */
+const RING = 163.4;
+
+/** Sign-in page (login.html: ?state=default | error | throttled). */
 export function LoginScreen() {
   const { redirect } = route.useSearch();
   const navigate = useNavigate();
@@ -28,10 +37,10 @@ export function LoginScreen() {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<Problem>(null);
   const [missing, setMissing] = useState<{ username?: string; password?: string }>({});
-  const [blockedUntil, setBlockedUntil] = useState<number | null>(null);
-  const [blockedMinutes, setBlockedMinutes] = useState(1);
-  const left = useSecondsLeft(blockedUntil);
-  const blocked = blockedUntil !== null && left > 0;
+  const [blocked, setBlocked] = useState<{ until: number; total: number } | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const left = useSecondsLeft(blocked?.until ?? null);
+  const waiting = blocked !== null && left > 0;
   const pwRef = useRef<HTMLInputElement>(null);
   const userRef = useRef<HTMLInputElement>(null);
 
@@ -40,9 +49,16 @@ export function LoginScreen() {
     userRef.current?.focus();
   }, []);
 
+  // the wait is over: the password field comes back, focus goes to it
+  const wasWaiting = useRef(false);
+  useEffect(() => {
+    if (wasWaiting.current && !waiting) pwRef.current?.focus();
+    wasWaiting.current = waiting;
+  }, [waiting]);
+
   const submit = async (ev: FormEvent) => {
     ev.preventDefault();
-    if (busy || blocked) return;
+    if (busy || waiting) return;
     const m: typeof missing = {};
     if (!username.trim()) m.username = 'Type your username.';
     if (!password) m.password = 'Type your password.';
@@ -64,36 +80,42 @@ export function LoginScreen() {
       }
       const detail = (error as { detail?: string } | undefined)?.detail;
       if (response.status === 401) {
-        setProblem({ kind: 'wrong', text: 'That username and password don’t match. Check both, then try again.' });
+        setProblem({
+          kind: 'wrong',
+          title: 'That username and password don’t match.',
+          body: 'Check both, then try again. The password field was cleared.',
+        });
         setPassword('');
-        pwRef.current?.focus();
+        setHelpOpen(true);
+        // after React re-enables and clears the field
+        requestAnimationFrame(() => pwRef.current?.focus());
       } else if (response.status === 429) {
         const wait = retryAfterSeconds(response);
-        setBlockedMinutes(Math.max(1, Math.ceil(wait / 60)));
-        setBlockedUntil(Date.now() + wait * 1000);
+        setBlocked({ until: Date.now() + wait * 1000, total: wait });
         setPassword('');
       } else if (response.status === 409) {
         void navigate({ to: '/setup', search: { step: 'account' }, replace: true });
       } else if (response.status === 422) {
-        setProblem({ kind: 'invalid', text: detail ?? 'Check the username and the password.' });
+        setProblem({ kind: 'invalid', title: detail ?? 'Check the username and the password.' });
       } else {
-        setProblem({
-          kind: 'server',
-          text: detail ?? `The server answered ${response.status}. Try again in a moment.`,
-        });
+        setProblem({ kind: 'server', title: detail ?? `The server answered ${response.status}. Try again in a moment.` });
       }
     } catch {
       setProblem({
         kind: 'offline',
-        text: 'Gonema could not be reached. Check that the server is running, then try again.',
+        title: 'Gonema could not be reached.',
+        body: 'Check that the server is running, then try again.',
       });
     } finally {
       setBusy(false);
     }
   };
 
+  const minutes = blocked ? Math.max(1, Math.ceil(blocked.total / 60)) : 1;
+  const fraction = blocked && blocked.total > 0 ? left / blocked.total : 0;
   return (
     <div className="ob-page login-page">
+      <AtmosphereWall />
       <header className="ob-top">
         <span className="brand" role="img" aria-label="Gonema">
           <Mark />
@@ -102,96 +124,125 @@ export function LoginScreen() {
         <div className="spacer" />
         <ThemeToggle />
       </header>
-      <main id="main" className="login glass-2" aria-labelledby={`${id}-h`}>
-        <form onSubmit={submit} noValidate className="login-form">
+      <div className="login-stage">
+        <main id="main" className="login glass-2" aria-labelledby={`${id}-h`}>
           <div>
             <span className="t-overline">Sign in</span>
             <h1 id={`${id}-h`}>Back to the booth</h1>
             <p className="intro">Sign in to run your collection on this server.</p>
           </div>
-          {blocked ? (
-            <Notice
-              tone="missing"
-              icon={<Clock className="i" aria-hidden="true" />}
-              title="Too many attempts."
-              role="status"
-            >
-              Gonema pauses sign-in for a few minutes to keep guessers out. You can try again in{' '}
-              <span className="t-mono-sm countdown" aria-hidden="true">
-                {formatCountdown(left)}
-              </span>
-              <span className="sr-only">
-                about {blockedMinutes} {blockedMinutes === 1 ? 'minute' : 'minutes'}
-              </span>
-              .
-            </Notice>
+          {waiting ? (
+            <div className="login-wait" role="status">
+              <div className="ring" aria-hidden="true">
+                <svg viewBox="0 0 56 56">
+                  <circle className="bg" cx="28" cy="28" r="26" />
+                  <circle className="fg" cx="28" cy="28" r="26" style={{ strokeDashoffset: RING * (1 - fraction) }} />
+                </svg>
+                <span className="t">{formatCountdown(left)}</span>
+              </div>
+              <div>
+                <b>Sign-in is paused for a few minutes.</b>
+                <span className="d">
+                  Too many wrong attempts, so Gonema slows guessers down. Nothing is locked: the form comes back on its
+                  own.
+                </span>
+                <span className="sr-only">
+                  You can try again in about {minutes} {minutes === 1 ? 'minute' : 'minutes'}.
+                </span>
+              </div>
+            </div>
           ) : (
             problem && (
               <Notice
                 tone="failed"
                 icon={<TriangleAlert className="i" aria-hidden="true" />}
-                title={problem.text}
+                title={problem.title}
                 role="alert"
-              />
+              >
+                {problem.body}
+              </Notice>
             )
           )}
-          {blockedUntil !== null && !blocked && (
+          {blocked !== null && !waiting && (
             <p className="sr-only" role="status">
               You can sign in again.
             </p>
           )}
-          <Field label="Username" error={missing.username}>
-            {({ id: fid, describedBy, invalid }) => (
-              <Input
-                ref={userRef}
-                id={fid}
-                name="username"
-                autoComplete="username"
-                autoCapitalize="none"
-                spellCheck={false}
-                aria-describedby={describedBy}
-                invalid={invalid}
-                value={username}
-                onChange={(ev) => setUsername(ev.target.value)}
-              />
-            )}
-          </Field>
-          <Field label="Password" error={missing.password}>
-            {({ id: fid, describedBy, invalid }) => (
-              <PasswordInput
-                ref={pwRef}
-                id={fid}
-                name="password"
-                autoComplete="current-password"
-                aria-describedby={describedBy}
-                invalid={invalid}
-                value={password}
-                onChange={(ev) => setPassword(ev.target.value)}
-              />
-            )}
-          </Field>
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            loading={busy}
-            disabled={blocked}
-            icon={<LogIn className="i" aria-hidden="true" />}
-            className="login-submit"
-          >
-            Sign in
-          </Button>
-          <details className="login-help">
-            <summary>Forgot the password?</summary>
-            <p>
-              Gonema has one admin account and no reset by e-mail. On the server, stop Gonema and remove the account
-              from the <span className="t-mono-sm">users</span> table of the database, then start it again: this page
-              offers to create the account anew. Films, settings and connections are kept; the API key must be replaced
-              in the apps that use it.
-            </p>
+          <form onSubmit={submit} noValidate className="login-form">
+            <Field label="Username" error={missing.username}>
+              {({ id: fid, describedBy, invalid }) => (
+                <Input
+                  ref={userRef}
+                  id={fid}
+                  name="username"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={username}
+                  onChange={(ev) => setUsername(ev.target.value)}
+                />
+              )}
+            </Field>
+            <Field label="Password" error={missing.password}>
+              {({ id: fid, describedBy, invalid }) => (
+                <PasswordInput
+                  ref={pwRef}
+                  id={fid}
+                  name="password"
+                  autoComplete="current-password"
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  disabled={waiting}
+                  value={password}
+                  onChange={(ev) => setPassword(ev.target.value)}
+                />
+              )}
+            </Field>
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              loading={busy}
+              disabled={waiting}
+              icon={
+                waiting ? <Clock className="i" aria-hidden="true" /> : <LogIn className="i" aria-hidden="true" />
+              }
+              className="login-submit"
+            >
+              {waiting ? (
+                <>
+                  Try again in <span className="countdown">{formatCountdown(left)}</span>
+                </>
+              ) : (
+                'Sign in'
+              )}
+            </Button>
+          </form>
+          <details className="login-help" open={helpOpen} onToggle={(ev) => setHelpOpen(ev.currentTarget.open)}>
+            <summary>
+              <ChevronRight className="i" aria-hidden="true" />
+              Forgot the password?
+            </summary>
+            <div className="help-bd">
+              <p>Gonema has one admin account and no reset by e-mail. Whoever runs the server can make a new one:</p>
+              <ol>
+                <li>Stop Gonema.</li>
+                <li>
+                  Remove the account from the <code>users</code> table of <code>gonema.db</code>.
+                </li>
+                <li>Start it again: this page offers to create the account anew.</li>
+              </ol>
+              <span className="keep">
+                <Info className="i" aria-hidden="true" />
+                Films, settings and connections are kept. The API key goes with the account: put the new one in the
+                apps that use it.
+              </span>
+            </div>
           </details>
-        </form>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
