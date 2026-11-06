@@ -12,6 +12,7 @@ import (
 
 	"github.com/fs0ciety7000/gonema/internal/events"
 	"github.com/fs0ciety7000/gonema/internal/jobs"
+	"github.com/fs0ciety7000/gonema/internal/library"
 	"github.com/fs0ciety7000/gonema/internal/store"
 	"github.com/fs0ciety7000/gonema/internal/store/db"
 )
@@ -136,10 +137,22 @@ func (s *Service) RegisterJobs(r JobRunner) {
 	r.Handle(JobLibraryScan, s.handleScan, jobs.HandlerOptions{Timeout: scanJobTimeout})
 }
 
+// providerChecker is implemented by library.Service: Provider reports
+// ErrNoProvider while no TMDB key is configured.
+type providerChecker interface {
+	Provider() (library.KeyedProvider, error)
+}
+
 // StartLibraryScan queues a scan of a root folder, or of rel inside it.
 func (s *Service) StartLibraryScan(ctx context.Context, rootFolderID int64, rel string) (LibraryScan, error) {
 	if s.lib == nil {
 		return LibraryScan{}, ErrNoProvider
+	}
+	// Refuse at once rather than queue a scan that fails on its first lookup.
+	if pc, ok := s.lib.(providerChecker); ok {
+		if _, err := pc.Provider(); err != nil {
+			return LibraryScan{}, err
+		}
 	}
 	if s.jobs == nil || !s.jobs.Has(JobLibraryScan) {
 		return LibraryScan{}, userErr(ErrInvalid, nil, "background scans are not available on this server")
@@ -297,6 +310,9 @@ func (s *Service) runScan(ctx context.Context, sc *LibraryScan) error {
 		return err // shutdown: the job runs again at the next start
 	default:
 		sc.Status, sc.Error = ScanFailed, errText(err)
+		if errors.Is(err, ErrNoProvider) {
+			sc.Error = "No TMDB key is configured: add one in Settings > Metadata, then scan again."
+		}
 		if sc.Error == "" {
 			sc.Error = "The scan failed; the logs have the details."
 		}

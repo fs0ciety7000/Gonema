@@ -2,6 +2,7 @@ package importer_test
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"slices"
@@ -203,5 +204,32 @@ wait:
 	list, err := svc.LibraryScans(e.ctx)
 	if err != nil || len(list) != 1 || list[0].Folders != nil {
 		t.Errorf("list = %+v, %v", list, err)
+	}
+}
+
+// noProviderLibrary is a library without a TMDB key.
+type noProviderLibrary struct{ *fakeLibrary }
+
+func (noProviderLibrary) Provider() (library.KeyedProvider, error) { return nil, library.ErrNoProvider }
+
+// TestLibraryScanWithoutProvider: a scan is refused at once without TMDB,
+// instead of being queued and failing in the background.
+func TestLibraryScanWithoutProvider(t *testing.T) {
+	e := newEnv(t)
+	libraryTree(e)
+	runner := jobs.New(e.st, jobs.Options{Workers: 1, PollInterval: 10 * time.Millisecond, Bus: e.bus})
+	svc, err := importer.New(importer.Options{
+		Store: e.st, Bus: e.bus, Library: noProviderLibrary{e.lib}, Jobs: runner, Now: func() time.Time { return e.now },
+		FS: fsx.New(nil, fsx.Options{Now: func() time.Time { return e.now }}),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc.RegisterJobs(runner)
+	if _, err := svc.StartLibraryScan(e.ctx, e.rootID, "A-M"); !errors.Is(err, library.ErrNoProvider) {
+		t.Fatalf("err = %v, want ErrNoProvider", err)
+	}
+	if scans, err := svc.LibraryScans(e.ctx); err != nil || len(scans) != 0 {
+		t.Errorf("scans = %+v, %v; want none", scans, err)
 	}
 }

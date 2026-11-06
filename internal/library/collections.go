@@ -93,7 +93,14 @@ func (s *Service) MonitorCollection(ctx context.Context, id int64, opts MonitorO
 		return MonitorResult{}, invalid("minimumAvailability", "minimum availability must be announced, in_cinemas or released")
 	}
 	p := db.UpdateCollectionSettingsParams{ID: id, Monitored: opts.Monitored, MinimumAvailability: opts.MinimumAvailability, SearchOnAdd: opts.Monitored && opts.SearchOnAdd}
+	var prov KeyedProvider
 	if opts.Monitored {
+		// Check the provider before saving: monitoring without TMDB must not
+		// be stored and then reported as a failure.
+		var err error
+		if prov, err = s.Provider(); err != nil {
+			return MonitorResult{}, err
+		}
 		if err := s.checkRefs(ctx, opts.RootFolderID, opts.QualityProfileID); err != nil {
 			return MonitorResult{}, err
 		}
@@ -110,10 +117,6 @@ func (s *Service) MonitorCollection(ctx context.Context, id int64, opts MonitorO
 	s.publish(events.Event{Type: events.CollectionUpdated, Data: map[string]any{"id": id, "monitored": opts.Monitored}})
 	if !opts.Monitored {
 		return res, nil
-	}
-	prov, err := s.Provider()
-	if err != nil {
-		return res, err
 	}
 	c, err := prov.Collection(ctx, int(res.Collection.TmdbID))
 	if err != nil {

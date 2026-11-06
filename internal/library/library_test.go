@@ -661,3 +661,32 @@ func TestRefreshDue(t *testing.T) {
 		}
 	}
 }
+
+// Monitoring a collection without TMDB is refused before anything is saved.
+func TestCollectionMonitorWithoutProvider(t *testing.T) {
+	e := newEnv(t)
+	ref := &metadata.CollectionRef{TMDBID: 10, Name: "Alien Collection"}
+	m := released(1, "Alien", 1979)
+	m.Collection = ref
+	e.prov.set(m)
+	first := e.add(t, 1)
+	e.svc.provider = nil
+	ctx := context.Background()
+	_, err := e.svc.MonitorCollection(ctx, *first.CollectionID, MonitorOptions{
+		Monitored: true, QualityProfileID: e.lib.ProfileID, RootFolderID: e.lib.RootFolderID,
+	})
+	if !errors.Is(err, ErrNoProvider) {
+		t.Fatalf("err = %v, want ErrNoProvider", err)
+	}
+	c, err := e.st.Read().GetCollection(ctx, *first.CollectionID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Monitored {
+		t.Error("collection saved as monitored without a provider")
+	}
+	// Turning monitoring off needs no provider.
+	if _, err := e.svc.MonitorCollection(ctx, *first.CollectionID, MonitorOptions{}); err != nil {
+		t.Errorf("unmonitor without provider: %v", err)
+	}
+}
