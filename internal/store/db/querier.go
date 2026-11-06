@@ -37,8 +37,14 @@ type Querier interface {
 	// ----------------------------------------------------------------- scoring
 	CountScoringRules(ctx context.Context) (int64, error)
 	CountTagMovies(ctx context.Context, tagID int64) (int64, error)
+	CountUsers(ctx context.Context) (int64, error)
+	CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (ApiKey, error)
 	// ----------------------------------------------------------------- download clients
 	CreateDownloadClient(ctx context.Context, arg CreateDownloadClientParams) (DownloadClient, error)
+	// Phase 8 operations: import journal (migration 00008) and the per-movie
+	// deltas of the library index.
+	// ----------------------------------------------------------------- import journal
+	CreateImportJournal(ctx context.Context, arg CreateImportJournalParams) (ImportJournal, error)
 	// ----------------------------------------------------------------- indexers
 	CreateIndexer(ctx context.Context, arg CreateIndexerParams) (Indexer, error)
 	// ----------------------------------------------------------------- media servers
@@ -51,11 +57,14 @@ type Querier interface {
 	CreateRootFolder(ctx context.Context, path string) (RootFolder, error)
 	CreateSavedView(ctx context.Context, arg CreateSavedViewParams) (SavedView, error)
 	CreateScoringRule(ctx context.Context, arg CreateScoringRuleParams) (ScoringRule, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateTag(ctx context.Context, label string) (Tag, error)
+	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteAlternateTitles(ctx context.Context, arg DeleteAlternateTitlesParams) error
 	DeleteBlocklist(ctx context.Context, id int64) (int64, error)
 	DeleteCollection(ctx context.Context, id int64) (int64, error)
 	DeleteDownloadClient(ctx context.Context, id int64) (int64, error)
+	DeleteExpiredSessions(ctx context.Context, arg DeleteExpiredSessionsParams) (int64, error)
 	DeleteFinishedJobsBefore(ctx context.Context, before int64) (int64, error)
 	DeleteImportListExclusion(ctx context.Context, tmdbID int64) (int64, error)
 	DeleteIndexer(ctx context.Context, id int64) (int64, error)
@@ -72,8 +81,12 @@ type Querier interface {
 	DeleteSavedView(ctx context.Context, id int64) (int64, error)
 	DeleteScoringConditions(ctx context.Context, ruleID int64) error
 	DeleteScoringRule(ctx context.Context, id int64) (int64, error)
+	DeleteSession(ctx context.Context, id int64) (int64, error)
 	DeleteSetting(ctx context.Context, key string) (int64, error)
 	DeleteTag(ctx context.Context, id int64) (int64, error)
+	DeleteUserAPIKey(ctx context.Context, userID int64) (int64, error)
+	DeleteUserSession(ctx context.Context, arg DeleteUserSessionParams) (int64, error)
+	DeleteUserSessionsExcept(ctx context.Context, arg DeleteUserSessionsExceptParams) (int64, error)
 	// EnqueueJob inserts a pending job. With a dedupe_key that an active (pending or
 	// running) job already holds, nothing is inserted and sql.ErrNoRows is returned.
 	EnqueueJob(ctx context.Context, arg EnqueueJobParams) (Job, error)
@@ -82,15 +95,21 @@ type Querier interface {
 	FailJob(ctx context.Context, arg FailJobParams) (Job, error)
 	// FindImageOwner finds the movie an image belongs to (demo image rendering).
 	FindImageOwner(ctx context.Context, imagePath string) (FindImageOwnerRow, error)
+	GetAPIKeyByHash(ctx context.Context, keyHash []byte) (GetAPIKeyByHashRow, error)
 	GetBlocklist(ctx context.Context, id int64) (Blocklist, error)
 	GetCollection(ctx context.Context, id int64) (Collection, error)
 	GetCollectionByTmdbID(ctx context.Context, tmdbID int64) (Collection, error)
 	GetCurrentMovieFile(ctx context.Context, movieID int64) (MovieFile, error)
 	GetDownload(ctx context.Context, id int64) (Download, error)
 	GetDownloadClient(ctx context.Context, id int64) (DownloadClient, error)
+	GetFirstUser(ctx context.Context) (User, error)
+	GetImportJournal(ctx context.Context, id int64) (ImportJournal, error)
 	GetIndexer(ctx context.Context, id int64) (Indexer, error)
 	GetJob(ctx context.Context, id int64) (Job, error)
 	GetLastRSSSync(ctx context.Context) (int64, error)
+	// ----------------------------------------------------------------- library index deltas
+	// GetLibraryChangesHead returns the newest change sequence (0 when none).
+	GetLibraryChangesHead(ctx context.Context) (GetLibraryChangesHeadRow, error)
 	// GetLibraryVersion is bumped by triggers on every change ListLibraryIndex
 	// can see (migration 00004).
 	GetLibraryVersion(ctx context.Context) (int64, error)
@@ -114,11 +133,15 @@ type Querier interface {
 	// dashboard and onboarding.
 	// ----------------------------------------------------------------- scoring rules
 	GetScoringRule(ctx context.Context, id int64) (ScoringRule, error)
+	GetSessionByToken(ctx context.Context, tokenHash []byte) (GetSessionByTokenRow, error)
 	GetSetting(ctx context.Context, key string) (string, error)
 	// ----------------------------------------------------------------- onboarding
 	GetSetupCounts(ctx context.Context) (GetSetupCountsRow, error)
 	GetTag(ctx context.Context, id int64) (Tag, error)
 	GetTagByLabel(ctx context.Context, label string) (Tag, error)
+	GetUser(ctx context.Context, id int64) (User, error)
+	GetUserAPIKey(ctx context.Context, userID int64) (ApiKey, error)
+	GetUserByUsername(ctx context.Context, username string) (User, error)
 	InsertAlternateTitle(ctx context.Context, arg InsertAlternateTitleParams) (AlternateTitle, error)
 	// ----------------------------------------------------------------- blocklist
 	InsertBlocklist(ctx context.Context, arg InsertBlocklistParams) (Blocklist, error)
@@ -169,12 +192,18 @@ type Querier interface {
 	// of the download. events is a JSON array of event kinds; NULL filters nothing.
 	// since and until are Unix milliseconds (until excluded).
 	ListHistoryFiltered(ctx context.Context, arg ListHistoryFilteredParams) ([]ListHistoryFilteredRow, error)
+	ListImportJournal(ctx context.Context, limit int64) ([]ImportJournal, error)
+	ListImportJournalByStatus(ctx context.Context, status string) ([]ImportJournal, error)
 	ListImportListExclusions(ctx context.Context) ([]ImportListExclusion, error)
 	ListIndexers(ctx context.Context) ([]Indexer, error)
 	ListJobsByStatus(ctx context.Context, arg ListJobsByStatusParams) ([]Job, error)
 	// ListLastFailedDownloads returns the movies whose newest download failed,
 	// with its grab time (the library index compares it with the file import).
 	ListLastFailedDownloads(ctx context.Context) ([]ListLastFailedDownloadsRow, error)
+	ListLastFailedDownloadsByIDs(ctx context.Context, ids string) ([]ListLastFailedDownloadsByIDsRow, error)
+	// ListLibraryChangesSince returns the changes after a sequence, oldest first.
+	// movie_id NULL means every movie.
+	ListLibraryChangesSince(ctx context.Context, arg ListLibraryChangesSinceParams) ([]LibraryChange, error)
 	// Queries of the web UI screens (library grid and table, header, saved views).
 	// ListLibraryIndex returns the compact row of every movie, in id order. The
 	// library service keeps it in memory (rebuilt when GetLibraryVersion changes)
@@ -182,6 +211,9 @@ type Querier interface {
 	// download_progress is the persisted progress
 	// of the newest active download (0 when not downloading).
 	ListLibraryIndex(ctx context.Context) ([]ListLibraryIndexRow, error)
+	// ListLibraryIndexByIDs is ListLibraryIndex restricted to some movies (ids: a
+	// JSON array of integers).
+	ListLibraryIndexByIDs(ctx context.Context, ids string) ([]ListLibraryIndexByIDsRow, error)
 	ListMatcherAlternateTitleRows(ctx context.Context) ([]ListMatcherAlternateTitleRowsRow, error)
 	ListMatcherAlternateTitles(ctx context.Context) ([]ListMatcherAlternateTitlesRow, error)
 	// Queries of the library service (internal/library) and the API.
@@ -198,6 +230,7 @@ type Querier interface {
 	ListMovieHistory(ctx context.Context, arg ListMovieHistoryParams) ([]History, error)
 	ListMovieIDsByTag(ctx context.Context, tagID int64) ([]int64, error)
 	ListMovieTags(ctx context.Context, movieID int64) ([]Tag, error)
+	ListMovieTagsByIDs(ctx context.Context, ids string) ([]MovieTag, error)
 	// ListMoviesByAddedDesc is keyset-paginated, newest first: pass the last
 	// (added_at, id) of the previous page, or (math.MaxInt64, math.MaxInt64) first.
 	ListMoviesByAddedDesc(ctx context.Context, arg ListMoviesByAddedDescParams) ([]ListMoviesByAddedDescRow, error)
@@ -247,6 +280,8 @@ type Querier interface {
 	// discover flags and file operations.
 	// ----------------------------------------------------------------- tags
 	ListTagsWithUsage(ctx context.Context) ([]ListTagsWithUsageRow, error)
+	ListUserSessions(ctx context.Context, arg ListUserSessionsParams) ([]Session, error)
+	PruneImportJournal(ctx context.Context, before int64) (int64, error)
 	// PurgeHistory deletes rows created before cutoff. The history_retention_only
 	// trigger aborts unless every such row is also older than the
 	// 'history.retention_days' setting.
@@ -270,6 +305,7 @@ type Querier interface {
 	// contains query (lower case; lower() folds ASCII only).
 	SearchAlternateTitleMovies(ctx context.Context, query string) ([]int64, error)
 	SetDownloadClientSecrets(ctx context.Context, arg SetDownloadClientSecretsParams) (int64, error)
+	SetImportJournalStatus(ctx context.Context, arg SetImportJournalStatusParams) (ImportJournal, error)
 	SetIndexerSecrets(ctx context.Context, arg SetIndexerSecretsParams) (int64, error)
 	SetMediaServerSecrets(ctx context.Context, arg SetMediaServerSecretsParams) (int64, error)
 	SetMovieFileRelativePath(ctx context.Context, arg SetMovieFileRelativePathParams) (MovieFile, error)
@@ -283,6 +319,10 @@ type Querier interface {
 	SetNotificationSecrets(ctx context.Context, arg SetNotificationSecretsParams) (int64, error)
 	SetProfileScore(ctx context.Context, arg SetProfileScoreParams) error
 	SetSetting(ctx context.Context, arg SetSettingParams) error
+	SetUserLastLogin(ctx context.Context, arg SetUserLastLoginParams) error
+	SetUserPassword(ctx context.Context, arg SetUserPasswordParams) (int64, error)
+	TouchAPIKey(ctx context.Context, arg TouchAPIKeyParams) error
+	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateCollectionSettings(ctx context.Context, arg UpdateCollectionSettingsParams) (Collection, error)
 	UpdateDownloadClient(ctx context.Context, arg UpdateDownloadClientParams) (DownloadClient, error)
 	UpdateDownloadClientHealth(ctx context.Context, arg UpdateDownloadClientHealthParams) (int64, error)

@@ -41,8 +41,7 @@ type SetupStep struct {
 	ID string
 	// Done: the step needs nothing more.
 	Done bool
-	// Available is false for steps that need a later version (the admin
-	// account arrives with authentication).
+	// Available is false for steps that need a later version.
 	Available bool
 	// Count is the number of items the step created (folders, clients...).
 	Count int64
@@ -75,8 +74,13 @@ func (s *Service) SetupStatus(ctx context.Context) (SetupStatus, error) {
 		return SetupStatus{}, fmt.Errorf("library: read %s: %w", settingSetupDismissed, err)
 	}
 	tmdb := s.TMDBConfigured()
+	users, err := s.st.Read().CountUsers(ctx)
+	if err != nil {
+		return SetupStatus{}, store.MapError(fmt.Errorf("library: count accounts: %w", err))
+	}
 	st := SetupStatus{Dismissed: dismissed, Steps: []SetupStep{
-		{ID: StepAccount, Available: false},
+		// The admin account (POST /auth/setup); done once it exists.
+		{ID: StepAccount, Available: true, Done: users > 0, Count: users},
 		{ID: StepTMDB, Available: true, Done: tmdb, Count: boolCount(tmdb)},
 		{ID: StepRootFolder, Available: true, Done: c.RootFolders > 0, Count: c.RootFolders},
 		{ID: StepDownloadClient, Available: true, Done: c.DownloadClients > 0, Count: c.DownloadClients},

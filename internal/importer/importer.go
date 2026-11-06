@@ -183,6 +183,10 @@ type Options struct {
 	// ExtraRoots, optional, returns more folders imports may read from (e.g. the
 	// download folders reported by the download clients).
 	ExtraRoots func(ctx context.Context) []string
+	// Fault, for tests only, is called between the steps of an import (see
+	// the Fault* constants); an error stops the import there as a crash
+	// would: nothing is undone and the journal entry stays pending.
+	Fault func(step string) error
 }
 
 // Service imports files. It is safe for concurrent use; imports of one movie
@@ -196,6 +200,7 @@ type Service struct {
 	log        *slog.Logger
 	now        func() time.Time
 	extraRoots func(ctx context.Context) []string
+	fault      func(step string) error
 
 	locks sync.Map // movie id -> *sync.Mutex
 }
@@ -207,7 +212,7 @@ func New(opts Options) (*Service, error) {
 	}
 	s := &Service{
 		st: opts.Store, fs: opts.FS, matcher: opts.Matcher, lib: opts.Library, bus: opts.Bus,
-		log: opts.Logger, now: opts.Now, extraRoots: opts.ExtraRoots,
+		log: opts.Logger, now: opts.Now, extraRoots: opts.ExtraRoots, fault: opts.Fault,
 	}
 	if s.now == nil {
 		s.now = time.Now

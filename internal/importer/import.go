@@ -541,9 +541,25 @@ func (s *Service) execute(ctx context.Context, set *Settings, p *plan) (Result, 
 		name, dst, place = free, filepath.Join(movieDir, free), filepath.Join(movieDir, free)
 	}
 
+	// The intent goes to the journal before any file is touched: a crash
+	// between the file operation and the database commit is reconciled at
+	// the next start (see Recover).
+	fileParams := s.fileParams(p, name)
+	jid, err := s.journalBegin(ctx, p, set, dst, place, staging, curPath, &fileParams)
+	if err != nil {
+		return Result{}, err
+	}
+	if err := s.faultAt(FaultAfterIntent); err != nil {
+		return Result{}, err
+	}
 	out, err := s.fs.Transfer(ctx, p.src, place, p.mode)
 	if err != nil {
-		return Result{}, fsErr(err, "cannot %s %s into %s", modeVerb(p.mode), filepath.Base(p.src), movieDir)
+		err = fsErr(err, "cannot %s %s into %s", modeVerb(p.mode), filepath.Base(p.src), movieDir)
+		s.journalFail(ctx, jid, err)
+		return Result{}, err
+	}
+	if err := s.faultAt(FaultAfterTransfer); err != nil {
+		return Result{}, err
 	}
 	// Undo uses a detached context: it must run even when ctx is canceled.
 	undoCtx := context.WithoutCancel(ctx)
@@ -568,10 +584,15 @@ func (s *Service) execute(ctx context.Context, set *Settings, p *plan) (Result, 
 			})
 			if err != nil {
 				undoTransfer(place)
-				return Result{}, fsErr(err, "cannot move the previous file %s to the recycle bin %s", filepath.Base(curPath), bin)
+				err = fsErr(err, "cannot move the previous file %s to the recycle bin %s", filepath.Base(curPath), bin)
+				s.journalFail(ctx, jid, err)
+				return Result{}, err
 			}
 			recycled = &it
 		}
+	}
+	if err := s.faultAt(FaultAfterRecycle); err != nil {
+		return Result{}, err
 	}
 	restoreOld := func() {
 		if recycled == nil {
@@ -585,21 +606,16 @@ func (s *Service) execute(ctx context.Context, set *Settings, p *plan) (Result, 
 		if _, err := s.fs.Move(ctx, place, dst); err != nil {
 			undoTransfer(place)
 			restoreOld()
-			return Result{}, fsErr(err, "cannot rename the new file into place in %s", movieDir)
+			err = fsErr(err, "cannot rename the new file into place in %s", movieDir)
+			s.journalFail(ctx, jid, err)
+			return Result{}, err
 		}
+	}
+	if err := s.faultAt(FaultBeforeCommit); err != nil {
+		return Result{}, err
 	}
 
 	// Record.
-	parsedJSON, err := json.Marshal(&p.parsed)
-	if err != nil {
-		parsedJSON = []byte("{}")
-	}
-	langs := make([]string, 0, len(p.parsed.Languages))
-	for _, l := range p.parsed.Languages {
-		langs = append(langs, l.String())
-	}
-	langJSON, _ := json.Marshal(langs)
-	media, _ := json.Marshal(mediaInfo(&p.parsed))
 	upgraded := t.current != nil
 	reason := fmt.Sprintf("Imported %s as %s (%s)", qualityLabel(p.quality, p.parsed.Revision), name, methodText(out.Method))
 	event := historyImported
@@ -630,27 +646,27 @@ func (s *Service) execute(ctx context.Context, set *Settings, p *plan) (Result, 
 	}
 	score := int64(p.score.Total)
 	var row db.MovieFile
+	fileParams.ImportedAt = store.Millis(s.now())
 	err = s.st.WithTx(ctx, func(q *db.Queries) error {
 		var err error
-		row, err = q.UpsertMovieFile(ctx, db.UpsertMovieFileParams{
-			MovieID: t.movie.ID, RelativePath: name, Size: p.size, Quality: string(p.quality),
-			Revision: int64(max(p.parsed.Revision.Version, 1)), Edition: p.parsed.Edition.String(),
-			Languages: string(langJSON), ReleaseGroup: p.parsed.ReleaseGroup, SceneName: p.scene,
-			Parsed: string(parsedJSON), MediaInfo: string(media), CustomScore: score,
-			ImportedAt: store.Millis(s.now()),
-		})
+		row, err = q.UpsertMovieFile(ctx, fileParams)
 		if err != nil {
 			return fmt.Errorf("record movie file: %w", err)
 		}
-		return s.appendHistory(ctx, q, &historyRow{
+		if err := s.appendHistory(ctx, q, &historyRow{
 			movieID: t.movie.ID, event: event, title: p.scene, quality: string(p.quality), score: &score,
 			downloadID: p.downloadID, data: data,
-		})
+		}); err != nil {
+			return err
+		}
+		return s.journalDone(ctx, q, jid, "")
 	})
 	if err != nil {
 		undoTransfer(dst)
 		restoreOld()
-		return Result{}, fmt.Errorf("importer: record the import of %s: %w", t.movie.Title, err)
+		err = fmt.Errorf("importer: record the import of %s: %w", t.movie.Title, err)
+		s.journalFail(ctx, jid, err)
+		return Result{}, err
 	}
 
 	result := Result{Imported: true, Upgraded: upgraded, FileID: row.ID, Path: name, Reason: reason}

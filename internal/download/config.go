@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/fs0ciety7000/gonema/internal/netx"
 )
 
 // DefaultTimeout bounds each HTTP request to a client.
@@ -85,19 +87,16 @@ func (c *Config) Client() (*http.Client, error) {
 		}
 		return c.HTTPClient, nil
 	}
-	tr := http.DefaultTransport.(*http.Transport).Clone()
+	// Destinations are checked by netx (integration policy: loopback and LAN
+	// allowed by default, link-local and metadata addresses never).
+	tr := netx.NewTransport(netx.Integration)
 	if c.InsecureSkipVerify {
 		// security: explicit, documented opt-in for self-signed certificates.
 		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12} //nolint:gosec // opt-in
 	}
 	// No global timeout: each request gets its own (Config.Timeout). Redirects
 	// are not followed: a client API never redirects, a proxy login page does.
-	return &http.Client{
-		Transport: tr,
-		CheckRedirect: func(*http.Request, []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}, nil
+	return &http.Client{Transport: netx.Wrap(tr), CheckRedirect: netx.NoRedirect}, nil
 }
 
 // RequestTimeout returns the per-request timeout.

@@ -459,7 +459,7 @@ func serveImage(w http.ResponseWriter, r *http.Request, local, kind, size, file 
 	}
 	h := w.Header()
 	h.Set("ETag", `"`+kind+"-"+size+"-"+file+"-"+strconv.FormatInt(fi.Size(), 36)+"-"+strconv.FormatInt(fi.ModTime().UnixNano(), 36)+`"`)
-	h.Set("Cache-Control", "public, max-age=31536000, immutable")
+	h.Set("Cache-Control", "private, max-age=31536000, immutable") // private: served to signed-in callers only
 	h.Set("X-Content-Type-Options", "nosniff")
 	switch path.Ext(file) {
 	case ".png":

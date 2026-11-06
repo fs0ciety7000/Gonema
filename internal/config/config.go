@@ -13,6 +13,10 @@
 //	                   sub-path ("/gonema"); default "" (served at the root).
 //	GONEMA_WORKERS     number of background job workers, default 4.
 //
+// The security variables (GONEMA_AUTH, GONEMA_COOKIE_SECURE,
+// GONEMA_TRUSTED_ORIGINS, GONEMA_OUTBOUND_*, GONEMA_WEBHOOK_ALLOW_PRIVATE) are
+// described in security.go and docs/security.md.
+//
 // The default port 7676 avoids the ports of other well-known self-hosted media
 // apps (7878, 8989, 8686, 8787, 9696, 6767, 6969, 5055, 8096, 32400, 8080,
 // 9091, 8112, 6789, 8181).
@@ -60,6 +64,8 @@ type Config struct {
 	LogFormat string     // FormatText or FormatJSON
 	BaseURL   string     // "" or "/path" without trailing slash
 	Workers   int        // background job workers
+	Security  Security   // authentication and outbound policy
+	Log       LogOutput  // log file and in-memory buffer (logging.go)
 }
 
 // Env abstracts the process environment for tests.
@@ -76,6 +82,8 @@ func Defaults(inContainer bool) Config {
 		LogLevel:  slog.LevelInfo,
 		LogFormat: FormatText,
 		Workers:   4,
+		Security:  DefaultSecurity(),
+		Log:       DefaultLogOutput(),
 	}
 	if inContainer {
 		c.DataDir = "/config"
@@ -108,6 +116,8 @@ func Load(args []string, env Env, out io.Writer) (Config, error) {
 	format := fs.String("log-format", str(EnvLogFormat, def.LogFormat), "log format: text or json ("+EnvLogFormat+")")
 	baseURL := fs.String("base-url", str(EnvBaseURL, ""), "URL path prefix behind a reverse proxy, e.g. /gonema ("+EnvBaseURL+")")
 	workers := fs.String("workers", str(EnvWorkers, strconv.Itoa(def.Workers)), "background job workers, 1-32 ("+EnvWorkers+")")
+	sec := newSecurityFlags(fs, str)
+	logOut := newLogFlags(fs, str)
 	if err := fs.Parse(args); err != nil {
 		return Config{}, err
 	}
@@ -142,6 +152,13 @@ func Load(args []string, env Env, out io.Writer) (Config, error) {
 		errs = append(errs, fmt.Errorf("config: workers %q: want a number from 1 to 32", *workers))
 	} else {
 		c.Workers = n
+	}
+	var err error
+	if c.Security, err = sec.finish(); err != nil {
+		errs = append(errs, err)
+	}
+	if c.Log, err = logOut.finish(c.DataDir); err != nil {
+		errs = append(errs, err)
 	}
 	if err := errors.Join(errs...); err != nil {
 		return Config{}, err
@@ -198,14 +215,14 @@ func cleanBaseURL(b string) (string, error) {
 
 // LogAttrs returns the configuration as log attributes (it holds no secret).
 func (c *Config) LogAttrs() []any {
-	return []any{
+	return append([]any{
 		slog.String("data_dir", c.DataDir),
 		slog.String("bind", c.Bind),
 		slog.String("base_url", c.BaseURL),
 		slog.String("log_level", c.LogLevel.String()),
 		slog.String("log_format", c.LogFormat),
 		slog.Int("workers", c.Workers),
-	}
+	}, append(c.Security.logAttrs(), c.Log.logAttrs()...)...)
 }
 
 // IsLoopback reports whether Bind only accepts local connections.

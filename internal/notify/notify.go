@@ -246,12 +246,31 @@ type Config struct {
 
 // Options are the shared dependencies of the implementations.
 type Options struct {
-	HTTP      *http.Client // default outbound.NewHTTPClient()
-	UserAgent string       // default "Gonema"
-	Timeout   time.Duration
-	Now       func() time.Time
+	HTTP *http.Client // default outbound.NewHTTPClient()
+	// WebhookHTTP sends to webhook URLs (webhook, Discord, Slack); default
+	// HTTP when HTTP is set, outbound.NewWebhookHTTPClient() otherwise
+	// (public addresses only unless the operator allowed private ones).
+	WebhookHTTP *http.Client
+	UserAgent   string // default "Gonema"
+	Timeout     time.Duration
+	Now         func() time.Time
 	// Dial opens SMTP connections; default net.Dialer. Tests replace it.
 	Dial func(ctx context.Context, network, addr string) (net.Conn, error)
+}
+
+// defaultClients fills HTTP and WebhookHTTP. A caller that set HTTP only (tests,
+// custom transports) gets it for webhooks too.
+func (o *Options) defaultClients() {
+	if o.WebhookHTTP == nil {
+		if o.HTTP != nil {
+			o.WebhookHTTP = o.HTTP
+		} else {
+			o.WebhookHTTP = outbound.NewWebhookHTTPClient()
+		}
+	}
+	if o.HTTP == nil {
+		o.HTTP = outbound.NewHTTPClient()
+	}
 }
 
 // ErrConfig means the settings are incomplete or invalid; the message says why.
@@ -271,9 +290,7 @@ func New(cfg Config, opts Options) (Notifier, error) {
 	if !cfg.Kind.Valid() {
 		return nil, configErr("unknown notification kind %q", cfg.Kind)
 	}
-	if opts.HTTP == nil {
-		opts.HTTP = outbound.NewHTTPClient()
-	}
+	opts.defaultClients()
 	if opts.UserAgent == "" {
 		opts.UserAgent = "Gonema"
 	}
@@ -290,8 +307,12 @@ func New(cfg Config, opts Options) (Notifier, error) {
 		// The path of a Discord or Slack webhook URL is its secret.
 		red.Add(strings.TrimPrefix(u.Path, "/"), u.EscapedPath())
 	}
+	hc := opts.HTTP
+	if cfg.Kind == Webhook || cfg.Kind == Discord || cfg.Kind == Slack {
+		hc = opts.WebhookHTTP
+	}
 	client := &outbound.Client{
-		Service: cfg.Kind.Label(), HTTP: opts.HTTP, Timeout: opts.Timeout, UserAgent: opts.UserAgent, Redactor: red, Now: opts.Now,
+		Service: cfg.Kind.Label(), HTTP: hc, Timeout: opts.Timeout, UserAgent: opts.UserAgent, Redactor: red, Now: opts.Now,
 	}
 	s := &cfg.Settings
 	switch cfg.Kind {

@@ -40,6 +40,7 @@ func (p PageParams) beforeID() int64 {
 }
 
 func (s *Server) routes() {
+	s.authRoutes()
 	s.systemRoutes()
 	s.movieRoutes()
 	s.libraryRoutes()

@@ -177,9 +177,9 @@ Toute modification d'un profil ou d'une règle recalcule, dans la même transact
 
 **jobs** — `id, kind, payload JSON, status (pending·running·done·failed·cancelled), priority, dedupe_key UNIQUE NULL, run_at, attempts, max_attempts, last_error, started_at, finished_at, created_at`. Index `(status, run_at, priority)`. Les jobs `running` au démarrage repassent en `pending` (reprise).
 
-**users** — `id, username UNIQUE, password_hash (argon2id), role (admin·user), created_at, last_login_at`.
-**sessions** — `token_hash PK, user_id FK, expires_at, user_agent, ip, created_at`.
-**api_keys** — `id, user_id FK, name, key_hash, prefix, created_at, last_used_at`. La clé n'est montrée qu'une fois.
+**users** — `id, username UNIQUE (comparé sans casse), password_hash (argon2id, chaîne PHC), role (admin·user), created_at, last_login_at, password_changed_at`. Un seul compte admin pour l'instant, créé au premier lancement (migration 00007 ; détail : `docs/security.md`).
+**sessions** — `id PK (identifiant public : liste et révocation), token_hash BLOB UNIQUE (SHA-256 du jeton du cookie, jamais le jeton), user_id FK CASCADE, created_at, last_seen_at, expires_at, ip, user_agent`. Index `(user_id)`, `(expires_at)`. Fin à `expires_at` (30 j) ou après 14 j sans usage (`last_seen_at`, écrit au plus toutes les 5 min) ; purge des expirées à chaque connexion. Table recréée par la migration 00007 (vide avant).
+**api_keys** — `id, user_id FK UNIQUE CASCADE (une clé par compte), key_hash BLOB UNIQUE (SHA-256), last4, created_at, last_used_at`. La clé n'est montrée qu'une fois ; la régénérer remplace la ligne. Table recréée par la migration 00007 (vide avant).
 
 **saved_views** — `id, user_id FK NULL, page, name, filters JSON, sort JSON, columns JSON, density ('airy'|'compact'), position`. `user_id` NULL = vue partagée (avant l'authentification de la phase 8) ; nom unique par `(page, name)` pour les vues partagées (migration 00004).
 

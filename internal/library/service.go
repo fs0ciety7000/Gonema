@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/fs0ciety7000/gonema/internal/events"
@@ -117,8 +118,14 @@ type Service struct {
 	healthMu sync.Mutex
 	health   map[int64]string // root folder id -> last error ("" = ok)
 
-	indexMu sync.Mutex // guards idx; held while the index reloads
-	idx     *libraryIndex
+	// idx is the in-memory library index (see index.go). Readers load it
+	// without a lock; a refresh builds a new index and swaps it in.
+	idx atomic.Pointer[libraryIndex]
+	// rebuildMu allows one full reload at a time; readers never wait on it.
+	rebuildMu sync.Mutex
+	// staleServed records that a reader got the previous index while a full
+	// reload ran (library.reindexed is then published).
+	staleServed atomic.Bool
 }
 
 // New returns a service. Call Init before use.

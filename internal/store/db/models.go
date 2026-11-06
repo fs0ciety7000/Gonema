@@ -16,9 +16,8 @@ type AlternateTitle struct {
 type ApiKey struct {
 	ID         int64  `json:"id"`
 	UserID     int64  `json:"userId"`
-	Name       string `json:"name"`
-	KeyHash    string `json:"keyHash"`
-	Prefix     string `json:"prefix"`
+	KeyHash    []byte `json:"keyHash"`
+	Last4      string `json:"last4"`
 	CreatedAt  int64  `json:"createdAt"`
 	LastUsedAt *int64 `json:"lastUsedAt"`
 }
@@ -110,6 +109,22 @@ type History struct {
 	CreatedAt   int64   `json:"createdAt"`
 }
 
+type ImportJournal struct {
+	ID          int64  `json:"id"`
+	MovieID     int64  `json:"movieId"`
+	DownloadID  *int64 `json:"downloadId"`
+	Source      string `json:"source"`
+	Destination string `json:"destination"`
+	Staging     string `json:"staging"`
+	Mode        string `json:"mode"`
+	Size        int64  `json:"size"`
+	Record      string `json:"record"`
+	Status      string `json:"status"`
+	Message     string `json:"message"`
+	CreatedAt   int64  `json:"createdAt"`
+	UpdatedAt   int64  `json:"updatedAt"`
+}
+
 type ImportList struct {
 	ID                  int64  `json:"id"`
 	Name                string `json:"name"`
@@ -169,6 +184,11 @@ type Job struct {
 	StartedAt   *int64  `json:"startedAt"`
 	FinishedAt  *int64  `json:"finishedAt"`
 	CreatedAt   int64   `json:"createdAt"`
+}
+
+type LibraryChange struct {
+	Seq     int64  `json:"seq"`
+	MovieID *int64 `json:"movieId"`
 }
 
 type LibraryVersion struct {
@@ -361,12 +381,14 @@ type ScoringRule struct {
 }
 
 type Session struct {
-	TokenHash string  `json:"tokenHash"`
-	UserID    int64   `json:"userId"`
-	ExpiresAt int64   `json:"expiresAt"`
-	UserAgent *string `json:"userAgent"`
-	Ip        *string `json:"ip"`
-	CreatedAt int64   `json:"createdAt"`
+	ID         int64  `json:"id"`
+	TokenHash  []byte `json:"tokenHash"`
+	UserID     int64  `json:"userId"`
+	CreatedAt  int64  `json:"createdAt"`
+	LastSeenAt int64  `json:"lastSeenAt"`
+	ExpiresAt  int64  `json:"expiresAt"`
+	Ip         string `json:"ip"`
+	UserAgent  string `json:"userAgent"`
 }
 
 type Setting struct {
@@ -380,10 +402,11 @@ type Tag struct {
 }
 
 type User struct {
-	ID           int64  `json:"id"`
-	Username     string `json:"username"`
-	PasswordHash string `json:"passwordHash"`
-	Role         string `json:"role"`
-	CreatedAt    int64  `json:"createdAt"`
-	LastLoginAt  *int64 `json:"lastLoginAt"`
+	ID                int64  `json:"id"`
+	Username          string `json:"username"`
+	PasswordHash      string `json:"passwordHash"`
+	Role              string `json:"role"`
+	CreatedAt         int64  `json:"createdAt"`
+	LastLoginAt       *int64 `json:"lastLoginAt"`
+	PasswordChangedAt int64  `json:"passwordChangedAt"`
 }

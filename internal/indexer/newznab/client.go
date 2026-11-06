@@ -20,6 +20,7 @@ import (
 	"github.com/fs0ciety7000/gonema/internal/decision"
 	"github.com/fs0ciety7000/gonema/internal/flight"
 	"github.com/fs0ciety7000/gonema/internal/indexer"
+	"github.com/fs0ciety7000/gonema/internal/netx"
 	"github.com/fs0ciety7000/gonema/internal/ratelimit"
 )
 
@@ -124,7 +125,9 @@ func New(o Options) (*Client, error) {
 		now:        time.Now,
 	}
 	if c.http == nil {
-		c.http = &http.Client{}
+		// Destinations checked at dial time (netx integration policy),
+		// redirects re-checked, bodies capped.
+		c.http = netx.NewClient(netx.Integration)
 	}
 	if c.log == nil {
 		c.log = slog.New(slog.DiscardHandler)
@@ -491,7 +494,10 @@ func (c *Client) transportError(ctx context.Context, err error) error {
 		verify  *tls.CertificateVerificationError
 		record  tls.RecordHeaderError
 	)
+	var blocked *netx.BlockedError
 	switch {
+	case errors.As(err, &blocked):
+		e.Kind, e.Message = indexer.ErrBadURL, blocked.Error()
 	case errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &netErr) && netErr.Timeout()):
 		e.Kind, e.Message = indexer.ErrTimeout, fmt.Sprintf("no answer within %s", c.timeout)
 	case errors.As(err, &verify), errors.As(err, &unknown), errors.As(err, &invalid), errors.As(err, &host), errors.As(err, &record),

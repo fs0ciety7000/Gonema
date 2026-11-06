@@ -13,10 +13,12 @@ import (
 
 	"github.com/fs0ciety7000/gonema/internal/acquire"
 	"github.com/fs0ciety7000/gonema/internal/api"
+	"github.com/fs0ciety7000/gonema/internal/backup"
 	"github.com/fs0ciety7000/gonema/internal/config"
 	"github.com/fs0ciety7000/gonema/internal/demo"
 	"github.com/fs0ciety7000/gonema/internal/health"
 	"github.com/fs0ciety7000/gonema/internal/importer"
+	"github.com/fs0ciety7000/gonema/internal/logbuf"
 	"github.com/fs0ciety7000/gonema/internal/mediaserver"
 	"github.com/fs0ciety7000/gonema/internal/notify"
 )
@@ -24,11 +26,12 @@ import (
 // newAPI builds the API with every route group. serve and openapi share it,
 // so the printed document is exactly what the server serves.
 func newAPI(d api.Deps, imp *importer.Service, notes *notify.Service, media *mediaserver.Service,
-	checks *health.Scheduler, healthSettings health.SettingsStore) *api.Server {
+	checks *health.Scheduler, healthSettings health.SettingsStore, ops api.OpsDeps) *api.Server {
 	srv := api.New(d)
 	srv.RegisterImportRoutes(imp)
 	srv.RegisterIntegrationRoutes(notes, media)
 	srv.RegisterHealthRoutes(checks, healthSettings)
+	srv.RegisterOpsRoutes(ops)
 	return srv
 }
 
@@ -36,7 +39,9 @@ func newAPI(d api.Deps, imp *importer.Service, notes *notify.Service, media *med
 // handlers, so the services are not started (no database, no network).
 func runOpenAPI(stdout, stderr io.Writer) int {
 	srv := newAPI(api.Deps{Acquire: &acquire.Service{}, Version: version},
-		&importer.Service{}, &notify.Service{}, &mediaserver.Service{}, &health.Scheduler{}, health.SettingsStore{})
+		&importer.Service{}, &notify.Service{}, &mediaserver.Service{}, &health.Scheduler{}, health.SettingsStore{},
+		api.OpsDeps{Backups: &backup.Service{}, BackupSettings: &backup.SettingsStore{}, Logs: logbuf.NewBuffer(1),
+			LogLevel: new(slog.LevelVar), Imports: &importer.Service{}})
 	out, err := json.MarshalIndent(srv.OpenAPI(), "", "  ")
 	if err != nil {
 		_, _ = fmt.Fprintln(stderr, "gonema: encode the OpenAPI document:", err)

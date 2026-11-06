@@ -14,6 +14,7 @@ import (
 	"github.com/fs0ciety7000/gonema/internal/decision"
 	"github.com/fs0ciety7000/gonema/internal/download"
 	"github.com/fs0ciety7000/gonema/internal/indexer"
+	"github.com/fs0ciety7000/gonema/internal/netx"
 )
 
 // Limits of release file downloads.
@@ -142,9 +143,12 @@ func (s *Service) get(ctx context.Context, link string, limit int64) (data []byt
 			err = ue.Err // drop the URL: it carries the API key
 		}
 		var fe *fetchError
+		var blocked *netx.BlockedError
 		switch {
 		case errors.As(err, &fe):
 			return nil, "", fe
+		case errors.As(err, &blocked):
+			return nil, "", &fetchError{msg: blocked.Error()}
 		case errors.Is(err, context.DeadlineExceeded) || ctx.Err() != nil:
 			return nil, "", &fetchError{msg: "no answer in time"}
 		default:

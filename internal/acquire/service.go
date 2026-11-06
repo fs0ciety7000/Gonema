@@ -27,6 +27,7 @@ import (
 	"github.com/fs0ciety7000/gonema/internal/events"
 	"github.com/fs0ciety7000/gonema/internal/jobs"
 	"github.com/fs0ciety7000/gonema/internal/match"
+	"github.com/fs0ciety7000/gonema/internal/netx"
 	"github.com/fs0ciety7000/gonema/internal/parser"
 	"github.com/fs0ciety7000/gonema/internal/search"
 	"github.com/fs0ciety7000/gonema/internal/secretbox"
@@ -218,7 +219,9 @@ func New(opts Options) (*Service, error) {
 		s.orch = search.New(search.Options{Logger: s.log, Now: s.now})
 	}
 	if s.http == nil {
-		s.http = &http.Client{}
+		// Release downloads follow the links indexers return: destinations
+		// checked at dial time (netx integration policy).
+		s.http = netx.NewClient(netx.Integration)
 	}
 	if s.newIx == nil {
 		s.newIx = defaultIndexerFactory(s.version, s.log)

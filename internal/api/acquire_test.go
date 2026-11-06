@@ -98,17 +98,19 @@ func newAcquireEnv(t *testing.T) *acqEnv {
 	if err != nil {
 		t.Fatal(err)
 	}
-	srv := New(Deps{
+	deps := Deps{
 		Library: lib, Acquire: acq, Jobs: runner, Bus: bus, Store: st, Logger: log, Version: "test",
 		StartedAt: time.Now(), DataDir: t.TempDir(), SSEHeartbeat: 50 * time.Millisecond,
-	})
+	}
+	apiKey := withTestAuth(t, &deps)
+	srv := New(deps)
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(func() {
 		srv.Shutdown()
 		ts.Close()
 	})
 	return &acqEnv{
-		testEnv: &testEnv{srv: srv, ts: ts, lib: lib, bus: bus, rootID: seed.RootFolderID, profID: seed.ProfileID},
+		testEnv: &testEnv{srv: srv, ts: ts, lib: lib, bus: bus, st: st, rootID: seed.RootFolderID, profID: seed.ProfileID, apiKey: apiKey},
 		acq:     acq, logs: logs, movieID: m.ID,
 	}
 }

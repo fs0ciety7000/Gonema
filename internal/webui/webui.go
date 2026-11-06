@@ -255,13 +255,25 @@ func csp(scriptHashes []string) string {
 	}, "; ")
 }
 
+// PermissionsPolicy turns off every powerful browser feature; the trailer
+// player (privacy-enhanced YouTube, the only frame-src) keeps fullscreen,
+// autoplay, picture-in-picture and encrypted media. The API serves it too.
+const PermissionsPolicy = "accelerometer=(), ambient-light-sensor=(), autoplay=(self \"https://www.youtube-nocookie.com\"), " +
+	"battery=(), bluetooth=(), browsing-topics=(), camera=(), display-capture=(), " +
+	"encrypted-media=(self \"https://www.youtube-nocookie.com\"), fullscreen=(self \"https://www.youtube-nocookie.com\"), " +
+	"gamepad=(), geolocation=(), gyroscope=(), hid=(), identity-credentials-get=(), idle-detection=(), " +
+	"local-fonts=(), magnetometer=(), microphone=(), midi=(), otp-credentials=(), payment=(), " +
+	"picture-in-picture=(self \"https://www.youtube-nocookie.com\"), publickey-credentials-create=(), " +
+	"publickey-credentials-get=(), screen-wake-lock=(), serial=(), storage-access=(), usb=(), " +
+	"web-share=(), window-management=(), xr-spatial-tracking=()"
+
 func (h *Handler) securityHeaders(hd http.Header) {
 	hd.Set("Content-Security-Policy", h.csp)
 	hd.Set("X-Content-Type-Options", "nosniff")
 	hd.Set("Referrer-Policy", "strict-origin-when-cross-origin")
 	hd.Set("X-Frame-Options", "DENY")
 	hd.Set("Cross-Origin-Opener-Policy", "same-origin")
-	hd.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
+	hd.Set("Permissions-Policy", PermissionsPolicy)
 }
 
 // ServeHTTP serves a file of the SPA, or index.html for client-side routes.

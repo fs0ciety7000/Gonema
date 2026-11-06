@@ -69,13 +69,14 @@ func newDemoEnv(tb testing.TB, films int, baseURL string, tweak func(*Deps)) *te
 	if tweak != nil {
 		tweak(&d)
 	}
+	apiKey := withTestAuth(tb, &d)
 	srv := New(d)
 	ts := httptest.NewServer(srv.Handler())
 	tb.Cleanup(func() {
 		srv.Shutdown()
 		ts.Close()
 	})
-	return &testEnv{srv: srv, ts: ts, lib: lib, bus: bus, st: st}
+	return &testEnv{srv: srv, ts: ts, lib: lib, bus: bus, st: st, apiKey: apiKey}
 }
 
 func (e *testEnv) columns(t *testing.T, query string) MovieColumns {
@@ -484,7 +485,7 @@ func TestImages(t *testing.T) {
 
 	r := e.do(t, "GET", "/gonema/api/v1/images/poster/w342/abc123.png", "")
 	if r.status != 200 || r.body != string(data) || r.header.Get("Content-Type") != "image/png" ||
-		r.header.Get("Cache-Control") != "public, max-age=31536000, immutable" || r.header.Get("ETag") == "" {
+		r.header.Get("Cache-Control") != "private, max-age=31536000, immutable" || r.header.Get("ETag") == "" {
 		t.Fatalf("image = %d %v", r.status, r.header)
 	}
 	r2 := e.do(t, "GET", "/gonema/api/v1/images/poster/w342/abc123.png", "")
@@ -551,7 +552,7 @@ func TestLibrary10kBudget(t *testing.T) {
 		t.Skip("performance budget: skipped with -short and -race")
 	}
 	e := newDemoEnv(t, 10_000, "", nil)
-	h := e.srv.Handler()
+	h := e.handler()
 	measure := func(target string) (time.Duration, int, int) {
 		best := time.Hour
 		var gz, raw int
@@ -603,7 +604,7 @@ func TestLibrary10kBudget(t *testing.T) {
 
 func BenchmarkMovieColumns10k(b *testing.B) {
 	e := newDemoEnv(b, 10_000, "", nil)
-	h := e.srv.Handler()
+	h := e.handler()
 	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/api/v1/movies/ids?sort=title", http.NoBody)) // load the index
 	b.ReportAllocs()
 	var size int
@@ -622,7 +623,7 @@ func BenchmarkMovieColumns10k(b *testing.B) {
 
 func BenchmarkMovieListPage10k(b *testing.B) {
 	e := newDemoEnv(b, 10_000, "", nil)
-	h := e.srv.Handler()
+	h := e.handler()
 	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/api/v1/movies?sort=title", http.NoBody)) // load the index
 	b.ReportAllocs()
 	for b.Loop() {

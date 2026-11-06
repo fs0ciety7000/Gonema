@@ -18,6 +18,8 @@ import (
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
 
 	"github.com/fs0ciety7000/gonema/internal/acquire"
+	"github.com/fs0ciety7000/gonema/internal/auth"
+	"github.com/fs0ciety7000/gonema/internal/config"
 	"github.com/fs0ciety7000/gonema/internal/events"
 	"github.com/fs0ciety7000/gonema/internal/health"
 	"github.com/fs0ciety7000/gonema/internal/importer"
@@ -55,6 +57,12 @@ type Deps struct {
 
 	// SSEHeartbeat is the period of SSE keep-alive comments; default 15 s.
 	SSEHeartbeat time.Duration
+
+	// Auth authenticates the callers. Without it every protected route
+	// answers 401 (fail closed). See auth_middleware.go.
+	Auth *auth.Service
+	// Security holds the authentication options (mode, cookie, origins).
+	Security config.Security
 }
 
 // Server is the HTTP API.
@@ -102,9 +110,7 @@ func New(d Deps) *Server {
 		mux.Handle("/", d.UI)
 	}
 
-	// TODO(phase8): auth. Every route below is unauthenticated until phase 8
-	// (users, sessions, API keys); the server binds to localhost by default.
-	var h http.Handler = mux
+	h := s.withAuth(mux) // every /api route needs a caller, see auth_middleware.go
 	if d.BaseURL != "" {
 		outer := http.NewServeMux()
 		outer.Handle(d.BaseURL+"/", http.StripPrefix(d.BaseURL, mux))
@@ -112,6 +118,7 @@ func New(d Deps) *Server {
 		outer.HandleFunc("GET /health", handleHealth)
 		h = outer
 	}
+	h = withSecurityHeaders(h)
 	h = withGzip(h)
 	h = withWriteDeadline(60*time.Second, h)
 	h = withRecover(d.Logger, h)

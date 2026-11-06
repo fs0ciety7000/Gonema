@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fs0ciety7000/gonema/internal/config"
 	"github.com/fs0ciety7000/gonema/internal/events"
 	"github.com/fs0ciety7000/gonema/internal/jobs"
 	"github.com/fs0ciety7000/gonema/internal/library"
@@ -118,9 +119,17 @@ type testEnv struct {
 	rootID int64
 	profID int64
 	prov   *provider
+	apiKey string // sent by do as X-Api-Key; see withTestAuth
 }
 
 func newTestEnv(t *testing.T, baseURL string) *testEnv {
+	t.Helper()
+	return newTestEnvWith(t, baseURL, nil, true)
+}
+
+// newTestEnvWith is newTestEnv with security options; setup creates the
+// account (and its API key, sent by do).
+func newTestEnvWith(t *testing.T, baseURL string, sec *config.Security, setup bool) *testEnv {
 	t.Helper()
 	st := storetest.New(t)
 	key, _ := secretbox.NewKey()
@@ -159,16 +168,26 @@ func newTestEnv(t *testing.T, baseURL string) *testEnv {
 		_ = runner.Stop(sctx)
 	})
 	lib2 := storetest.SeedLibrary(t, st)
-	srv := New(Deps{
+	deps := Deps{
 		Library: lib, Jobs: runner, Bus: bus, Store: st, Logger: log, Version: "test",
 		StartedAt: time.Now(), DataDir: t.TempDir(), BaseURL: baseURL, SSEHeartbeat: 50 * time.Millisecond,
-	})
+	}
+	if sec != nil {
+		deps.Security = *sec
+	}
+	var apiKey string
+	if setup {
+		apiKey = withTestAuth(t, &deps)
+	} else {
+		newTestAuth(t, &deps)
+	}
+	srv := New(deps)
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(func() {
 		srv.Shutdown()
 		ts.Close()
 	})
-	return &testEnv{srv: srv, ts: ts, lib: lib, bus: bus, st: st, rootID: lib2.RootFolderID, profID: lib2.ProfileID, prov: prov}
+	return &testEnv{srv: srv, ts: ts, lib: lib, bus: bus, st: st, rootID: lib2.RootFolderID, profID: lib2.ProfileID, prov: prov, apiKey: apiKey}
 }
 
 type response struct {
@@ -189,6 +208,9 @@ func (e *testEnv) do(t *testing.T, method, path, body string, header ...string) 
 	}
 	if body != "" {
 		req.Header.Set("Content-Type", "application/json")
+	}
+	if e.apiKey != "" {
+		req.Header.Set(APIKeyHeader, e.apiKey)
 	}
 	for i := 0; i+1 < len(header); i += 2 {
 		req.Header.Set(header[i], header[i+1])
@@ -365,6 +387,7 @@ func TestGzip(t *testing.T) {
 	e := newTestEnv(t, "")
 	req, _ := http.NewRequestWithContext(context.Background(), "GET", e.ts.URL+"/api/v1/quality-profiles", http.NoBody)
 	req.Header.Set("Accept-Encoding", "gzip")
+	req.Header.Set(APIKeyHeader, e.apiKey)
 	resp, err := (&http.Transport{DisableCompression: true}).RoundTrip(req)
 	if err != nil {
 		t.Fatal(err)
@@ -424,6 +447,7 @@ func openSSE(t *testing.T, e *testEnv, lastID string) *sseClient {
 	t.Cleanup(cancel)
 	req, _ := http.NewRequestWithContext(ctx, "GET", e.ts.URL+"/api/v1/events", http.NoBody)
 	req.Header.Set("Accept-Encoding", "gzip") // must not be compressed
+	req.Header.Set(APIKeyHeader, e.apiKey)
 	if lastID != "" {
 		req.Header.Set("Last-Event-ID", lastID)
 	}

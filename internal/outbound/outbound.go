@@ -4,8 +4,8 @@
 // plain-language errors with every registered secret redacted, Retry-After
 // parsing and a retry loop with backoff.
 //
-// The download clients keep their own helper (internal/download/internal/httpc);
-// both will move onto the hardened dialer of phase 8.
+// The download clients keep their own helper (internal/download/internal/httpc).
+// Both connect through package netx: SSRF policy checked at dial time.
 package outbound
 
 import (
@@ -25,6 +25,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/fs0ciety7000/gonema/internal/netx"
 )
 
 // Defaults.
@@ -210,20 +212,19 @@ type Client struct {
 
 // NewHTTPClient returns the HTTP client the integrations share: no redirects
 // (a redirect is reported, never followed with the credentials), proxy from
-// the environment, TLS 1.2 minimum.
-func NewHTTPClient() *http.Client {
-	tr := http.DefaultTransport.(*http.Transport).Clone()
-	tr.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12}
+// the environment, TLS 1.2 minimum, destinations checked by netx with the
+// integration policy (loopback and LAN allowed by default).
+func NewHTTPClient() *http.Client { return newHTTPClient(netx.Integration) }
+
+// NewWebhookHTTPClient is NewHTTPClient with the webhook policy of netx:
+// public addresses only, unless the operator allowed private ones.
+func NewWebhookHTTPClient() *http.Client { return newHTTPClient(netx.Webhook) }
+
+func newHTTPClient(class netx.Class) *http.Client {
+	tr := netx.NewTransport(class)
 	tr.MaxIdleConnsPerHost = 2
 	tr.ResponseHeaderTimeout = DefaultTimeout
-	// TODO(phase8): netx — plug the SSRF-hardened dialer here (tr.DialContext),
-	// with the allow-list of private ranges the user configured.
-	return &http.Client{
-		Transport: tr,
-		CheckRedirect: func(*http.Request, []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
+	return &http.Client{Transport: netx.Wrap(tr), CheckRedirect: netx.NoRedirect}
 }
 
 // Response is a fully read response.
@@ -345,7 +346,12 @@ func classify(err error) (detail string, kind error) {
 		recordErr  tls.RecordHeaderError
 		dnsErr     *net.DNSError
 	)
+	var blocked *netx.BlockedError
 	switch {
+	case errors.As(err, &blocked):
+		return blocked.Error(), ErrInvalidURL
+	case errors.Is(err, netx.ErrTooLarge):
+		return "the response is too large", ErrResponse
 	case errors.As(err, &unknownCA), errors.As(err, &verifyErr):
 		return "certificate not trusted (self-signed?)", ErrTLS
 	case errors.As(err, &hostErr):

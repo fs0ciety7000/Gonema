@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/fs0ciety7000/gonema/internal/download"
+	"github.com/fs0ciety7000/gonema/internal/netx"
 )
 
 // MaxBodyBytes bounds a response body.
@@ -207,7 +208,10 @@ func classify(err error) (detail string, kind error) {
 		recordErr  tls.RecordHeaderError
 		dnsErr     *net.DNSError
 	)
+	var blocked *netx.BlockedError
 	switch {
+	case errors.As(err, &blocked):
+		return blocked.Error(), download.ErrInvalidRequest
 	case errors.As(err, &unknownCA), errors.As(err, &verifyErr):
 		return "certificate not trusted (self-signed?)", download.ErrTLS
 	case errors.As(err, &hostErr):

@@ -461,9 +461,16 @@ func TestSetupStatusAndPreferences(t *testing.T) {
 	for _, s := range st.Steps {
 		done[s.ID] = s.Done
 	}
-	if st.Complete || st.Next != StepDownloadClient || !done[StepTMDB] || !done[StepRootFolder] || done[StepQualityProfile] ||
-		done[StepFirstMovie] || st.Steps[0].ID != StepAccount || st.Steps[0].Available {
+	if st.Complete || st.Next != StepAccount || !done[StepTMDB] || !done[StepRootFolder] || done[StepQualityProfile] ||
+		done[StepFirstMovie] || st.Steps[0].ID != StepAccount || !st.Steps[0].Available || st.Steps[0].Done {
 		t.Fatalf("status = %+v", st)
+	}
+	// The account step is done once the admin account exists (package auth).
+	if _, err := e.st.Write().CreateUser(ctx, db.CreateUserParams{Username: "admin", PasswordHash: "$argon2id$v=19$x", CreatedAt: 1, PasswordChangedAt: 1}); err != nil {
+		t.Fatal(err)
+	}
+	if st, _ = e.svc.SetupStatus(ctx); st.Next != StepDownloadClient || !st.Steps[0].Done || st.Steps[0].Count != 1 {
+		t.Fatalf("status with an account = %+v", st)
 	}
 	if err := e.svc.SetSetupDismissed(ctx, true); err != nil {
 		t.Fatal(err)

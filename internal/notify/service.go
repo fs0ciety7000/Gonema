@@ -146,9 +146,7 @@ func NewService(o ServiceOptions) (*Service, error) {
 		s.now = time.Now
 	}
 	s.nopts.Now = s.now
-	if s.nopts.HTTP == nil {
-		s.nopts.HTTP = outbound.NewHTTPClient()
-	}
+	s.nopts.defaultClients()
 	if s.newN == nil {
 		s.newN = New
 	}

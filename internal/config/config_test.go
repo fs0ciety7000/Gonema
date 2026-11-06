@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
+	"github.com/fs0ciety7000/gonema/internal/netx"
 )
 
 func envOf(m map[string]string) func(string) string {
@@ -33,12 +35,12 @@ func TestLoad(t *testing.T) {
 	}{
 		{
 			name: "defaults",
-			want: Config{DataDir: abs("./data"), Bind: "127.0.0.1:7676", LogLevel: slog.LevelInfo, LogFormat: "text", Workers: 4},
+			want: Config{DataDir: abs("./data"), Bind: "127.0.0.1:7676", LogLevel: slog.LevelInfo, LogFormat: "text", Workers: 4, Security: DefaultSecurity(), Log: DefaultLogOutput()},
 		},
 		{
 			name:      "container defaults",
 			container: true,
-			want:      Config{DataDir: "/config", Bind: "0.0.0.0:7676", LogLevel: slog.LevelInfo, LogFormat: "text", Workers: 4},
+			want:      Config{DataDir: "/config", Bind: "0.0.0.0:7676", LogLevel: slog.LevelInfo, LogFormat: "text", Workers: 4, Security: DefaultSecurity(), Log: DefaultLogOutput()},
 		},
 		{
 			name: "environment",
@@ -46,18 +48,31 @@ func TestLoad(t *testing.T) {
 				EnvDataDir: "/srv/gonema", EnvBind: "[::1]:9000", EnvLogLevel: "DEBUG",
 				EnvLogFormat: "JSON", EnvBaseURL: "/gonema/", EnvWorkers: "8",
 			},
-			want: Config{DataDir: "/srv/gonema", Bind: "[::1]:9000", LogLevel: slog.LevelDebug, LogFormat: "json", BaseURL: "/gonema", Workers: 8},
+			want: Config{DataDir: "/srv/gonema", Bind: "[::1]:9000", LogLevel: slog.LevelDebug, LogFormat: "json", BaseURL: "/gonema", Workers: 8, Security: DefaultSecurity(), Log: DefaultLogOutput()},
 		},
 		{
 			name: "flags win over environment",
 			args: []string{"-bind", "127.0.0.1:0", "-log-level", "warn", "-base-url", "apps/gonema"},
 			env:  map[string]string{EnvBind: "0.0.0.0:1", EnvLogLevel: "debug", EnvDataDir: "/d"},
-			want: Config{DataDir: "/d", Bind: "127.0.0.1:0", LogLevel: slog.LevelWarn, LogFormat: "text", BaseURL: "/apps/gonema", Workers: 4},
+			want: Config{DataDir: "/d", Bind: "127.0.0.1:0", LogLevel: slog.LevelWarn, LogFormat: "text", BaseURL: "/apps/gonema", Workers: 4, Security: DefaultSecurity(), Log: DefaultLogOutput()},
 		},
 		{
 			name: "root base URL is empty",
 			args: []string{"-base-url", "/"},
-			want: Config{DataDir: abs("./data"), Bind: "127.0.0.1:7676", LogLevel: slog.LevelInfo, LogFormat: "text", Workers: 4},
+			want: Config{DataDir: abs("./data"), Bind: "127.0.0.1:7676", LogLevel: slog.LevelInfo, LogFormat: "text", Workers: 4, Security: DefaultSecurity(), Log: DefaultLogOutput()},
+		},
+		{
+			name: "security options",
+			args: []string{"-cookie-secure", "TRUE"},
+			env: map[string]string{
+				EnvAuth: "disabled_for_local", EnvTrustedOrigins: "https://media.example.org, http://10.0.0.2:8080/",
+				EnvOutboundAllowPrivate: "false", EnvOutboundAllowLoopback: "0", EnvWebhookAllowPrivate: "true",
+			},
+			want: Config{DataDir: abs("./data"), Bind: "127.0.0.1:7676", LogLevel: slog.LevelInfo, LogFormat: "text", Workers: 4,
+				Security: Security{AuthMode: AuthDisabledForLocal, CookieSecure: CookieSecureAlways,
+					TrustedOrigins: []string{"https://media.example.org", "http://10.0.0.2:8080"},
+					Outbound:       netx.Config{Webhook: netx.Policy{AllowLoopback: true, AllowPrivate: true}}},
+				Log: DefaultLogOutput()},
 		},
 	}
 	for _, tt := range tests {
@@ -90,6 +105,10 @@ func TestLoadErrors(t *testing.T) {
 		{"workers", nil, map[string]string{EnvWorkers: "0"}, "workers"},
 		{"extra argument", []string{"oops"}, nil, "unexpected argument"},
 		{"unknown flag", []string{"-nope"}, nil, "not defined"},
+		{"auth mode", nil, map[string]string{EnvAuth: "off"}, "disabled_for_local"},
+		{"cookie secure", []string{"-cookie-secure", "maybe"}, nil, "cookie-secure"},
+		{"trusted origin", nil, map[string]string{EnvTrustedOrigins: "media.example.org"}, "trusted origin"},
+		{"outbound bool", nil, map[string]string{EnvOutboundAllowPrivate: "yes please"}, "outbound-allow-private"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

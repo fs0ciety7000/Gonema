@@ -11,6 +11,7 @@ import (
 
 	"github.com/fs0ciety7000/gonema/internal/mediaserver"
 	"github.com/fs0ciety7000/gonema/internal/notify"
+	"github.com/fs0ciety7000/gonema/internal/outbound"
 	"github.com/fs0ciety7000/gonema/internal/secretbox"
 )
 
@@ -19,7 +20,9 @@ func newIntegrationEnv(t *testing.T) *testEnv {
 	e := newTestEnv(t, "")
 	key, _ := secretbox.NewKey()
 	box, _ := secretbox.New(key)
-	n, err := notify.NewService(notify.ServiceOptions{Store: e.srv.d.Store, Box: box, Bus: e.bus})
+	// The webhooks of these tests listen on 127.0.0.1: use the integration
+	// client (the default webhook client only reaches public addresses).
+	n, err := notify.NewService(notify.ServiceOptions{Store: e.srv.d.Store, Box: box, Bus: e.bus, HTTP: outbound.NewHTTPClient()})
 	if err != nil {
 		t.Fatal(err)
 	}

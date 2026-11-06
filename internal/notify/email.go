@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fs0ciety7000/gonema/internal/netx"
 	"github.com/fs0ciety7000/gonema/internal/outbound"
 )
 
@@ -90,8 +91,9 @@ func newEmail(s *ServiceSettings, sec *Secrets, red *outbound.Redactor, opts Opt
 	}
 	dial := opts.Dial
 	if dial == nil {
-		// TODO(phase8): netx — dial through the SSRF-hardened dialer.
-		d := &net.Dialer{Timeout: 10 * time.Second}
+		// SMTP servers are often on the LAN: integration policy of netx.
+		d := netx.NewDialer(netx.Integration)
+		d.Timeout = 10 * time.Second
 		dial = d.DialContext
 	}
 	return &email{

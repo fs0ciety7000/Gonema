@@ -29,6 +29,8 @@ import (
 
 	"github.com/fs0ciety7000/gonema/internal/acquire"
 	"github.com/fs0ciety7000/gonema/internal/api"
+	"github.com/fs0ciety7000/gonema/internal/auth"
+	"github.com/fs0ciety7000/gonema/internal/backup"
 	"github.com/fs0ciety7000/gonema/internal/config"
 	"github.com/fs0ciety7000/gonema/internal/demo"
 	"github.com/fs0ciety7000/gonema/internal/events"
@@ -37,6 +39,7 @@ import (
 	"github.com/fs0ciety7000/gonema/internal/jobs"
 	"github.com/fs0ciety7000/gonema/internal/library"
 	"github.com/fs0ciety7000/gonema/internal/metadata/tmdb"
+	"github.com/fs0ciety7000/gonema/internal/netx"
 	"github.com/fs0ciety7000/gonema/internal/secretbox"
 	"github.com/fs0ciety7000/gonema/internal/store"
 	"github.com/fs0ciety7000/gonema/internal/webui"
@@ -58,7 +61,8 @@ func main() {
 // run executes a subcommand and returns the process exit code.
 func run(ctx context.Context, args []string, stdout, stderr io.Writer, getenv func(string) string) int {
 	cmd := "serve"
-	if len(args) > 0 && (args[0] == "serve" || args[0] == "version" || args[0] == "help" || args[0] == "openapi" || args[0] == "demo") {
+	if len(args) > 0 && (args[0] == "serve" || args[0] == "version" || args[0] == "help" || args[0] == "openapi" || args[0] == "demo" ||
+		opsCommand(args[0])) {
 		cmd, args = args[0], args[1:]
 	}
 	switch cmd {
@@ -66,12 +70,16 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer, getenv fu
 		_, _ = fmt.Fprintln(stdout, "gonema", version)
 		return 0
 	case "help":
-		_, _ = fmt.Fprintln(stdout, "usage: gonema [serve] [flags] | gonema version | gonema openapi | gonema demo seed [flags]\nrun `gonema serve -h` or `gonema demo seed -h` for the flags")
+		_, _ = fmt.Fprintln(stdout, "usage: gonema [serve] [flags] | gonema version | gonema openapi | gonema demo seed [flags]\n"+
+			"       gonema backup [flags] | gonema restore [flags] <archive.zip> | gonema healthcheck [flags]\n"+
+			"run `gonema <command> -h` for the flags")
 		return 0
 	case "openapi":
 		return runOpenAPI(stdout, stderr)
 	case "demo":
 		return runDemo(ctx, args, stdout, stderr, getenv)
+	case "backup", "restore", "healthcheck":
+		return runOps(ctx, cmd, args, stdout, stderr, getenv)
 	}
 	cfg, err := config.Load(args, config.Env{Getenv: getenv, InContainer: inContainer()}, stderr)
 	if errors.Is(err, flag.ErrHelp) {
@@ -81,8 +89,13 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer, getenv fu
 		_, _ = fmt.Fprintln(stderr, "gonema:", err)
 		return 2
 	}
-	log := cfg.NewLogger(stderr)
-	if err := serve(ctx, &cfg, log, getenv); err != nil {
+	log, outs, err := newLogging(&cfg, stderr)
+	if err != nil {
+		_, _ = fmt.Fprintln(stderr, "gonema:", err)
+		return 2
+	}
+	defer outs.close()
+	if err := serve(ctx, &cfg, log, outs, getenv); err != nil {
 		log.Error("gonema stopped with an error", slog.Any("error", err))
 		return 1
 	}
@@ -103,12 +116,12 @@ func inContainer() bool {
 // in order: stop accepting and end event streams, stop the queue tracker and
 // the health checks, the jobs and the background searches and imports, drain
 // the history writer, close the database.
-func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, getenv func(string) string) (err error) {
+func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, outs *logOutputs, getenv func(string) string) (err error) {
 	start := time.Now()
 	log.Info("starting gonema", append([]any{slog.String("version", version)}, cfg.LogAttrs()...)...)
-	if !cfg.IsLoopback() {
-		log.Warn("listening on a non-local address without authentication (added in a later version): restrict access with a firewall or reverse proxy",
-			slog.String("bind", cfg.Bind))
+	netx.Configure(cfg.Security.Outbound)
+	if cfg.Security.AuthMode == config.AuthDisabledForLocal {
+		log.Warn("GONEMA_AUTH=disabled_for_local: requests from loopback and private addresses skip the login; anyone on the LAN can use Gonema")
 	}
 
 	if err := os.MkdirAll(cfg.DataDir, 0o750); err != nil {
@@ -126,6 +139,9 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, getenv fun
 		return fmt.Errorf("master key: %w", err)
 	}
 
+	if _, err := backup.ApplyPending(cfg.DataDir, time.Now(), log); err != nil {
+		return fmt.Errorf("apply the staged restore: %w", err)
+	}
 	st, err := store.Open(ctx, filepath.Join(cfg.DataDir, "gonema.db"))
 	if err != nil {
 		return err
@@ -183,6 +199,13 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, getenv fun
 	if err != nil {
 		return err
 	}
+	if _, err := imp.Recover(ctx); err != nil { // before the queue tracker resumes imports
+		return err
+	}
+	ops, err := newOps(ctx, cfg, st, key, src, runner, imp, outs, log)
+	if err != nil {
+		return err
+	}
 	acq, err := acquire.New(acquire.Options{
 		Store: st, Box: box, Matcher: lib, Jobs: runner, Bus: bus, Logger: log, Version: version,
 		Importer: importAdapter{imp}, ImporterWritesHistory: true,
@@ -200,12 +223,23 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, getenv fun
 	}
 
 	checks, healthSettings := newHealth(st, bus, log, lib, acq, imp)
+	registerOpsChecks(checks, imp, ops.Backups)
 	registerIntegrationChecks(checks, notes, media)
+	authSvc, err := auth.New(auth.Options{Store: st, Logger: log})
+	if err != nil {
+		return err
+	}
+	if need, err := authSvc.NeedsSetup(ctx); err != nil {
+		return err
+	} else if need {
+		log.Warn("no account exists yet: open the web interface to create the admin account; until then anyone who reaches it can create it",
+			slog.String("bind", cfg.Bind))
+	}
 	srv := newAPI(api.Deps{
 		Library: lib, Acquire: acq, Jobs: runner, Bus: bus, Store: st, Logger: log, Version: version,
 		StartedAt: start, DataDir: cfg.DataDir, BaseURL: cfg.BaseURL, Bind: cfg.Bind, LogLevel: strings.ToLower(cfg.LogLevel.String()),
-		Images: imageStore, UI: ui,
-	}, imp, notes, media, checks, healthSettings)
+		Images: imageStore, UI: ui, Auth: authSvc, Security: cfg.Security,
+	}, imp, notes, media, checks, healthSettings, ops)
 	httpSrv := &http.Server{
 		Handler:           srv.Handler(),
 		ReadHeaderTimeout: 5 * time.Second,

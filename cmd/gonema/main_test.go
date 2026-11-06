@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -131,6 +132,24 @@ func TestColdStart(t *testing.T) {
 		if resp.StatusCode != http.StatusOK || !strings.HasPrefix(resp.Header.Get("Content-Type"), "text/html") ||
 			!strings.Contains(resp.Header.Get("Content-Security-Policy"), "frame-ancestors 'none'") {
 			t.Errorf("GET /movies = %d %v", resp.StatusCode, resp.Header)
+		}
+	}
+	// The API needs a caller; the auth status is public and asks for setup.
+	if resp, err := client.Get(base + "/api/v1/system/status"); err != nil {
+		t.Errorf("GET /api/v1/system/status: %v", err)
+	} else {
+		_ = resp.Body.Close()
+		if resp.StatusCode != http.StatusUnauthorized {
+			t.Errorf("unauthenticated API = %d", resp.StatusCode)
+		}
+	}
+	if resp, err := client.Get(base + "/api/v1/auth/status"); err != nil {
+		t.Errorf("GET /api/v1/auth/status: %v", err)
+	} else {
+		b, _ := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if resp.StatusCode != http.StatusOK || !strings.Contains(string(b), `"setupRequired":true`) {
+			t.Errorf("auth status = %d %s", resp.StatusCode, b)
 		}
 	}
 	for _, f := range []string{"gonema.db", "gonema.key"} {

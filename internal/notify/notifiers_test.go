@@ -120,13 +120,48 @@ func server(t *testing.T, fn func(w http.ResponseWriter, r *http.Request, body [
 	return srv, c
 }
 
+// newNotifier uses the integration client for every kind: the test servers
+// listen on 127.0.0.1, which the default webhook client refuses (see
+// TestWebhookPolicy).
 func newNotifier(t *testing.T, cfg Config) Notifier {
 	t.Helper()
-	n, err := New(cfg, Options{UserAgent: "Gonema/test", Now: func() time.Time { return time.Unix(1_800_000_000, 0) }})
+	n, err := New(cfg, Options{HTTP: outbound.NewHTTPClient(), UserAgent: "Gonema/test", Now: func() time.Time { return time.Unix(1_800_000_000, 0) }})
 	if err != nil {
 		t.Fatalf("New(%s): %v", cfg.Kind, err)
 	}
 	return n
+}
+
+// TestWebhookPolicy: by default webhooks (generic, Discord, Slack) reach public
+// addresses only, while self-hosted push services (ntfy, Gotify) follow the
+// integration policy that allows the LAN.
+func TestWebhookPolicy(t *testing.T) {
+	srv, c := server(t, func(w http.ResponseWriter, _ *http.Request, _ []byte) { w.WriteHeader(http.StatusOK) })
+	for _, cfg := range []Config{
+		{Kind: Webhook, Settings: ServiceSettings{URL: srv.URL + "/hook"}},
+		{Kind: Slack, Secrets: Secrets{WebhookURL: srv.URL + "/services/T0/B0/x"}},
+	} {
+		n, err := New(cfg, Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = n.Send(context.Background(), sampleMessage())
+		if !errors.Is(err, outbound.ErrInvalidURL) || !strings.Contains(err.Error(), "GONEMA_WEBHOOK_ALLOW_PRIVATE") {
+			t.Errorf("%s to loopback: %v", cfg.Kind, err)
+		}
+	}
+	n, err := New(Config{Kind: Ntfy, Settings: ServiceSettings{ServerURL: srv.URL, Topic: "gonema"}}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := n.Send(context.Background(), sampleMessage()); err != nil {
+		t.Errorf("ntfy on the LAN: %v", err)
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if len(c.reqs) != 1 {
+		t.Errorf("calls = %d", len(c.reqs))
+	}
 }
 
 func TestWebhook(t *testing.T) {

@@ -374,6 +374,7 @@ func (s *Service) tagIDs(ctx context.Context, labels []string) (ids []int64, mis
 // library_version.
 type libraryIndex struct {
 	version int64
+	seq     int64             // last library_changes row applied
 	rows    []MovieSummary    // id order; shared, never modified
 	tags    map[int64][]int64 // movie id -> tag ids
 
@@ -404,63 +405,6 @@ func (x *libraryIndex) ordered(sort string, sign int) []int32 {
 	}
 	x.orders[k] = o
 	return o
-}
-
-// index returns the current index, reloading it when library_version moved.
-// The version check is one tiny query; the reload reads every movie.
-func (s *Service) index(ctx context.Context) (*libraryIndex, error) {
-	v, err := s.st.Read().GetLibraryVersion(ctx)
-	if err != nil {
-		return nil, store.MapError(fmt.Errorf("library: index version: %w", err))
-	}
-	s.indexMu.Lock()
-	defer s.indexMu.Unlock()
-	if s.idx != nil && s.idx.version == v {
-		return s.idx, nil
-	}
-	idx := &libraryIndex{tags: map[int64][]int64{}}
-	err = s.st.ReadTx(ctx, func(q *db.Queries) error {
-		var err error
-		if idx.version, err = q.GetLibraryVersion(ctx); err != nil {
-			return fmt.Errorf("version: %w", err)
-		}
-		rows, err := q.ListLibraryIndex(ctx)
-		if err != nil {
-			return fmt.Errorf("rows: %w", err)
-		}
-		failed, err := q.ListLastFailedDownloads(ctx)
-		if err != nil {
-			return fmt.Errorf("failed downloads: %w", err)
-		}
-		failedAt := make(map[int64]int64, len(failed))
-		for _, f := range failed {
-			failedAt[f.MovieID] = f.GrabbedAt
-		}
-		idx.rows = make([]MovieSummary, len(rows))
-		for i := range rows {
-			r := &idx.rows[i]
-			r.ListLibraryIndexRow = rows[i]
-			if at, ok := failedAt[r.ID]; ok && r.State != StateDownloading {
-				r.LastDownloadFailed = r.FileImportedAt == nil || at > *r.FileImportedAt
-			}
-		}
-		tags, err := q.ListAllMovieTags(ctx)
-		if err != nil {
-			return fmt.Errorf("tags: %w", err)
-		}
-		for _, t := range tags {
-			idx.tags[t.MovieID] = append(idx.tags[t.MovieID], t.TagID)
-		}
-		for i := range idx.rows {
-			idx.rows[i].TagIDs = idx.tags[idx.rows[i].ID]
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, store.MapError(fmt.Errorf("library: load the movie index: %w", err))
-	}
-	s.idx = idx
-	return idx, nil
 }
 
 // ListMovies returns one page of movies, or every movie with All. Rows come
