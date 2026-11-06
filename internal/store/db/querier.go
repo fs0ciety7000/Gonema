@@ -50,6 +50,8 @@ type Querier interface {
 	CreateImportJournal(ctx context.Context, arg CreateImportJournalParams) (ImportJournal, error)
 	// ----------------------------------------------------------------- indexers
 	CreateIndexer(ctx context.Context, arg CreateIndexerParams) (Indexer, error)
+	// ----------------------------------------------------------------- library import scans
+	CreateLibraryScan(ctx context.Context, arg CreateLibraryScanParams) (LibraryImportScan, error)
 	// ----------------------------------------------------------------- media servers
 	CreateMediaServer(ctx context.Context, arg CreateMediaServerParams) (MediaServer, error)
 	// ----------------------------------------------------------------- notifications
@@ -118,6 +120,7 @@ type Querier interface {
 	// ----------------------------------------------------------------- library index deltas
 	// GetLibraryChangesHead returns the newest change sequence (0 when none).
 	GetLibraryChangesHead(ctx context.Context) (GetLibraryChangesHeadRow, error)
+	GetLibraryScan(ctx context.Context, id int64) (LibraryImportScan, error)
 	// GetLibraryVersion is bumped by triggers on every change ListLibraryIndex
 	// can see (migration 00004).
 	GetLibraryVersion(ctx context.Context) (int64, error)
@@ -225,6 +228,8 @@ type Querier interface {
 	// ListLibraryIndexByIDs is ListLibraryIndex restricted to some movies (ids: a
 	// JSON array of integers).
 	ListLibraryIndexByIDs(ctx context.Context, ids string) ([]ListLibraryIndexByIDsRow, error)
+	// ListLibraryScans lists the recent scans without their folders.
+	ListLibraryScans(ctx context.Context, limit int64) ([]ListLibraryScansRow, error)
 	ListMatcherAlternateTitleRows(ctx context.Context) ([]ListMatcherAlternateTitleRowsRow, error)
 	ListMatcherAlternateTitles(ctx context.Context) ([]ListMatcherAlternateTitlesRow, error)
 	// Queries of the library service (internal/library) and the API.
@@ -293,6 +298,8 @@ type Querier interface {
 	ListTagsWithUsage(ctx context.Context) ([]ListTagsWithUsageRow, error)
 	ListUserSessions(ctx context.Context, arg ListUserSessionsParams) ([]Session, error)
 	PruneImportJournal(ctx context.Context, before int64) (int64, error)
+	// PruneLibraryScans keeps the newest scans.
+	PruneLibraryScans(ctx context.Context, keep int64) (int64, error)
 	// PurgeHistory deletes rows created before cutoff. The history_retention_only
 	// trigger aborts unless every such row is also older than the
 	// 'history.retention_days' setting.
@@ -334,6 +341,7 @@ type Querier interface {
 	SetDownloadsRetryStopped(ctx context.Context, arg SetDownloadsRetryStoppedParams) (int64, error)
 	SetImportJournalStatus(ctx context.Context, arg SetImportJournalStatusParams) (ImportJournal, error)
 	SetIndexerSecrets(ctx context.Context, arg SetIndexerSecretsParams) (int64, error)
+	SetLibraryScanJob(ctx context.Context, arg SetLibraryScanJobParams) error
 	SetMediaServerSecrets(ctx context.Context, arg SetMediaServerSecretsParams) (int64, error)
 	SetMovieFileRelativePath(ctx context.Context, arg SetMovieFileRelativePathParams) (MovieFile, error)
 	SetMovieLastSearched(ctx context.Context, arg SetMovieLastSearchedParams) (int64, error)
@@ -360,6 +368,7 @@ type Querier interface {
 	UpdateDownloadState(ctx context.Context, arg UpdateDownloadStateParams) (Download, error)
 	UpdateIndexer(ctx context.Context, arg UpdateIndexerParams) (Indexer, error)
 	UpdateIndexerHealth(ctx context.Context, arg UpdateIndexerHealthParams) (int64, error)
+	UpdateLibraryScan(ctx context.Context, arg UpdateLibraryScanParams) error
 	UpdateMediaServer(ctx context.Context, arg UpdateMediaServerParams) (MediaServer, error)
 	UpdateMovieFileScore(ctx context.Context, arg UpdateMovieFileScoreParams) (int64, error)
 	UpdateMovieMetadata(ctx context.Context, arg UpdateMovieMetadataParams) (Movie, error)

@@ -90,6 +90,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.createIndexerStmt, err = db.PrepareContext(ctx, createIndexer); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateIndexer: %w", err)
 	}
+	if q.createLibraryScanStmt, err = db.PrepareContext(ctx, createLibraryScan); err != nil {
+		return nil, fmt.Errorf("error preparing query CreateLibraryScan: %w", err)
+	}
 	if q.createMediaServerStmt, err = db.PrepareContext(ctx, createMediaServer); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateMediaServer: %w", err)
 	}
@@ -257,6 +260,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.getLibraryChangesHeadStmt, err = db.PrepareContext(ctx, getLibraryChangesHead); err != nil {
 		return nil, fmt.Errorf("error preparing query GetLibraryChangesHead: %w", err)
+	}
+	if q.getLibraryScanStmt, err = db.PrepareContext(ctx, getLibraryScan); err != nil {
+		return nil, fmt.Errorf("error preparing query GetLibraryScan: %w", err)
 	}
 	if q.getLibraryVersionStmt, err = db.PrepareContext(ctx, getLibraryVersion); err != nil {
 		return nil, fmt.Errorf("error preparing query GetLibraryVersion: %w", err)
@@ -441,6 +447,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listLibraryIndexByIDsStmt, err = db.PrepareContext(ctx, listLibraryIndexByIDs); err != nil {
 		return nil, fmt.Errorf("error preparing query ListLibraryIndexByIDs: %w", err)
 	}
+	if q.listLibraryScansStmt, err = db.PrepareContext(ctx, listLibraryScans); err != nil {
+		return nil, fmt.Errorf("error preparing query ListLibraryScans: %w", err)
+	}
 	if q.listMatcherAlternateTitleRowsStmt, err = db.PrepareContext(ctx, listMatcherAlternateTitleRows); err != nil {
 		return nil, fmt.Errorf("error preparing query ListMatcherAlternateTitleRows: %w", err)
 	}
@@ -549,6 +558,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.pruneImportJournalStmt, err = db.PrepareContext(ctx, pruneImportJournal); err != nil {
 		return nil, fmt.Errorf("error preparing query PruneImportJournal: %w", err)
 	}
+	if q.pruneLibraryScansStmt, err = db.PrepareContext(ctx, pruneLibraryScans); err != nil {
+		return nil, fmt.Errorf("error preparing query PruneLibraryScans: %w", err)
+	}
 	if q.purgeHistoryStmt, err = db.PrepareContext(ctx, purgeHistory); err != nil {
 		return nil, fmt.Errorf("error preparing query PurgeHistory: %w", err)
 	}
@@ -605,6 +617,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.setIndexerSecretsStmt, err = db.PrepareContext(ctx, setIndexerSecrets); err != nil {
 		return nil, fmt.Errorf("error preparing query SetIndexerSecrets: %w", err)
+	}
+	if q.setLibraryScanJobStmt, err = db.PrepareContext(ctx, setLibraryScanJob); err != nil {
+		return nil, fmt.Errorf("error preparing query SetLibraryScanJob: %w", err)
 	}
 	if q.setMediaServerSecretsStmt, err = db.PrepareContext(ctx, setMediaServerSecrets); err != nil {
 		return nil, fmt.Errorf("error preparing query SetMediaServerSecrets: %w", err)
@@ -665,6 +680,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.updateIndexerHealthStmt, err = db.PrepareContext(ctx, updateIndexerHealth); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateIndexerHealth: %w", err)
+	}
+	if q.updateLibraryScanStmt, err = db.PrepareContext(ctx, updateLibraryScan); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateLibraryScan: %w", err)
 	}
 	if q.updateMediaServerStmt, err = db.PrepareContext(ctx, updateMediaServer); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateMediaServer: %w", err)
@@ -827,6 +845,11 @@ func (q *Queries) Close() error {
 	if q.createIndexerStmt != nil {
 		if cerr := q.createIndexerStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createIndexerStmt: %w", cerr)
+		}
+	}
+	if q.createLibraryScanStmt != nil {
+		if cerr := q.createLibraryScanStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createLibraryScanStmt: %w", cerr)
 		}
 	}
 	if q.createMediaServerStmt != nil {
@@ -1107,6 +1130,11 @@ func (q *Queries) Close() error {
 	if q.getLibraryChangesHeadStmt != nil {
 		if cerr := q.getLibraryChangesHeadStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getLibraryChangesHeadStmt: %w", cerr)
+		}
+	}
+	if q.getLibraryScanStmt != nil {
+		if cerr := q.getLibraryScanStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getLibraryScanStmt: %w", cerr)
 		}
 	}
 	if q.getLibraryVersionStmt != nil {
@@ -1414,6 +1442,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listLibraryIndexByIDsStmt: %w", cerr)
 		}
 	}
+	if q.listLibraryScansStmt != nil {
+		if cerr := q.listLibraryScansStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listLibraryScansStmt: %w", cerr)
+		}
+	}
 	if q.listMatcherAlternateTitleRowsStmt != nil {
 		if cerr := q.listMatcherAlternateTitleRowsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listMatcherAlternateTitleRowsStmt: %w", cerr)
@@ -1594,6 +1627,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing pruneImportJournalStmt: %w", cerr)
 		}
 	}
+	if q.pruneLibraryScansStmt != nil {
+		if cerr := q.pruneLibraryScansStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing pruneLibraryScansStmt: %w", cerr)
+		}
+	}
 	if q.purgeHistoryStmt != nil {
 		if cerr := q.purgeHistoryStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing purgeHistoryStmt: %w", cerr)
@@ -1687,6 +1725,11 @@ func (q *Queries) Close() error {
 	if q.setIndexerSecretsStmt != nil {
 		if cerr := q.setIndexerSecretsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing setIndexerSecretsStmt: %w", cerr)
+		}
+	}
+	if q.setLibraryScanJobStmt != nil {
+		if cerr := q.setLibraryScanJobStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing setLibraryScanJobStmt: %w", cerr)
 		}
 	}
 	if q.setMediaServerSecretsStmt != nil {
@@ -1787,6 +1830,11 @@ func (q *Queries) Close() error {
 	if q.updateIndexerHealthStmt != nil {
 		if cerr := q.updateIndexerHealthStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updateIndexerHealthStmt: %w", cerr)
+		}
+	}
+	if q.updateLibraryScanStmt != nil {
+		if cerr := q.updateLibraryScanStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateLibraryScanStmt: %w", cerr)
 		}
 	}
 	if q.updateMediaServerStmt != nil {
@@ -1930,6 +1978,7 @@ type Queries struct {
 	createDownloadClientStmt          *sql.Stmt
 	createImportJournalStmt           *sql.Stmt
 	createIndexerStmt                 *sql.Stmt
+	createLibraryScanStmt             *sql.Stmt
 	createMediaServerStmt             *sql.Stmt
 	createNotificationStmt            *sql.Stmt
 	createQualityProfileStmt          *sql.Stmt
@@ -1986,6 +2035,7 @@ type Queries struct {
 	getJobStmt                        *sql.Stmt
 	getLastRSSSyncStmt                *sql.Stmt
 	getLibraryChangesHeadStmt         *sql.Stmt
+	getLibraryScanStmt                *sql.Stmt
 	getLibraryVersionStmt             *sql.Stmt
 	getMediaServerStmt                *sql.Stmt
 	getMovieStmt                      *sql.Stmt
@@ -2047,6 +2097,7 @@ type Queries struct {
 	listLibraryChangesSinceStmt       *sql.Stmt
 	listLibraryIndexStmt              *sql.Stmt
 	listLibraryIndexByIDsStmt         *sql.Stmt
+	listLibraryScansStmt              *sql.Stmt
 	listMatcherAlternateTitleRowsStmt *sql.Stmt
 	listMatcherAlternateTitlesStmt    *sql.Stmt
 	listMatcherMoviesStmt             *sql.Stmt
@@ -2083,6 +2134,7 @@ type Queries struct {
 	listTagsWithUsageStmt             *sql.Stmt
 	listUserSessionsStmt              *sql.Stmt
 	pruneImportJournalStmt            *sql.Stmt
+	pruneLibraryScansStmt             *sql.Stmt
 	purgeHistoryStmt                  *sql.Stmt
 	reassignDownloadMovieStmt         *sql.Stmt
 	recordMediaServerFailureStmt      *sql.Stmt
@@ -2102,6 +2154,7 @@ type Queries struct {
 	setDownloadsRetryStoppedStmt      *sql.Stmt
 	setImportJournalStatusStmt        *sql.Stmt
 	setIndexerSecretsStmt             *sql.Stmt
+	setLibraryScanJobStmt             *sql.Stmt
 	setMediaServerSecretsStmt         *sql.Stmt
 	setMovieFileRelativePathStmt      *sql.Stmt
 	setMovieLastSearchedStmt          *sql.Stmt
@@ -2122,6 +2175,7 @@ type Queries struct {
 	updateDownloadStateStmt           *sql.Stmt
 	updateIndexerStmt                 *sql.Stmt
 	updateIndexerHealthStmt           *sql.Stmt
+	updateLibraryScanStmt             *sql.Stmt
 	updateMediaServerStmt             *sql.Stmt
 	updateMovieFileScoreStmt          *sql.Stmt
 	updateMovieMetadataStmt           *sql.Stmt
@@ -2166,6 +2220,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		createDownloadClientStmt:          q.createDownloadClientStmt,
 		createImportJournalStmt:           q.createImportJournalStmt,
 		createIndexerStmt:                 q.createIndexerStmt,
+		createLibraryScanStmt:             q.createLibraryScanStmt,
 		createMediaServerStmt:             q.createMediaServerStmt,
 		createNotificationStmt:            q.createNotificationStmt,
 		createQualityProfileStmt:          q.createQualityProfileStmt,
@@ -2222,6 +2277,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		getJobStmt:                        q.getJobStmt,
 		getLastRSSSyncStmt:                q.getLastRSSSyncStmt,
 		getLibraryChangesHeadStmt:         q.getLibraryChangesHeadStmt,
+		getLibraryScanStmt:                q.getLibraryScanStmt,
 		getLibraryVersionStmt:             q.getLibraryVersionStmt,
 		getMediaServerStmt:                q.getMediaServerStmt,
 		getMovieStmt:                      q.getMovieStmt,
@@ -2283,6 +2339,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		listLibraryChangesSinceStmt:       q.listLibraryChangesSinceStmt,
 		listLibraryIndexStmt:              q.listLibraryIndexStmt,
 		listLibraryIndexByIDsStmt:         q.listLibraryIndexByIDsStmt,
+		listLibraryScansStmt:              q.listLibraryScansStmt,
 		listMatcherAlternateTitleRowsStmt: q.listMatcherAlternateTitleRowsStmt,
 		listMatcherAlternateTitlesStmt:    q.listMatcherAlternateTitlesStmt,
 		listMatcherMoviesStmt:             q.listMatcherMoviesStmt,
@@ -2319,6 +2376,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		listTagsWithUsageStmt:             q.listTagsWithUsageStmt,
 		listUserSessionsStmt:              q.listUserSessionsStmt,
 		pruneImportJournalStmt:            q.pruneImportJournalStmt,
+		pruneLibraryScansStmt:             q.pruneLibraryScansStmt,
 		purgeHistoryStmt:                  q.purgeHistoryStmt,
 		reassignDownloadMovieStmt:         q.reassignDownloadMovieStmt,
 		recordMediaServerFailureStmt:      q.recordMediaServerFailureStmt,
@@ -2338,6 +2396,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		setDownloadsRetryStoppedStmt:      q.setDownloadsRetryStoppedStmt,
 		setImportJournalStatusStmt:        q.setImportJournalStatusStmt,
 		setIndexerSecretsStmt:             q.setIndexerSecretsStmt,
+		setLibraryScanJobStmt:             q.setLibraryScanJobStmt,
 		setMediaServerSecretsStmt:         q.setMediaServerSecretsStmt,
 		setMovieFileRelativePathStmt:      q.setMovieFileRelativePathStmt,
 		setMovieLastSearchedStmt:          q.setMovieLastSearchedStmt,
@@ -2358,6 +2417,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		updateDownloadStateStmt:           q.updateDownloadStateStmt,
 		updateIndexerStmt:                 q.updateIndexerStmt,
 		updateIndexerHealthStmt:           q.updateIndexerHealthStmt,
+		updateLibraryScanStmt:             q.updateLibraryScanStmt,
 		updateMediaServerStmt:             q.updateMediaServerStmt,
 		updateMovieFileScoreStmt:          q.updateMovieFileScoreStmt,
 		updateMovieMetadataStmt:           q.updateMovieMetadataStmt,

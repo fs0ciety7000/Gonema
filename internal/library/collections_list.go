@@ -105,20 +105,18 @@ type CollectionFilm struct {
 // CollectionCounts summarizes the films of a collection.
 type CollectionCounts struct {
 	Total, InLibrary, OnDisk, Downloading, Wanted int
-	// Missing: not in the library; MissingReleased: of those, released.
-	Missing, MissingReleased int
+	// NotInLibrary: every film not in the library; Missing: of those, the
+	// released ones (an upcoming film is never "missing": a monitored
+	// collection adds it on release day).
+	NotInLibrary, Missing int
 	// Upcoming: not released yet, in the library or not.
 	Upcoming         int
 	SizeOnDisk       int64
 	YearFrom, YearTo int // 0 when unknown
 }
 
-// HasMissing reports whether the collection misses films: released ones, or
-// (when the collection is not monitored, so nothing adds them later) films
-// not released yet.
-func (c *CollectionCounts) HasMissing(monitored bool) bool {
-	return c.MissingReleased > 0 || (!monitored && c.Missing > 0)
-}
+// HasMissing reports whether the collection misses released films.
+func (c *CollectionCounts) HasMissing() bool { return c.Missing > 0 }
 
 // CollectionView is a collection with its films.
 type CollectionView struct {
@@ -218,9 +216,9 @@ func (c *CollectionCounts) add(f *CollectionFilm) {
 			c.SizeOnDisk += *f.Movie.FileSize
 		}
 	} else {
-		c.Missing++
+		c.NotInLibrary++
 		if f.Released {
-			c.MissingReleased++
+			c.Missing++
 		}
 	}
 	switch f.State {
@@ -329,12 +327,12 @@ func (s *Service) ListCollections(ctx context.Context, q CollectionQuery) (Colle
 		t := &page.Totals
 		t.Collections++
 		t.Films += v.Counts.Total
-		t.NotInLibrary += v.Counts.Missing
+		t.NotInLibrary += v.Counts.NotInLibrary
 		t.Upcoming += v.Counts.Upcoming
 		if c.Monitored {
 			t.Monitored++
 		}
-		missing := v.Counts.HasMissing(c.Monitored)
+		missing := v.Counts.HasMissing()
 		if missing {
 			t.WithMissing++
 		}
@@ -388,91 +386,110 @@ func (s *Service) CollectionView(ctx context.Context, id int64) (CollectionView,
 	return buildView(d.Collection, parts, known, movies, s.now().Format(dateLayout)), d, nil
 }
 
-// Collections refresh job.
+// Collections job: refreshes the TMDB parts snapshots and adds the released
+// films of monitored collections (a monitored collection adds an upcoming
+// film on its release day, not before).
 const (
-	// JobCollectionsRefresh refreshes the parts snapshot of the collections and
-	// adds the new films of monitored collections.
+	// JobCollectionsRefresh is the job kind.
 	JobCollectionsRefresh = "collections.refresh"
-	// CollectionsRefreshInterval is its period.
-	CollectionsRefreshInterval = 12 * time.Hour
-	// collectionsStaleAfter: a snapshot older than this is refreshed.
+	// CollectionsRefreshInterval is its period: a film released today is
+	// added within this delay.
+	CollectionsRefreshInterval = 6 * time.Hour
+	// collectionsStaleAfter: a snapshot older than this is read again.
 	collectionsStaleAfter = 24 * time.Hour
 	// collectionsPerRun bounds the TMDB calls of one run.
 	collectionsPerRun = 100
 )
 
-// RefreshCollections refreshes the oldest parts snapshots (at most
-// collectionsPerRun per run) and, for monitored collections, adds the films
-// that are not in the library yet (excluded films are skipped), with the
-// collection's settings. Each addition is written to history (movie_added,
-// with the collection as the reason).
+// RefreshCollections reads again the oldest parts snapshots from TMDB (at
+// most collectionsPerRun per run), then adds to the library, for each
+// monitored collection, its released films that are not in it yet (excluded
+// films are skipped), with the collection's settings. Each addition is
+// written to history (movie_added, with the collection as the reason).
 func (s *Service) RefreshCollections(ctx context.Context) error {
-	p, err := s.Provider()
-	if err != nil {
-		s.log.Debug("collections refresh skipped: no TMDB key")
-		return nil
+	if p, err := s.Provider(); err == nil {
+		rows, err := s.st.Read().ListCollectionsNeedingParts(ctx, db.ListCollectionsNeedingPartsParams{
+			StaleBefore: ptr(store.Millis(s.now().Add(-collectionsStaleAfter))), Limit: collectionsPerRun,
+		})
+		if err != nil {
+			return store.MapError(fmt.Errorf("library: collections to refresh: %w", err))
+		}
+		for _, r := range rows {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			c, err := p.Collection(ctx, int(r.TmdbID))
+			if err != nil {
+				s.log.Warn("collection refresh failed", slog.Int64("collection_id", r.ID), slog.Any("error", err))
+				continue
+			}
+			s.saveParts(ctx, r.ID, c.Parts)
+		}
 	}
-	rows, err := s.st.Read().ListCollectionsNeedingParts(ctx, db.ListCollectionsNeedingPartsParams{
-		StaleBefore: ptr(store.Millis(s.now().Add(-collectionsStaleAfter))), Limit: collectionsPerRun,
-	})
+	rows, err := s.st.Read().ListCollections(ctx)
 	if err != nil {
-		return store.MapError(fmt.Errorf("library: collections to refresh: %w", err))
+		return store.MapError(fmt.Errorf("library: list collections: %w", err))
 	}
 	added := 0
-	for _, r := range rows {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		c, err := p.Collection(ctx, int(r.TmdbID))
-		if err != nil {
-			s.log.Warn("collection refresh failed", slog.Int64("collection_id", r.ID), slog.Any("error", err))
+	for i := range rows {
+		c := &rows[i]
+		if !c.Monitored || c.QualityProfileID == nil || c.RootFolderID == nil {
 			continue
 		}
-		s.saveParts(ctx, r.ID, c.Parts)
-		row, err := s.st.Read().GetCollection(ctx, r.ID)
-		if err != nil {
-			return store.MapError(fmt.Errorf("library: collection %d: %w", r.ID, err))
-		}
-		if !row.Monitored || row.QualityProfileID == nil || row.RootFolderID == nil {
+		parts, ok := decodeParts(c.Parts)
+		if !ok {
 			continue
 		}
-		n, err := s.addMissingParts(ctx, &row, c.Parts)
+		n, err := s.addReleasedParts(ctx, c, parts, fmt.Sprintf("Added automatically on release: the collection %s is monitored.", c.Name))
 		added += n
 		if err != nil {
 			return err
 		}
 	}
-	if len(rows) > 0 {
-		s.log.Info("collections refreshed", slog.Int("collections", len(rows)), slog.Int("movies_added", added))
+	if added > 0 {
+		s.log.Info("released films of monitored collections added", slog.Int("movies_added", added))
 	}
 	return nil
 }
 
-// addMissingParts adds the parts of a monitored collection that are not in the
-// library and not excluded.
-func (s *Service) addMissingParts(ctx context.Context, c *db.Collection, parts []metadata.MovieSummary) (int, error) {
-	ids := partIDs(parts)
+// releasedParts keeps the parts released on or before today (YYYY-MM-DD). Pure.
+func releasedParts(parts []PartSnapshot, today string) (released, upcoming []PartSnapshot) {
+	for _, p := range parts {
+		if p.ReleaseDate != "" && p.ReleaseDate <= today {
+			released = append(released, p)
+		} else {
+			upcoming = append(upcoming, p)
+		}
+	}
+	return released, upcoming
+}
+
+// addReleasedParts adds the released parts of a monitored collection that are
+// not in the library and not excluded; it returns how many were added.
+func (s *Service) addReleasedParts(ctx context.Context, c *db.Collection, parts []PartSnapshot, reason string) (int, error) {
+	released, _ := releasedParts(parts, s.now().Format(dateLayout))
+	ids := make([]int, 0, len(released))
+	for _, p := range released {
+		ids = append(ids, p.TmdbID)
+	}
 	flags, err := s.FlagMovies(ctx, ids)
 	if err != nil {
 		return 0, err
 	}
 	added := 0
-	for i := range parts {
-		part := &parts[i]
-		f := flags[part.TMDBID]
-		if part.Adult || f.MovieID != 0 || f.Excluded {
+	for _, p := range released {
+		if f := flags[p.TmdbID]; f.MovieID != 0 || f.Excluded {
 			continue
 		}
-		_, created, err := s.AddMovie(ctx, part.TMDBID, AddOptions{
+		_, created, err := s.AddMovie(ctx, p.TmdbID, AddOptions{
 			RootFolderID: *c.RootFolderID, QualityProfileID: *c.QualityProfileID, MinimumAvailability: c.MinimumAvailability,
-			Monitored: true, SearchOnAdd: c.SearchOnAdd,
-			Reason: fmt.Sprintf("Added automatically: the monitored collection %s has a new film.", c.Name),
+			Monitored: true, SearchOnAdd: c.SearchOnAdd, Reason: reason,
 		})
 		switch {
 		case err != nil && ctx.Err() != nil:
 			return added, ctx.Err()
 		case err != nil:
-			s.log.Warn("collection part not added", slog.Int64("collection_id", c.ID), slog.Int("tmdb_id", part.TMDBID), slog.Any("error", err))
+			s.log.Warn("collection part not added", slog.Int64("collection_id", c.ID), slog.Int("tmdb_id", p.TmdbID), slog.Any("error", err))
 		case created:
 			added++
 		}

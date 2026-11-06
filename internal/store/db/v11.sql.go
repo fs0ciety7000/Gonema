@@ -30,6 +30,39 @@ func (q *Queries) CancelRunningJob(ctx context.Context, arg CancelRunningJobPara
 	return result.RowsAffected()
 }
 
+const createLibraryScan = `-- name: CreateLibraryScan :one
+
+INSERT INTO library_import_scans (root_folder_id, path, status, created_at, updated_at)
+VALUES (?1, ?2, 'pending', ?3, ?3)
+RETURNING id, root_folder_id, path, status, job_id, total, done, folders, error, created_at, updated_at
+`
+
+type CreateLibraryScanParams struct {
+	RootFolderID int64  `json:"rootFolderId"`
+	Path         string `json:"path"`
+	Now          int64  `json:"now"`
+}
+
+// ----------------------------------------------------------------- library import scans
+func (q *Queries) CreateLibraryScan(ctx context.Context, arg CreateLibraryScanParams) (LibraryImportScan, error) {
+	row := q.queryRow(ctx, q.createLibraryScanStmt, createLibraryScan, arg.RootFolderID, arg.Path, arg.Now)
+	var i LibraryImportScan
+	err := row.Scan(
+		&i.ID,
+		&i.RootFolderID,
+		&i.Path,
+		&i.Status,
+		&i.JobID,
+		&i.Total,
+		&i.Done,
+		&i.Folders,
+		&i.Error,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const disableCalendarFeed = `-- name: DisableCalendarFeed :execrows
 UPDATE calendar_feeds SET key_hash = NULL, last4 = '', last_used_at = NULL
 WHERE user_id = ? AND key_hash IS NOT NULL
@@ -90,6 +123,29 @@ func (q *Queries) GetCalendarFeedByKey(ctx context.Context, keyHash []byte) (Cal
 	return i, err
 }
 
+const getLibraryScan = `-- name: GetLibraryScan :one
+SELECT id, root_folder_id, path, status, job_id, total, done, folders, error, created_at, updated_at FROM library_import_scans WHERE id = ?
+`
+
+func (q *Queries) GetLibraryScan(ctx context.Context, id int64) (LibraryImportScan, error) {
+	row := q.queryRow(ctx, q.getLibraryScanStmt, getLibraryScan, id)
+	var i LibraryImportScan
+	err := row.Scan(
+		&i.ID,
+		&i.RootFolderID,
+		&i.Path,
+		&i.Status,
+		&i.JobID,
+		&i.Total,
+		&i.Done,
+		&i.Folders,
+		&i.Error,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listCollectionsNeedingParts = `-- name: ListCollectionsNeedingParts :many
 SELECT c.id, c.tmdb_id FROM collections c
 WHERE (c.parts IS NULL OR coalesce(c.parts_refreshed_at, 0) < ?1)
@@ -131,6 +187,73 @@ func (q *Queries) ListCollectionsNeedingParts(ctx context.Context, arg ListColle
 		return nil, err
 	}
 	return items, nil
+}
+
+const listLibraryScans = `-- name: ListLibraryScans :many
+SELECT id, root_folder_id, path, status, job_id, total, done, error, created_at, updated_at
+FROM library_import_scans ORDER BY id DESC LIMIT ?1
+`
+
+type ListLibraryScansRow struct {
+	ID           int64  `json:"id"`
+	RootFolderID int64  `json:"rootFolderId"`
+	Path         string `json:"path"`
+	Status       string `json:"status"`
+	JobID        *int64 `json:"jobId"`
+	Total        int64  `json:"total"`
+	Done         int64  `json:"done"`
+	Error        string `json:"error"`
+	CreatedAt    int64  `json:"createdAt"`
+	UpdatedAt    int64  `json:"updatedAt"`
+}
+
+// ListLibraryScans lists the recent scans without their folders.
+func (q *Queries) ListLibraryScans(ctx context.Context, limit int64) ([]ListLibraryScansRow, error) {
+	rows, err := q.query(ctx, q.listLibraryScansStmt, listLibraryScans, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLibraryScansRow{}
+	for rows.Next() {
+		var i ListLibraryScansRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.RootFolderID,
+			&i.Path,
+			&i.Status,
+			&i.JobID,
+			&i.Total,
+			&i.Done,
+			&i.Error,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const pruneLibraryScans = `-- name: PruneLibraryScans :execrows
+DELETE FROM library_import_scans
+WHERE id NOT IN (SELECT id FROM library_import_scans ORDER BY id DESC LIMIT ?1)
+`
+
+// PruneLibraryScans keeps the newest scans.
+func (q *Queries) PruneLibraryScans(ctx context.Context, keep int64) (int64, error) {
+	result, err := q.exec(ctx, q.pruneLibraryScansStmt, pruneLibraryScans, keep)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const setCalendarFeedKey = `-- name: SetCalendarFeedKey :one
@@ -266,6 +389,20 @@ func (q *Queries) SetDownloadsRetryStopped(ctx context.Context, arg SetDownloads
 	return result.RowsAffected()
 }
 
+const setLibraryScanJob = `-- name: SetLibraryScanJob :exec
+UPDATE library_import_scans SET job_id = ?1 WHERE id = ?2
+`
+
+type SetLibraryScanJobParams struct {
+	JobID *int64 `json:"jobId"`
+	ID    int64  `json:"id"`
+}
+
+func (q *Queries) SetLibraryScanJob(ctx context.Context, arg SetLibraryScanJobParams) error {
+	_, err := q.exec(ctx, q.setLibraryScanJobStmt, setLibraryScanJob, arg.JobID, arg.ID)
+	return err
+}
+
 const touchCalendarFeed = `-- name: TouchCalendarFeed :exec
 UPDATE calendar_feeds SET last_used_at = ? WHERE id = ?
 `
@@ -277,6 +414,36 @@ type TouchCalendarFeedParams struct {
 
 func (q *Queries) TouchCalendarFeed(ctx context.Context, arg TouchCalendarFeedParams) error {
 	_, err := q.exec(ctx, q.touchCalendarFeedStmt, touchCalendarFeed, arg.LastUsedAt, arg.ID)
+	return err
+}
+
+const updateLibraryScan = `-- name: UpdateLibraryScan :exec
+UPDATE library_import_scans SET
+    status = ?1, total = ?2, done = ?3,
+    folders = ?4, error = ?5, updated_at = ?6
+WHERE id = ?7
+`
+
+type UpdateLibraryScanParams struct {
+	Status    string `json:"status"`
+	Total     int64  `json:"total"`
+	Done      int64  `json:"done"`
+	Folders   string `json:"folders"`
+	Error     string `json:"error"`
+	UpdatedAt int64  `json:"updatedAt"`
+	ID        int64  `json:"id"`
+}
+
+func (q *Queries) UpdateLibraryScan(ctx context.Context, arg UpdateLibraryScanParams) error {
+	_, err := q.exec(ctx, q.updateLibraryScanStmt, updateLibraryScan,
+		arg.Status,
+		arg.Total,
+		arg.Done,
+		arg.Folders,
+		arg.Error,
+		arg.UpdatedAt,
+		arg.ID,
+	)
 	return err
 }
 

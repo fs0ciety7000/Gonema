@@ -203,10 +203,11 @@ func serve(ctx context.Context, cfg *config.Config, base *slog.Logger, outs *log
 		log.Warn("this binary has no web interface (built without `make web`): a placeholder page is served")
 	}
 
-	imp, err := importer.New(importer.Options{Store: st, Matcher: lib, Library: lib, Bus: bus, Logger: logFor("import"), DataDir: cfg.DataDir})
+	imp, err := importer.New(importer.Options{Store: st, Matcher: lib, Library: lib, Bus: bus, Logger: logFor("import"), DataDir: cfg.DataDir, Jobs: runner})
 	if err != nil {
 		return err
 	}
+	imp.RegisterJobs(runner)
 	lib.SetReservedFolders(func(ctx context.Context) []string { // a root folder cannot be (in) the recycle bin
 		if set, err := imp.Settings(ctx); err == nil && set.RecycleBin != "" {
 			return []string{set.RecycleBin}

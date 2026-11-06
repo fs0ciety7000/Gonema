@@ -22,6 +22,7 @@ import (
 	"github.com/fs0ciety7000/gonema/internal/decision"
 	"github.com/fs0ciety7000/gonema/internal/events"
 	"github.com/fs0ciety7000/gonema/internal/fsx"
+	"github.com/fs0ciety7000/gonema/internal/jobs"
 	"github.com/fs0ciety7000/gonema/internal/library"
 	"github.com/fs0ciety7000/gonema/internal/match"
 	"github.com/fs0ciety7000/gonema/internal/parser"
@@ -190,6 +191,15 @@ type Options struct {
 	// the Fault* constants); an error stops the import there as a crash
 	// would: nothing is undone and the journal entry stays pending.
 	Fault func(step string) error
+	// Jobs, optional, runs the library scans (RegisterJobs) and the searches
+	// asked after a library import.
+	Jobs JobQueue
+}
+
+// JobQueue is the part of the job runner the service uses (jobs.Runner).
+type JobQueue interface {
+	Enqueue(ctx context.Context, kind string, payload any, opts jobs.EnqueueOptions) (db.Job, bool, error)
+	Has(kind string) bool
 }
 
 // Service imports files. It is safe for concurrent use; imports of one movie
@@ -205,6 +215,9 @@ type Service struct {
 	extraRoots func(ctx context.Context) []string
 	fault      func(step string) error
 	dataDir    string
+	jobs       JobQueue
+	posterURL  func(tmdbPath string) *string // API image links of candidates (SetImageURL)
+	scans      scanState                     // library scans of this process (scanjob.go)
 
 	locks sync.Map // movie id -> *sync.Mutex
 }
@@ -216,7 +229,7 @@ func New(opts Options) (*Service, error) {
 	}
 	s := &Service{
 		st: opts.Store, fs: opts.FS, matcher: opts.Matcher, lib: opts.Library, bus: opts.Bus,
-		log: opts.Logger, now: opts.Now, extraRoots: opts.ExtraRoots, fault: opts.Fault, dataDir: opts.DataDir,
+		log: opts.Logger, now: opts.Now, extraRoots: opts.ExtraRoots, fault: opts.Fault, dataDir: opts.DataDir, jobs: opts.Jobs,
 	}
 	if s.now == nil {
 		s.now = time.Now

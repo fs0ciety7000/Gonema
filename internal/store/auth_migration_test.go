@@ -18,13 +18,13 @@ func TestMigration7Auth(t *testing.T) {
 		t.Fatal(err)
 	}
 	hash := make([]byte, 32)
-	if _, err := s.Write().CreateSession(ctx, db.CreateSessionParams{TokenHash: hash, UserID: u.ID, CreatedAt: 1, LastSeenAt: 1, ExpiresAt: 2}); err != nil {
+	if _, err := s.Write().CreateSession(ctx, db.CreateSessionParams{TokenHash: hash, UserID: u.ID, CreatedAt: 1, LastSeenAt: 1, ExpiresAt: 2, Via: "direct"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.Write().CreateSession(ctx, db.CreateSessionParams{TokenHash: hash, UserID: u.ID, CreatedAt: 1, LastSeenAt: 1, ExpiresAt: 2}); !errors.Is(MapError(err), ErrConflict) {
+	if _, err := s.Write().CreateSession(ctx, db.CreateSessionParams{TokenHash: hash, UserID: u.ID, CreatedAt: 1, LastSeenAt: 1, ExpiresAt: 2, Via: "direct"}); !errors.Is(MapError(err), ErrConflict) {
 		t.Errorf("duplicate token hash: %v", err)
 	}
-	if _, err := s.Write().CreateSession(ctx, db.CreateSessionParams{TokenHash: []byte("short"), UserID: u.ID, CreatedAt: 1, LastSeenAt: 1, ExpiresAt: 2}); !errors.Is(MapError(err), ErrInvalid) {
+	if _, err := s.Write().CreateSession(ctx, db.CreateSessionParams{TokenHash: []byte("short"), UserID: u.ID, CreatedAt: 1, LastSeenAt: 1, ExpiresAt: 2, Via: "direct"}); !errors.Is(MapError(err), ErrInvalid) {
 		t.Errorf("short token hash: %v", err)
 	}
 	if _, err := s.Write().CreateAPIKey(ctx, db.CreateAPIKeyParams{UserID: u.ID, KeyHash: hash, Last4: "abcd", CreatedAt: 1}); err != nil {

@@ -21,6 +21,11 @@
 -- only its SHA-256 and last four characters are stored, like the API key. The
 -- row also keeps the feed options; key_hash NULL means the feed is off.
 --
+-- library_import_scans keeps the scans of existing movie folders (library
+-- import): run as a background job, their results (folders JSON, one object
+-- per folder with its match proposal) stay for a later review. Only the last
+-- 20 scans are kept.
+--
 -- history.event gains retries_stopped and retries_resumed (the history table is
 -- rebuilt, as in 00002: SQLite cannot alter a CHECK constraint).
 --
@@ -51,6 +56,22 @@ CREATE TABLE calendar_feeds (
                                 CHECK (json_valid(release_types) AND json_type(release_types) = 'array'),
     CHECK ((key_hash IS NULL) = (last4 = ''))
 );
+
+CREATE TABLE library_import_scans (
+    id             INTEGER PRIMARY KEY,
+    root_folder_id INTEGER NOT NULL REFERENCES root_folders (id) ON DELETE CASCADE,
+    path           TEXT    NOT NULL DEFAULT '',
+    status         TEXT    NOT NULL DEFAULT 'pending'
+                           CHECK (status IN ('pending', 'running', 'done', 'cancelled', 'failed')),
+    job_id         INTEGER,
+    total          INTEGER NOT NULL DEFAULT 0,
+    done           INTEGER NOT NULL DEFAULT 0,
+    folders        TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid(folders) AND json_type(folders) = 'array'),
+    error          TEXT    NOT NULL DEFAULT '',
+    created_at     INTEGER NOT NULL,
+    updated_at     INTEGER NOT NULL
+);
+CREATE INDEX library_import_scans_root_folder_id ON library_import_scans (root_folder_id);
 
 CREATE TABLE history_new (
     id           INTEGER PRIMARY KEY,
@@ -150,6 +171,8 @@ BEGIN
 END;
 -- +goose StatementEnd
 
+DROP INDEX library_import_scans_root_folder_id;
+DROP TABLE library_import_scans;
 DROP TABLE calendar_feeds;
 ALTER TABLE sessions DROP COLUMN via;
 ALTER TABLE downloads DROP COLUMN retry_stopped_at;

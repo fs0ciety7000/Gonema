@@ -208,6 +208,20 @@ type LibraryChange struct {
 	MovieID *int64 `json:"movieId"`
 }
 
+type LibraryImportScan struct {
+	ID           int64  `json:"id"`
+	RootFolderID int64  `json:"rootFolderId"`
+	Path         string `json:"path"`
+	Status       string `json:"status"`
+	JobID        *int64 `json:"jobId"`
+	Total        int64  `json:"total"`
+	Done         int64  `json:"done"`
+	Folders      string `json:"folders"`
+	Error        string `json:"error"`
+	CreatedAt    int64  `json:"createdAt"`
+	UpdatedAt    int64  `json:"updatedAt"`
+}
+
 type LibraryVersion struct {
 	ID int64 `json:"id"`
 	V  int64 `json:"v"`

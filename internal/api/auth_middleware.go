@@ -82,6 +82,8 @@ type client struct {
 	// Loopback: a direct connection from a loopback address (not a trusted
 	// proxy, no proxy header) with a loopback Host (localhost, 127.0.0.1, ::1).
 	Loopback bool
+	// Host is the Host header of the request.
+	Host string
 	// Via is how the client connects (auth.ViaDirect, ViaLocal or ViaProxy),
 	// for the session list only.
 	Via string
@@ -151,6 +153,13 @@ func (s *Server) withAuth(next http.Handler) http.Handler {
 		}
 		if len(s.d.Security.AllowedHosts) > 0 && !c.HostOK && r.Header.Get(APIKeyHeader) == "" {
 			writeProblem(w, r, http.StatusForbidden, hostRefused)
+			return
+		}
+
+		if r.URL.Path == calendarPath && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+			// The iCal feed authenticates with its own read-only key in the
+			// query string (calendar_routes.go): no session, no API key.
+			next.ServeHTTP(w, r)
 			return
 		}
 
@@ -303,7 +312,7 @@ func loopbackHost(r *http.Request) bool {
 // It only serves login throttling and the session list, never an access
 // decision. X-Forwarded-Proto is read from trusted proxies only.
 func (s *Server) clientInfo(r *http.Request) client {
-	c := client{UserAgent: r.UserAgent(), HostOK: s.hostAllowed(r)}
+	c := client{UserAgent: r.UserAgent(), HostOK: s.hostAllowed(r), Host: r.Host}
 	sec := &s.d.Security
 	peer, ok := remoteAddr(r)
 	trusted := ok && sec.ProxyTrusted(peer)

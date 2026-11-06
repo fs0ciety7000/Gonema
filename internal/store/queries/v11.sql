@@ -79,3 +79,32 @@ UPDATE calendar_feeds SET last_used_at = ? WHERE id = ?;
 -- name: CancelRunningJob :execrows
 UPDATE jobs SET status = 'cancelled', finished_at = CAST(sqlc.arg(now) AS INTEGER)
 WHERE id = sqlc.arg(id) AND status = 'running';
+
+-- ----------------------------------------------------------------- library import scans
+
+-- name: CreateLibraryScan :one
+INSERT INTO library_import_scans (root_folder_id, path, status, created_at, updated_at)
+VALUES (sqlc.arg(root_folder_id), sqlc.arg(path), 'pending', sqlc.arg(now), sqlc.arg(now))
+RETURNING *;
+
+-- name: SetLibraryScanJob :exec
+UPDATE library_import_scans SET job_id = sqlc.arg(job_id) WHERE id = sqlc.arg(id);
+
+-- name: UpdateLibraryScan :exec
+UPDATE library_import_scans SET
+    status = sqlc.arg(status), total = sqlc.arg(total), done = sqlc.arg(done),
+    folders = sqlc.arg(folders), error = sqlc.arg(error), updated_at = sqlc.arg(updated_at)
+WHERE id = sqlc.arg(id);
+
+-- name: GetLibraryScan :one
+SELECT * FROM library_import_scans WHERE id = ?;
+
+-- ListLibraryScans lists the recent scans without their folders.
+-- name: ListLibraryScans :many
+SELECT id, root_folder_id, path, status, job_id, total, done, error, created_at, updated_at
+FROM library_import_scans ORDER BY id DESC LIMIT sqlc.arg(limit);
+
+-- PruneLibraryScans keeps the newest scans.
+-- name: PruneLibraryScans :execrows
+DELETE FROM library_import_scans
+WHERE id NOT IN (SELECT id FROM library_import_scans ORDER BY id DESC LIMIT sqlc.arg(keep));

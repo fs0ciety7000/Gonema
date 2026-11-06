@@ -573,8 +573,17 @@ func TestCollectionMonitor(t *testing.T) {
 		m.Collection = ref
 		e.prov.set(m)
 	}
+	day := func(s string) metadata.Date {
+		d, err := metadata.ParseDate(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return d
+	}
 	e.prov.collections[10] = &metadata.Collection{TMDBID: 10, Name: "Alien Collection", Parts: []metadata.MovieSummary{
-		{TMDBID: 1, Title: "Alien"}, {TMDBID: 2, Title: "Aliens"}, {TMDBID: 3, Title: "Alien 3"}, {TMDBID: 4, Title: "Gone"},
+		{TMDBID: 1, Title: "Alien", ReleaseDate: day("1979-05-25")}, {TMDBID: 2, Title: "Aliens", ReleaseDate: day("1986-07-18")},
+		{TMDBID: 3, Title: "Alien 3", ReleaseDate: day("1992-05-22")}, {TMDBID: 4, Title: "Gone", ReleaseDate: day("2000-01-01")},
+		{TMDBID: 5, Title: "Alien: Next", ReleaseDate: day("2099-01-01")}, {TMDBID: 6, Title: "Alien: Untitled"},
 	}}
 	first := e.add(t, 1)
 	ctx := context.Background()
@@ -593,8 +602,12 @@ func TestCollectionMonitor(t *testing.T) {
 	if len(res.Skipped) != 2 || res.Skipped[0].TmdbID != 3 || res.Skipped[1].TmdbID != 4 {
 		t.Errorf("skipped = %+v", res.Skipped)
 	}
+	// Not released yet: added on release day by the collections job, not now.
+	if len(res.Upcoming) != 2 || res.Upcoming[0].TmdbID != 5 || res.Upcoming[1].TmdbID != 6 {
+		t.Errorf("upcoming = %+v", res.Upcoming)
+	}
 	d, err := e.svc.GetCollection(ctx, *first.CollectionID)
-	if err != nil || len(d.Movies) != 2 || len(d.Parts) != 4 {
+	if err != nil || len(d.Movies) != 2 || len(d.Parts) != 6 {
 		t.Errorf("collection = %+v, %v", d, err)
 	}
 }
