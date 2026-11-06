@@ -34,6 +34,8 @@ export type LibraryItem = {
   releasePhysical: string | null;
   releaseCinema: string | null;
   tags: string[];
+  /** Ids of the film's tags (GET /tags has the labels). */
+  tagIds: number[];
 };
 
 type Raw = Record<string, unknown>;
@@ -98,6 +100,7 @@ export function toLibraryItem(r: Raw): LibraryItem {
     releasePhysical: str(r.releasePhysical),
     releaseCinema: str(r.releaseCinema),
     tags: list(r.tags),
+    tagIds: Array.isArray(r.tagIds) ? r.tagIds.filter((x): x is number => typeof x === 'number') : [],
   };
 }
 
@@ -131,6 +134,7 @@ export type MovieColumnsWire = {
   releaseDigital?: Array<string | null>;
   releasePhysical?: Array<string | null>;
   releaseCinema?: Array<string | null>;
+  tagIds?: Array<number[] | null>;
 };
 
 export function fromColumns(c: MovieColumnsWire): LibraryItem[] {

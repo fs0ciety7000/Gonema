@@ -104,6 +104,14 @@ export default defineConfig(({ mode }) => ({
     sourcemap: false,
     assetsInlineLimit: 0,
     reportCompressedSize: true,
+    rolldownOptions: {
+      output: {
+        // Everything the first screen imports statically ships as one chunk: lazy routes
+        // sharing those modules otherwise split them into many small files, which gzip worse
+        // and cost more requests (measured in e2e/perf.mjs).
+        codeSplitting: { groups: [{ name: 'app', tags: ['$initial'] }] },
+      },
+    },
   },
   test: {
     environment: 'jsdom',

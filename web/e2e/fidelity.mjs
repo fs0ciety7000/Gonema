@@ -1,13 +1,16 @@
 // Fidelity captures + accessibility audit, on the real server with the demo library.
-//   node e2e/fidelity.mjs
+//   node e2e/fidelity.mjs            (ONLY=name1,name2 to run some screens)
 // Writes e2e/__screenshots__/<screen>-<theme>.png (the app), compare-<screen>-<theme>.png
 // (app | mockup render side by side) and e2e/__screenshots__/a11y-report.json (axe-core).
 // States mirror the mockups: grid with 2 selected films and the pointer on a third poster,
 // table with one selected row and its context menu open, film page at rest.
+// Lot 2: add film (TMDB mocked: the demo has no key), add film · discover (mocked), interactive
+// search (stream mocked: the demo has no indexer), queue and history (real), and the dialogs.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { api, axe, BASE, ensureServer, freeze, launch, openPage } from './helpers.mjs';
+import { demoFilms, mockInteractiveSearch, mockTmdb } from './mocks.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = join(here, '__screenshots__');
@@ -86,6 +89,148 @@ const SCREENS = [
   },
 ];
 
+let films;
+const fileFilm = async () => {
+  const cols = await api('/movies/ids?sort=added&order=desc');
+  const i = cols.state.findIndex((st, k) => st === 'upgradable' && cols.quality?.[k]);
+  return cols.id[Math.max(i, 0)];
+};
+
+SCREENS.push(
+  {
+    name: 'add-film',
+    render: 'add-film',
+    url: '/discover?q=drift',
+    mock: (page) => mockTmdb(page, films),
+    async prepare(page) {
+      await page.locator('.res').first().waitFor();
+      await settle(page);
+    },
+  },
+  {
+    name: 'add-film-discover',
+    render: 'add-film-discover',
+    url: '/discover?tab=discover',
+    mock: (page) => mockTmdb(page, films),
+    async prepare(page) {
+      await page.locator('.rowp .pc').first().waitFor();
+      await page.waitForTimeout(600);
+      await settle(page);
+    },
+  },
+  {
+    name: 'add-film-no-key',
+    url: '/discover',
+    async prepare(page) {
+      await page.getByRole('heading', { name: /isn’t connected yet/ }).waitFor();
+      await settle(page);
+    },
+  },
+  {
+    name: 'tmdb-key-dialog',
+    url: '/discover',
+    async prepare(page) {
+      await page.getByRole('button', { name: 'Add a TMDB key' }).click();
+      await page.getByRole('dialog').waitFor();
+      await settle(page);
+    },
+  },
+  {
+    name: 'interactive-search',
+    render: 'interactive-search',
+    url: () => `/films/${films[0].id}/search`,
+    mock: (page) => mockInteractiveSearch(page, films[0]),
+    async prepare(page) {
+      await page.locator('tr.rel').first().waitFor();
+      await page.waitForTimeout(500);
+      await page
+        .locator('tr[data-key="r1"]')
+        .getByRole('button', { name: /Show score details/ })
+        .click();
+      await settle(page);
+    },
+  },
+  {
+    name: 'interactive-search-confirm',
+    url: () => `/films/${films[0].id}/search`,
+    mock: (page) => mockInteractiveSearch(page, films[0]),
+    async prepare(page) {
+      await page.locator('tr.rel').first().waitFor();
+      await page.locator('tr[data-key="x1"]').getByRole('button', { name: 'Grab anyway…' }).click();
+      await page.getByRole('dialog', { name: 'Grab a rejected release?' }).waitFor();
+      await settle(page);
+    },
+  },
+  {
+    name: 'queue',
+    render: 'queue',
+    url: '/queue',
+    async prepare(page) {
+      await page.locator('.qi').first().waitFor();
+      await settle(page);
+    },
+  },
+  {
+    name: 'queue-history',
+    render: 'queue-history',
+    url: '/history',
+    async prepare(page) {
+      await page.locator('.hist tbody tr[data-index]').first().waitFor();
+      await settle(page);
+    },
+  },
+  {
+    name: 'dialog-tags',
+    url: '/films',
+    async prepare(page) {
+      await page.locator('.pc').first().waitFor();
+      await page.locator('.pc').nth(0).hover();
+      await page.locator('.pc-select input').nth(0).click();
+      await page
+        .getByRole('toolbar', { name: /Bulk actions/ })
+        .getByRole('button', { name: 'Tags' })
+        .click();
+      await page.getByRole('dialog').getByRole('checkbox').first().waitFor();
+      await settle(page);
+    },
+  },
+  {
+    name: 'dialog-move',
+    url: '/films',
+    async prepare(page) {
+      await page.locator('.pc').first().waitFor();
+      await page.locator('.pc').nth(0).hover();
+      await page.locator('.pc-select input').nth(0).click();
+      await page
+        .getByRole('toolbar', { name: /Bulk actions/ })
+        .getByRole('button', { name: 'Move' })
+        .click();
+      await page.getByRole('dialog').locator('.plan').waitFor();
+      await page.waitForTimeout(500);
+      await settle(page);
+    },
+  },
+  {
+    name: 'dialog-delete-file',
+    url: async () => `/films/${await fileFilm()}`,
+    async prepare(page) {
+      await page.getByRole('button', { name: 'Delete file…' }).click();
+      await page.getByRole('dialog').waitFor();
+      await settle(page);
+    },
+  },
+  {
+    name: 'dialog-rename',
+    url: async () => `/films/${await fileFilm()}`,
+    async prepare(page) {
+      await page.getByRole('button', { name: 'Rename preview' }).click();
+      await page.getByRole('dialog').waitFor();
+      await page.waitForTimeout(500);
+      await settle(page);
+    },
+  },
+);
+
 async function compare(browser, app, render, file) {
   const page = await browser.newPage({ viewport: { width: 2 * 1440 + 24, height: 960 } });
   const toUrl = (p) => `data:image/${p.endsWith('.png') ? 'png' : 'jpeg'};base64,${readFileSync(p).toString('base64')}`;
@@ -106,9 +251,13 @@ async function run() {
     tags: 'wcag2a, wcag2aa, wcag21a, wcag21aa, best-practice',
     screens: [],
   };
+  films = await demoFilms(api);
+  const only = process.env.ONLY?.split(',');
   for (const s of SCREENS) {
+    if (only && !only.includes(s.name)) continue;
     for (const theme of ['dark', 'light']) {
       const page = await openPage(browser, { theme, width: s.width ?? 1440, height: s.height ?? 900, bypassCSP: true });
+      if (s.mock) await s.mock(page);
       const path = typeof s.url === 'function' ? await s.url() : s.url;
       await page.goto(`${BASE}${path}`);
       await s.prepare(page);
@@ -117,7 +266,7 @@ async function run() {
       const violations = await axe(page);
       report.screens.push({ screen: s.name, theme, url: path, violations, errors: page.errors });
       const render = join(renders, `${s.render}-${theme}.jpg`);
-      if (existsSync(render) && !s.width)
+      if (s.render && existsSync(render) && !s.width)
         await compare(browser, file, render, join(out, `compare-${s.name}-${theme}.png`));
       console.log(
         `${s.name}-${theme}: ${violations.length} axe violation(s)${violations.length ? ` ${violations.map((v) => v.id).join(', ')}` : ''}`,
@@ -137,7 +286,8 @@ async function run() {
     console.log(`404-${theme}: ${violations.length} axe violation(s)`);
     await page.context().close();
   }
-  writeFileSync(join(out, 'a11y-report.json'), `${JSON.stringify(report, null, 2)}\n`);
+  if (!only) writeFileSync(join(out, 'a11y-report.json'), `${JSON.stringify(report, null, 2)}\n`);
+  else writeFileSync(join(out, 'a11y-report.partial.json'), `${JSON.stringify(report, null, 2)}\n`);
   await browser.close();
 }
 

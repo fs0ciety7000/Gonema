@@ -28,7 +28,7 @@ import { reachable } from '@/lib/nav';
 import { useDelayedFlag } from '@/lib/useDelayedFlag';
 import { openMovieTransition, takeLastOpened } from '@/lib/viewTransition';
 import mascotEmpty from '../../../../docs/brand/kit/mascot/kernel-empty-library.svg?url';
-import { COLUMNS, type ColumnId, LibraryTable } from './LibraryTable';
+import { COLUMNS, type ColumnId } from './columns';
 import {
   applyFilters,
   DEFAULT_DIR,
@@ -53,6 +53,9 @@ const route = getRouteApi('/films');
 const FiltersButton = lazy(() => import('./FiltersPopover').then((m) => ({ default: m.FiltersButton })));
 const SaveViewButton = lazy(() => import('./FiltersPopover').then((m) => ({ default: m.SaveViewButton })));
 const BulkBar = lazy(() => import('./BulkBar').then((m) => ({ default: m.BulkBar })));
+// The grid is the default layout: the table arrives on demand (and is preloaded when the browser is idle).
+const loadTable = () => import('./LibraryTable');
+const LibraryTable = lazy(() => loadTable().then((m) => ({ default: m.LibraryTable })));
 
 const COLS_KEY = 'gn-table-columns';
 function readColumns(): Set<ColumnId> {
@@ -166,13 +169,24 @@ export function LibraryScreen() {
   }
 
   const [focusId] = useState(() => takeLastOpened());
+
+  // Preload the table once the grid is on screen, so T switches without waiting.
+  useEffect(() => {
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(() => void loadTable(), { timeout: 4000 });
+      return () => window.cancelIdleCallback?.(id);
+    }
+    const t = setTimeout(() => void loadTable(), 2500);
+    return () => clearTimeout(t);
+  }, []);
   const showSkeleton = useDelayedFlag(lib.isPending);
 
   // G / T switch layout (not while typing).
   useEffect(() => {
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
-      if (isTypingTarget(ev.target, '[role="menu"], [role="listbox"]')) return;
+      if (ev.metaKey || ev.ctrlKey || ev.altKey || ev.shiftKey) return;
+      if (isTypingTarget(ev.target, '[role="menu"], [role="listbox"], [role="dialog"]')) return;
       if (ev.key === 'g' || ev.key === 'G') setSearch({ layout: undefined, density: undefined });
       else if (ev.key === 't' || ev.key === 'T') setSearch({ layout: 'table', density: undefined });
     };
@@ -189,13 +203,20 @@ export function LibraryScreen() {
     [navigate, order],
   );
   const onSearchFilm = useCallback((m: LibraryItem) => void actions.search([{ id: m.id, title: m.title }]), [actions]);
+  const onInteractive = useCallback(
+    (m: LibraryItem) => void navigate({ to: '/films/$movieId/search', params: { movieId: m.id } }),
+    [navigate],
+  );
   const onToggleMonitor = useCallback(
     (m: LibraryItem) => void actions.setMonitored([{ id: m.id, title: m.title }], !m.monitored),
     [actions],
   );
   const menu = useCallback(
     (m: LibraryItem) => (
-      <MovieMenuItems movie={m} onOpen={() => onOpen(m, document.querySelector(`[data-poster-frame="${m.id}"]`))} />
+      <MovieMenuItems
+        movie={{ ...m, hasFile: !!(m.quality || m.size) }}
+        onOpen={() => onOpen(m, document.querySelector(`[data-poster-frame="${m.id}"]`))}
+      />
     ),
     [onOpen],
   );
@@ -400,25 +421,27 @@ export function LibraryScreen() {
           </div>
         ) : isTable ? (
           <>
-            <LibraryTable
-              items={ordered}
-              selection={selection}
-              live={live}
-              columns={columns}
-              sort={sort}
-              dir={dir}
-              onSort={(k) =>
-                setSearch({ sort: k, dir: k === sort ? (dir === 'asc' ? 'desc' : 'asc') : DEFAULT_DIR[k] })
-              }
-              density={density}
-              rootPath={rootPath}
-              pathRoot={firstRoot}
-              hrefOf={hrefOf}
-              onOpen={onOpen}
-              menu={menu}
-              loading={lib.isPending}
-              focusId={focusId}
-            />
+            <Suspense fallback={<div className="table-pending" aria-busy="true" />}>
+              <LibraryTable
+                items={ordered}
+                selection={selection}
+                live={live}
+                columns={columns}
+                sort={sort}
+                dir={dir}
+                onSort={(k) =>
+                  setSearch({ sort: k, dir: k === sort ? (dir === 'asc' ? 'desc' : 'asc') : DEFAULT_DIR[k] })
+                }
+                density={density}
+                rootPath={rootPath}
+                pathRoot={firstRoot}
+                hrefOf={hrefOf}
+                onOpen={onOpen}
+                menu={menu}
+                loading={lib.isPending}
+                focusId={focusId}
+              />
+            </Suspense>
             <div className="foot-note">
               <span>{lib.data ? `${formatNumber(ordered.length)} of ${formatNumber(all.length)} films` : ''}</span>
               <span>↑↓ move · Space select · ⇧ range · ↵ open · Shift+F10 menu</span>
@@ -439,6 +462,7 @@ export function LibraryScreen() {
               onOpen={onOpen}
               onSearch={onSearchFilm}
               onToggleMonitor={onToggleMonitor}
+              onInteractive={onInteractive}
               menu={menu}
               focusId={focusId}
               epoch={epochN.current}

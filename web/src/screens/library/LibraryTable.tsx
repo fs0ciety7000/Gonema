@@ -23,18 +23,11 @@ import { overlayRoot } from '@/components/ui/overlayRoot';
 import { PosterArt } from '@/components/ui/PosterArt';
 import { formatBytes, formatDate, formatEta } from '@/lib/format';
 import { displayStatus, STATUS, statusText } from '@/lib/status';
+import { COLUMNS, type ColumnId } from './columns';
 import type { SortDir, SortKey } from './model';
 import type { SelectionApi } from './useSelection';
 
-export type ColumnId = 'quality' | 'size' | 'score' | 'status' | 'added' | 'path';
-export const COLUMNS: ReadonlyArray<{ id: ColumnId; label: string; width: number; sort?: SortKey; align?: 'r' }> = [
-  { id: 'quality', label: 'Quality', width: 150, sort: 'quality' },
-  { id: 'size', label: 'Size', width: 92, sort: 'size', align: 'r' },
-  { id: 'score', label: 'Score', width: 76, sort: 'score', align: 'r' },
-  { id: 'status', label: 'Status', width: 148, sort: 'status' },
-  { id: 'added', label: 'Added', width: 104, sort: 'added' },
-  { id: 'path', label: 'Path', width: 220 },
-];
+export { COLUMNS, type ColumnId };
 
 type Props = {
   items: readonly LibraryItem[];

@@ -1,6 +1,6 @@
 {
-  "base": "http://127.0.0.1:17676",
-  "date": "2026-11-06T02:50:36.656Z",
+  "base": "http://127.0.0.1:7676",
+  "date": "2026-11-06T03:55:00.342Z",
   "tags": "wcag2a, wcag2aa, wcag21a, wcag21aa, best-practice",
   "screens": [
     {
@@ -56,6 +56,174 @@
       "screen": "movie-detail",
       "theme": "light",
       "url": "/films/884",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "add-film",
+      "theme": "dark",
+      "url": "/discover?q=drift",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "add-film",
+      "theme": "light",
+      "url": "/discover?q=drift",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "add-film-discover",
+      "theme": "dark",
+      "url": "/discover?tab=discover",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "add-film-discover",
+      "theme": "light",
+      "url": "/discover?tab=discover",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "add-film-no-key",
+      "theme": "dark",
+      "url": "/discover",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "add-film-no-key",
+      "theme": "light",
+      "url": "/discover",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "tmdb-key-dialog",
+      "theme": "dark",
+      "url": "/discover",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "tmdb-key-dialog",
+      "theme": "light",
+      "url": "/discover",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "interactive-search",
+      "theme": "dark",
+      "url": "/films/1665/search",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "interactive-search",
+      "theme": "light",
+      "url": "/films/1665/search",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "interactive-search-confirm",
+      "theme": "dark",
+      "url": "/films/1665/search",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "interactive-search-confirm",
+      "theme": "light",
+      "url": "/films/1665/search",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "queue",
+      "theme": "dark",
+      "url": "/queue",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "queue",
+      "theme": "light",
+      "url": "/queue",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "queue-history",
+      "theme": "dark",
+      "url": "/history",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "queue-history",
+      "theme": "light",
+      "url": "/history",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dialog-tags",
+      "theme": "dark",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dialog-tags",
+      "theme": "light",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dialog-move",
+      "theme": "dark",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dialog-move",
+      "theme": "light",
+      "url": "/films",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dialog-delete-file",
+      "theme": "dark",
+      "url": "/films/1665",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dialog-delete-file",
+      "theme": "light",
+      "url": "/films/1665",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dialog-rename",
+      "theme": "dark",
+      "url": "/films/1665",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "dialog-rename",
+      "theme": "light",
+      "url": "/films/1665",
       "violations": [],
       "errors": []
     },

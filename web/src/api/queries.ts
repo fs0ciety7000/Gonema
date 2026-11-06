@@ -1,7 +1,15 @@
 import { type QueryClient, queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, unwrap } from './client';
 import { fromColumns, type LibraryItem, type MovieColumnsWire } from './model';
-import type { HistoryEntry, MovieDetail, QualityProfile, QueueItem, RootFolder, SavedView } from './schema';
+import { seedProgress } from './progress';
+import type {
+  HistoryEntry,
+  MovieDetail,
+  QualityProfile,
+  QueueEntry as QueueItem,
+  RootFolder,
+  SavedView,
+} from './schema';
 
 type Movie = MovieDetail;
 
@@ -74,7 +82,9 @@ export const queueQuery = queryOptions({
   queryKey: keys.queue,
   queryFn: async ({ signal }) => {
     try {
-      return ((await unwrap(api.GET('/queue', { signal }))) ?? []) as QueueItem[];
+      const items = ((await unwrap(api.GET('/queue', { signal }))) ?? []) as QueueItem[];
+      seedProgress(items);
+      return items;
     } catch (e) {
       // The acquisition endpoints are absent when the server runs without them.
       if ((e as { status?: number }).status === 404) return [] as QueueItem[];

@@ -1,4 +1,18 @@
-import { Bookmark, Copy, Film, RefreshCw, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
+import {
+  Bookmark,
+  Copy,
+  FileX2,
+  Film,
+  FolderInput,
+  Pencil,
+  RefreshCw,
+  ScanSearch,
+  Search,
+  SlidersHorizontal,
+  Tag,
+  Trash2,
+} from 'lucide-react';
 import type { LibraryItem } from '@/api/model';
 import { useProfiles, useRootFolders } from '@/api/queries';
 import {
@@ -9,17 +23,21 @@ import {
   MenuSeparator,
   Submenu,
 } from '@/components/ui/Menu';
+import { openMovieDialog } from './dialogStore';
 import { joinPath, useMovieActions } from './useMovieActions';
 
 type Props = {
-  movie: Pick<LibraryItem, 'id' | 'title' | 'monitored' | 'qualityProfileId' | 'rootFolderId' | 'path'>;
+  movie: Pick<LibraryItem, 'id' | 'title' | 'monitored' | 'qualityProfileId' | 'rootFolderId' | 'path'> & {
+    /** Whether the film has a file on disk (rename and delete file need one). */
+    hasFile?: boolean;
+  };
   onOpen?: () => void;
 };
 
-/** Actions of one film, shared by the poster menu, the table row menu and the context menu.
- *  Entries whose screen comes in a later build (interactive search, tags, rename) are not shown. */
+/** Actions of one film, shared by the poster menu, the table row menu and the context menu. */
 export function MovieMenuItems({ movie, onOpen }: Props) {
   const a = useMovieActions();
+  const navigate = useNavigate();
   const profiles = useProfiles();
   const roots = useRootFolders();
   const t = { id: movie.id, title: movie.title };
@@ -33,6 +51,13 @@ export function MovieMenuItems({ movie, onOpen }: Props) {
       )}
       <MenuItem icon={<Search className="i" aria-hidden="true" />} hint="S" onSelect={() => void a.search([t])}>
         Search now
+      </MenuItem>
+      <MenuItem
+        icon={<ScanSearch className="i" aria-hidden="true" />}
+        hint="I"
+        onSelect={() => void navigate({ to: '/films/$movieId/search', params: { movieId: movie.id } })}
+      >
+        Interactive search…
       </MenuItem>
       <MenuSeparator />
       <MenuCheckboxItem
@@ -61,6 +86,27 @@ export function MovieMenuItems({ movie, onOpen }: Props) {
         </Submenu>
       )}
       <MenuItem
+        icon={<Tag className="i" aria-hidden="true" />}
+        hint="⇧T"
+        onSelect={() => openMovieDialog({ kind: 'tags', targets: [t] })}
+      >
+        Edit tags…
+      </MenuItem>
+      <MenuItem
+        icon={<FolderInput className="i" aria-hidden="true" />}
+        onSelect={() => openMovieDialog({ kind: 'move', targets: [t] })}
+      >
+        Move…
+      </MenuItem>
+      {movie.hasFile !== false && (
+        <MenuItem
+          icon={<Pencil className="i" aria-hidden="true" />}
+          onSelect={() => openMovieDialog({ kind: 'rename', targets: [t] })}
+        >
+          Rename files…
+        </MenuItem>
+      )}
+      <MenuItem
         icon={<Copy className="i" aria-hidden="true" />}
         onSelect={() => void a.copyPath(joinPath(root, movie.path))}
       >
@@ -73,6 +119,15 @@ export function MovieMenuItems({ movie, onOpen }: Props) {
       <MenuItem danger icon={<Trash2 className="i" aria-hidden="true" />} hint="⌫" onSelect={() => a.remove([t])}>
         Remove from library
       </MenuItem>
+      {movie.hasFile !== false && (
+        <MenuItem
+          danger
+          icon={<FileX2 className="i" aria-hidden="true" />}
+          onSelect={() => openMovieDialog({ kind: 'deleteFile', target: t })}
+        >
+          Delete file…
+        </MenuItem>
+      )}
     </>
   );
 }

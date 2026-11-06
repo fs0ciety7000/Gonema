@@ -88,10 +88,22 @@ export function QueuePill() {
       {speed > 0 && <span>{formatSpeed(speed)}</span>}
     </>
   );
+  const linkContent = (
+    <>
+      <span className="sr-only">Queue: </span>
+      <StatusText status="downloading">{text}</StatusText>
+      {speed > 0 && (
+        <span>
+          <span className="sr-only"> at </span>
+          {formatSpeed(speed)}
+        </span>
+      )}
+    </>
+  );
   const label = `Queue: ${text}${speed > 0 ? ` at ${formatSpeed(speed)}` : ''}`;
   return reachable('queue') ? (
-    <Link className="live-pill hide-tablet" to={'/queue' as never} aria-label={label}>
-      {content}
+    <Link className="live-pill hide-tablet" to={'/queue' as never}>
+      {linkContent}
     </Link>
   ) : (
     <span className="live-pill hide-tablet" role="status" aria-label={label}>

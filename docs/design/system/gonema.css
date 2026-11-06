@@ -264,13 +264,13 @@ h1, h2, h3, h4, p { margin: 0; }
 
 /* Glass recipe: frost + translucency + lit edge + depth (see glassmorphism skill) */
 .glass-1, .glass-2, .glass-3 { position: relative; border: 1px solid var(--border); }
-.glass-1 { background: var(--glass-1); backdrop-filter: blur(var(--glass-blur-1)) saturate(1.2); -webkit-backdrop-filter: blur(var(--glass-blur-1)) saturate(1.2); }
-.glass-2 { background: var(--glass-2); backdrop-filter: blur(var(--glass-blur-2)) saturate(1.2); -webkit-backdrop-filter: blur(var(--glass-blur-2)) saturate(1.2); box-shadow: inset 0 1px 0 var(--glass-edge), var(--elev-3); }
-.glass-3 { background: var(--glass-3); backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); -webkit-backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); box-shadow: inset 0 1px 0 var(--glass-edge), var(--elev-4); }
+.glass-1 { background: var(--glass-1); -webkit-backdrop-filter: blur(var(--glass-blur-1)) saturate(1.2); backdrop-filter: blur(var(--glass-blur-1)) saturate(1.2); }
+.glass-2 { background: var(--glass-2); -webkit-backdrop-filter: blur(var(--glass-blur-2)) saturate(1.2); backdrop-filter: blur(var(--glass-blur-2)) saturate(1.2); box-shadow: inset 0 1px 0 var(--glass-edge), var(--elev-3); }
+.glass-3 { background: var(--glass-3); -webkit-backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); box-shadow: inset 0 1px 0 var(--glass-edge), var(--elev-4); }
 
 /* Reduced transparency: glass becomes solid, contrast is unchanged */
 @media (prefers-reduced-transparency: reduce) {
-  .glass-1, .glass-2, .glass-3, .topbar, .bulkbar, .menu, .popover, .dialog, .toast, .tooltip { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  .glass-1, .glass-2, .glass-3, .topbar, .bulkbar, .menu, .popover, .dialog, .toast, .tooltip { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
   .glass-1, .topbar { background: var(--bg-base) !important; }
   .glass-2, .glass-3, .bulkbar, .menu, .popover, .dialog, .toast { background: var(--bg-overlay) !important; }
 }
@@ -339,7 +339,7 @@ h1, h2, h3, h4, p { margin: 0; }
 .icon-btn:disabled { color: var(--text-disabled); background: transparent; cursor: not-allowed; }
 .icon-btn.outlined { border-color: var(--border-strong); background: color-mix(in srgb, var(--bg-raised) 70%, transparent); }
 .icon-btn.sm { width: var(--control-h-sm); height: var(--control-h-sm); border-radius: var(--radius-sm); }
-.icon-btn.on-media { color: var(--ink-on-poster); background: rgba(18, 16, 14, 0.55); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-color: rgba(255, 244, 232, 0.16); }
+.icon-btn.on-media { color: var(--ink-on-poster); background: rgba(18, 16, 14, 0.55); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-color: rgba(255, 244, 232, 0.16); }
 .icon-btn.on-media:hover { background: rgba(18, 16, 14, 0.72); }
 .icon-btn .dot { position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--status-missing); box-shadow: 0 0 0 2px var(--bg-base); }
 
@@ -448,7 +448,7 @@ h1, h2, h3, h4, p { margin: 0; }
 .badge[data-status="available"] { --c: var(--status-available); --b: var(--status-available-bg); }
 .badge.lg { height: 28px; padding: 0 12px 0 9px; font-size: 13px; }
 /* On posters: glass pill, status colour carried by the icon + a leading dot */
-.badge.on-media { --b: rgba(18, 16, 14, 0.72); color: #F7F0E6; backdrop-filter: blur(12px) saturate(1.3); -webkit-backdrop-filter: blur(12px) saturate(1.3); box-shadow: inset 0 0 0 1px rgba(255, 244, 232, 0.14); }
+.badge.on-media { --b: rgba(18, 16, 14, 0.72); color: #F7F0E6; -webkit-backdrop-filter: blur(12px) saturate(1.3); backdrop-filter: blur(12px) saturate(1.3); box-shadow: inset 0 0 0 1px rgba(255, 244, 232, 0.14); }
 .badge.on-media .i { color: var(--c-media, var(--c)); }
 .badge.on-media[data-status="downloading"] { --c-media: #5EC4D6; }
 .badge.on-media[data-status="missing"] { --c-media: #E8AE55; }
@@ -503,7 +503,7 @@ button.score:hover { box-shadow: inset 0 0 0 1px currentColor; }
 @keyframes pop-in { from { opacity: 0; transform: scale(0.96); } }
 
 /* 3.15 Menu / context menu / popover ------------------------------------------------- */
-.menu, .popover { z-index: var(--z-popover); min-width: 220px; padding: 6px; border-radius: var(--radius-lg); background: var(--glass-3); backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); -webkit-backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); border: 1px solid var(--border-strong); box-shadow: inset 0 1px 0 var(--glass-edge), var(--elev-4); transform-origin: var(--origin, top left); animation: pop-in var(--dur-base) var(--ease-out) both; }
+.menu, .popover { z-index: var(--z-popover); min-width: 220px; padding: 6px; border-radius: var(--radius-lg); background: var(--glass-3); -webkit-backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); border: 1px solid var(--border-strong); box-shadow: inset 0 1px 0 var(--glass-edge), var(--elev-4); transform-origin: var(--origin, top left); animation: pop-in var(--dur-base) var(--ease-out) both; }
 .menu [role="menuitem"], .menu [role="menuitemcheckbox"], .menu [role="menuitemradio"], .menu [role="option"] { display: flex; align-items: center; gap: 10px; width: 100%; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: var(--text-primary); font: 400 14px/1 var(--font-ui); text-align: left; }
 .menu [role^="menuitem"] .i { width: 16px; height: 16px; color: var(--text-secondary); }
 .menu [role^="menuitem"] .label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -522,7 +522,7 @@ button.score:hover { box-shadow: inset 0 0 0 1px currentColor; }
 
 /* 3.16 Dialog ------------------------------------------------------------------------ */
 .scrim { position: fixed; inset: 0; z-index: var(--z-scrim); background: var(--scrim); backdrop-filter: blur(2px); animation: fade-in var(--dur-base) var(--ease-out) both; }
-.dialog { z-index: var(--z-dialog); width: min(480px, calc(100vw - 32px)); border-radius: var(--radius-xl); background: var(--glass-3); backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); -webkit-backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); border: 1px solid var(--border-strong); box-shadow: inset 0 1px 0 var(--glass-edge), var(--elev-4); padding: var(--space-6); animation: dialog-in var(--dur-slow) var(--ease-out) both; }
+.dialog { z-index: var(--z-dialog); width: min(480px, calc(100vw - 32px)); border-radius: var(--radius-xl); background: var(--glass-3); -webkit-backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); border: 1px solid var(--border-strong); box-shadow: inset 0 1px 0 var(--glass-edge), var(--elev-4); padding: var(--space-6); animation: dialog-in var(--dur-slow) var(--ease-out) both; }
 .dialog h2 { font: var(--type-title-lg); letter-spacing: var(--type-title-lg-tracking); margin-bottom: var(--space-2); }
 .dialog p { color: var(--text-secondary); }
 .dialog .actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-6); }
@@ -533,7 +533,7 @@ button.score:hover { box-shadow: inset 0 0 0 1px currentColor; }
 /* 3.17 Toast with Undo ----------------------------------------------------------------
    Destructive actions run optimistically and offer Undo for 8 s. The timer is a
    thin bar that drains (pauses on hover/focus). Enter from bottom, exit downward. */
-.toast { z-index: var(--z-toast); display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-3); width: 420px; max-width: calc(100vw - 32px); padding: 12px 12px 12px 14px; border-radius: var(--radius-lg); background: var(--glass-3); backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); -webkit-backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); border: 1px solid var(--border-strong); box-shadow: inset 0 1px 0 var(--glass-edge), var(--elev-4); position: relative; overflow: hidden; animation: toast-in var(--spring-gentle-dur) var(--spring-gentle) both; }
+.toast { z-index: var(--z-toast); display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-3); width: 420px; max-width: calc(100vw - 32px); padding: 12px 12px 12px 14px; border-radius: var(--radius-lg); background: var(--glass-3); -webkit-backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); border: 1px solid var(--border-strong); box-shadow: inset 0 1px 0 var(--glass-edge), var(--elev-4); position: relative; overflow: hidden; animation: toast-in var(--spring-gentle-dur) var(--spring-gentle) both; }
 .toast .ticon { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--bg-active); color: var(--text-secondary); }
 .toast .ticon .i { width: 16px; height: 16px; }
 .toast .ttitle { font: 500 14px/20px var(--font-ui); }
@@ -700,7 +700,7 @@ button.score:hover { box-shadow: inset 0 0 0 1px currentColor; }
 
 /* Top bar */
 .main { min-width: 0; display: flex; flex-direction: column; }
-.topbar { position: sticky; top: 0; z-index: var(--z-topbar); height: var(--topbar-h); display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--gutter); background: var(--glass-1); backdrop-filter: blur(var(--glass-blur-1)) saturate(1.2); -webkit-backdrop-filter: blur(var(--glass-blur-1)) saturate(1.2); border-bottom: 1px solid var(--border); }
+.topbar { position: sticky; top: 0; z-index: var(--z-topbar); height: var(--topbar-h); display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--gutter); background: var(--glass-1); -webkit-backdrop-filter: blur(var(--glass-blur-1)) saturate(1.2); backdrop-filter: blur(var(--glass-blur-1)) saturate(1.2); border-bottom: 1px solid var(--border); }
 .topbar .search { width: 340px; flex: none; }
 .topbar .search .kbd { margin-left: auto; }
 .topbar .spacer { flex: 1; }
@@ -726,7 +726,7 @@ button.score:hover { box-shadow: inset 0 0 0 1px currentColor; }
 .poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--poster-min), 1fr)); gap: var(--grid-gap-y) var(--grid-gap-x); }
 
 /* Bulk action bar */
-.bulkbar { position: fixed; z-index: var(--z-bulkbar); left: 50%; bottom: 24px; transform: translateX(-50%); display: flex; align-items: center; gap: var(--space-1); padding: 6px 6px 6px 8px; border-radius: var(--radius-lg); background: var(--glass-3); backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); -webkit-backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); border: 1px solid var(--border-strong); box-shadow: inset 0 1px 0 var(--glass-edge), var(--elev-4); animation: bulk-in var(--spring-gentle-dur) var(--spring-gentle) both; }
+.bulkbar { position: fixed; z-index: var(--z-bulkbar); left: 50%; bottom: 24px; transform: translateX(-50%); display: flex; align-items: center; gap: var(--space-1); padding: 6px 6px 6px 8px; border-radius: var(--radius-lg); background: var(--glass-3); -webkit-backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3); border: 1px solid var(--border-strong); box-shadow: inset 0 1px 0 var(--glass-edge), var(--elev-4); animation: bulk-in var(--spring-gentle-dur) var(--spring-gentle) both; }
 .bulkbar .count { display: inline-flex; align-items: center; gap: 8px; padding: 0 12px 0 6px; font: 600 14px/1 var(--font-ui); font-variant-numeric: tabular-nums; }
 .bulkbar .count .n { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 6px; border-radius: var(--radius-pill); background: var(--accent); color: var(--accent-contrast); font-size: 13px; }
 .bulkbar .divider { width: 1px; height: 22px; background: var(--border-strong); margin: 0 4px; }

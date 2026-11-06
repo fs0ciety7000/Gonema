@@ -1744,7 +1744,7 @@ a.live-pill:hover {
    until hover/focus, but their backdrop-filter is still painted on every card of every
    frame. Frost them only while they are shown with the pointer; keyboard focus shows them
    on their 55 % dark fill (same contrast). See e2e/fidelity.md. */
-/* (moved below, after the glass restatement) */
+/* (rules below, after the glass note) */
 
 /* Sticky chrome below the top bar also clears the demo / offline banner when it is shown. */
 .main:has(> .app-banner) {
@@ -1755,39 +1755,8 @@ a.live-pill:hover {
   z-index: calc(var(--z-sticky) + 1);
 }
 
-/* ------------------------------------------------------------------ glass: build workaround
-   gonema.css declares backdrop-filter then -webkit-backdrop-filter with var() values; the CSS
-   minifier (lightningcss, used by Tailwind and Vite) collapses the pair into the prefixed one
-   only, which Chromium and Firefox ignore, so every glass surface lost its frost in the build.
-   The same values are restated here unprefixed (the minifier adds the prefix it needs). */
-.glass-1,
-.topbar {
-  backdrop-filter: blur(var(--glass-blur-1)) saturate(1.2);
-}
-.glass-2 {
-  backdrop-filter: blur(var(--glass-blur-2)) saturate(1.2);
-}
-.glass-3,
-.menu,
-.popover,
-.dialog,
-.toast,
-.bulkbar {
-  backdrop-filter: blur(var(--glass-blur-3)) saturate(1.3);
-}
-.icon-btn.on-media {
-  backdrop-filter: blur(12px);
-}
-.badge.on-media {
-  backdrop-filter: blur(12px) saturate(1.3);
-}
-.check.on-media input {
-  backdrop-filter: blur(8px);
-}
-.scrim,
-.offline-overlay {
-  backdrop-filter: blur(2px);
-}
+/* ------------------------------------------------------------------ glass
+   gonema.css declares -webkit-backdrop-filter before backdrop-filter, so the minifier keeps both. */
 /* Poster controls: frosted only while shown with the pointer (scroll cost, see above). */
 .pc .pc-actions .icon-btn.on-media,
 .pc .check.on-media input {
@@ -1834,4 +1803,9 @@ a.live-pill:hover {
     clip: rect(0 0 0 0);
     white-space: nowrap;
   }
+}
+
+/* Placeholder while the table chunk loads (first visit straight to the table layout). */
+.table-pending {
+  min-height: 60vh;
 }

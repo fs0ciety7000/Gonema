@@ -1,14 +1,15 @@
-import { Bookmark, BookmarkMinus, Search, SlidersHorizontal, Trash2, X } from 'lucide-react';
+import { Bookmark, BookmarkMinus, FolderInput, Search, SlidersHorizontal, Tag, Trash2, X } from 'lucide-react';
 import { useEffect } from 'react';
 import type { LibraryItem } from '@/api/model';
 import { useProfiles } from '@/api/queries';
+import { openMovieDialog } from '@/components/movie/dialogStore';
 import { useMovieActions } from '@/components/movie/useMovieActions';
 import { Button, IconButton } from '@/components/ui/Button';
 import { Menu, MenuRadioGroup, MenuRadioItem } from '@/components/ui/Menu';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { isTypingTarget } from '@/lib/keys';
 
-/** Floating glass bar for the selection. Tags, Move and Delete files come with their dialogs in lot 2. */
+/** Floating glass bar for the selection. Tags, Move and Delete open their dialogs (lazy chunk). */
 export function BulkBar({ selected, onClear }: { selected: readonly LibraryItem[]; onClear: () => void }) {
   const a = useMovieActions();
   const profiles = useProfiles();
@@ -101,15 +102,34 @@ export function BulkBar({ selected, onClear }: { selected: readonly LibraryItem[
         >
           Search
         </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={<Tag className="i" aria-hidden="true" />}
+          aria-haspopup="dialog"
+          onClick={() => openMovieDialog({ kind: 'tags', targets })}
+        >
+          Tags
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={<FolderInput className="i" aria-hidden="true" />}
+          aria-haspopup="dialog"
+          onClick={() => openMovieDialog({ kind: 'move', targets, onDone: onClear })}
+        >
+          Move
+        </Button>
         <span className="divider" aria-hidden="true" />
         <Button
           variant="ghost"
           size="sm"
           className="bulk-danger"
           icon={<Trash2 className="i" aria-hidden="true" />}
-          onClick={() => a.remove(targets, onClear)}
+          aria-haspopup="dialog"
+          onClick={() => openMovieDialog({ kind: 'remove', targets, onDone: onClear })}
         >
-          Remove
+          Delete…
         </Button>
         <Tooltip content="Clear selection" shortcut="Esc">
           <IconButton size="sm" label="Clear selection (Esc)" onClick={onClear}>

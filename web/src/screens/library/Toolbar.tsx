@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/Menu';
 import { Segmented } from '@/components/ui/Segmented';
 import { STATUS } from '@/lib/status';
-import { COLUMNS, type ColumnId } from './LibraryTable';
+import { COLUMNS, type ColumnId } from './columns';
 import {
   type Density,
   type Filters,

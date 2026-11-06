@@ -223,7 +223,7 @@ export function CastDialog({
 
 // ----------------------------------------------------------------- history
 
-const EVENT: Record<
+export const EVENT: Record<
   string,
   { label: string; status?: DisplayStatus; icon: typeof Info; kind: 'grab' | 'import' | 'failure' | 'other' }
 > = {
@@ -391,6 +391,7 @@ type FileView = {
   releaseGroup: string;
   customScore: number;
   importedAt: string;
+  scoreBreakdown?: { rules?: Array<{ rule: string; score: number }> | null; total: number } | null;
   media?: {
     videoCodec?: string;
     bitDepth?: number;
@@ -402,7 +403,18 @@ type FileView = {
   } | null;
 };
 
-export function FilePanel({ file, runtimeMin }: { file: FileView; runtimeMin: number }) {
+export function FilePanel({
+  file,
+  runtimeMin,
+  onRename,
+  onDelete,
+}: {
+  file: FileView;
+  runtimeMin: number;
+  onRename?: () => void;
+  onDelete?: () => void;
+}) {
+  const rules = (file.scoreBreakdown?.rules ?? []).filter((r) => r.score !== 0);
   const m = file.media ?? {};
   const name = file.relativePath.split('/').pop() ?? file.relativePath;
   const perMin = runtimeMin > 0 ? formatBytes(file.size / runtimeMin) : null;
@@ -481,9 +493,45 @@ export function FilePanel({ file, runtimeMin }: { file: FileView; runtimeMin: nu
             <dt>Score</dt>
             <dd>
               <ScorePill score={file.customScore} />
+              {rules.length > 0 && (
+                <span className="score-break">
+                  {rules.map((r) => (
+                    <Tag key={r.rule} plain>
+                      {r.rule} {r.score > 0 ? '+' : '−'}
+                      {Math.abs(r.score)}
+                    </Tag>
+                  ))}
+                </span>
+              )}
             </dd>
           </div>
         </dl>
+        {(onRename || onDelete) && (
+          <div className="card-actions">
+            {onRename && (
+              <Button
+                size="sm"
+                icon={<Pencil className="i" aria-hidden="true" />}
+                aria-haspopup="dialog"
+                onClick={onRename}
+              >
+                Rename preview
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="file-delete"
+                icon={<Trash2 className="i" aria-hidden="true" />}
+                aria-haspopup="dialog"
+                onClick={onDelete}
+              >
+                Delete file…
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

@@ -102,6 +102,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/collections/{tmdbId}/add": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add every movie of a TMDB collection
+         * @description Adds the parts that are not in the library (excluded ones are skipped) with the given settings; with monitorCollection, its future movies are added too.
+         */
+        post: operations["add-collection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/discover/collection/{tmdbId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A TMDB collection
+         * @description Every part, flagged when already in the library.
+         */
+        get: operations["discover-collection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/discover/person/{tmdbId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Filmography of a person
+         * @description Cast and crew credits merged by movie, flagged when in the library. TMDB does not return the person's name here: use the cast or crew entry it came from.
+         */
+        get: operations["discover-person"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/discover/{list}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A TMDB list
+         * @description Popular, trending, upcoming and now playing movies (upcoming and now playing for the configured region), flagged when already in the library. Adult movies are left out.
+         */
+        get: operations["discover-list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/download-clients": {
         parameters: {
             query?: never;
@@ -197,7 +277,7 @@ export interface paths {
         };
         /**
          * Event stream (Server-Sent Events)
-         * @description Each message has an id, an event name (movie.added, movie.updated, movie.deleted, job.started, job.completed, job.failed, health.changed, download.progress, download.grabbed, download.updated, download.imported, download.failed, download.removed, search.batch, search.indexer_done, search.indexer_failed, search.finished, ...) and JSON data {id, type, time, movieId, data}. A comment is sent every 15 s as a heartbeat. An event named "resync" means events were missed: refetch.
+         * @description Each message has an id, an event name (movie.added, movie.updated, movie.deleted, job.started, job.completed, job.failed, health.changed, download.progress, download.grabbed, download.updated, download.imported, download.failed, download.removed, search.batch, search.indexer_done, search.indexer_failed, search.finished, ...) and JSON data {id, type, time, movieId, data}. download.progress data is compact, keyed by download id: {id, movieId, status, progress, speedBps, etaSeconds, message}. moviefile.renamed / moviefile.deleted follow file operations; tags.changed follows tag edits. A comment is sent every 15 s as a heartbeat. An event named "resync" means events were missed: refetch.
          */
         get: operations["stream-events"];
         put?: never;
@@ -273,8 +353,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Recent history
-         * @description Every automatic action and its reasons, newest first.
+         * History
+         * @description Every automatic action and user file operation with its reasons, newest first, with filters. Rows of one download chain (grab, failure, retry, import, upgrade) share chainId.
          */
         get: operations["list-history"];
         put?: never;
@@ -659,6 +739,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/movies/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change several movies at once
+         * @description Settings and tags change in one transaction (all movies or none). The previous settings come back for Undo. With rootFolderId, each movie is then moved (one result per movie in moves).
+         */
+        post: operations["bulk-update-movies"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/movies/bulk/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Undo a bulk edit
+         * @description Puts movies back to the given settings (monitored, quality profile, minimum availability, exact tags), as returned in previous by a bulk edit. Root folders are not changed.
+         */
+        post: operations["restore-movie-settings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/movies/ids": {
         parameters: {
             query?: never;
@@ -679,6 +799,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/movies/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move several movies
+         * @description Each movie as POST /movies/{id}/move; a failure is reported for its movie and the others go on.
+         */
+        post: operations["move-movies"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/movies/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rename several movies
+         * @description Each movie as POST /movies/{id}/rename; preview=true only plans.
+         */
+        post: operations["rename-movies"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/movies/{id}": {
         parameters: {
             query?: never;
@@ -692,7 +852,7 @@ export interface paths {
         post?: never;
         /**
          * Remove a movie from the library
-         * @description Removes the movie from the database only. Its folder and files are never deleted.
+         * @description By default removes the movie from the database only: its folder and files stay on disk (204). With deleteFiles=true and confirm=true, every file of the movie folder first goes to the recycle bin (never a permanent deletion), then the movie is removed (200 with what was recycled). deleteFiles without confirm is refused (422).
          */
         delete: operations["delete-movie"];
         options?: never;
@@ -702,6 +862,26 @@ export interface paths {
          * @description Only the fields present are changed.
          */
         patch: operations["update-movie"];
+        trace?: never;
+    };
+    "/movies/{id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete the file of a movie
+         * @description Moves the file and its subtitles to the recycle bin (never a permanent deletion) and forgets it: the movie is missing again. Requires confirm=true (422 otherwise). Written to history (file_deleted).
+         */
+        delete: operations["delete-movie-file"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/movies/{id}/history": {
@@ -724,6 +904,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/movies/{id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move a movie to another root folder
+         * @description With moveFiles, every file of the movie folder moves into a folder named with the folder template (a rename on one file system; across file systems each file is copied, verified, then its source removed). Refused (409) when the destination folder exists. Written to history (file_renamed). preview=true only plans.
+         */
+        post: operations["move-movie"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/movies/{id}/refresh": {
         parameters: {
             query?: never;
@@ -738,6 +938,46 @@ export interface paths {
          * @description Queues a metadata refresh from TMDB.
          */
         post: operations["refresh-movie"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/movies/{id}/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rename a movie to the templates
+         * @description Renames the folder (same root folder), the file and its subtitles; refused (409) when a new name is taken. Written to history (file_renamed); media servers are asked to rescan.
+         */
+        post: operations["rename-movie"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/movies/{id}/rename/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview the rename of a movie
+         * @description Current and new names with the naming templates: folder, file and its subtitles. problems lists what would block it.
+         */
+        get: operations["preview-movie-rename"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -778,6 +1018,26 @@ export interface paths {
          * @description Returns at once with the search id. Results stream on /events (search.batch, search.indexer_done, search.indexer_failed, search.finished) and stay available at /searches/{searchId} for 15 minutes. Each result has its decision: accepted, rejections, score breakdown and rank. Download links are never exposed.
          */
         post: operations["start-interactive-search"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/movies/{id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add or remove tags of a movie
+         * @description The previous settings come back for Undo (POST /movies/bulk/restore).
+         */
+        post: operations["update-movie-tags"];
         delete?: never;
         options?: never;
         head?: never;
@@ -914,7 +1174,7 @@ export interface paths {
         };
         /**
          * Downloads in progress
-         * @description Live progress; updates stream as download.progress and download.* events.
+         * @description Oldest first, with the movie, indexer, retry chain and allowed actions. download.progress events carry the live fields of one entry, keyed by id (see ProgressUpdate); download.* events mean: refetch.
          */
         get: operations["list-queue"];
         put?: never;
@@ -1320,6 +1580,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List tags
+         * @description By label, with the number of movies carrying each.
+         */
+        get: operations["list-tags"];
+        put?: never;
+        /**
+         * Create a tag
+         * @description Labels are unique (409 otherwise).
+         */
+        post: operations["create-tag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tags/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Rename a tag
+         * @description The movies keep the tag. Labels are unique (409 otherwise).
+         */
+        put: operations["rename-tag"];
+        post?: never;
+        /**
+         * Delete a tag
+         * @description Removes it from every movie. The answer lists those movies, for Undo.
+         */
+        delete: operations["delete-tag"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/views": {
         parameters: {
             query?: never;
@@ -1358,6 +1666,26 @@ export interface paths {
         post?: never;
         /** Delete a saved view */
         delete: operations["delete-view"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wanted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Wanted movies
+         * @description missing: monitored, no file, released enough for the minimum availability. cutoff_unmet: monitored, the file is below the profile's cutoff. Same rows and paging as GET /movies.
+         */
+        get: operations["list-wanted"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1403,6 +1731,31 @@ export interface components {
         };
         "Add-root-folderRequest": {
             path: string;
+        };
+        AddCollectionInputBody: {
+            /**
+             * @default released
+             * @enum {string}
+             */
+            minimumAvailability: "announced" | "in_cinemas" | "released";
+            /** @description Also add the collection's future movies automatically (the movies are then monitored) */
+            monitorCollection?: boolean;
+            /** @description Monitor the added movies; default true */
+            monitored?: boolean;
+            /** Format: int64 */
+            qualityProfileId: number;
+            /** Format: int64 */
+            rootFolderId: number;
+            searchOnAdd?: boolean;
+            tags?: string[] | null;
+        };
+        AddCollectionResult: {
+            added: components["schemas"]["Movie"][] | null;
+            collection: components["schemas"]["Collection"];
+            /** @description Library ids of the parts already in the library (left unchanged) */
+            existing: number[] | null;
+            /** @description Parts not added, with the reason */
+            skipped: components["schemas"]["SkippedPart"][] | null;
         };
         AddMovieInputBody: {
             /**
@@ -1458,6 +1811,48 @@ export interface components {
             rules?: components["schemas"]["RuleScore"][] | null;
             /** Format: int64 */
             total: number;
+        };
+        BulkFileResult: {
+            /** @description One per movie, in request order */
+            results: components["schemas"]["MoveOutcome"][] | null;
+        };
+        BulkInputBody: {
+            ids: number[] | null;
+            set: components["schemas"]["BulkSet"];
+        };
+        BulkMoveInputBody: {
+            ids: number[] | null;
+            moveFiles: boolean;
+            /** Format: int64 */
+            rootFolderId: number;
+        };
+        BulkRenameInputBody: {
+            ids: number[] | null;
+        };
+        BulkResult: {
+            /** @description Movies whose settings changed */
+            changed: number[] | null;
+            /** @description One per movie when rootFolderId was set */
+            moves: components["schemas"]["MoveOutcome"][] | null;
+            /** @description Settings before the edit, one per movie: POST them to /movies/bulk/restore to undo (root folders: move back with /movies/move) */
+            previous: components["schemas"]["MovieSettings"][] | null;
+        };
+        BulkSet: {
+            /** @description Labels; missing tags are created */
+            addTags?: string[] | null;
+            /** @enum {string} */
+            minimumAvailability?: "announced" | "in_cinemas" | "released";
+            monitored?: boolean;
+            /** @description With rootFolderId: move the files too, into folders named with the template */
+            moveFiles?: boolean;
+            /** Format: int64 */
+            qualityProfileId?: number;
+            removeTags?: string[] | null;
+            /**
+             * Format: int64
+             * @description Move to this root folder (see POST /movies/{id}/move)
+             */
+            rootFolderId?: number;
         };
         Candidate: {
             ambiguous?: boolean;
@@ -1544,6 +1939,21 @@ export interface components {
             /** Format: int64 */
             tmdbId: number;
         };
+        DeletedTag: {
+            movieIds: number[] | null;
+            tag: components["schemas"]["Tag"];
+        };
+        Deletion: {
+            /** @description Recycle bin the files went to */
+            bin: string;
+            /** @description Files Gonema knew of that were already gone from disk */
+            missing: string[] | null;
+            /** Format: int64 */
+            movieId: number;
+            notes: string[] | null;
+            /** @description Names of the items in the recycle bin (restore them from there) */
+            recycled: string[] | null;
+        };
         DeliveryHealth: {
             /**
              * Format: int64
@@ -1555,6 +1965,74 @@ export interface components {
             lastFailedAt: string | null;
             /** Format: date-time */
             lastOkAt: string | null;
+        };
+        DiscoverCollection: {
+            backdropUrl: string | null;
+            /**
+             * Format: int64
+             * @description Library collection (GET /collections/{id}); null when none of its movies was added
+             */
+            collectionId: number | null;
+            /**
+             * Format: int64
+             * @description Parts already in the library
+             */
+            inLibrary: number;
+            /** @description New movies of the collection are added automatically */
+            monitored: boolean;
+            name: string;
+            overview: string;
+            /** @description By release date, undated last; part n is entry n-1 */
+            parts: components["schemas"]["DiscoverMovie"][] | null;
+            posterUrl: string | null;
+            /** Format: int64 */
+            tmdbId: number;
+        };
+        DiscoverMovie: {
+            /** @description w1280 */
+            backdropUrl: string | null;
+            /** @description On the import list exclusions */
+            excluded: boolean;
+            inLibrary: boolean;
+            /** @description Library movies only */
+            monitored: boolean;
+            /**
+             * Format: int64
+             * @description Library movie id when inLibrary
+             */
+            movieId: number | null;
+            originalLanguage?: string;
+            originalTitle?: string;
+            overview: string;
+            /** Format: double */
+            popularity: number;
+            /** @description w342, through the image cache */
+            posterUrl: string | null;
+            rating: components["schemas"]["Rating"];
+            /** @description YYYY-MM-DD */
+            releaseDate: string | null;
+            /**
+             * @description Library state; null when not in the library
+             * @enum {string|null}
+             */
+            state: "available" | "missing" | "downloading" | "upgradable" | null;
+            title: string;
+            /** Format: int64 */
+            tmdbId: number;
+            /**
+             * Format: int64
+             * @description 0 when unknown
+             */
+            year: number;
+        };
+        DiscoverPage: {
+            /** Format: int64 */
+            page: number;
+            results: components["schemas"]["DiscoverMovie"][] | null;
+            /** Format: int64 */
+            totalPages: number;
+            /** Format: int64 */
+            totalResults: number;
         };
         DownloadClient: {
             /** @description Whether an API key is stored; it is never returned */
@@ -1699,11 +2177,21 @@ export interface components {
             threeD: boolean;
             videoCodec?: string;
         };
+        FileOp: {
+            from: string;
+            to: string;
+        };
         FileQuality: {
             /** Format: int64 */
             customScore: number;
             quality: string;
             revision: components["schemas"]["Revision"];
+        };
+        Filmography: {
+            /** @description Cast and crew merged by movie, deduplicated; upcoming (undated) first, then newest first */
+            movies: components["schemas"]["PersonCredit"][] | null;
+            /** Format: int64 */
+            tmdbId: number;
         };
         "Grab-search-resultRequest": {
             /** @description key of the result */
@@ -1738,6 +2226,53 @@ export interface components {
             /** Format: int64 */
             movieId: number | null;
             quality: string | null;
+            sourceTitle: string;
+        };
+        HistoryMovie: {
+            dominantColor: string | null;
+            /** Format: int64 */
+            id: number;
+            /** @description w342 */
+            posterUrl: string | null;
+            title: string;
+            /** Format: int64 */
+            year: number;
+        };
+        HistoryPage: {
+            entries: components["schemas"]["HistoryRow"][] | null;
+            /** @description Pass as cursor for older entries; absent on the last page */
+            nextCursor?: string;
+        };
+        HistoryRow: {
+            /**
+             * Format: int64
+             * @description First download of the retry chain: rows with one chainId are one acquisition (grabbed, failed, retried, imported, upgraded)
+             */
+            chainId: number | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int64 */
+            customScore: number | null;
+            /** @description Reasons and details of the event */
+            data: unknown;
+            /** Format: int64 */
+            downloadId: number | null;
+            event: string;
+            /** Format: int64 */
+            id: number;
+            /** @description null when the movie is no longer in the library (sourceTitle remains) */
+            movie: components["schemas"]["HistoryMovie"];
+            /** Format: int64 */
+            movieId: number | null;
+            quality: string | null;
+            qualityName: string | null;
+            /** @description Plain-language reason (data.reason); empty when the event has none */
+            reason: string;
+            /**
+             * Format: int64
+             * @description The failed download this entry's download replaced
+             */
+            retryOf: number | null;
             sourceTitle: string;
         };
         ImportSettingsBody: {
@@ -1982,8 +2517,12 @@ export interface components {
         LookupResult: {
             adult?: boolean;
             backdropPath?: string;
+            /** @description On the import list exclusions */
+            excluded: boolean;
             genreIds?: number[] | null;
             inLibrary: boolean;
+            /** @description Library movies only */
+            monitored: boolean;
             /**
              * Format: int64
              * @description Library movie id when inLibrary
@@ -1995,8 +2534,15 @@ export interface components {
             /** Format: double */
             popularity?: number;
             posterPath?: string;
+            /** @description w342, through the image cache */
+            posterUrl: string | null;
             rating?: components["schemas"]["Rating"];
             releaseDate?: string;
+            /**
+             * @description Library state; null when not in the library
+             * @enum {string|null}
+             */
+            state: "available" | "missing" | "downloading" | "upgradable" | null;
             title: string;
             /** Format: int64 */
             tmdbId: number;
@@ -2099,6 +2645,20 @@ export interface components {
             /** @description Movies not added, with the reason */
             skipped: components["schemas"]["SkippedPart"][] | null;
         };
+        MoveBody: {
+            /** @description Move the files into a folder named with the template (refused if it exists); false only changes where Gonema looks */
+            moveFiles: boolean;
+            /** Format: int64 */
+            rootFolderId: number;
+        };
+        MoveOutcome: {
+            /** @description Why the movie was not moved */
+            error?: string;
+            /** Format: int64 */
+            movieId: number;
+            ok: boolean;
+            relocation?: components["schemas"]["Relocation"];
+        };
         Movie: {
             /** Format: date-time */
             addedAt: string;
@@ -2165,6 +2725,7 @@ export interface components {
             /** @description Space-separated HDR formats (DV HDR10); empty for SDR or no file */
             hdr: string[] | null;
             id: number[] | null;
+            minimumAvailability: string[] | null;
             monitored: boolean[] | null;
             path: string[] | null;
             /** @description w342 */
@@ -2176,14 +2737,22 @@ export interface components {
             qualityNames: {
                 [key: string]: string;
             };
+            qualityProfileId: number[] | null;
             /** @description TMDB average out of 10 */
             ratingTmdb: (number | null)[] | null;
+            /** @description YYYY-MM-DD */
+            releaseCinema: (string | null)[] | null;
+            releaseDigital: (string | null)[] | null;
+            releasePhysical: (string | null)[] | null;
             rootFolderId: number[] | null;
             runtimeMin: number[] | null;
             sizeOnDisk: (number | null)[] | null;
+            sortTitle: string[] | null;
             state: string[] | null;
             /** @description Release stage */
             status: string[] | null;
+            /** @description Ids of each movie's tags */
+            tagIds: (number[] | null)[] | null;
             title: string[] | null;
             /** Format: int64 */
             total: number;
@@ -2245,6 +2814,8 @@ export interface components {
             releaseCinema: string | null;
             releaseDigital: string | null;
             releasePhysical: string | null;
+            /** @description Filled at the next metadata refresh for movies added before this field existed */
+            releaseRegions: components["schemas"]["ReleaseRegions"];
             /** Format: int64 */
             rootFolderId: number;
             rootFolderPath: string;
@@ -2257,6 +2828,8 @@ export interface components {
             status: "announced" | "in_cinemas" | "released" | "deleted";
             /** @description Why the release stage is what it is */
             statusReason: string;
+            /** @description Production companies, TMDB order */
+            studios: components["schemas"]["Studio"][] | null;
             tagline: string;
             tags: string[] | null;
             title: string;
@@ -2271,7 +2844,10 @@ export interface components {
             year: number;
         };
         MovieFile: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Score given at import
+             */
             customScore: number;
             edition: string;
             fullPath: string;
@@ -2289,6 +2865,7 @@ export interface components {
             /** Format: int64 */
             revision: number;
             sceneName: string;
+            scoreBreakdown: components["schemas"]["ScoreBreakdown"];
             /** Format: int64 */
             size: number;
         };
@@ -2363,6 +2940,8 @@ export interface components {
              * @enum {string}
              */
             status: "announced" | "in_cinemas" | "released" | "deleted";
+            /** @description Ids of the movie's tags (GET /tags has the labels) */
+            tagIds: number[] | null;
             title: string;
             /** Format: int64 */
             tmdbId: number;
@@ -2382,6 +2961,21 @@ export interface components {
              */
             total: number;
         };
+        MovieSettings: {
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            minimumAvailability: "announced" | "in_cinemas" | "released";
+            monitored: boolean;
+            /** Format: int64 */
+            qualityProfileId: number;
+            /**
+             * Format: int64
+             * @description Informative: a restore does not move movies
+             */
+            rootFolderId: number;
+            tags: string[] | null;
+        };
         MovieSummary: {
             adult?: boolean;
             backdropPath?: string;
@@ -2399,6 +2993,11 @@ export interface components {
             tmdbId: number;
             /** Format: int64 */
             year?: number;
+        };
+        MovieTagsInputBody: {
+            /** @description Labels; missing tags are created */
+            add?: string[] | null;
+            remove?: string[] | null;
         };
         NamingPreview: {
             example: boolean;
@@ -2531,6 +3130,76 @@ export interface components {
             /** Format: int64 */
             tmdbId: number;
         };
+        PersonCredit: {
+            /** @description w1280 */
+            backdropUrl: string | null;
+            /** @description Cast roles */
+            characters: string[] | null;
+            departments: string[] | null;
+            /** @description On the import list exclusions */
+            excluded: boolean;
+            inLibrary: boolean;
+            /** @description Crew jobs (Director, Writer...) */
+            jobs: string[] | null;
+            /** @description Library movies only */
+            monitored: boolean;
+            /**
+             * Format: int64
+             * @description Library movie id when inLibrary
+             */
+            movieId: number | null;
+            originalLanguage?: string;
+            originalTitle?: string;
+            overview: string;
+            /** Format: double */
+            popularity: number;
+            /** @description w342, through the image cache */
+            posterUrl: string | null;
+            rating: components["schemas"]["Rating"];
+            /** @description YYYY-MM-DD */
+            releaseDate: string | null;
+            /**
+             * @description Library state; null when not in the library
+             * @enum {string|null}
+             */
+            state: "available" | "missing" | "downloading" | "upgradable" | null;
+            title: string;
+            /** Format: int64 */
+            tmdbId: number;
+            /**
+             * Format: int64
+             * @description 0 when unknown
+             */
+            year: number;
+        };
+        Plan: {
+            /** @description Current file, relative to the movie folder */
+            fileFrom?: string;
+            /** @description New name of the current file */
+            fileTo?: string;
+            /** @description Absolute movie folder now */
+            fromFolder: string;
+            /** @description Movie folder relative to its root folder, now */
+            fromPath: string;
+            /** Format: int64 */
+            fromRootFolderId: number;
+            /** @enum {string} */
+            kind: "rename" | "move";
+            moveFiles: boolean;
+            /** Format: int64 */
+            movieId: number;
+            /** @description Names and location already match: nothing to do */
+            noChange: boolean;
+            notes: string[] | null;
+            ops: components["schemas"]["FileOp"][] | null;
+            /** @description Why the operation is refused; empty when it can run */
+            problems: string[] | null;
+            /** @description Absolute movie folder after the operation */
+            toFolder: string;
+            toPath: string;
+            /** Format: int64 */
+            toRootFolderId: number;
+        };
         PreviewInputBody: {
             fileTemplate: string;
             folderTemplate: string;
@@ -2566,6 +3235,80 @@ export interface components {
             /** Format: int64 */
             position: number;
             quality: string;
+        };
+        QueueActions: {
+            pause: boolean;
+            /** @description Remove (optionally blocklist and retry) */
+            remove: boolean;
+            resume: boolean;
+            /** @description The import failed: POST /queue/{id}/import */
+            retryImport: boolean;
+        };
+        QueueEntry: {
+            actions: components["schemas"]["QueueActions"];
+            client: string;
+            /** Format: int64 */
+            clientId: number | null;
+            /** Format: date-time */
+            completedAt: string | null;
+            /** Format: int64 */
+            customScore: number;
+            /**
+             * Format: int64
+             * @description size x progress
+             */
+            downloadedBytes: number;
+            /** Format: int64 */
+            etaSeconds: number | null;
+            failedReason: string | null;
+            /** Format: date-time */
+            grabbedAt: string;
+            /** Format: int64 */
+            id: number;
+            /** @description Completed but the import failed; failedReason says why */
+            importFailed: boolean;
+            /** Format: date-time */
+            importedAt: string | null;
+            importing: boolean;
+            /** @description Indexer name, empty when unknown */
+            indexer: string;
+            /** Format: int64 */
+            indexerId: number | null;
+            manual: boolean;
+            messages: string[] | null;
+            movie: components["schemas"]["QueueMovie"];
+            /** Format: int64 */
+            movieId: number;
+            /**
+             * Format: double
+             * @description 0 to 1
+             */
+            progress: number;
+            /** @enum {string} */
+            protocol: "usenet" | "torrent";
+            quality: string;
+            qualityName: string;
+            /** @description Set when this download replaces a failed one */
+            retry: components["schemas"]["QueueRetry"];
+            /** Format: int64 */
+            retryOf: number | null;
+            /**
+             * Format: int64
+             * @description Torrents: seeders when grabbed
+             */
+            seeders: number | null;
+            /** Format: int64 */
+            size: number;
+            /** Format: int64 */
+            speedBps: number;
+            /** @enum {string} */
+            status: "queued" | "downloading" | "paused" | "completed" | "importing" | "imported" | "failed" | "warning" | "removed";
+            /** @description Latest message from the client or the importer */
+            statusMessage: string;
+            /** @description Release title */
+            title: string;
+            /** @description Quality name of the file on disk it would replace; null without a file */
+            upgradeFrom: string | null;
         };
         QueueItem: {
             client: string;
@@ -2608,6 +3351,33 @@ export interface components {
             status: "queued" | "downloading" | "paused" | "completed" | "importing" | "imported" | "failed" | "warning" | "removed";
             /** @description Release title */
             title: string;
+        };
+        QueueMovie: {
+            dominantColor: string | null;
+            /** Format: int64 */
+            id: number;
+            /** @description w342 */
+            posterUrl: string | null;
+            title: string;
+            /** Format: int64 */
+            year: number;
+        };
+        QueueRetry: {
+            /**
+             * Format: int64
+             * @description This release's number among the movie's grabs of the last 24 hours
+             */
+            attempt: number;
+            /**
+             * Format: int64
+             * @description Attempts allowed per day (Settings > Acquisition)
+             */
+            of: number;
+            /** Format: int64 */
+            previousDownloadId: number;
+            /** @description Why the previous release failed */
+            previousReason: string;
+            previousRelease: string;
         };
         QueueSummary: {
             /**
@@ -2684,6 +3454,42 @@ export interface components {
             message: string;
             permanent: boolean;
         };
+        ReleaseRegions: {
+            certification: string | null;
+            cinema: string | null;
+            digital: string | null;
+            physical: string | null;
+        };
+        Relocation: {
+            /** @description File operations performed */
+            done: components["schemas"]["FileOp"][] | null;
+            /** @description Current file, relative to the movie folder */
+            fileFrom?: string;
+            /** @description New name of the current file */
+            fileTo?: string;
+            /** @description Absolute movie folder now */
+            fromFolder: string;
+            /** @description Movie folder relative to its root folder, now */
+            fromPath: string;
+            /** Format: int64 */
+            fromRootFolderId: number;
+            /** @enum {string} */
+            kind: "rename" | "move";
+            moveFiles: boolean;
+            /** Format: int64 */
+            movieId: number;
+            /** @description Names and location already match: nothing to do */
+            noChange: boolean;
+            notes: string[] | null;
+            ops: components["schemas"]["FileOp"][] | null;
+            /** @description Why the operation is refused; empty when it can run */
+            problems: string[] | null;
+            /** @description Absolute movie folder after the operation */
+            toFolder: string;
+            toPath: string;
+            /** Format: int64 */
+            toRootFolderId: number;
+        };
         RemotePathMapping: {
             /** @description Host of the download client, as configured on the client */
             host: string;
@@ -2699,12 +3505,18 @@ export interface components {
             localPath: string;
             remotePath: string;
         };
+        "Restore-movie-settingsRequest": {
+            previous: components["schemas"]["MovieSettings"][] | null;
+        };
         "Restore-recycledResponse": {
             path: string;
         };
         RestoreInputBody: {
             /** @description Item name, as listed */
             name: string;
+        };
+        RestoreResult: {
+            changed: number[] | null;
         };
         Revision: {
             real?: boolean;
@@ -2779,6 +3591,17 @@ export interface components {
         ScanInputBody: {
             /** @description Folder or file inside an allowed import folder */
             path: string;
+        };
+        ScoreBreakdown: {
+            /** @description Matched rules in rule order; score 0 when the profile does not score the rule */
+            rules: components["schemas"]["ScoreRule"][] | null;
+            /** Format: int64 */
+            total: number;
+        };
+        ScoreRule: {
+            rule: string;
+            /** Format: int64 */
+            score: number;
         };
         SearchResult: {
             accepted: boolean;
@@ -2950,6 +3773,13 @@ export interface components {
             /** Format: int64 */
             tmdbId: number;
         };
+        Studio: {
+            /** @description ISO 3166-1 alpha-2 */
+            country?: string;
+            name: string;
+            /** Format: int64 */
+            tmdbId: number;
+        };
         SystemStatus: {
             arch: string;
             baseUrl: string;
@@ -2977,6 +3807,19 @@ export interface components {
         };
         TMDBSetting: {
             configured: boolean;
+        };
+        Tag: {
+            /** Format: int64 */
+            id: number;
+            label: string;
+            /**
+             * Format: int64
+             * @description Movies carrying the tag
+             */
+            movies: number;
+        };
+        TagLabelBody: {
+            label: string;
         };
         TestResult: {
             /** @description Plain-language result, safe to display */
@@ -3024,11 +3867,19 @@ export interface components {
 }
 export type AcquisitionSettings = components['schemas']['AcquisitionSettings'];
 export type AddRootFolderRequest = components['schemas']['Add-root-folderRequest'];
+export type AddCollectionInputBody = components['schemas']['AddCollectionInputBody'];
+export type AddCollectionResult = components['schemas']['AddCollectionResult'];
 export type AddMovieInputBody = components['schemas']['AddMovieInputBody'];
 export type AlternateTitle = components['schemas']['AlternateTitle'];
 export type BlockGroupRequest = components['schemas']['Block-groupRequest'];
 export type BlocklistItem = components['schemas']['BlocklistItem'];
 export type Breakdown = components['schemas']['Breakdown'];
+export type BulkFileResult = components['schemas']['BulkFileResult'];
+export type BulkInputBody = components['schemas']['BulkInputBody'];
+export type BulkMoveInputBody = components['schemas']['BulkMoveInputBody'];
+export type BulkRenameInputBody = components['schemas']['BulkRenameInputBody'];
+export type BulkResult = components['schemas']['BulkResult'];
+export type BulkSet = components['schemas']['BulkSet'];
 export type Candidate = components['schemas']['Candidate'];
 export type CheckStatus = components['schemas']['CheckStatus'];
 export type ClearMovieBlocklistResponse = components['schemas']['Clear-movie-blocklistResponse'];
@@ -3036,7 +3887,12 @@ export type ClientHealth = components['schemas']['ClientHealth'];
 export type Collection = components['schemas']['Collection'];
 export type CollectionPart = components['schemas']['CollectionPart'];
 export type CollectionSummary = components['schemas']['CollectionSummary'];
+export type DeletedTag = components['schemas']['DeletedTag'];
+export type Deletion = components['schemas']['Deletion'];
 export type DeliveryHealth = components['schemas']['DeliveryHealth'];
+export type DiscoverCollection = components['schemas']['DiscoverCollection'];
+export type DiscoverMovie = components['schemas']['DiscoverMovie'];
+export type DiscoverPage = components['schemas']['DiscoverPage'];
 export type DownloadClient = components['schemas']['DownloadClient'];
 export type DownloadClientInput = components['schemas']['DownloadClientInput'];
 export type DownloadProgress = components['schemas']['DownloadProgress'];
@@ -3044,10 +3900,15 @@ export type ErrorDetail = components['schemas']['ErrorDetail'];
 export type ErrorModel = components['schemas']['ErrorModel'];
 export type EventFlag = components['schemas']['EventFlag'];
 export type FileMedia = components['schemas']['FileMedia'];
+export type FileOp = components['schemas']['FileOp'];
 export type FileQuality = components['schemas']['FileQuality'];
+export type Filmography = components['schemas']['Filmography'];
 export type GrabSearchResultRequest = components['schemas']['Grab-search-resultRequest'];
 export type HealthIssue = components['schemas']['HealthIssue'];
 export type HistoryEntry = components['schemas']['HistoryEntry'];
+export type HistoryMovie = components['schemas']['HistoryMovie'];
+export type HistoryPage = components['schemas']['HistoryPage'];
+export type HistoryRow = components['schemas']['HistoryRow'];
 export type ImportSettingsBody = components['schemas']['ImportSettingsBody'];
 export type Indexer = components['schemas']['Indexer'];
 export type IndexerHealth = components['schemas']['IndexerHealth'];
@@ -3070,13 +3931,17 @@ export type MediaServerInput = components['schemas']['MediaServerInput'];
 export type MediaServerTest = components['schemas']['MediaServerTest'];
 export type MonitorInputBody = components['schemas']['MonitorInputBody'];
 export type MonitorResult = components['schemas']['MonitorResult'];
+export type MoveBody = components['schemas']['MoveBody'];
+export type MoveOutcome = components['schemas']['MoveOutcome'];
 export type Movie = components['schemas']['Movie'];
 export type MovieColumns = components['schemas']['MovieColumns'];
 export type MovieDetail = components['schemas']['MovieDetail'];
 export type MovieFile = components['schemas']['MovieFile'];
 export type MovieListItem = components['schemas']['MovieListItem'];
 export type MoviePage = components['schemas']['MoviePage'];
+export type MovieSettings = components['schemas']['MovieSettings'];
 export type MovieSummary = components['schemas']['MovieSummary'];
+export type MovieTagsInputBody = components['schemas']['MovieTagsInputBody'];
 export type NamingPreview = components['schemas']['NamingPreview'];
 export type NamingSettingsView = components['schemas']['NamingSettingsView'];
 export type NamingTemplates = components['schemas']['NamingTemplates'];
@@ -3088,11 +3953,17 @@ export type NotificationSecretsSet = components['schemas']['NotificationSecretsS
 export type NotificationTest = components['schemas']['NotificationTest'];
 export type ParsedRelease = components['schemas']['ParsedRelease'];
 export type Person = components['schemas']['Person'];
+export type PersonCredit = components['schemas']['PersonCredit'];
+export type Plan = components['schemas']['Plan'];
 export type PreviewInputBody = components['schemas']['PreviewInputBody'];
 export type PurgeOutputBody = components['schemas']['PurgeOutputBody'];
 export type QualityProfile = components['schemas']['QualityProfile'];
 export type QualityProfileItem = components['schemas']['QualityProfileItem'];
+export type QueueActions = components['schemas']['QueueActions'];
+export type QueueEntry = components['schemas']['QueueEntry'];
 export type QueueItem = components['schemas']['QueueItem'];
+export type QueueMovie = components['schemas']['QueueMovie'];
+export type QueueRetry = components['schemas']['QueueRetry'];
 export type QueueSummary = components['schemas']['QueueSummary'];
 export type Rating = components['schemas']['Rating'];
 export type ReasonFlag = components['schemas']['ReasonFlag'];
@@ -3100,10 +3971,14 @@ export type RecycleEntry = components['schemas']['RecycleEntry'];
 export type RefreshHealth = components['schemas']['RefreshHealth'];
 export type RefreshOutputBody = components['schemas']['RefreshOutputBody'];
 export type Rejection = components['schemas']['Rejection'];
+export type ReleaseRegions = components['schemas']['ReleaseRegions'];
+export type Relocation = components['schemas']['Relocation'];
 export type RemotePathMapping = components['schemas']['RemotePathMapping'];
 export type RemotePathMappingInput = components['schemas']['RemotePathMappingInput'];
+export type RestoreMovieSettingsRequest = components['schemas']['Restore-movie-settingsRequest'];
 export type RestoreRecycledResponse = components['schemas']['Restore-recycledResponse'];
 export type RestoreInputBody = components['schemas']['RestoreInputBody'];
+export type RestoreResult = components['schemas']['RestoreResult'];
 export type Revision = components['schemas']['Revision'];
 export type RootFolder = components['schemas']['RootFolder'];
 export type RuleScore = components['schemas']['RuleScore'];
@@ -3111,6 +3986,8 @@ export type SavedView = components['schemas']['SavedView'];
 export type SavedViewInput = components['schemas']['SavedViewInput'];
 export type ScanCandidate = components['schemas']['ScanCandidate'];
 export type ScanInputBody = components['schemas']['ScanInputBody'];
+export type ScoreBreakdown = components['schemas']['ScoreBreakdown'];
+export type ScoreRule = components['schemas']['ScoreRule'];
 export type SearchResult = components['schemas']['SearchResult'];
 export type SearchSnapshot = components['schemas']['SearchSnapshot'];
 export type SearchStarted = components['schemas']['SearchStarted'];
@@ -3120,8 +3997,11 @@ export type ServiceSettings = components['schemas']['ServiceSettings'];
 export type SetTmdbKeyRequest = components['schemas']['Set-tmdb-keyRequest'];
 export type Settings = components['schemas']['Settings'];
 export type SkippedPart = components['schemas']['SkippedPart'];
+export type Studio = components['schemas']['Studio'];
 export type SystemStatus = components['schemas']['SystemStatus'];
 export type TmdbSetting = components['schemas']['TMDBSetting'];
+export type Tag = components['schemas']['Tag'];
+export type TagLabelBody = components['schemas']['TagLabelBody'];
 export type TestResult = components['schemas']['TestResult'];
 export type Token = components['schemas']['Token'];
 export type UpdateMovieInputBody = components['schemas']['UpdateMovieInputBody'];
@@ -3313,6 +4193,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MonitorResult"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "add-collection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description TMDB collection id */
+                tmdbId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCollectionInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddCollectionResult"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "discover-collection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tmdbId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscoverCollection"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "discover-person": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description TMDB person id */
+                tmdbId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Filmography"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "discover-list": {
+        parameters: {
+            query?: {
+                /** @description Trending period */
+                window?: "day" | "week";
+                page?: number;
+            };
+            header?: never;
+            path: {
+                list: "popular" | "trending" | "upcoming" | "now_playing";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscoverPage"];
                 };
             };
             /** @description Error */
@@ -3675,8 +4689,18 @@ export interface operations {
     "list-history": {
         parameters: {
             query?: {
-                /** @description Return entries with an id lower than this (keyset pagination); 0 = from the newest */
-                before?: number;
+                /** @description Event kinds, comma-separated; all when absent */
+                event?: ("grabbed" | "grab_failed" | "grab_overridden" | "download_failed" | "download_removed" | "imported" | "upgraded" | "import_failed" | "file_deleted" | "file_renamed" | "blocklisted" | "ignored" | "metadata_changed" | "movie_added" | "movie_deleted" | "retry_scheduled" | "retries_exhausted")[] | null;
+                /** @description Only this movie (also after its removal) */
+                movieId?: number;
+                /** @description Only the entries of this download */
+                downloadId?: number;
+                /** @description Entries at or after this time (RFC 3339) */
+                since?: string;
+                /** @description Entries before this time (RFC 3339) */
+                until?: string;
+                /** @description nextCursor of the previous page */
+                cursor?: string;
                 limit?: number;
             };
             header?: never;
@@ -3691,7 +4715,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HistoryEntry"][] | null;
+                    "application/json": components["schemas"]["HistoryPage"];
                 };
             };
             /** @description Error */
@@ -4501,8 +5525,11 @@ export interface operations {
                 yearTo?: number;
                 genre?: string;
                 rootFolderId?: number;
-                /** @description Tag label */
+                /** @description Tag label (same as a one-label tags) */
                 tag?: string;
+                /** @description Tag labels, comma-separated: movies with any of them (tagMatch=any) or all (tagMatch=all) */
+                tags?: string[] | null;
+                tagMatch?: "any" | "all";
                 /** @description Text in the title, original title or an alternate title (case-insensitive) */
                 q?: string;
                 /** @description nextCursor of the previous page */
@@ -4569,6 +5596,72 @@ export interface operations {
             };
         };
     };
+    "bulk-update-movies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkResult"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "restore-movie-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Restore-movie-settingsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestoreResult"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "list-movie-columns": {
         parameters: {
             query?: {
@@ -4588,8 +5681,11 @@ export interface operations {
                 yearTo?: number;
                 genre?: string;
                 rootFolderId?: number;
-                /** @description Tag label */
+                /** @description Tag label (same as a one-label tags) */
                 tag?: string;
+                /** @description Tag labels, comma-separated: movies with any of them (tagMatch=any) or all (tagMatch=all) */
+                tags?: string[] | null;
+                tagMatch?: "any" | "all";
                 /** @description Text in the title, original title or an alternate title (case-insensitive) */
                 q?: string;
             };
@@ -4606,6 +5702,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MovieColumns"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "move-movies": {
+        parameters: {
+            query?: {
+                /** @description Only return the planned operations */
+                preview?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkMoveInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkFileResult"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "rename-movies": {
+        parameters: {
+            query?: {
+                /** @description Only return the planned operations */
+                preview?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkRenameInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkFileResult"];
                 };
             };
             /** @description Error */
@@ -4656,6 +5824,10 @@ export interface operations {
             query?: {
                 /** @description Keep import lists from adding it again */
                 addExclusion?: boolean;
+                /** @description Also move the movie's files to the recycle bin */
+                deleteFiles?: boolean;
+                /** @description Required with deleteFiles: the user confirmed it */
+                confirm?: boolean;
             };
             header?: never;
             path: {
@@ -4671,7 +5843,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["Deletion"];
+                };
             };
             /** @description Error */
             default: {
@@ -4707,6 +5881,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MovieDetail"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "delete-movie-file": {
+        parameters: {
+            query?: {
+                /** @description Required: the user confirmed the deletion */
+                confirm?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Deletion"];
                 };
             };
             /** @description Error */
@@ -4756,6 +5965,45 @@ export interface operations {
             };
         };
     };
+    "move-movie": {
+        parameters: {
+            query?: {
+                /** @description Only return the planned operations */
+                preview?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Relocation"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "refresh-movie": {
         parameters: {
             query?: never;
@@ -4775,6 +6023,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RefreshOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "rename-movie": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Relocation"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "preview-movie-rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Plan"];
                 };
             };
             /** @description Error */
@@ -4839,6 +6151,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SearchStarted"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-movie-tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MovieTagsInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkResult"];
                 };
             };
             /** @description Error */
@@ -5186,7 +6534,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["QueueItem"][] | null;
+                    "application/json": components["schemas"]["QueueEntry"][] | null;
                 };
             };
             /** @description Error */
@@ -6057,6 +7405,136 @@ export interface operations {
             };
         };
     };
+    "list-tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tag"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-tag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagLabelBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tag"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "rename-tag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagLabelBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tag"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "delete-tag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletedTag"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "list-views": {
         parameters: {
             query?: {
@@ -6208,6 +7686,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-wanted": {
+        parameters: {
+            query?: {
+                kind?: "missing" | "cutoff_unmet";
+                sort?: "title" | "year" | "added" | "size" | "score" | "quality";
+                order?: "asc" | "desc";
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoviePage"];
+                };
             };
             /** @description Error */
             default: {

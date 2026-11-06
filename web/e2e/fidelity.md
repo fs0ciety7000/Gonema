@@ -57,14 +57,12 @@ Production builds hide what later lots build; development builds show an honest 
 | D10 | Offline card: log tip reads `docker logs --tail 50 gonema`; port from the page URL | The server logs to stderr (no `/config/logs/gonema.log`); the mockup's port 7878 is not Gonema's (7676). |
 | D11 | Light/dark captured; tablet capture without a side-by-side composite | The composite script pairs 1440-wide images only; compare `library-grid-tablet-*.png` with `docs/design/renders/library-grid-tablet-*.jpg` directly (rail, 5 columns, no queue pill, as designed). |
 
-### Build workaround that affects rendering
+### Build workaround (resolved in lot 2)
 
-`gonema.css` writes `backdrop-filter` then `-webkit-backdrop-filter` with `var()` values. The CSS
-minifier used by Tailwind 4 and Vite 8 (lightningcss) collapses the pair into the prefixed one only,
-which Chromium and Firefox ignore: every glass surface (top bar, menus, dialogs, toasts, bulk bar,
-on-poster badges) lost its frost in production builds. `src/styles/app-shell.css` restates the same
-values unprefixed (the minifier then emits both). Reported so `gonema.css` can be reordered or the
-minifier fixed upstream; no token value is re-typed.
+Lot 1 restated the glass `backdrop-filter` values in `app-shell.css` because lightningcss collapsed
+`backdrop-filter` + `-webkit-backdrop-filter` into the prefixed one. Lot 2 reordered `gonema.css`
+(prefixed first, unprefixed last) and removed the workaround: the built CSS keeps both declarations
+for every glass surface (checked in `dist/assets/index-*.css`).
 
 ### Not matched / to review
 
@@ -73,3 +71,70 @@ minifier fixed upstream; no token value is re-typed.
   `docs/design/renders/motion-poster-detail-*.jpg`.
 - Browser Back from a film uses the router's plain navigation (no reverse shared-element
   transition); the in-app "Films" breadcrumb plays the reverse transition and focus returns to the poster.
+
+
+---
+
+# Fidelity — phase 7, lot 2 (add & discover, interactive search, activity, library dialogs)
+
+Captures: `node e2e/fidelity.mjs` (production build in the Go binary, demo library of 10,000 films).
+New side-by-sides: `compare-add-film-*`, `compare-add-film-discover-*`, `compare-interactive-search-*`,
+`compare-queue-*`, `compare-queue-history-*`. App-only states audited too: `add-film-no-key`,
+`tmdb-key-dialog`, `interactive-search-confirm`, `dialog-tags`, `dialog-move`, `dialog-rename`,
+`dialog-delete-file`.
+
+Accessibility: axe-core 4.14, same tags: **0 violations on 34/34 captures** (17 states × dark + light),
+`__screenshots__/a11y-report.json`.
+
+Mocked for captures (see `e2e/README.md`): TMDB lists and lookup (no key in the demo), the interactive
+search stream (no indexer in the demo). Queue and history are real demo data.
+
+## Deviations
+
+### Content (data, not design)
+
+| # | Visible difference | Why |
+|---|---|---|
+| C10 | Add film: result meta reads "Released 3 Apr 1998 · English · TMDB 7.1" instead of "Drama · Walter Brisk"; panel caption without runtime/genre/director | `/lookup` returns no genres names, runtime or crew. |
+| C11 | Add film: no folder-template preview; the hint shows `<root>/<Title (Year)>/` | The naming preview needs a movie; the folder name follows the default template and may differ from a custom one. |
+| C12 | Discover: no "Make this an import list" button | Import lists have no endpoint yet (lot 3). |
+| C13 | Discover: "Filmography" asks for a TMDB person link or id instead of a name search | No person search endpoint (`/discover/person/{tmdbId}` only, name not returned). |
+| C14 | Queue: every demo item is "Queued"/downloading on a disabled demo client; no failed retry row, importing or paused rows unless created | Demo data. The retry row ("Trying release #2 of 6"), importing, warning ("Retry import") and paused states are implemented from `QueueEntry.retry/actions/status`. |
+| C15 | History: reasons read "(demo data)"; quality/score often empty | Demo history entries. Chains use `chainId` (left rule), none in the demo. |
+| C16 | Interactive search: no "Indexer health" link in the failed-indexer notice | Health screen is lot 3. |
+
+### Scope (hidden, never dead ends)
+
+| # | Not in this build | Lot |
+|---|---|---|
+| S10 | Activity: "Blocklist" tab, "Pause all", "Export" | 3 (no pause-all / export endpoints) |
+| S11 | Sidebar: Home, Collections, Calendar, Wanted, Blocklist, Health, Settings stay hidden in production | 3 |
+| S12 | Queue empty state: "Search the N now" → links to the library's Wanted view instead (no bulk search endpoint) | 3 |
+
+Lot 1 items S2–S6 are now built: "Add film" button + `A` shortcut, queue pill links to the queue,
+bulk Tags / Move / Delete…, menus (Interactive search… `I`, Edit tags… `⇧T`, Move…, Rename files…,
+Delete file…), film page (Interactive search, Rename preview, Delete file…, collection Open with the
+whole collection and "Add the N missing", file score breakdown tags — C7 resolved).
+
+### Design decisions taken while implementing
+
+| # | Difference | Justification |
+|---|---|---|
+| D12 | Bulk bar "Delete…" opens a dialog: "Keep the files" (default, then the Undo flow) or "Also move files to recycle bin" (button says exactly that). Menus keep the immediate "Remove from library" with Undo | Confirmation is reserved for files on disk; removal alone stays Undo (D1). |
+| D13 | "Delete file…" confirmation states the recycle bin and its retention (from `/import/settings`, 30 days by default); the success toast offers "Restore" | Nothing is deleted for good; restore uses `/recycle-bin/restore`. |
+| D14 | Queue remove: options popover (blocklist ✓, search again ✓, delete data ✗), applied at once with Undo; the DELETE is sent when the toast closes | motion.md §5 (clear queue item = Undo). |
+| D15 | Interactive search: "Retry" of a failed indexer restarts the whole search | No per-indexer retry endpoint; the notice says so. |
+| D16 | Rejected rows with only permanent reasons show an info toggle; "Grab anyway…" is then inside the expanded decision panel (soft reasons keep the button in the row, as in the mockup) | Mockup behaviour, made reachable for every rejected release. |
+| D17 | Interactive search table virtualised above 100 rows (spacer rows); keyboard: ↑/↓ rows, Enter expands, G grabs (rejected → confirmation), Esc back to the film | Spec. |
+| D18 | Discover posters without a TMDB image show the typographic placeholder; poster click opens the options dialog, "+" adds with the last options | Same placeholder rule as C1. |
+| D19 | Add options remembered in `localStorage` (`gn-add-options`), validated against existing folders/profiles | "remember last choices". |
+| D20 | "Whole collection": the film is added, then the collection is monitored with the same options (its other films added); Undo removes all of them | `/lookup` has no collection id before adding. |
+| D21 | The library table is a lazy chunk (preloaded when idle); `vite.config.ts` groups everything the first screen imports into one chunk (Rolldown `$initial`) | Initial JS budget: 198.3 KB gzip (lot 1: 199.4 KB) with lot 2's menu items, routes and stores. |
+
+### Measurements (this machine, 2026-11-06)
+
+- Initial JS for the library: **198,270 B gzip** (≤ 200 KB); CSS 18.2 KB. Lazy chunks: interactive search 8.9 KB,
+  activity 7.7 KB, add 5.9 KB + discover 5.5 KB, dialogs 5.3 KB, lot2.css 5.1 KB (gzip).
+- Scroll (10k films, `e2e/perf.json`): grid 1× 54–59 fps, table 1× 42–51 fps. The lot 1 build measured on the same machine
+  and server in the same session: grid 55 fps, table 51.4 fps — the table is below its lot 1 figure (57.2) for both builds,
+  so the drop is the environment, not lot 2; to re-measure on an idle machine.

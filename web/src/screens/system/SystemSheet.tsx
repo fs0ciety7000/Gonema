@@ -76,6 +76,7 @@ const base: LibraryItem = {
   releasePhysical: null,
   releaseCinema: null,
   tags: [],
+  tagIds: [],
 };
 
 const CARDS: Array<{

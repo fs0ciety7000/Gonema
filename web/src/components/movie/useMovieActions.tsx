@@ -95,6 +95,7 @@ export function useMovieActions() {
     [patch],
   );
 
+  /** One transaction for all films (POST /movies/bulk); Undo puts back the previous settings the server returned. */
   const setProfile = useCallback(
     async (
       targets: readonly Target[],
@@ -102,11 +103,25 @@ export function useMovieActions() {
       profileName: string,
       previous: ReadonlyMap<number, number>,
     ) => {
-      const ok = await patch(
-        targets.map((t) => t.id),
-        { qualityProfileId: profileId },
-      );
-      if (!ok) return;
+      const ids = targets.map((t) => t.id);
+      await qc.cancelQueries({ queryKey: keys.library });
+      const snap = applyOptimistic(qc, ids, { qualityProfileId: profileId });
+      let restore: (() => Promise<unknown>) | null = null;
+      try {
+        const { bulkUpdate, restoreSettings } = await import('@/api/screens');
+        const r = await bulkUpdate(ids, { qualityProfileId: profileId });
+        const prev = r.previous ?? [];
+        restore = () => restoreSettings(prev);
+      } catch (e) {
+        if (!(e instanceof ApiError) || e.status !== 404) {
+          restoreSnapshot(qc, snap);
+          toast.error('Nothing was changed', errorText(e));
+          return;
+        }
+        // Older server without the bulk endpoint: one PATCH per film.
+        if (!(await patch(ids, { qualityProfileId: profileId }))) return;
+      }
+      for (const id of ids) void qc.invalidateQueries({ queryKey: keys.movie(id) });
       toast.show({
         title:
           targets.length === 1
@@ -119,11 +134,18 @@ export function useMovieActions() {
             const p = previous.get(t.id);
             if (p && p !== profileId) byProfile.set(p, [...(byProfile.get(p) ?? []), t.id]);
           }
-          for (const [p, ids] of byProfile) void patch(ids, { qualityProfileId: p });
+          for (const [p, pids] of byProfile) applyOptimistic(qc, pids, { qualityProfileId: p });
+          const run =
+            restore ?? (() => Promise.all([...byProfile].map(([p, pids]) => patch(pids, { qualityProfileId: p }))));
+          void run()
+            .catch((e) => {
+              toast.error('The previous profiles were not restored', errorText(e));
+            })
+            .finally(() => void qc.invalidateQueries({ queryKey: keys.library }));
         },
       });
     },
-    [patch],
+    [patch, qc],
   );
 
   const search = useCallback(async (targets: readonly Target[]) => {

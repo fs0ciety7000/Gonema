@@ -68,6 +68,63 @@ export const movieRoute = createRoute({
   component: lazyRouteComponent(() => import('@/screens/movie/MovieScreen'), 'MovieScreen'),
 });
 
+const parseMovieId = {
+  parse: (p: { movieId: string }) => {
+    const id = Number(p.movieId);
+    if (!Number.isInteger(id) || id < 1) throw new Error('Not a film id');
+    return { movieId: id };
+  },
+  stringify: (p: { movieId: number }) => ({ movieId: String(p.movieId) }),
+};
+
+export const searchRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/films/$movieId/search',
+  params: parseMovieId,
+  loader: ({ context, params }) => {
+    void context.queryClient.prefetchQuery(movieQuery(params.movieId));
+  },
+  component: lazyRouteComponent(() => import('@/screens/search/InteractiveSearchScreen'), 'InteractiveSearchScreen'),
+});
+
+export type DiscoverSearch = { tab?: 'discover'; q?: string; list?: string };
+
+export const discoverRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/discover',
+  validateSearch: (raw: Record<string, unknown>): DiscoverSearch => ({
+    tab: raw.tab === 'discover' ? 'discover' : undefined,
+    q: typeof raw.q === 'string' && raw.q.length <= 200 ? raw.q : undefined,
+    list: typeof raw.list === 'string' && /^[a-z_-]{1,32}$/.test(raw.list) ? raw.list : undefined,
+  }),
+  component: lazyRouteComponent(() => import('@/screens/discover/AddFilmScreen'), 'AddFilmScreen'),
+  head: () => ({ meta: [{ title: 'Add & discover · Gonema' }] }),
+});
+
+export type HistorySearch = { event?: string; movie?: number; since?: string };
+
+const queueRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/queue',
+  component: lazyRouteComponent(() => import('@/screens/activity/ActivityScreen'), 'QueueScreen'),
+  head: () => ({ meta: [{ title: 'Queue · Gonema' }] }),
+});
+
+export const historyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/history',
+  validateSearch: (raw: Record<string, unknown>): HistorySearch => {
+    const movie = Number(raw.movie);
+    return {
+      event: typeof raw.event === 'string' && /^[a-z_]{1,40}$/.test(raw.event) ? raw.event : undefined,
+      movie: Number.isInteger(movie) && movie > 0 ? movie : undefined,
+      since: raw.since === '1d' || raw.since === '7d' || raw.since === '30d' ? raw.since : undefined,
+    };
+  },
+  component: lazyRouteComponent(() => import('@/screens/activity/ActivityScreen'), 'HistoryScreen'),
+  head: () => ({ meta: [{ title: 'History · Gonema' }] }),
+});
+
 const placeholderRoutes = __GONEMA_DEV__
   ? ALL_SECTIONS.filter((s) => !s.built).map((s) =>
       createRoute({
@@ -95,6 +152,10 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   libraryRoute,
   movieRoute,
+  searchRoute,
+  discoverRoute,
+  queueRoute,
+  historyRoute,
   ...(__GONEMA_DEV__ ? [systemRoute] : []),
   ...placeholderRoutes,
 ]);

@@ -13,6 +13,7 @@ import {
   useState,
 } from 'react';
 import type { LibraryItem } from '@/api/model';
+import { openMovieDialog } from '@/components/movie/dialogStore';
 import { type LiveDownload, PosterCard, PosterSkeleton } from '@/components/movie/PosterCard';
 import { cx } from '@/components/ui/cx';
 import { overlayRoot } from '@/components/ui/overlayRoot';
@@ -39,6 +40,8 @@ type PosterGridProps = {
   onOpen: (m: LibraryItem, frame: HTMLElement | null) => void;
   onSearch: (m: LibraryItem) => void;
   onToggleMonitor: (m: LibraryItem) => void;
+  /** I: interactive search for the focused film. */
+  onInteractive?: (m: LibraryItem) => void;
   menu: (m: LibraryItem) => ReactNode;
   focusId?: number | null;
   /** Bumped when filters or sort change: the grid cross-fades in place (150 ms). */
@@ -63,6 +66,7 @@ export function PosterGrid({
   onOpen,
   onSearch,
   onToggleMonitor,
+  onInteractive,
   menu,
   focusId,
   epoch,
@@ -216,9 +220,15 @@ export function PosterGrid({
       if (ev.key === 's' || ev.key === 'S') {
         ev.preventDefault();
         onSearch(m);
-      } else if (ev.key === 'm' || ev.key === 'M') {
+      } else if ((ev.key === 'm' || ev.key === 'M') && !ev.shiftKey) {
         ev.preventDefault();
         onToggleMonitor(m);
+      } else if ((ev.key === 'i' || ev.key === 'I') && !ev.shiftKey) {
+        ev.preventDefault();
+        onInteractive?.(m);
+      } else if (ev.key === 'T' && ev.shiftKey) {
+        ev.preventDefault();
+        openMovieDialog({ kind: 'tags', targets: [{ id: m.id, title: m.title }] });
       } else if (ev.key === '.') {
         ev.preventDefault();
         cell.querySelector<HTMLButtonElement>('[data-more]')?.click();
