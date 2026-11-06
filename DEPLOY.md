@@ -17,7 +17,7 @@
 2. `make openapi` committed if the API changed; the web client types regenerated.
 3. New migrations have a `Down` and `docs/data-model.md` is up to date.
 4. `make release-check` (validates `.goreleaser.yaml`).
-5. Tag `vX.Y.Z`, then `goreleaser release --clean` (CI or a maintainer machine with Docker buildx and syft).
+5. Push a tag `vX.Y.Z`: `.github/workflows/release.yml` runs `goreleaser release --clean` (fallback: a maintainer machine with Docker buildx and syft).
 6. Check the draft release (archives, checksums, SBOMs) and the image manifest (`docker buildx imagetools inspect ghcr.io/fs0ciety7000/gonema:X.Y.Z`), then publish.
 7. Smoke-test the image: `docker run --rm -p 7676:7676 ghcr.io/fs0ciety7000/gonema:X.Y.Z`, `docker inspect --format '{{.State.Health.Status}}'` reaches `healthy`.
 

@@ -1,5 +1,7 @@
 # Gonema
 
+[![CI](https://github.com/fs0ciety7000/Gonema/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/fs0ciety7000/Gonema/actions/workflows/ci.yml) [![Release](https://github.com/fs0ciety7000/Gonema/actions/workflows/release.yml/badge.svg)](https://github.com/fs0ciety7000/Gonema/actions/workflows/release.yml)
+
 Gonema is a self-hosted manager for a movie collection. It watches the films you want, searches your Usenet and BitTorrent indexers, picks the best release according to quality rules you set, sends it to your download client, then imports, renames and files it in your library, and upgrades it later when a better release appears. Every automatic decision records its reasons in the history.
 
 It is one static binary (Go, SQLite embedded, web interface embedded) or a small `scratch` Docker image. There is no hosted service: you run it on your own machine, NAS or server.
@@ -202,6 +204,8 @@ Traefik streams responses without buffering by default and sets `X-Forwarded-Pro
 ## Development
 
 `make test`, `make lint`, `make build`, `make bench`; see [`AGENTS.md`](AGENTS.md) and [`docs/architecture.md`](docs/architecture.md).
+
+CI (`.github/workflows/ci.yml`, every pull request and push to `main`): Go (sqlc output committed, tests, race, lint, govulncheck, build), web (typecheck, lint, tests, build, initial JS budget of 200 KB gzip), end-to-end suites against a demo server and fresh servers, and the Docker image (build, health check, non-root). Releases: see [operations](docs/operations.md#releases).
 
 ## License
 
