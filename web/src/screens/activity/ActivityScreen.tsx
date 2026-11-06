@@ -1,20 +1,31 @@
 import '@/styles/lot2.css';
-import { useQuery } from '@tanstack/react-query';
+import '@/styles/lot3.css';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { CircleCheck, CircleSlash, RefreshCw } from 'lucide-react';
-import { useEffect } from 'react';
-import { api, unwrap } from '@/api/client';
-import { useQueue } from '@/api/queries';
+import { CircleCheck, CircleSlash, Hand, Play, RefreshCw } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ApiError, api, unwrap } from '@/api/client';
+import { keys, useQueue } from '@/api/queries';
 import type { DownloadClient } from '@/api/schema';
+import { blocklistQuery, queueControl } from '@/api/lot3';
 import { queueSummaryQuery } from '@/api/screens';
 import { SearchField, ThemeToggle, Topbar } from '@/components/shell/Topbar';
 import { Button } from '@/components/ui/Button';
 import { Tabs } from '@/components/ui/Tabs';
+import { toast } from '@/components/ui/Toast';
 import { formatEta, formatSpeed } from '@/lib/format';
+import { BlocklistPanel } from './BlocklistPanel';
 import { HistoryPanel, HistoryToolbar } from './HistoryPanel';
 import { QueuePanel } from './QueuePanel';
 
-type Tab = 'queue' | 'history';
+type Tab = 'queue' | 'history' | 'blocklist';
+
+const TITLE: Record<Tab, string> = { queue: 'Queue', history: 'History', blocklist: 'Blocklist' };
+const PATH: Record<Tab, '/queue' | '/history' | '/blocklist'> = {
+  queue: '/queue',
+  history: '/history',
+  blocklist: '/blocklist',
+};
 
 const clientsQuery = {
   queryKey: ['download-clients'] as const,
@@ -59,21 +70,74 @@ function Clients() {
   );
 }
 
+/** Pause all / Resume all: every Gonema download in its client (the clients' other downloads stay as they are). */
+function PauseAll() {
+  const qc = useQueryClient();
+  const queue = useQueue();
+  const [busy, setBusy] = useState(false);
+  const items = queue.data ?? [];
+  const active = items.filter((q) => q.status === 'downloading' || q.status === 'queued').length;
+  const paused = items.filter((q) => q.status === 'paused').length;
+  if (!active && !paused) return null;
+  const what: 'pause' | 'resume' = active ? 'pause' : 'resume';
+  const run = async () => {
+    setBusy(true);
+    try {
+      const r = await queueControl(what);
+      void qc.invalidateQueries({ queryKey: keys.queue });
+      const unsupported = (r.clients ?? []).filter((c) => !c.supported).map((c) => c.name);
+      toast.show({
+        tone: r.failed ? 'error' : 'neutral',
+        title: what === 'pause' ? `Paused ${r.changed} ${r.changed === 1 ? 'download' : 'downloads'}.` : `Resumed ${r.changed} ${r.changed === 1 ? 'download' : 'downloads'}.`,
+        body: [
+          r.failed ? `${r.failed} could not be changed in their client.` : '',
+          unsupported.length ? `${unsupported.join(', ')} cannot pause from Gonema.` : '',
+          what === 'pause' && !r.failed ? 'Nothing downloads until you resume.' : '',
+        ]
+          .filter(Boolean)
+          .join(' '),
+        action:
+          what === 'pause' && r.changed
+            ? { label: 'Resume', onClick: () => void queueControl('resume').then(() => qc.invalidateQueries({ queryKey: keys.queue })) }
+            : undefined,
+      });
+    } catch (e) {
+      toast.error(what === 'pause' ? 'Nothing was paused' : 'Nothing was resumed', e instanceof ApiError ? e.detail : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      loading={busy}
+      icon={what === 'pause' ? <Hand className="i" aria-hidden="true" /> : <Play className="i" aria-hidden="true" />}
+      onClick={() => void run()}
+    >
+      {what === 'pause' ? 'Pause all' : 'Resume all'}
+    </Button>
+  );
+}
+
 function ActivityScreen({ tab }: { tab: Tab }) {
   const navigate = useNavigate();
   const queue = useQueue();
   const summary = useQuery(queueSummaryQuery);
   useEffect(() => {
-    document.title = `${tab === 'queue' ? 'Queue' : 'History'} · Gonema`;
+    document.title = `${TITLE[tab]} · Gonema`;
   }, [tab]);
   const items = queue.data ?? [];
+  const blocked = useQuery(blocklistQuery).data?.length;
   const s = summary.data;
   const downloading = s?.downloading ?? items.filter((q) => q.status === 'downloading').length;
   const speed = s?.totalSpeedBps ?? items.reduce((n, q) => n + (q.speedBps || 0), 0);
   const sub =
     tab === 'history'
       ? 'Every automatic action, with the reason it was taken.'
-      : !items.length
+      : tab === 'blocklist'
+        ? 'Releases and groups Gonema will never grab again.'
+        : !items.length
         ? queue.isSuccess
           ? 'Nothing downloading.'
           : ' '
@@ -108,15 +172,18 @@ function ActivityScreen({ tab }: { tab: Tab }) {
             panelId="activity-panel"
             className="tabs-plain"
             value={tab}
-            onChange={(t) => void navigate({ to: t === 'queue' ? '/queue' : '/history' })}
+            onChange={(t) => void navigate({ to: PATH[t] })}
             items={[
               { value: 'queue', label: 'Queue', count: items.length || undefined },
               { value: 'history', label: 'History' },
+              { value: 'blocklist', label: 'Blocklist', count: blocked || undefined },
             ]}
           />
           <div className="toolbar">
             {tab === 'queue' ? (
-              <Button
+              <>
+                <PauseAll />
+                <Button
                 variant="ghost"
                 size="sm"
                 icon={<RefreshCw className="i" aria-hidden="true" />}
@@ -125,13 +192,14 @@ function ActivityScreen({ tab }: { tab: Tab }) {
               >
                 Refresh
               </Button>
-            ) : (
+              </>
+            ) : tab === 'history' ? (
               <HistoryToolbar />
-            )}
+            ) : null}
           </div>
         </div>
         <div id="activity-panel" role="tabpanel" aria-labelledby={`tab-activity-panel-${tab}`}>
-          {tab === 'queue' ? <QueuePanel /> : <HistoryPanel />}
+          {tab === 'queue' ? <QueuePanel /> : tab === 'history' ? <HistoryPanel /> : <BlocklistPanel />}
         </div>
       </main>
     </>
@@ -144,4 +212,8 @@ export function QueueScreen() {
 
 export function HistoryScreen() {
   return <ActivityScreen tab="history" />;
+}
+
+export function BlocklistScreen() {
+  return <ActivityScreen tab="blocklist" />;
 }

@@ -5,7 +5,7 @@ import { seedProgress } from './progress';
 import type {
   HistoryEntry,
   MovieDetail,
-  QualityProfile,
+  QualityProfileDetail as QualityProfile,
   QueueEntry as QueueItem,
   RootFolder,
   SavedView,

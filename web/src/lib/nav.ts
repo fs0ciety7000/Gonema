@@ -42,10 +42,10 @@ export const NAV: ReadonlyArray<{ heading: string; items: readonly NavEntry[] }>
   {
     heading: 'Library',
     items: [
-      { id: 'home', label: 'Home', icon: Gauge, path: '/home', built: false, lot: 3 },
+      { id: 'home', label: 'Home', icon: Gauge, path: '/', built: true },
       { id: 'films', label: 'Films', icon: Film, path: '/films', built: true },
       { id: 'collections', label: 'Collections', icon: Layers, path: '/collections', built: false, lot: 3 },
-      { id: 'calendar', label: 'Calendar', icon: Calendar, path: '/calendar', built: false, lot: 3 },
+      { id: 'calendar', label: 'Calendar', icon: Calendar, path: '/calendar', built: true },
       { id: 'discover', label: 'Add & discover', icon: Compass, path: '/discover', built: true },
     ],
   },
@@ -54,15 +54,15 @@ export const NAV: ReadonlyArray<{ heading: string; items: readonly NavEntry[] }>
     items: [
       { id: 'queue', label: 'Queue', icon: ArrowDownToLine, path: '/queue', built: true },
       { id: 'history', label: 'History', icon: History, path: '/history', built: true },
-      { id: 'wanted', label: 'Wanted', icon: CircleDashed, path: '/wanted', built: false, lot: 3 },
-      { id: 'blocklist', label: 'Blocklist', icon: Ban, path: '/blocklist', built: false, lot: 3 },
+      { id: 'wanted', label: 'Wanted', icon: CircleDashed, path: '/wanted', built: true },
+      { id: 'blocklist', label: 'Blocklist', icon: Ban, path: '/blocklist', built: true },
     ],
   },
   {
     heading: 'System',
     items: [
-      { id: 'health', label: 'Health', icon: Activity, path: '/health', built: false, lot: 3 },
-      { id: 'settings', label: 'Settings', icon: Settings, path: '/settings', built: false, lot: 3 },
+      { id: 'health', label: 'Health', icon: Activity, path: '/health', built: true },
+      { id: 'settings', label: 'Settings', icon: Settings, path: '/settings', built: true },
     ],
   },
 ];

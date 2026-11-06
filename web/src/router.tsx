@@ -32,12 +32,16 @@ const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   },
 });
 
-const indexRoute = createRoute({
+export const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  beforeLoad: () => {
-    throw redirect({ to: '/films', replace: true });
+  beforeLoad: async ({ context }) => {
+    // First run: the guided setup until it is complete or skipped (resumable: its state is on the server).
+    const { needsOnboarding } = await import('@/api/onboarding');
+    if (await needsOnboarding(context.queryClient)) throw redirect({ to: '/setup', replace: true });
   },
+  component: lazyRouteComponent(() => import('@/screens/home/HomeScreen'), 'HomeScreen'),
+  head: () => ({ meta: [{ title: 'Home · Gonema' }] }),
 });
 
 export const libraryRoute = createRoute({
@@ -125,6 +129,92 @@ export const historyRoute = createRoute({
   head: () => ({ meta: [{ title: 'History · Gonema' }] }),
 });
 
+const blocklistRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/blocklist',
+  component: lazyRouteComponent(() => import('@/screens/activity/ActivityScreen'), 'BlocklistScreen'),
+  head: () => ({ meta: [{ title: 'Blocklist · Gonema' }] }),
+});
+
+export type CalendarSearch = { view?: 'agenda'; month?: string; all?: true };
+
+export const calendarRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/calendar',
+  validateSearch: (raw: Record<string, unknown>): CalendarSearch => ({
+    view: raw.view === 'agenda' ? 'agenda' : undefined,
+    month: typeof raw.month === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(raw.month) ? raw.month : undefined,
+    all: raw.all === true || raw.all === '1' || raw.all === 1 ? true : undefined,
+  }),
+  component: lazyRouteComponent(() => import('@/screens/calendar/CalendarScreen'), 'CalendarScreen'),
+  head: () => ({ meta: [{ title: 'Calendar · Gonema' }] }),
+});
+
+export type WantedSearch = { kind?: 'cutoff' };
+
+export const wantedRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/wanted',
+  validateSearch: (raw: Record<string, unknown>): WantedSearch => ({
+    kind: raw.kind === 'cutoff' ? 'cutoff' : undefined,
+  }),
+  component: lazyRouteComponent(() => import('@/screens/wanted/WantedScreen'), 'WantedScreen'),
+  head: () => ({ meta: [{ title: 'Wanted · Gonema' }] }),
+});
+
+const healthRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/health',
+  component: lazyRouteComponent(() => import('@/screens/health/HealthScreen'), 'HealthScreen'),
+  head: () => ({ meta: [{ title: 'Health · Gonema' }] }),
+});
+
+const settingsIndexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings',
+  component: lazyRouteComponent(() => import('@/screens/settings/SettingsScreen'), 'SettingsScreen'),
+  head: () => ({ meta: [{ title: 'Settings · Gonema' }] }),
+});
+
+export const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings/$section',
+  component: lazyRouteComponent(() => import('@/screens/settings/SettingsScreen'), 'SettingsScreen'),
+});
+
+const settingsAnchorRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings/$section/$anchor',
+  component: lazyRouteComponent(() => import('@/screens/settings/SettingsScreen'), 'SettingsScreen'),
+});
+
+export type SetupSearch = { step?: string };
+
+export const setupRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/setup',
+  validateSearch: (raw: Record<string, unknown>): SetupSearch => ({
+    step: typeof raw.step === 'string' && /^[a-z]{2,16}$/.test(raw.step) ? raw.step : undefined,
+  }),
+  component: lazyRouteComponent(() => import('@/screens/onboarding/OnboardingScreen'), 'OnboardingScreen'),
+  head: () => ({ meta: [{ title: 'Setup · Gonema' }] }),
+});
+
+const failedDownloadRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/queue/$downloadId',
+  params: {
+    parse: (p: { downloadId: string }) => {
+      const id = Number(p.downloadId);
+      if (!Number.isInteger(id) || id < 1) throw new Error('Not a download id');
+      return { downloadId: id };
+    },
+    stringify: (p: { downloadId: number }) => ({ downloadId: String(p.downloadId) }),
+  },
+  component: lazyRouteComponent(() => import('@/screens/activity/FailedDownloadScreen'), 'FailedDownloadScreen'),
+  head: () => ({ meta: [{ title: 'Failed download · Gonema' }] }),
+});
+
 const placeholderRoutes = __GONEMA_DEV__
   ? ALL_SECTIONS.filter((s) => !s.built).map((s) =>
       createRoute({
@@ -149,13 +239,22 @@ const systemRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
-  indexRoute,
+  homeRoute,
   libraryRoute,
   movieRoute,
   searchRoute,
   discoverRoute,
   queueRoute,
   historyRoute,
+  blocklistRoute,
+  failedDownloadRoute,
+  calendarRoute,
+  wantedRoute,
+  healthRoute,
+  settingsIndexRoute,
+  settingsRoute,
+  settingsAnchorRoute,
+  setupRoute,
   ...(__GONEMA_DEV__ ? [systemRoute] : []),
   ...placeholderRoutes,
 ]);

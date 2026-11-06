@@ -8,10 +8,11 @@ import { cx } from '@/components/ui/cx';
 import { formatSpeed } from '@/lib/format';
 import { isTypingTarget } from '@/lib/keys';
 import { reachable } from '@/lib/nav';
+import { palette } from '@/lib/palette';
 import { setThemePreference, useTheme } from '@/lib/theme';
 
-/** ⌘K field. The command palette arrives in lot 3: until then the field only takes focus
- *  (⌘K / Ctrl+K / "/") and filters the current list when the screen provides onSearch. */
+/** Search field of the top bar. ⌘K / Ctrl+K opens the command palette (AppShell); "/" focuses
+ *  the field. With onSearch the field filters the current list; without it, it opens the palette. */
 export function SearchField({
   value,
   onSearch,
@@ -26,8 +27,7 @@ export function SearchField({
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const onKey = (ev: KeyboardEvent) => {
-      const typing = isTypingTarget(ev.target);
-      if (((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'k') || (!typing && ev.key === '/')) {
+      if (!isTypingTarget(ev.target) && ev.key === '/' && !ev.metaKey && !ev.ctrlKey && !ev.altKey) {
         ev.preventDefault();
         ref.current?.focus();
         ref.current?.select();
@@ -48,6 +48,15 @@ export function SearchField({
         value={value ?? ''}
         onChange={(ev) => onSearch?.(ev.target.value)}
         readOnly={!onSearch}
+        onClick={onSearch ? undefined : () => palette.open()}
+        onKeyDownCapture={(ev) => {
+          // without a list to filter, typing starts a palette search
+          if (onSearch || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+          if (ev.key === 'Enter' || ev.key.length === 1) {
+            ev.preventDefault();
+            palette.open(ev.key.length === 1 && ev.key !== ' ' ? ev.key : '');
+          }
+        }}
         onKeyDown={(ev) => {
           if (ev.key === 'Escape') {
             if (value) onSearch?.('');

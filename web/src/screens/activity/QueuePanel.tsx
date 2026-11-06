@@ -386,7 +386,7 @@ const QueueRow = memo(function QueueRow({
               Retry import
             </Button>
           ) : (
-            <Link className="btn btn-ghost btn-sm" to="/history" search={{ movie: q.movieId }}>
+            <Link className="btn btn-ghost btn-sm" to="/queue/$downloadId" params={{ downloadId: q.id }}>
               Details
             </Link>
           )}

@@ -1,13 +1,14 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
-import { ChevronDown, History as HistoryIcon, Info, X } from 'lucide-react';
+import { ChevronDown, Download, History as HistoryIcon, Info, X } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { API_ROOT } from '@/api/client';
 import { useLibrary } from '@/api/queries';
 import type { HistoryRow } from '@/api/schema';
 import { fetchHistory, type HistoryQuery } from '@/api/screens';
 import { QualityBadge, ScorePill } from '@/components/ui/Badges';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClass } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { cx } from '@/components/ui/cx';
 import { Notice, Skeleton } from '@/components/ui/Feedback';
@@ -92,8 +93,28 @@ export function HistoryToolbar() {
         options={SINCE}
         onChange={(v) => set({ since: v === 'any' ? undefined : v })}
       />
+      <a
+        className={buttonClass('ghost', 'sm')}
+        href={exportUrl(f)}
+        download
+        title="Every entry matching these filters, as a CSV file"
+      >
+        <Download className="i" aria-hidden="true" />
+        Export
+      </a>
     </>
   );
+}
+
+/** CSV export of GET /history/export with the filters on screen ("Other" exports every event). */
+export function exportUrl(f: { event: string; movie?: number; since: string }, now = Date.now()): string {
+  const q = new URLSearchParams({ format: 'csv' });
+  const events = EVENTS_OF[f.event];
+  if (events) q.set('event', events.join(','));
+  if (f.movie) q.set('movieId', String(f.movie));
+  const ms = SINCE_MS[f.since];
+  if (ms) q.set('since', new Date(now - ms).toISOString());
+  return `${API_ROOT}/history/export?${q}`;
 }
 
 function ChipMenu({

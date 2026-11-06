@@ -65,6 +65,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Release calendar
+         * @description Cinema, digital and physical release dates of the library movies in a range (both ends included, at most 400 days). Monitored movies only by default; unmonitored=true adds the unmonitored movies not released yet. Served from the in-memory index.
+         */
+        get: operations["get-calendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/collections/{id}": {
         parameters: {
             query?: never;
@@ -122,6 +142,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Home dashboard
+         * @description Library counts, wanted and upgradable, this month's activity, the queue, upcoming releases, disk space per root folder, recent activity, recently added films, health issues and the state of indexers and download clients. One call, no network access (free space is measured on the local disks).
+         */
+        get: operations["get-dashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/discover/collection/{tmdbId}": {
         parameters: {
             query?: never;
@@ -142,6 +182,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/discover/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search people on TMDB
+         * @description By name, with the movies they are known for (flagged when in the library). Cached and rate limited like every TMDB call. The filmography is at /discover/person/{tmdbId}.
+         */
+        get: operations["discover-people"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/discover/person/{tmdbId}": {
         parameters: {
             query?: never;
@@ -151,7 +211,7 @@ export interface paths {
         };
         /**
          * Filmography of a person
-         * @description Cast and crew credits merged by movie, flagged when in the library. TMDB does not return the person's name here: use the cast or crew entry it came from.
+         * @description Cast and crew credits merged by movie, flagged when in the library, with the person's profile (name, portrait, biography) from a second cached TMDB call made in parallel; person is null when only that call failed.
          */
         get: operations["discover-person"];
         put?: never;
@@ -357,6 +417,26 @@ export interface paths {
          * @description Every automatic action and user file operation with its reasons, newest first, with filters. Rows of one download chain (grab, failure, retry, import, upgrade) share chainId.
          */
         get: operations["list-history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export the history
+         * @description Every entry matching the filters of GET /history, newest first, streamed as CSV (one header row; cells that a spreadsheet would read as a formula are prefixed with ') or as a JSON array of history rows.
+         */
+        get: operations["export-history"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1148,6 +1228,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Onboarding progress
+         * @description Each setup step (TMDB key, root folder, download client, indexer, default quality profile, first film) with done or not, so the interface can guide and resume. No network access.
+         */
+        get: operations["get-onboarding"];
+        /** Skip or resume the onboarding */
+        put: operations["set-onboarding"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/qualities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The quality catalog
+         * @description Every quality, worst first, with the global size limits.
+         */
+        get: operations["list-qualities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/quality-profiles": {
         parameters: {
             query?: never;
@@ -1155,10 +1276,62 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List quality profiles */
+        /**
+         * List quality profiles
+         * @description By name, with the editor's details (entries, sizes, scores, usage).
+         */
         get: operations["list-quality-profiles"];
         put?: never;
+        /**
+         * Create a quality profile
+         * @description Validated by the quality engine: every problem is reported at once (422). A duplicate name is a conflict (409).
+         */
+        post: operations["create-quality-profile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quality-profiles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a quality profile */
+        get: operations["get-quality-profile"];
+        /**
+         * Replace a quality profile
+         * @description The files of the library are rescored with the new scores (rescoredFiles).
+         */
+        put: operations["update-quality-profile"];
         post?: never;
+        /**
+         * Delete an unused quality profile
+         * @description Refused with 409 while movies, collections or import lists use it, or when it is the last profile.
+         */
+        delete: operations["delete-quality-profile"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quality/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test a release name
+         * @description Parses the name, maps it to a quality and scores it with a profile: the matched rules and their scores. With movieId, also the decision a search would take now (accepted, rejections, upgrade of the file on disk). Pure engine, no network access.
+         */
+        post: operations["preview-release"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1179,6 +1352,46 @@ export interface paths {
         get: operations["list-queue"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/queue/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pause every download
+         * @description Pauses (or resumes) each of Gonema's active downloads in its client; the clients' other downloads are not touched. The result says per client what it supports and what was done; a failing client does not stop the others.
+         */
+        post: operations["pause-queue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/queue/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume every paused download
+         * @description Pauses (or resumes) each of Gonema's active downloads in its client; the clients' other downloads are not touched. The result says per client what it supports and what was done; a failing client does not stop the others.
+         */
+        post: operations["resume-queue"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1416,6 +1629,115 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/scoring-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List scoring rules
+         * @description In creation order (the order of score breakdowns), with conditions, a plain-English reading and the score of every profile.
+         */
+        get: operations["list-scoring-rules"];
+        put?: never;
+        /**
+         * Create a scoring rule
+         * @description Conditions are validated (and regular expressions compiled) by the quality engine; errors name the condition (422).
+         */
+        post: operations["create-scoring-rule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scoring-rules/kinds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Condition kinds of the rule editor
+         * @description Each kind with its input type and, for choices, the values the parser recognises.
+         */
+        get: operations["list-condition-kinds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scoring-rules/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Library files a draft rule matches
+         * @description Tests conditions (saved or not) against the release names of the library files: "matched 41 films".
+         */
+        post: operations["match-scoring-rule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scoring-rules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a scoring rule */
+        get: operations["get-scoring-rule"];
+        /**
+         * Replace a scoring rule
+         * @description The files of the library are rescored (rescoredFiles).
+         */
+        put: operations["update-scoring-rule"];
+        post?: never;
+        /**
+         * Delete a scoring rule
+         * @description Its scores go with it; the files of the library are rescored.
+         */
+        delete: operations["delete-scoring-rule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Command palette search
+         * @description Library films matched fuzzily from the in-memory index (prefix, word start, substring, all words, letters in order; a 4-digit word selects the year), in about a millisecond. With remote=true and a query of 3 characters or more, also TMDB movies and people (at most 4 s; a TMDB failure is reported in remote.error, never as an error status). Call it without remote on each keystroke and with remote=true debounced. Actions are defined by the interface.
+         */
+        get: operations["search-everything"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/searches/{searchId}": {
         parameters: {
             query?: never;
@@ -1453,6 +1775,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/searches/{searchId}/indexers/{indexerId}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask one indexer of an interactive search again
+         * @description Typically after it failed or timed out. Returns at once (202) with the indexer pending; its results join the same search and stream as search.batch, search.indexer_done or search.indexer_failed, then search.finished, on /events. force=true first clears the indexer's pause after repeated failures. 409 while the indexer has not answered yet.
+         */
+        post: operations["retry-search-indexer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/acquisition": {
         parameters: {
             query?: never;
@@ -1470,6 +1812,23 @@ export interface paths {
          * @description Every field is required. Out-of-range values are refused with a message per field (422). New intervals apply at once.
          */
         put: operations["set-acquisition-settings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/general": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Server settings and interface preferences */
+        get: operations["get-general-settings"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1556,6 +1915,26 @@ export interface paths {
          * @description Checks the key with TMDB, then stores it encrypted. Accepts the API Read Access Token or the API Key.
          */
         put: operations["set-tmdb-key"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/ui": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change the interface preferences
+         * @description Theme, density, defaults of the add-film dialog, calendar and week start. Shared by every browser until users arrive.
+         */
+        put: operations["set-ui-preferences"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1854,6 +2233,52 @@ export interface components {
              */
             rootFolderId?: number;
         };
+        CalendarEvent: {
+            /** @description YYYY-MM-DD */
+            date: string;
+            movie: components["schemas"]["CalendarMovie"];
+            /** @description What Gonema does about it, in plain language */
+            note: string;
+            /** @description This release meets the movie's minimum availability: Gonema searches from this date (monitored movies) */
+            searchable: boolean;
+            /** @enum {string} */
+            type: "cinema" | "digital" | "physical";
+        };
+        CalendarMovie: {
+            dominantColor: string | null;
+            hasFile: boolean;
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            minimumAvailability: "announced" | "in_cinemas" | "released";
+            monitored: boolean;
+            /** @description w342 */
+            posterUrl: string | null;
+            /** @description Quality id of the file; null without a file */
+            quality: string | null;
+            qualityName: string | null;
+            /**
+             * @description Library state
+             * @enum {string}
+             */
+            state: "available" | "missing" | "downloading" | "upgradable";
+            /**
+             * @description Release stage
+             * @enum {string}
+             */
+            status: "announced" | "in_cinemas" | "released" | "deleted";
+            title: string;
+            /** Format: int64 */
+            tmdbId: number;
+            /** Format: int64 */
+            year: number;
+        };
+        CalendarPage: {
+            end: string;
+            /** @description By date, then cinema, digital, physical, then title */
+            events: components["schemas"]["CalendarEvent"][] | null;
+            start: string;
+        };
         Candidate: {
             ambiguous?: boolean;
             /** Format: double */
@@ -1890,6 +2315,24 @@ export interface components {
              */
             failureCount: number;
             lastError?: string;
+        };
+        ClientPauseResult: {
+            /**
+             * Format: int64
+             * @description Downloads paused or resumed
+             */
+            changed: number;
+            /** Format: int64 */
+            clientId: number;
+            /** @description Why downloads failed, at most 5 */
+            errors: string[] | null;
+            /** Format: int64 */
+            failed: number;
+            /** @enum {string} */
+            kind: "sabnzbd" | "nzbget" | "qbittorrent" | "deluge" | "transmission";
+            name: string;
+            /** @description The client can pause and resume single downloads; only Gonema's downloads are touched */
+            supported: boolean;
         };
         Collection: {
             backdropPath: string | null;
@@ -1938,6 +2381,159 @@ export interface components {
             posterUrl: string | null;
             /** Format: int64 */
             tmdbId: number;
+        };
+        ConditionKindInfo: {
+            /** @enum {string} */
+            input: "choice" | "text" | "regex" | "range";
+            kind: string;
+            label: string;
+            /** @description range only: GB or year */
+            unit?: string;
+            /** @description Choices of a choice input */
+            values: string[] | null;
+        };
+        Dashboard: {
+            clients: components["schemas"]["ServiceStatus"][] | null;
+            disks: components["schemas"]["DiskUsage"][] | null;
+            /** Format: date-time */
+            generatedAt: string;
+            health: components["schemas"]["DashboardHealth"];
+            indexers: components["schemas"]["ServiceStatus"][] | null;
+            /**
+             * Format: date-time
+             * @description null before the first sync
+             */
+            lastRssSync: string | null;
+            library: components["schemas"]["LibraryStats"];
+            queue: components["schemas"]["DashboardQueue"];
+            /** @description Latest grabs, imports, upgrades and failures (8) */
+            recentActivity: components["schemas"]["HistoryRow"][] | null;
+            /** @description Latest additions (12) */
+            recentlyAdded: components["schemas"]["DashboardMovie"][] | null;
+            thisMonth: components["schemas"]["DashboardMonth"];
+            /** @description Next releases of monitored movies (60 days, at most 6) */
+            upcoming: components["schemas"]["CalendarEvent"][] | null;
+            wanted: components["schemas"]["DashboardWanted"];
+        };
+        DashboardHealth: {
+            /** Format: int64 */
+            errors: number;
+            /** Format: int64 */
+            issues: number;
+            /** @description The 3 most urgent issues */
+            top: components["schemas"]["HealthIssue"][] | null;
+            /** Format: int64 */
+            warnings: number;
+        };
+        DashboardMonth: {
+            /**
+             * Format: int64
+             * @description Movies added to the library
+             */
+            added: number;
+            /**
+             * Format: int64
+             * @description Files imported (first file of a movie)
+             */
+            imported: number;
+            /** Format: date-time */
+            since: string;
+            /**
+             * Format: int64
+             * @description Files replaced by a better one
+             */
+            upgraded: number;
+        };
+        DashboardMovie: {
+            /** Format: date-time */
+            addedAt: string;
+            dominantColor: string | null;
+            /** Format: int64 */
+            id: number;
+            monitored: boolean;
+            posterUrl: string | null;
+            state: string;
+            title: string;
+            /** Format: int64 */
+            year: number;
+        };
+        DashboardQueue: {
+            /**
+             * Format: int64
+             * @description Active queue entries
+             */
+            count: number;
+            /**
+             * Format: int64
+             * @description Entries transferring now
+             */
+            downloading: number;
+            /**
+             * Format: int64
+             * @description Longest remaining time among the downloading entries
+             */
+            etaSeconds: number | null;
+            /** @description Up to 5: downloading first, then importing, queued, paused, warnings */
+            items: components["schemas"]["DashboardQueueItem"][] | null;
+            /** Format: int64 */
+            paused: number;
+            /** Format: int64 */
+            remainingBytes: number;
+            /** Format: int64 */
+            totalSpeedBps: number;
+            /**
+             * Format: int64
+             * @description Entries with a warning
+             */
+            warnings: number;
+        };
+        DashboardQueueItem: {
+            client: string;
+            dominantColor: string | null;
+            /** Format: int64 */
+            etaSeconds: number | null;
+            /**
+             * Format: int64
+             * @description Queue entry id
+             */
+            id: number;
+            /** Format: int64 */
+            movieId: number;
+            posterUrl: string | null;
+            /** Format: double */
+            progress: number;
+            release: string;
+            /** Format: int64 */
+            size: number;
+            /** Format: int64 */
+            speedBps: number;
+            /** @enum {string} */
+            status: "queued" | "downloading" | "paused" | "completed" | "importing" | "imported" | "failed" | "warning" | "removed";
+            /** @description Movie title */
+            title: string;
+            /** Format: int64 */
+            year: number;
+        };
+        DashboardWanted: {
+            /**
+             * Format: int64
+             * @description Have a file below the profile's cutoff
+             */
+            cutoffUnmet: number;
+            /**
+             * Format: int64
+             * @description Waiting for their release
+             */
+            notYetReleased: number;
+            /**
+             * Format: int64
+             * @description Released enough for their minimum availability: Gonema searches for them
+             */
+            released: number;
+        };
+        "Delete-scoring-ruleResponse": {
+            /** Format: int64 */
+            rescoredFiles: number;
         };
         DeletedTag: {
             movieIds: number[] | null;
@@ -2033,6 +2629,36 @@ export interface components {
             totalPages: number;
             /** Format: int64 */
             totalResults: number;
+        };
+        DiskUsage: {
+            accessible: boolean;
+            /**
+             * Format: int64
+             * @description null without files
+             */
+            averageFileSize: number | null;
+            error?: string;
+            /** Format: int64 */
+            files: number;
+            /** Format: int64 */
+            freeSpace: number | null;
+            /** Format: int64 */
+            movies: number;
+            path: string;
+            /**
+             * Format: int64
+             * @description Free space / average file size; null when unknown
+             */
+            roomForFilms: number | null;
+            /** Format: int64 */
+            rootFolderId: number;
+            /**
+             * Format: int64
+             * @description Bytes of the library files in this folder
+             */
+            sizeOnDisk: number;
+            /** Format: int64 */
+            totalSpace: number | null;
         };
         DownloadClient: {
             /** @description Whether an API key is stored; it is never returned */
@@ -2190,8 +2816,25 @@ export interface components {
         Filmography: {
             /** @description Cast and crew merged by movie, deduplicated; upcoming (undated) first, then newest first */
             movies: components["schemas"]["PersonCredit"][] | null;
+            /** @description Name, portrait and biography; null when TMDB could not give them (the movies are still listed) */
+            person: components["schemas"]["PersonProfile"];
             /** Format: int64 */
             tmdbId: number;
+        };
+        GeneralSettings: {
+            /** @description Read-only here: change them in the environment and restart */
+            server: components["schemas"]["GeneralSettingsServerStruct"];
+            ui: components["schemas"]["UIPreferences"];
+        };
+        GeneralSettingsServerStruct: {
+            /** @description URL base path (GONEMA_BASE_URL) */
+            baseUrl: string;
+            /** @description Listening address (GONEMA_BIND) */
+            bind: string;
+            dataDir: string;
+            /** @description GONEMA_LOG_LEVEL */
+            logLevel: string;
+            version: string;
         };
         "Grab-search-resultRequest": {
             /** @description key of the result */
@@ -2573,6 +3216,15 @@ export interface components {
             rejections?: string[] | null;
             subtitles?: string[] | null;
             upgraded: boolean;
+        };
+        "Match-scoring-ruleRequest": {
+            conditions: components["schemas"]["ScoringCondition"][] | null;
+            /**
+             * Format: int64
+             * @description Movies returned
+             * @default 12
+             */
+            limit: number;
         };
         MediaServer: {
             baseUrl: string;
@@ -3084,6 +3736,60 @@ export interface components {
             message: string;
             ok: boolean;
         };
+        PaletteFilm: {
+            dominantColor: string | null;
+            /**
+             * @description Field that matched
+             * @enum {string}
+             */
+            field: "title" | "originalTitle";
+            /** Format: int64 */
+            id: number;
+            /**
+             * @description How it matched, best first
+             * @enum {string}
+             */
+            match: "prefix" | "word" | "substring" | "words" | "fuzzy";
+            monitored: boolean;
+            originalTitle: string;
+            /** @description w342 */
+            posterUrl: string | null;
+            quality: string | null;
+            qualityName: string | null;
+            /** @description Matched characters of field as [start, end) pairs in Unicode code points, to highlight */
+            ranges: (number[] | null)[] | null;
+            /** @enum {string} */
+            state: "available" | "missing" | "downloading" | "upgradable";
+            title: string;
+            /** Format: int64 */
+            tmdbId: number;
+            /** Format: int64 */
+            year: number;
+        };
+        PaletteRemote: {
+            /** @description Why TMDB results are missing (no key, timeout...); library hits are still returned */
+            error?: string;
+            /** @description TMDB movies, flagged when in the library */
+            movies: components["schemas"]["DiscoverMovie"][] | null;
+            people: components["schemas"]["PersonResult"][] | null;
+        };
+        PaletteResult: {
+            /** @description Library movies, best match first */
+            films: components["schemas"]["PaletteFilm"][] | null;
+            /**
+             * Format: int64
+             * @description Library movies matching, beyond the limit
+             */
+            filmsTotal: number;
+            query: string;
+            /** @description TMDB results; null unless remote=true and the query has 3 characters or more */
+            remote: components["schemas"]["PaletteRemote"];
+            /**
+             * Format: int64
+             * @description Time spent on the library hits
+             */
+            tookMicros: number;
+        };
         ParsedRelease: {
             alternateTitles?: string[] | null;
             atmos?: boolean;
@@ -3119,6 +3825,30 @@ export interface components {
             videoCodec?: string;
             /** Format: int64 */
             year?: number;
+        };
+        PauseAllResult: {
+            /** Format: int64 */
+            changed: number;
+            /** @description Per download client with active downloads, by name */
+            clients: components["schemas"]["ClientPauseResult"][] | null;
+            /** Format: int64 */
+            failed: number;
+            /** @description true for pause, false for resume */
+            paused: boolean;
+            /**
+             * Format: int64
+             * @description Downloads already in that state, importing, failed to import, or without a client
+             */
+            skipped: number;
+        };
+        PeoplePage: {
+            /** Format: int64 */
+            page: number;
+            results: components["schemas"]["PersonResult"][] | null;
+            /** Format: int64 */
+            totalPages: number;
+            /** Format: int64 */
+            totalResults: number;
         };
         Person: {
             character?: string;
@@ -3172,6 +3902,33 @@ export interface components {
              */
             year: number;
         };
+        PersonProfile: {
+            biography?: string;
+            /** @description YYYY-MM-DD */
+            birthday: string | null;
+            deathday: string | null;
+            imdbId?: string;
+            knownForDepartment?: string;
+            name: string;
+            placeOfBirth?: string;
+            /** @description w185 */
+            profileUrl: string | null;
+            /** Format: int64 */
+            tmdbId: number;
+        };
+        PersonResult: {
+            /** @description Movies they are known for, flagged when in the library */
+            knownFor: components["schemas"]["DiscoverMovie"][] | null;
+            /** @description Acting, Directing... */
+            knownForDepartment?: string;
+            name: string;
+            /** Format: double */
+            popularity: number;
+            /** @description Portrait at w185, through the image cache */
+            profileUrl: string | null;
+            /** Format: int64 */
+            tmdbId: number;
+        };
         Plan: {
             /** @description Current file, relative to the movie folder */
             fileFrom?: string;
@@ -3200,6 +3957,87 @@ export interface components {
             /** Format: int64 */
             toRootFolderId: number;
         };
+        Preview: {
+            cutoffLabel: string;
+            /** Format: int64 */
+            cutoffRank: number;
+            /** Format: int64 */
+            cutoffScore: number;
+            /** @description Only with movieId */
+            decision: components["schemas"]["PreviewDecision"];
+            /** @description A file like this one would end the upgrades: cutoff quality and cutoff score reached */
+            meetsCutoff: boolean;
+            /** Format: int64 */
+            minScore: number;
+            /**
+             * Format: double
+             * @description Time the parser took, in microseconds
+             */
+            parseMicros: number;
+            parsed: components["schemas"]["ParsedRelease"];
+            profile: string;
+            /** Format: int64 */
+            profileId: number;
+            quality: string;
+            /** @description The profile allows this quality */
+            qualityAllowed: boolean;
+            qualityName: string;
+            /**
+             * Format: int64
+             * @description Rank in the profile, higher is better; 0 when absent
+             */
+            qualityRank: number;
+            /** @description Matched rules and their scores in this profile */
+            score: components["schemas"]["Breakdown"];
+            title: string;
+        };
+        PreviewDecision: {
+            accepted: boolean;
+            /** @description null when the movie has no file */
+            currentFile: components["schemas"]["PreviewFile"];
+            /** Format: int64 */
+            movieId: number;
+            movieTitle: string;
+            /** @description Checks that were skipped (size unknown...) */
+            notes?: string[] | null;
+            rejections: components["schemas"]["Rejection"][] | null;
+            /** @description Set when the release would replace the file on disk */
+            upgrade?: components["schemas"]["UpgradeInfo"];
+        };
+        PreviewFile: {
+            /**
+             * Format: int64
+             * @description Stored score of the file
+             */
+            customScore: number;
+            quality: string;
+            qualityName: string;
+        };
+        PreviewInput: {
+            indexer?: string;
+            indexerFlags?: string[] | null;
+            /**
+             * Format: int64
+             * @description Also decide against this movie and its file
+             */
+            movieId?: number;
+            /**
+             * Format: int64
+             * @description Profile to score with; default the movie's
+             */
+            profileId?: number;
+            /**
+             * @default usenet
+             * @enum {string}
+             */
+            protocol: "usenet" | "torrent";
+            /**
+             * Format: int64
+             * @description Bytes, for size rules and limits
+             */
+            size?: number;
+            title: string;
+        };
         PreviewInputBody: {
             fileTemplate: string;
             folderTemplate: string;
@@ -3211,13 +4049,95 @@ export interface components {
             /** @description false keeps the original file names */
             renameFiles: boolean;
         };
+        ProfileEntry: {
+            allowed: boolean;
+            /** @description Group name; empty for a single quality */
+            group?: string;
+            /** @description Quality ids */
+            qualities: string[] | null;
+        };
+        ProfileRuleScore: {
+            profile: string;
+            /** Format: int64 */
+            profileId: number;
+            /** Format: int64 */
+            score: number;
+        };
+        ProfileScore: {
+            rule: string;
+            /** Format: int64 */
+            ruleId: number;
+            /** Format: int64 */
+            score: number;
+        };
+        ProfileScoreInput: {
+            /** Format: int64 */
+            ruleId: number;
+            /** Format: int64 */
+            score: number;
+        };
+        ProfileSize: {
+            /** @description The profile overrides the global limits */
+            custom: boolean;
+            /**
+             * Format: double
+             * @description 0 = no upper bound
+             */
+            maxMbPerMin: number;
+            /** Format: double */
+            minMbPerMin: number;
+            /** Format: double */
+            preferredMbPerMin: number;
+            quality: string;
+            qualityName: string;
+        };
+        ProfileSizeInput: {
+            /**
+             * Format: double
+             * @description 0 = no upper bound
+             */
+            maxMbPerMin: number;
+            /** Format: double */
+            minMbPerMin: number;
+            /** Format: double */
+            preferredMbPerMin: number;
+            quality: string;
+        };
+        ProfileUsage: {
+            /** Format: int64 */
+            collections: number;
+            /** Format: int64 */
+            importLists: number;
+            /** Format: int64 */
+            movies: number;
+        };
         PurgeOutputBody: {
             purged: components["schemas"]["RecycleEntry"][] | null;
         };
-        QualityProfile: {
+        QualityDefinition: {
+            /** @description Stable id, e.g. bluray-1080p */
+            id: string;
+            modifier: string;
+            /** @description Display name, e.g. Bluray-1080p */
+            name: string;
+            /**
+             * Format: int64
+             * @description Intrinsic rank, higher is better
+             */
+            rank: number;
+            resolution: string;
+            /** @description Global size limits (profiles may override them) */
+            sizes: components["schemas"]["SizeRange"];
+            source: string;
+        };
+        QualityProfileDetail: {
+            /** @description Display name of the cutoff item */
+            cutoffLabel: string;
             cutoffQuality: string;
             /** Format: int64 */
             cutoffScore: number;
+            /** @description Best first; the editor's rows */
+            entries: components["schemas"]["ProfileEntry"][] | null;
             /** Format: int64 */
             id: number;
             items: components["schemas"]["QualityProfileItem"][] | null;
@@ -3227,6 +4147,47 @@ export interface components {
             /** Format: int64 */
             minUpgradeStep: number;
             name: string;
+            /**
+             * @description Empty: the global setting (Settings > Acquisition)
+             * @enum {string}
+             */
+            preferredProtocol: "" | "usenet" | "torrent";
+            /** @description Every scoring rule with this profile's score (0 when unscored), in rule order */
+            scores: components["schemas"]["ProfileScore"][] | null;
+            /** @description Effective size range of every quality of the profile, in entry order */
+            sizes: components["schemas"]["ProfileSize"][] | null;
+            upgradeAllowed: boolean;
+            usage: components["schemas"]["ProfileUsage"];
+        };
+        QualityProfileInput: {
+            /** @description Group name or quality id at which quality upgrades stop */
+            cutoff: string;
+            /**
+             * Format: int64
+             * @description Upgrade until: once the file reaches the cutoff quality and this score, upgrades stop
+             */
+            cutoffScore: number;
+            /** @description Best first */
+            entries: components["schemas"]["ProfileEntry"][] | null;
+            /** @description Wanted audio languages (en, fr, pt-BR...), original, or any; empty = any */
+            languages?: string[] | null;
+            /**
+             * Format: int64
+             * @description Releases scoring lower are rejected
+             */
+            minScore: number;
+            /**
+             * Format: int64
+             * @description Minimum score gain of an upgrade at the same quality
+             */
+            minUpgradeStep: number;
+            name: string;
+            /** @enum {string} */
+            preferredProtocol?: "" | "usenet" | "torrent";
+            /** @description Scores by rule; absent keeps the stored ones; rules left out score 0 */
+            scores?: components["schemas"]["ProfileScoreInput"][];
+            /** @description Size overrides; absent keeps the stored ones (none on create); qualities left out use the global limits */
+            sizes?: components["schemas"]["ProfileSizeInput"][];
             upgradeAllowed: boolean;
         };
         QualityProfileItem: {
@@ -3235,6 +4196,14 @@ export interface components {
             /** Format: int64 */
             position: number;
             quality: string;
+        };
+        QualityProfileSaved: {
+            profile: components["schemas"]["QualityProfileDetail"];
+            /**
+             * Format: int64
+             * @description Files whose custom score changed with this edit
+             */
+            rescoredFiles: number;
         };
         QueueActions: {
             pause: boolean;
@@ -3540,8 +4509,32 @@ export interface components {
             /** Format: int64 */
             totalSpace: number | null;
         };
+        RuleMatchMovie: {
+            dominantColor: string | null;
+            /** Format: int64 */
+            id: number;
+            posterUrl: string | null;
+            title: string;
+            /** Format: int64 */
+            year: number;
+        };
+        RuleMatches: {
+            /**
+             * Format: int64
+             * @description Files of the library the conditions match
+             */
+            count: number;
+            /** @description The first matching movies */
+            movies: components["schemas"]["RuleMatchMovie"][] | null;
+        };
         RuleScore: {
             rule: string;
+            /** Format: int64 */
+            score: number;
+        };
+        RuleScoreInput: {
+            /** Format: int64 */
+            profileId: number;
             /** Format: int64 */
             score: number;
         };
@@ -3602,6 +4595,55 @@ export interface components {
             rule: string;
             /** Format: int64 */
             score: number;
+        };
+        ScoringCondition: {
+            /** @enum {string} */
+            kind: "title_regex" | "release_group" | "source" | "resolution" | "codec" | "hdr" | "audio" | "edition" | "language" | "indexer_flag" | "indexer" | "size_range" | "year_range";
+            /**
+             * Format: double
+             * @description 0 = no upper bound
+             */
+            max?: number;
+            /**
+             * Format: double
+             * @description size_range (GB) and year_range
+             */
+            min?: number;
+            /** @description The condition must not match */
+            negate?: boolean;
+            /** @description Must match; conditions of one kind that are not required are alternatives (or) */
+            required?: boolean;
+            /** @description Every kind but size_range and year_range; see GET /scoring-rules/kinds */
+            value?: string;
+        };
+        ScoringRule: {
+            conditions: components["schemas"]["ScoringCondition"][] | null;
+            description: string;
+            /** Format: int64 */
+            id: number;
+            /** @description Available to the {Score:rules} naming token */
+            includeInRename: boolean;
+            name: string;
+            /** @description The conditions in plain English, e.g. "the release is dv and is not from MiNiPiX" */
+            readsAs: string;
+            /** @description Every profile, by name, with its score (0 when unscored) */
+            scores: components["schemas"]["ProfileRuleScore"][] | null;
+        };
+        ScoringRuleInput: {
+            conditions: components["schemas"]["ScoringCondition"][] | null;
+            description?: string;
+            includeInRename?: boolean;
+            name: string;
+            /** @description Scores by profile; absent keeps the stored ones; profiles left out score 0 */
+            scores?: components["schemas"]["RuleScoreInput"][];
+        };
+        ScoringRuleSaved: {
+            /**
+             * Format: int64
+             * @description Files whose custom score changed with this edit
+             */
+            rescoredFiles: number;
+            rule: components["schemas"]["ScoringRule"];
         };
         SearchResult: {
             accepted: boolean;
@@ -3746,6 +4788,28 @@ export interface components {
             /** @description Discord: display name; ntfy: basic auth user; email: SMTP user */
             username?: string;
         };
+        ServiceStatus: {
+            /** @description Indexers: used by at least one of RSS, automatic and interactive searches */
+            enabled: boolean;
+            /** Format: int64 */
+            id: number;
+            kind: string;
+            /** @description Last error */
+            message?: string;
+            name: string;
+            /** @enum {string} */
+            protocol: "usenet" | "torrent";
+            /**
+             * @description paused: an indexer skipped after repeated failures until 'until'; off: disabled by the user
+             * @enum {string}
+             */
+            state: "ok" | "failing" | "paused" | "off";
+            /** Format: date-time */
+            until?: string;
+        };
+        "Set-onboardingRequest": {
+            dismissed: boolean;
+        };
         "Set-tmdb-keyRequest": {
             /** @description TMDB API Read Access Token or API Key */
             key: string;
@@ -3766,6 +4830,39 @@ export interface components {
              * @description Mention the recycle bin once it holds more than this many GB (1 to 100000)
              */
             recycleBinMaxGb: number;
+        };
+        SetupStatus: {
+            /** @description Every available step is done */
+            complete: boolean;
+            /** @description The user chose to skip the onboarding */
+            dismissed: boolean;
+            /** @description First step to do; empty when complete */
+            next: string;
+            /** @description In the order of the onboarding screens */
+            steps: components["schemas"]["SetupStep"][] | null;
+        };
+        SetupStep: {
+            /** @description false: arrives in a later version (the admin account comes with authentication) */
+            available: boolean;
+            /**
+             * Format: int64
+             * @description Items configured (folders, clients, indexers, profiles, films)
+             */
+            count: number;
+            done: boolean;
+            /** @enum {string} */
+            id: "account" | "tmdb" | "root_folder" | "download_client" | "indexer" | "quality_profile" | "first_movie";
+        };
+        SizeRange: {
+            /**
+             * Format: double
+             * @description 0 = no upper bound
+             */
+            maxMbPerMin: number;
+            /** Format: double */
+            minMbPerMin: number;
+            /** Format: double */
+            preferredMbPerMin: number;
         };
         SkippedPart: {
             reason: string;
@@ -3831,6 +4928,37 @@ export interface components {
             example: string;
             name: string;
         };
+        UIPreferences: {
+            /** @description The calendar shows announced unmonitored films by default */
+            calendarShowUnmonitored: boolean;
+            /** @enum {string} */
+            defaultMinimumAvailability: "announced" | "in_cinemas" | "released";
+            /**
+             * Format: int64
+             * @description Preselected profile when adding a film; null for none
+             */
+            defaultQualityProfileId: number | null;
+            /**
+             * Format: int64
+             * @description Preselected root folder; null for none
+             */
+            defaultRootFolderId: number | null;
+            /**
+             * @description Default density of lists
+             * @enum {string}
+             */
+            density: "airy" | "compact";
+            /**
+             * @description Color theme
+             * @enum {string}
+             */
+            theme: "system" | "light" | "dark";
+            /**
+             * Format: int64
+             * @description 0 Sunday, 1 Monday
+             */
+            weekStartsOn: number;
+        };
         UpdateMovieInputBody: {
             /** @enum {string} */
             minimumAvailability?: "announced" | "in_cinemas" | "released";
@@ -3880,19 +5008,33 @@ export type BulkMoveInputBody = components['schemas']['BulkMoveInputBody'];
 export type BulkRenameInputBody = components['schemas']['BulkRenameInputBody'];
 export type BulkResult = components['schemas']['BulkResult'];
 export type BulkSet = components['schemas']['BulkSet'];
+export type CalendarEvent = components['schemas']['CalendarEvent'];
+export type CalendarMovie = components['schemas']['CalendarMovie'];
+export type CalendarPage = components['schemas']['CalendarPage'];
 export type Candidate = components['schemas']['Candidate'];
 export type CheckStatus = components['schemas']['CheckStatus'];
 export type ClearMovieBlocklistResponse = components['schemas']['Clear-movie-blocklistResponse'];
 export type ClientHealth = components['schemas']['ClientHealth'];
+export type ClientPauseResult = components['schemas']['ClientPauseResult'];
 export type Collection = components['schemas']['Collection'];
 export type CollectionPart = components['schemas']['CollectionPart'];
 export type CollectionSummary = components['schemas']['CollectionSummary'];
+export type ConditionKindInfo = components['schemas']['ConditionKindInfo'];
+export type Dashboard = components['schemas']['Dashboard'];
+export type DashboardHealth = components['schemas']['DashboardHealth'];
+export type DashboardMonth = components['schemas']['DashboardMonth'];
+export type DashboardMovie = components['schemas']['DashboardMovie'];
+export type DashboardQueue = components['schemas']['DashboardQueue'];
+export type DashboardQueueItem = components['schemas']['DashboardQueueItem'];
+export type DashboardWanted = components['schemas']['DashboardWanted'];
+export type DeleteScoringRuleResponse = components['schemas']['Delete-scoring-ruleResponse'];
 export type DeletedTag = components['schemas']['DeletedTag'];
 export type Deletion = components['schemas']['Deletion'];
 export type DeliveryHealth = components['schemas']['DeliveryHealth'];
 export type DiscoverCollection = components['schemas']['DiscoverCollection'];
 export type DiscoverMovie = components['schemas']['DiscoverMovie'];
 export type DiscoverPage = components['schemas']['DiscoverPage'];
+export type DiskUsage = components['schemas']['DiskUsage'];
 export type DownloadClient = components['schemas']['DownloadClient'];
 export type DownloadClientInput = components['schemas']['DownloadClientInput'];
 export type DownloadProgress = components['schemas']['DownloadProgress'];
@@ -3903,6 +5045,8 @@ export type FileMedia = components['schemas']['FileMedia'];
 export type FileOp = components['schemas']['FileOp'];
 export type FileQuality = components['schemas']['FileQuality'];
 export type Filmography = components['schemas']['Filmography'];
+export type GeneralSettings = components['schemas']['GeneralSettings'];
+export type GeneralSettingsServerStruct = components['schemas']['GeneralSettingsServerStruct'];
 export type GrabSearchResultRequest = components['schemas']['Grab-search-resultRequest'];
 export type HealthIssue = components['schemas']['HealthIssue'];
 export type HistoryEntry = components['schemas']['HistoryEntry'];
@@ -3926,6 +5070,7 @@ export type LookupResult = components['schemas']['LookupResult'];
 export type Manifest = components['schemas']['Manifest'];
 export type ManualInputBody = components['schemas']['ManualInputBody'];
 export type ManualResult = components['schemas']['ManualResult'];
+export type MatchScoringRuleRequest = components['schemas']['Match-scoring-ruleRequest'];
 export type MediaServer = components['schemas']['MediaServer'];
 export type MediaServerInput = components['schemas']['MediaServerInput'];
 export type MediaServerTest = components['schemas']['MediaServerTest'];
@@ -3951,14 +5096,35 @@ export type NotificationInput = components['schemas']['NotificationInput'];
 export type NotificationSecretsInput = components['schemas']['NotificationSecretsInput'];
 export type NotificationSecretsSet = components['schemas']['NotificationSecretsSet'];
 export type NotificationTest = components['schemas']['NotificationTest'];
+export type PaletteFilm = components['schemas']['PaletteFilm'];
+export type PaletteRemote = components['schemas']['PaletteRemote'];
+export type PaletteResult = components['schemas']['PaletteResult'];
 export type ParsedRelease = components['schemas']['ParsedRelease'];
+export type PauseAllResult = components['schemas']['PauseAllResult'];
+export type PeoplePage = components['schemas']['PeoplePage'];
 export type Person = components['schemas']['Person'];
 export type PersonCredit = components['schemas']['PersonCredit'];
+export type PersonProfile = components['schemas']['PersonProfile'];
+export type PersonResult = components['schemas']['PersonResult'];
 export type Plan = components['schemas']['Plan'];
+export type Preview = components['schemas']['Preview'];
+export type PreviewDecision = components['schemas']['PreviewDecision'];
+export type PreviewFile = components['schemas']['PreviewFile'];
+export type PreviewInput = components['schemas']['PreviewInput'];
 export type PreviewInputBody = components['schemas']['PreviewInputBody'];
+export type ProfileEntry = components['schemas']['ProfileEntry'];
+export type ProfileRuleScore = components['schemas']['ProfileRuleScore'];
+export type ProfileScore = components['schemas']['ProfileScore'];
+export type ProfileScoreInput = components['schemas']['ProfileScoreInput'];
+export type ProfileSize = components['schemas']['ProfileSize'];
+export type ProfileSizeInput = components['schemas']['ProfileSizeInput'];
+export type ProfileUsage = components['schemas']['ProfileUsage'];
 export type PurgeOutputBody = components['schemas']['PurgeOutputBody'];
-export type QualityProfile = components['schemas']['QualityProfile'];
+export type QualityDefinition = components['schemas']['QualityDefinition'];
+export type QualityProfileDetail = components['schemas']['QualityProfileDetail'];
+export type QualityProfileInput = components['schemas']['QualityProfileInput'];
 export type QualityProfileItem = components['schemas']['QualityProfileItem'];
+export type QualityProfileSaved = components['schemas']['QualityProfileSaved'];
 export type QueueActions = components['schemas']['QueueActions'];
 export type QueueEntry = components['schemas']['QueueEntry'];
 export type QueueItem = components['schemas']['QueueItem'];
@@ -3981,21 +5147,33 @@ export type RestoreInputBody = components['schemas']['RestoreInputBody'];
 export type RestoreResult = components['schemas']['RestoreResult'];
 export type Revision = components['schemas']['Revision'];
 export type RootFolder = components['schemas']['RootFolder'];
+export type RuleMatchMovie = components['schemas']['RuleMatchMovie'];
+export type RuleMatches = components['schemas']['RuleMatches'];
 export type RuleScore = components['schemas']['RuleScore'];
+export type RuleScoreInput = components['schemas']['RuleScoreInput'];
 export type SavedView = components['schemas']['SavedView'];
 export type SavedViewInput = components['schemas']['SavedViewInput'];
 export type ScanCandidate = components['schemas']['ScanCandidate'];
 export type ScanInputBody = components['schemas']['ScanInputBody'];
 export type ScoreBreakdown = components['schemas']['ScoreBreakdown'];
 export type ScoreRule = components['schemas']['ScoreRule'];
+export type ScoringCondition = components['schemas']['ScoringCondition'];
+export type ScoringRule = components['schemas']['ScoringRule'];
+export type ScoringRuleInput = components['schemas']['ScoringRuleInput'];
+export type ScoringRuleSaved = components['schemas']['ScoringRuleSaved'];
 export type SearchResult = components['schemas']['SearchResult'];
 export type SearchSnapshot = components['schemas']['SearchSnapshot'];
 export type SearchStarted = components['schemas']['SearchStarted'];
 export type Selection = components['schemas']['Selection'];
 export type ServerPathMapping = components['schemas']['ServerPathMapping'];
 export type ServiceSettings = components['schemas']['ServiceSettings'];
+export type ServiceStatus = components['schemas']['ServiceStatus'];
+export type SetOnboardingRequest = components['schemas']['Set-onboardingRequest'];
 export type SetTmdbKeyRequest = components['schemas']['Set-tmdb-keyRequest'];
 export type Settings = components['schemas']['Settings'];
+export type SetupStatus = components['schemas']['SetupStatus'];
+export type SetupStep = components['schemas']['SetupStep'];
+export type SizeRange = components['schemas']['SizeRange'];
 export type SkippedPart = components['schemas']['SkippedPart'];
 export type Studio = components['schemas']['Studio'];
 export type SystemStatus = components['schemas']['SystemStatus'];
@@ -4004,6 +5182,7 @@ export type Tag = components['schemas']['Tag'];
 export type TagLabelBody = components['schemas']['TagLabelBody'];
 export type TestResult = components['schemas']['TestResult'];
 export type Token = components['schemas']['Token'];
+export type UiPreferences = components['schemas']['UIPreferences'];
 export type UpdateMovieInputBody = components['schemas']['UpdateMovieInputBody'];
 export type UpgradeInfo = components['schemas']['UpgradeInfo'];
 export type Video = components['schemas']['Video'];
@@ -4138,6 +5317,44 @@ export interface operations {
             };
         };
     };
+    "get-calendar": {
+        parameters: {
+            query?: {
+                /** @description YYYY-MM-DD; default the first day of the current month */
+                start?: string;
+                /** @description YYYY-MM-DD, included; default start + 41 days (a 6-week grid) */
+                end?: string;
+                /** @description Add the announced unmonitored movies */
+                unmonitored?: boolean;
+                /** @description Release types, comma-separated; all when absent */
+                types?: ("cinema" | "digital" | "physical")[] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarPage"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-collection": {
         parameters: {
             query?: never;
@@ -4242,6 +5459,35 @@ export interface operations {
             };
         };
     };
+    "get-dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dashboard"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "discover-collection": {
         parameters: {
             query?: never;
@@ -4260,6 +5506,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiscoverCollection"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "discover-people": {
+        parameters: {
+            query: {
+                query: string;
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeoplePage"];
                 };
             };
             /** @description Error */
@@ -4716,6 +5994,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HistoryPage"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "export-history": {
+        parameters: {
+            query?: {
+                /** @description Event kinds, comma-separated; all when absent */
+                event?: ("grabbed" | "grab_failed" | "grab_overridden" | "download_failed" | "download_removed" | "imported" | "upgraded" | "import_failed" | "file_deleted" | "file_renamed" | "blocklisted" | "ignored" | "metadata_changed" | "movie_added" | "movie_deleted" | "retry_scheduled" | "retries_exhausted")[] | null;
+                /** @description Only this movie (also after its removal) */
+                movieId?: number;
+                /** @description Only the entries of this download */
+                downloadId?: number;
+                /** @description Entries at or after this time (RFC 3339) */
+                since?: string;
+                /** @description Entries before this time (RFC 3339) */
+                until?: string;
+                format?: "csv" | "json";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The export */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryRow"][];
+                    "text/csv": string;
                 };
             };
             /** @description Error */
@@ -6490,6 +7810,97 @@ export interface operations {
             };
         };
     };
+    "get-onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupStatus"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "set-onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Set-onboardingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupStatus"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-qualities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualityDefinition"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "list-quality-profiles": {
         parameters: {
             query?: never;
@@ -6505,7 +7916,171 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["QualityProfile"][] | null;
+                    "application/json": components["schemas"]["QualityProfileDetail"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-quality-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QualityProfileInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualityProfileSaved"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-quality-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualityProfileDetail"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-quality-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QualityProfileInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualityProfileSaved"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "delete-quality-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "preview-release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preview"];
                 };
             };
             /** @description Error */
@@ -6535,6 +8110,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QueueEntry"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "pause-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PauseAllResult"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "resume-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PauseAllResult"];
                 };
             };
             /** @description Error */
@@ -7029,6 +8662,265 @@ export interface operations {
             };
         };
     };
+    "list-scoring-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoringRule"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-scoring-rule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScoringRuleInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoringRuleSaved"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-condition-kinds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConditionKindInfo"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "match-scoring-rule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Match-scoring-ruleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleMatches"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-scoring-rule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoringRule"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-scoring-rule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScoringRuleInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoringRuleSaved"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "delete-scoring-rule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Delete-scoring-ruleResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "search-everything": {
+        parameters: {
+            query?: {
+                q?: string;
+                /** @description Per group */
+                limit?: number;
+                /** @description Also search TMDB (q of 3 characters or more) */
+                remote?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaletteResult"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-search": {
         parameters: {
             query?: never;
@@ -7095,6 +8987,41 @@ export interface operations {
             };
         };
     };
+    "retry-search-indexer": {
+        parameters: {
+            query?: {
+                /** @description Try even if the indexer is paused after repeated failures */
+                force?: boolean;
+            };
+            header?: never;
+            path: {
+                searchId: string;
+                indexerId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchSnapshot"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-acquisition-settings": {
         parameters: {
             query?: never;
@@ -7144,6 +9071,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AcquisitionSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-general-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeneralSettings"];
                 };
             };
             /** @description Error */
@@ -7363,6 +9319,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TMDBSetting"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "set-ui-preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UIPreferences"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UIPreferences"];
                 };
             };
             /** @description Error */

@@ -3,20 +3,18 @@ import { Link, useRouterState } from '@tanstack/react-router';
 import { UserRound } from 'lucide-react';
 import { healthQuery, useLibrary, useQueue, useRootFolders, useSystemStatus } from '@/api/queries';
 import { ProgressBar } from '@/components/ui/Progress';
-import { DEV_SCREENS } from '@/lib/flags';
 import { formatBytes, formatNumber } from '@/lib/format';
 import { type NavEntry, visibleNav } from '@/lib/nav';
 import { Mark, Wordmark } from './Logo';
 
 function activeSection(pathname: string): string {
-  const seg = pathname.split('/').filter(Boolean)[0] ?? 'films';
-  return seg === 'home' ? 'home' : seg;
+  return pathname.split('/').filter(Boolean)[0] ?? 'home';
 }
 
 function Count({ entry }: { entry: NavEntry }) {
   const lib = useLibrary();
   const queue = useQueue();
-  const health = useQuery({ ...healthQuery, enabled: DEV_SCREENS });
+  const health = useQuery(healthQuery);
   if (entry.id === 'films' && lib.data) return <span className="count">{formatNumber(lib.data.length)}</span>;
   if (entry.id === 'queue' && queue.data?.length) {
     const n = queue.data.length;
@@ -74,7 +72,7 @@ export function Sidebar() {
   const status = useSystemStatus();
   return (
     <nav className="sidebar" aria-label="Main">
-      <Link className="brand" to="/films" aria-label="Gonema, films">
+      <Link className="brand" to="/" aria-label="Gonema, home">
         <Mark />
         <Wordmark />
       </Link>
