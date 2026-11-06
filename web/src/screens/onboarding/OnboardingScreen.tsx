@@ -275,6 +275,7 @@ function AccountStep({
           authenticated: true,
           method: 'session' as const,
           authMode: s?.authMode ?? 'enabled',
+          setupTokenRequired: false,
           username: data.user.username,
         }));
         void qc.invalidateQueries({ queryKey: onboardingQuery.queryKey });
@@ -285,7 +286,9 @@ function AccountStep({
         // someone (or another tab) created the account meanwhile
         void qc.invalidateQueries({ queryKey: authKey });
         setErrors({ form: 'The account already exists. Sign in with it instead.' });
-      } else if (response.status === 403 && /token/i.test(detail)) setErrors({ token: detail });
+      } else if (response.status === 403 && /setup token/i.test(detail)) setErrors({ token: detail });
+      else if (response.status === 403)
+        setErrors({ form: detail }); // e.g. Host refused (GONEMA_ALLOWED_HOSTS)
       else if (response.status === 422 && /username/i.test(detail)) setErrors({ name: detail });
       else if (response.status === 422) setErrors({ password: detail });
       else setErrors({ form: detail });
@@ -350,7 +353,13 @@ function AccountStep({
               <Field
                 label="Setup token"
                 error={errors.token}
-                hint="You are not on the server itself, so Gonema asks for proof you run it: copy the token from its logs (the line “no account exists yet”, field setup)."
+                hint={
+                  <>
+                    You are not on the server itself, so Gonema asks for proof that you run it. The token is in its log,
+                    on the line “no account exists yet” (<span className="t-mono-sm">setup=XXXX-XXXX-…</span>); in
+                    Docker: <span className="t-mono-sm">docker logs gonema</span>. Case, spaces and dashes don’t matter.
+                  </>
+                }
               >
                 {({ id, describedBy, invalid }) => (
                   <Input
@@ -363,6 +372,7 @@ function AccountStep({
                     invalid={invalid}
                     value={token}
                     maxLength={64}
+                    placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"
                     onChange={(ev) => setToken(ev.target.value)}
                   />
                 )}
@@ -1235,7 +1245,7 @@ export function OnboardingScreen() {
             go={go}
             signedIn={signedIn && !auth?.setupRequired}
             username={auth?.username}
-            needsToken={!!(auth as { setupTokenRequired?: boolean } | undefined)?.setupTokenRequired}
+            needsToken={!!auth?.setupTokenRequired}
           />
         ) : step === 'tmdb' ? (
           <Tmdb go={go} done={done.tmdb!} />

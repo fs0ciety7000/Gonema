@@ -60,11 +60,27 @@ export function mergeEntries(prev: readonly LogEntry[], add: readonly LogEntry[]
   return next.length > MAX_LINES ? next.slice(next.length - MAX_LINES) : next;
 }
 
-const Line = memo(function Line({ e, top }: { e: LogEntry; top: number }) {
+const Line = memo(function Line({
+  e,
+  top,
+  index,
+  measure,
+}: {
+  e: LogEntry;
+  top: number;
+  index: number;
+  measure: (el: HTMLElement | null) => void;
+}) {
   const attrs = attrsText(e.attrs);
   const d = new Date(e.time);
   return (
-    <li className="log-line" data-level={e.level} style={{ transform: `translateY(${top}px)` }}>
+    <li
+      ref={measure}
+      data-index={index}
+      className="log-line"
+      data-level={e.level}
+      style={{ transform: `translateY(${top}px)` }}
+    >
       <time dateTime={e.time}>{Number.isNaN(d.getTime()) ? '' : clock.format(d)}</time>
       <span className="lvl">
         <span aria-hidden="true">{SHORT[e.level]}</span>
@@ -140,7 +156,7 @@ function Viewer() {
     getScrollElement: () => scrollRef.current,
     estimateSize: () => LINE_H,
     overscan: 20,
-    measureElement: undefined,
+    getItemKey: (i) => entries[i]?.id ?? i,
   });
 
   // Follow the tail while the reader is at the bottom; otherwise count what arrives.
@@ -223,7 +239,7 @@ function Viewer() {
             <ol style={{ height: v.getTotalSize() }}>
               {items.map((it) => {
                 const e = entries[it.index]!;
-                return <Line key={e.id} e={e} top={it.start} />;
+                return <Line key={e.id} e={e} top={it.start} index={it.index} measure={v.measureElement} />;
               })}
             </ol>
           )}

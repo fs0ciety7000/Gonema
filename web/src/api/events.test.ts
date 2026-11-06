@@ -133,3 +133,25 @@ describe('EventStream', () => {
     s.stop();
   });
 });
+
+describe('EventStream and 429', () => {
+  it('waits at least the Retry-After of a 429 before reconnecting', async () => {
+    vi.useFakeTimers();
+    const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 429, headers: { 'Retry-After': '30' } }));
+    const states: number[] = [];
+    const s = new EventStream({
+      url: 'http://x/events',
+      fetch,
+      onEvent: () => {},
+      onResync: () => {},
+      backoff: () => 1000,
+      now: () => 0,
+      onState: (c) => c.nextRetryAt && states.push(c.nextRetryAt),
+    });
+    s.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(states.at(-1)).toBe(30_000);
+    s.stop();
+    vi.useRealTimers();
+  });
+});

@@ -1,6 +1,6 @@
 {
   "base": "http://127.0.0.1:7676",
-  "date": "2026-11-06T10:10:39.290Z",
+  "date": "2026-11-06T12:13:35.388Z",
   "tags": "wcag2a, wcag2aa, wcag21a, wcag21aa, best-practice",
   "screens": [
     {
@@ -354,6 +354,20 @@
       "errors": []
     },
     {
+      "screen": "onboarding-account",
+      "theme": "dark",
+      "url": "/setup?step=account",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "onboarding-account",
+      "theme": "light",
+      "url": "/setup?step=account",
+      "violations": [],
+      "errors": []
+    },
+    {
       "screen": "onboarding-tmdb",
       "theme": "dark",
       "url": "/setup?step=tmdb",
@@ -476,6 +490,140 @@
       "screen": "health",
       "theme": "light",
       "url": "/system/health",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "login",
+      "theme": "dark",
+      "url": "/login?redirect=%2Ffilms",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "login",
+      "theme": "light",
+      "url": "/login?redirect=%2Ffilms",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "login-error",
+      "theme": "dark",
+      "url": "/login",
+      "violations": [],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    {
+      "screen": "login-error",
+      "theme": "light",
+      "url": "/login",
+      "violations": [],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    {
+      "screen": "login-throttled",
+      "theme": "dark",
+      "url": "/login",
+      "violations": [],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ]
+    },
+    {
+      "screen": "login-throttled",
+      "theme": "light",
+      "url": "/login",
+      "violations": [],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ]
+    },
+    {
+      "screen": "settings-security",
+      "theme": "dark",
+      "url": "/settings/security",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-security",
+      "theme": "light",
+      "url": "/settings/security",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-security-account",
+      "theme": "dark",
+      "url": "/settings/security",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-security-account",
+      "theme": "light",
+      "url": "/settings/security",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-backups",
+      "theme": "dark",
+      "url": "/settings/backups",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-backups",
+      "theme": "light",
+      "url": "/settings/backups",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-backups-restore",
+      "theme": "dark",
+      "url": "/settings/backups",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-backups-restore",
+      "theme": "light",
+      "url": "/settings/backups",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-logs",
+      "theme": "dark",
+      "url": "/settings/logs",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-logs",
+      "theme": "light",
+      "url": "/settings/logs",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-about",
+      "theme": "dark",
+      "url": "/settings/about",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "settings-about",
+      "theme": "light",
+      "url": "/settings/about",
       "violations": [],
       "errors": []
     },

@@ -90,6 +90,8 @@ export class SseParser {
 export class EventStream {
   lastEventId: string | null = null;
   private retryMs = 3000;
+  /** Wait asked by a 429 (Retry-After), used once by the next reconnection. */
+  private retryAfterMs = 0;
   private attempt = 0;
   private controller: AbortController | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -150,6 +152,11 @@ export class EventStream {
         this.opts.onUnauthorized();
         return;
       }
+      if (res.status === 429) {
+        const h = res.headers.get('Retry-After')?.trim() ?? '';
+        const at = /^\d+$/.test(h) ? Number(h) * 1000 : Date.parse(h) - this.now();
+        this.retryAfterMs = Number.isFinite(at) && at > 0 ? Math.min(at, 10 * 60_000) : 0;
+      }
       if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
       this.attempt = 0;
       this.setState({ status: 'open', attempt: 0, nextRetryAt: null, lostAt: null });
@@ -205,7 +212,8 @@ export class EventStream {
   private scheduleReconnect() {
     if (this.stopped) return;
     this.attempt++;
-    const delay = this.backoff(this.attempt, this.retryMs);
+    const delay = Math.max(this.backoff(this.attempt, this.retryMs), this.retryAfterMs);
+    this.retryAfterMs = 0;
     const now = this.now();
     this.setState({
       status: 'reconnecting',

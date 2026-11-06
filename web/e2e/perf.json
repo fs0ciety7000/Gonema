@@ -1,112 +1,172 @@
 {
   "base": "http://127.0.0.1:7676",
-  "date": "2026-11-06T10:14:19.336Z",
+  "date": "2026-11-06T12:18:07.464Z",
   "runs": [
     {
       "layout": "grid",
       "cpuSlowdown": 1,
-      "frames": 299,
-      "fps": 59.8,
-      "avgMs": 16.72,
+      "frames": 297,
+      "fps": 59.4,
+      "avgMs": 16.83,
       "p95Ms": 16.7,
-      "p99Ms": 16.8,
-      "maxMs": 33.3,
-      "over20ms": 1
+      "p99Ms": 33.3,
+      "maxMs": 33.4,
+      "over20ms": 3
     },
     {
       "layout": "table",
       "cpuSlowdown": 1,
-      "frames": 259,
-      "fps": 51.8,
-      "avgMs": 19.3,
-      "p95Ms": 33.3,
-      "p99Ms": 33.4,
-      "maxMs": 83.2,
-      "over20ms": 38
+      "frames": 300,
+      "fps": 60,
+      "avgMs": 16.67,
+      "p95Ms": 16.7,
+      "p99Ms": 16.8,
+      "maxMs": 16.8,
+      "over20ms": 0
     },
     {
       "layout": "grid",
       "cpuSlowdown": 4,
-      "frames": 124,
-      "fps": 24.7,
-      "avgMs": 40.46,
+      "frames": 145,
+      "fps": 28.9,
+      "avgMs": 34.6,
       "p95Ms": 66.7,
-      "p99Ms": 83.3,
-      "maxMs": 83.4,
-      "over20ms": 105
+      "p99Ms": 83.4,
+      "maxMs": 99.9,
+      "over20ms": 100
     },
     {
       "layout": "table",
       "cpuSlowdown": 4,
-      "frames": 67,
-      "fps": 13.3,
-      "avgMs": 75.37,
-      "p95Ms": 116.7,
-      "p99Ms": 150,
-      "maxMs": 150,
-      "over20ms": 65
+      "frames": 111,
+      "fps": 22,
+      "avgMs": 45.49,
+      "p95Ms": 66.6,
+      "p99Ms": 66.7,
+      "maxMs": 66.7,
+      "over20ms": 108
     }
   ],
   "initial": {
-    "firstPosterMs": 466,
-    "domContentLoadedMs": 144,
-    "listRequestMs": 104,
-    "listTransferBytes": 592435,
-    "listDecodedBytes": 2974854,
-    "renderAfterListMs": 199,
-    "cls": 0.023,
+    "firstPosterMs": 487,
+    "domContentLoadedMs": 151,
+    "listRequestMs": 84,
+    "listTransferBytes": 592506,
+    "listDecodedBytes": 2974823,
+    "renderAfterListMs": 211,
+    "cls": 0.002,
     "loadedWithin1500ms": {
       "files": {
-        "index-DvC8G3kg.css": {
-          "raw": 94977,
-          "gzip": 18295
+        "index-BIRVIgOC.css": {
+          "raw": 96469,
+          "gzip": 18550
         },
-        "index-CC6HSLB2.js": {
-          "raw": 617681,
-          "gzip": 199805
+        "index-BtOMujBw.js": {
+          "raw": 480643,
+          "gzip": 154168
         },
-        "FiltersPopover-yEIhPm-3.js": {
-          "raw": 4636,
-          "gzip": 1693
+        "FiltersPopover-otidAqdJ.js": {
+          "raw": 4635,
+          "gzip": 1688
         },
-        "Field-bGwRx1y0.js": {
+        "Field-DAvMCDlX.js": {
           "raw": 988,
-          "gzip": 504
+          "gzip": 499
         },
-        "PopoverPopup-B6gAZa19.js": {
-          "raw": 7532,
-          "gzip": 2916
+        "Popover-xlqoS1bn.js": {
+          "raw": 2390,
+          "gzip": 1225
         },
-        "Popover-DBW_c5Ii.js": {
-          "raw": 2184,
-          "gzip": 1149
+        "useButton-COLSdEaL.js": {
+          "raw": 2424,
+          "gzip": 1123
         },
-        "LibraryTable-kzTZFgrE.js": {
-          "raw": 7953,
-          "gzip": 3231
+        "useHoverFloatingInteraction-ClGjEJ0R.js": {
+          "raw": 4032,
+          "gzip": 1555
         },
-        "Select-CE-E02vB.js": {
-          "raw": 27777,
-          "gzip": 9967
+        "overlayRoot-BX0-NIwT.js": {
+          "raw": 40805,
+          "gzip": 14434
+        },
+        "useOpenInteractionType-EeCw-cnr.js": {
+          "raw": 2096,
+          "gzip": 1016
+        },
+        "safePolygon-ClEWB6Tf.js": {
+          "raw": 6976,
+          "gzip": 2832
+        },
+        "useTriggerFocusGuards-D8Xj63OL.js": {
+          "raw": 535,
+          "gzip": 343
+        },
+        "LibraryTable-BAz0vkOz.css": {
+          "raw": 6016,
+          "gzip": 913
+        },
+        "PopoverPopup-DPV0MTmE.js": {
+          "raw": 7777,
+          "gzip": 3003
+        },
+        "usePositioner-BcyM13qz.js": {
+          "raw": 25661,
+          "gzip": 9978
+        },
+        "useScrollLock-CYivmSN6.js": {
+          "raw": 13288,
+          "gzip": 5091
+        },
+        "useTriggerSwitchTransition-CqbtsdfA.js": {
+          "raw": 627,
+          "gzip": 381
+        },
+        "ToolbarRootContext-mwoNeHZ8.js": {
+          "raw": 499,
+          "gzip": 347
+        },
+        "Select-CZXtK11V.js": {
+          "raw": 28127,
+          "gzip": 10053
+        },
+        "useCompositeListItem-BcmC8b8J.js": {
+          "raw": 11526,
+          "gzip": 4750
+        },
+        "LibraryTable-Wcf1-Bgz.js": {
+          "raw": 7968,
+          "gzip": 3239
+        },
+        "chevron-right-PYGo0n1Y.js": {
+          "raw": 160,
+          "gzip": 157
+        },
+        "useFocus-BbwIDOa8.js": {
+          "raw": 1822,
+          "gzip": 870
+        },
+        "MenuImpl-BzdfGxxH.js": {
+          "raw": 35576,
+          "gzip": 11445
         }
       },
-      "jsGzip": 219265,
-      "cssGzip": 18295
+      "jsGzip": 228197,
+      "cssGzip": 19463
     },
     "critical": {
       "files": {
-        "index-CC6HSLB2.js": {
-          "raw": 617681,
-          "gzip": 199805
+        "index-BtOMujBw.js": {
+          "raw": 480643,
+          "gzip": 154168
         },
-        "index-DvC8G3kg.css": {
-          "raw": 94977,
-          "gzip": 18295
+        "index-BIRVIgOC.css": {
+          "raw": 96469,
+          "gzip": 18550
         }
       },
-      "jsGzip": 199805,
-      "cssGzip": 18295
+      "jsGzip": 154168,
+      "cssGzip": 18550
     }
   },
-  "allChunks": 53
+  "allChunks": 75
 }

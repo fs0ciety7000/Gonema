@@ -208,3 +208,77 @@ C6 (studios in the credits), S7/S8 (⌘K palette, 404 "Search" button).
   calendar 3.2 KB, health 2.6 KB, wanted 2.1 KB, lot3.css 7.0 KB.
 - Scroll (10k films): grid 1× 59.8 fps (p95 16.7 ms), table 1× 51.8 fps, grid 4× 24.7 fps, table 4× 13.3 fps — same as lot 2 on this machine.
 - First poster 466 ms, CLS 0.023.
+
+
+---
+
+# Fidelity — phase 8 (sign-in, account step, Security, Backups, Logs, About, health, scroll)
+
+Captures: `node e2e/fidelity.mjs` (production build in the Go binary, demo library of 10,000 films, server in
+`GONEMA_AUTH=disabled_for_local`). New app-only captures (no mockup render exists for them): `login`, `login-error`,
+`login-throttled`, `onboarding-account`, `settings-security`, `settings-security-account`, `settings-backups`,
+`settings-backups-restore`, `settings-logs`, `settings-about`; `settings-index` now shows the Security, Backups and Logs cards.
+
+Accessibility: axe-core 4.14, same tags: **0 violations on 92/92 captures** (46 states × dark + light), plus the sign-in page
+with an error and the account step with the API key in `e2e/fresh/auth.test.mjs`. Console: only the 401 / 429 resource
+messages of the mocked failed sign-ins.
+
+## Deviations
+
+### Restored
+
+- **C24 resolved**: the setup has its 8 steps again, with **Account** second (onboarding.html `?step=account`).
+  Overlines count from it ("Step 1 · Security" … "Step 7 · First screening"); Welcome says "Seven short steps" and lists
+  "Secure the booth". **C23 resolved**: Settings has a **System** group (Security, Backups, Logs, About) and the overview
+  shows the three cards of `settings-quality.html?section=index`. **D4 / C17 resolved**: the sidebar user row shows the
+  username ("This server · Local access" in the local mode) and a **Sign out** button.
+
+### Design decisions taken while implementing
+
+| # | Difference | Justification |
+|---|---|---|
+| D32 | **Sign-in page derived from onboarding.html** (no mockup): same top bar (brand + theme), one glass-2 card of 440 px, overline + Archivo title "Back to the booth", one primary button, "Forgot the password?" disclosure. No poster wall (the library cannot be read signed out), no Kernel | DESIGN.md lists where Kernel may appear; sign-in is not one of them, and a mascot next to a password field reads as noise. |
+| D33 | Wrong credentials: a calm alert above the fields, the password cleared and focused. **429**: a "Too many attempts." status with a `m:ss` countdown from `Retry-After`; the button stays disabled until 0; screen readers hear the wait once (in minutes), not every second | Brief: "calm countdown". |
+| D34 | Account step: no "Sign-in method" select, no "add more people later" | The auth mode is a start option (`GONEMA_AUTH`), not an API setting; one account only (docs/security.md §8). The step says how to start in the local mode instead. Password hint "at least 10" (server rule), the mockup's "12" was an example. |
+| D35 | **Setup token** field on the account step only when `setupTokenRequired` (another machine than the server); the hint says where the token is (log line "no account exists yet", `docker logs gonema`) | Contract of the security fixes. 403 messages from the server (token, `GONEMA_ALLOWED_HOSTS`) are shown as they are. |
+| D36 | API key shown once in a sunken panel (read-only mono field, Copy, "You won’t see it again."); kept only in component state, dropped on Continue / dialog close; copy falls back to select + execCommand on plain-HTTP origins | Brief. The e2e checks the key is gone from the DOM after the step. |
+| D37 | Welcome's "Already have a backup? Restore it instead" is not shown | Restoring needs a signed-in caller; after the account step, Settings › Backups → Upload… → Restore… does it. |
+| D38 | Until the account exists, the other setup steps are shown but not links, "Skip for now" is hidden, and nothing else is fetched | Every other endpoint answers 401 before sign-in. In the local mode the account step stays optional (Skip works). |
+| D39 | Security: session revoke (other browsers) applies at once with **Undo** (DELETE sent when the toast closes); the current browser has "Sign out". API key **Regenerate… asks for confirmation** (the old key stops working at once), then shows the new key once in the same dialog. Password change can also replace the key (checkbox). | D25 pattern for reversible removals; the key replacement is not reversible, hence the confirm. |
+| D40 | Outbound policy, cookie mode, allowed hosts, trusted proxies and trusted origins are read only, with the variable names to change them | They are start options; the API exposes them read-only. |
+| D41 | Backups: **Restore…** and **Delete…** both confirm in a dialog. Restore says a backup of the current state is made first, that files on disk are untouched, that the master key is not included (opt-in checkbox when the archive holds one), and that it applies at the next restart; a staged restore shows a notice with **Cancel restore** | Brief; backup files are Gonema's own but are files: confirm, never Undo. Upload… accepts a `.zip` (server validates it; 413 / 507 messages shown). |
+| D42 | Logs: virtualised viewer (dynamic line heights), level filter (server-side `level`), search (server-side `q` for the history, same test client-side for the live tail), **Live** switch over `GET /logs/stream`, "N new" button when scrolled up, Download, and the runtime level (Segmented, "until the next restart") | The overview card's "Level" control is the runtime level too, as in the mockup. Log region is focusable (keyboard scrolling). |
+| D43 | Health: interrupted-import issues get **Mark as handled…** (dialog: Gonema changes no file) and a panel lists the import journal; the backup issue links "Open backups" | The API requires `confirm=true`; the dialog is the confirmation. |
+| D44 | Logs icon `file-video` in the settings nav (as the mockup) | Mockup fidelity; `file-text` would read better (to review). |
+
+### Scroll performance (library, 10,000 films)
+
+| # | Change | Why |
+|---|---|---|
+| P1 | Table rows are grid rows placed one by one (`translateY`, `contain: strict`) instead of a `<tbody>` translated as a whole; the header sticks as a block | A row entering the window no longer moves (and repaints) every other row. Roles are explicit on every element (`grid/rowgroup/row/columnheader/gridcell`), so the grid semantics do not depend on table display. |
+| P2 | Table thumbnails that enter **while the list scrolls** show the film's flat colour, the image comes when scrolling stops (150 ms); fallback tiles are flat in the table | The server only has w342 posters: decoding one per row and frame for a 20–28 px slot was the largest single cost. A w92 poster size in `internal/imagecache` would let the table keep images during scroll (backend suggestion). |
+| P3 | Table status and "more" icons are cached background images (same Lucide glyphs and DESIGN.md colours, per theme, `styles/table.css`, lazy) instead of an inline SVG per row; the header is memoised | Fewer DOM nodes per cell, cheaper paint. |
+| P4 | Poster cards mount the hover controls (shade, quality line, Search / Monitor / More, checkbox) only on the card under a mouse pointer, the grid's tab stop, or while selecting; `@starting-style` keeps their rise-in | ~40 % fewer nodes per card that scrolls in. Keyboard and touch paths unchanged (the tab stop has its controls). |
+| P5 | While the grid / table scrolls (`data-scrolling`), hover changes apply without transitions | A card passing under a resting pointer no longer starts transform / shadow / filter transitions every few frames. Hover itself stays active (motion.md perf budget). |
+
+### Initial JS (library route)
+
+- **154,168 B gzip** (lot 3: 199,805 B): menus (Base UI Menu + Floating UI) are behind a facade (`components/ui/Menu.tsx`) and
+  load when idle, on hover / focus of a trigger, or on first click (`MenuImpl.tsx`, 11.5 KB gzip + shared Base UI chunk).
+  The grid and table context menus are one anchored menu per list (`ListMenu`), so the list is no longer wrapped by Base UI.
+  Everything of phase 8 is lazy: sign-in 2.1 KB, Security 4.0 KB, Backups 3.2 KB, Logs 3.0 KB, About 1.0 KB, overview cards
+  1.5 KB, ops API 1.1 KB (gzip). The auth guard, 401 handler and user row add ~0.8 KB to the first chunk.
+- First load: the server status is requested in parallel with the sign-in state, so the demo banner does not arrive one
+  round trip later (CLS 0.003–0.023 measured, it depends on timing).
+
+### Measurements (this machine, 2026-11-06, same session, interleaved runs, median of 3)
+
+| | lot 3 build | phase 8 build |
+|---|---|---|
+| grid 1× | 59.8 fps | 60 fps |
+| table 1× | 56 fps (p95 33 ms) | **60 fps** (p95 16.8 ms) |
+| grid 4× | 23.2 fps | **30 fps** |
+| table 4× | 14.4 fps | **25.6 fps** |
+
+`npm run perf` on the final phase 8 build: grid 59.4 / 28.9 fps, table 60 / 22.0 fps (1× / 4×), first poster 487 ms, CLS 0.002. The machine was shared with
+other builds and tests (load 1.4–9): absolute numbers move between runs, the interleaved comparison does not.

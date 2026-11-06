@@ -53,9 +53,9 @@ export function SystemCards() {
   const last = backups.data?.backups?.[0];
   return (
     <>
-      <section className="panel" aria-labelledby="i7">
+      <section className="panel" aria-labelledby="sys-security">
         <div className="panel-hd">
-          <h2 id="i7">
+          <h2 id="sys-security">
             <Lock className="i" aria-hidden="true" />
             Security
           </h2>
@@ -95,9 +95,9 @@ export function SystemCards() {
           )}
         </div>
       </section>
-      <section className="panel" aria-labelledby="i8">
+      <section className="panel" aria-labelledby="sys-backups">
         <div className="panel-hd">
-          <h2 id="i8">
+          <h2 id="sys-backups">
             <HardDrive className="i" aria-hidden="true" />
             Backups
           </h2>
@@ -142,9 +142,9 @@ export function SystemCards() {
           </span>
         </div>
       </section>
-      <section className="panel span2" aria-labelledby="i9">
+      <section className="panel span2" aria-labelledby="sys-logs">
         <div className="panel-hd">
-          <h2 id="i9">
+          <h2 id="sys-logs">
             <FileVideo className="i" aria-hidden="true" />
             Logs
           </h2>

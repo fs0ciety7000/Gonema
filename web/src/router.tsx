@@ -41,6 +41,9 @@ const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   beforeLoad: async ({ context, location }) => {
     // Sign-in guard: no account yet -> the setup's account step; signed out -> the sign-in page,
     // then back to this URL. A server that cannot be reached is left to the offline screen.
+    // First load: the server status (demo banner) is asked in parallel, so the banner does not
+    // arrive one round trip later and push a painted page down (layout shift).
+    if (!context.queryClient.getQueryData(authKey)) void context.queryClient.prefetchQuery(statusQuery);
     const s = await context.queryClient.ensureQueryData(authStatusQuery).catch(() => null);
     if (!s) return;
     const path = location.pathname;
@@ -305,6 +308,8 @@ export function makeRouter(queryClient: QueryClient) {
   });
   // A 401 anywhere (session expired, revoked from another browser): sign in again, then come back.
   setUnauthorizedHandler(() => {
+    // Only a caller believed signed in is sent away; before the sign-in state is known, the guard decides.
+    if (!queryClient.getQueryData(authStatusQuery.queryKey)?.authenticated) return;
     queryClient.setQueryData(authKey, (s) => (s ? { ...s, authenticated: false, method: 'none' as const } : s));
     void queryClient.invalidateQueries({ queryKey: authKey });
     const loc = router.state.location;

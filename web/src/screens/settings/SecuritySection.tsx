@@ -20,6 +20,7 @@ import {
 } from '@/components/auth/AuthParts';
 import { StatusText } from '@/components/ui/Badges';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Dialog } from '@/components/ui/Dialog';
 import { Skeleton } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
@@ -106,15 +107,20 @@ function PasswordPanel({ hasAccount }: { hasAccount: boolean }) {
   const qc = useQueryClient();
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
+  const [newKeyToo, setNewKeyToo] = useState(false);
+  // shown once after a change with "also replace the API key", forgotten on the next action
+  const [newKey, setNewKey] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ current?: string; next?: string; form?: string }>({});
   const [blockedUntil, setBlockedUntil] = useState<number | null>(null);
   const left = useSecondsLeft(blockedUntil);
   const m = useMutation({
-    mutationFn: () => changePassword(current, next),
-    onSuccess: () => {
+    mutationFn: () => changePassword(current, next, newKeyToo),
+    onSuccess: (r) => {
       setCurrent('');
       setNext('');
       setErrors({});
+      setNewKeyToo(false);
+      setNewKey(r.apiKey ?? null);
       void qc.invalidateQueries({ queryKey: opsKeys.security });
       toast.show({ title: 'Password changed.', body: 'Every other browser was signed out; this one stays signed in.' });
     },
@@ -131,6 +137,7 @@ function PasswordPanel({ hasAccount }: { hasAccount: boolean }) {
   });
   const submit = (ev: FormEvent) => {
     ev.preventDefault();
+    setNewKey(null);
     const e: typeof errors = {};
     if (!current) e.current = 'Type the current password.';
     if (next.length < MIN_PASSWORD) e.next = `Use at least ${MIN_PASSWORD} characters.`;
@@ -179,6 +186,11 @@ function PasswordPanel({ hasAccount }: { hasAccount: boolean }) {
               </>
             )}
           </Field>
+          <Checkbox
+            checked={newKeyToo}
+            onCheckedChange={setNewKeyToo}
+            label="Also replace the API key (apps using the current one must be updated)"
+          />
           {errors.form && <p className="field-error">{errors.form}</p>}
           {blocked && (
             <p className="explain" role="status">
@@ -191,6 +203,7 @@ function PasswordPanel({ hasAccount }: { hasAccount: boolean }) {
               Change password
             </Button>
           </div>
+          {newKey && <ApiKeyReveal apiKey={newKey} />}
         </form>
       )}
     </Panel>
@@ -404,6 +417,24 @@ function Outbound({ s }: { s: SecuritySettings }) {
           </tr>
         </tbody>
       </table>
+      <dl className="kv">
+        <dt>Allowed host names</dt>
+        <dd>
+          {s.allowedHosts?.length ? (
+            <code>{s.allowedHosts.join(', ')}</code>
+          ) : (
+            'IP addresses and localhost only (GONEMA_ALLOWED_HOSTS adds names)'
+          )}
+        </dd>
+        <dt>Trusted proxies</dt>
+        <dd>
+          {s.trustedProxies?.length ? (
+            <code>{s.trustedProxies.join(', ')}</code>
+          ) : (
+            'None: forwarded headers are not trusted'
+          )}
+        </dd>
+      </dl>
       {!!s.outbound.alwaysBlocked?.length && (
         <>
           <span className="field-label">Never contacted</span>

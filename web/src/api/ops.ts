@@ -24,8 +24,10 @@ export const securityQuery = queryOptions({
 });
 
 /** Changes the password. Rate limited like sign-in: the Response is returned for Retry-After. */
-export async function changePassword(currentPassword: string, newPassword: string) {
-  const { data, error, response } = await api.PUT('/auth/password', { body: { currentPassword, newPassword } });
+export async function changePassword(currentPassword: string, newPassword: string, regenerateApiKey = false) {
+  const { data, error, response } = await api.PUT('/auth/password', {
+    body: { currentPassword, newPassword, regenerateApiKey },
+  });
   if (!response.ok) {
     const detail = (error as { detail?: string } | undefined)?.detail ?? `The server answered ${response.status}.`;
     throw Object.assign(new ApiError(response.status, detail), { response });
