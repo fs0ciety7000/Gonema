@@ -300,6 +300,7 @@ export function PosterGrid({
             aria-multiselectable="true"
             id="library-panel"
             className={cx('pg', selecting && 'selecting')}
+            data-scrolling={v.isScrolling || undefined}
             style={{ height: v.getTotalSize(), ['--cols' as string]: cols } as CSSProperties}
             onKeyDown={onKeyDown}
             onContextMenu={ctxMenu.onContextMenu}
@@ -336,6 +337,7 @@ export function PosterGrid({
                     href={hrefOf(m)}
                     selected={selection.selected.has(m.id)}
                     active={m.id === activeId}
+                    selecting={selecting}
                     live={live.get(m.id)}
                     onLinkClick={onLinkClick}
                     onSelectClick={onSelectClick}

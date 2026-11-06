@@ -31,8 +31,10 @@ describe('lot 3: home, setup, calendar, palette, wanted, blocklist, health, sett
     const page = await openPage(browser);
     await page.goto(`${BASE}/`);
     await page.waitForURL(/\/setup$/);
-    // the demo has a folder, profiles and films but no TMDB key: the setup resumes at the TMDB step
-    await page.getByRole('heading', { name: 'Connect film metadata' }).waitFor();
+    // the demo has a folder, profiles and films but no account (local mode) and no TMDB key:
+    // the setup resumes at the account step, which stays optional in the local mode
+    await page.getByRole('heading', { name: 'Secure the booth' }).waitFor();
+    await page.getByLabel('Username').waitFor();
     const steps = page.getByRole('navigation', { name: 'Setup steps' });
     await steps.getByRole('link', { name: /Library folder.*done/ }).waitFor();
     await steps.getByRole('link', { name: /Welcome/ }).click();

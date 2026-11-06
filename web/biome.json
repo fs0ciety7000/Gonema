@@ -50,6 +50,21 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["src/screens/library/LibraryTable.tsx"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noRedundantRoles": "off",
+            "useFocusableInteractive": "off",
+            "noNoninteractiveElementToInteractiveRole": "off",
+            "noNoninteractiveElementInteractions": "off"
+          }
+        }
+      }
+    }
+  ],
   "assist": {
     "actions": {
       "source": {

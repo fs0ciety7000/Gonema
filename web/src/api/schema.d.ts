@@ -74,7 +74,7 @@ export interface paths {
         get?: never;
         /**
          * Change the password
-         * @description Requires the current password. Ends every other session; a browser caller gets a fresh session cookie.
+         * @description Requires the current password. Ends every other session; a browser caller gets a fresh session cookie. With regenerateApiKey, the API key is replaced too (apps using the old one must be updated) and the new key is returned once.
          */
         put: operations["auth-change-password"];
         post?: never;
@@ -115,7 +115,7 @@ export interface paths {
         put?: never;
         /**
          * Create the admin account (first run only)
-         * @description Public while no account exists, 409 afterwards. Signs the caller in (session cookie) and returns the API key, shown only once. Password: 10 to 256 characters.
+         * @description Public while no account exists, 409 afterwards. Signs the caller in (session cookie) and returns the API key, shown only once. Password: 10 to 256 characters. Requires setupToken, the one-time token printed in the server logs, except from the server itself (loopback address and loopback Host): 403 when it is missing or wrong. 403 too when the Host header is not an IP address, localhost or an allowed host (GONEMA_ALLOWED_HOSTS).
          */
         post: operations["auth-setup"];
         delete?: never;
@@ -200,7 +200,7 @@ export interface paths {
         put?: never;
         /**
          * Add a backup archive from this computer
-         * @description multipart/form-data with a file field. The archive is validated (manifest, checksum, database integrity, schema version not newer than this Gonema) and stored as kind uploaded; restore it by name.
+         * @description multipart/form-data with a file field. The archive is validated (manifest, checksum, database integrity, schema version not newer than this Gonema) and stored as kind uploaded; restore it by name. Size limit: twice the current database, at least 1 GiB (413 above); 507 when the disk has no room for it.
          */
         post: operations["upload-backup"];
         delete?: never;
@@ -2611,6 +2611,8 @@ export interface components {
             method: "session" | "apikey" | "local" | "none";
             /** @description No account exists yet: show the account creation screen (POST /auth/setup) */
             setupRequired: boolean;
+            /** @description Only while setupRequired: POST /auth/setup needs setupToken, the one-time token printed in the server logs at startup. False for a browser on the server itself (loopback address and Host localhost, 127.0.0.1 or ::1) */
+            setupTokenRequired: boolean;
             username?: string;
         };
         AuthUser: {
@@ -4418,8 +4420,13 @@ export interface components {
             currentPassword: string;
             /** @description At least 10 characters */
             newPassword: string;
+            /** @description Also replace the API key (advised when the password may have leaked): the old key stops working and the new one is returned once, in apiKey */
+            regenerateApiKey?: boolean;
         };
         PasswordChanged: {
+            /** @description The new API key when regenerateApiKey was true, shown only now */
+            apiKey?: string;
+            apiKeyLast4?: string;
             /** @description Every other session was ended; the caller's session was renewed */
             sessionsRevoked: boolean;
         };
@@ -5353,6 +5360,8 @@ export interface components {
             status: "running" | "finished" | "failed";
         };
         SecuritySettings: {
+            /** @description GONEMA_ALLOWED_HOSTS */
+            allowedHosts: string[] | null;
             apiKey: components["schemas"]["APIKeyState"];
             /**
              * @description GONEMA_AUTH
@@ -5373,6 +5382,8 @@ export interface components {
             sessions: components["schemas"]["AuthSession"][] | null;
             /** @description GONEMA_TRUSTED_ORIGINS */
             trustedOrigins: string[] | null;
+            /** @description GONEMA_TRUSTED_PROXIES */
+            trustedProxies: string[] | null;
             /** @description null before setup (local mode only) */
             user: components["schemas"]["AuthUser"];
         };
@@ -5482,6 +5493,12 @@ export interface components {
              * @description Mention the recycle bin once it holds more than this many GB (1 to 100000)
              */
             recycleBinMaxGb: number;
+        };
+        SetupRequest: {
+            password: string;
+            /** @description The one-time setup token printed in the server logs while no account exists (line "no account exists yet"). Optional only from the server itself (loopback address with Host localhost, 127.0.0.1 or ::1); see setupTokenRequired in GET /auth/status */
+            setupToken?: string;
+            username: string;
         };
         SetupResult: {
             /** @description The API key, shown only now: store it in the app that needs it */
@@ -5859,6 +5876,7 @@ export type SetOnboardingRequest = components['schemas']['Set-onboardingRequest'
 export type SetTmdbKeyRequest = components['schemas']['Set-tmdb-keyRequest'];
 export type SetLogLevelRequest = components['schemas']['SetLogLevelRequest'];
 export type Settings = components['schemas']['Settings'];
+export type SetupRequest = components['schemas']['SetupRequest'];
 export type SetupResult = components['schemas']['SetupResult'];
 export type SetupStatus = components['schemas']['SetupStatus'];
 export type SetupStep = components['schemas']['SetupStep'];
@@ -6099,7 +6117,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Credentials"];
+                "application/json": components["schemas"]["SetupRequest"];
             };
         };
         responses: {
@@ -6114,6 +6132,15 @@ export interface operations {
                     "application/json": components["schemas"]["SetupResult"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
             /** @description Conflict */
             409: {
                 headers: {
@@ -6125,6 +6152,15 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6323,8 +6359,35 @@ export interface operations {
                     "application/json": components["schemas"]["BackupInfo"];
                 };
             };
-            /** @description Error */
-            default: {
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Insufficient Storage */
+            507: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7077,8 +7140,26 @@ export interface operations {
                     "text/event-stream": string;
                 };
             };
-            /** @description Error */
-            default: {
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7934,8 +8015,26 @@ export interface operations {
                     "text/event-stream": string;
                 };
             };
-            /** @description Error */
-            default: {
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

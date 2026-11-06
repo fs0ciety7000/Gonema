@@ -325,6 +325,8 @@ a.live-pill:hover {
 }
 .tbl .thumb .poster-fallback {
   padding: 0;
+  /* a flat tile at 20–28 px: the poster gradients cost raster time on every row that scrolls in */
+  background: var(--pf);
 }
 .tbl .thumb .pf-title,
 .tbl .thumb .pf-year,
@@ -452,6 +454,31 @@ a.live-pill:hover {
 [data-motion="reduce"] .pc-enter {
   /* biome-ignore lint/complexity/noImportantStyles: must win over gonema.css [data-motion] !important */
   animation: fade-in 150ms var(--ease-standard) both !important;
+}
+/* While the grid scrolls, hover changes apply at once: the card passing under a resting pointer
+   does not start transform / shadow / filter transitions on every frame (scroll cost). */
+.pg[data-scrolling] .pc-frame,
+.pg[data-scrolling] .pc-frame .poster-art,
+.pg[data-scrolling] .pc-shade,
+.pg[data-scrolling] .pc-actions,
+.pg[data-scrolling] .pc-hoverinfo,
+.pg[data-scrolling] .pc-select {
+  transition: none;
+}
+/* The hover controls are mounted when the pointer enters the card: they still rise in. */
+@starting-style {
+  .pc:hover .pc-actions,
+  .pc:hover .pc-hoverinfo {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  .pc:hover .pc-shade,
+  .pc:hover .pc-select {
+    opacity: 0;
+  }
+}
+.lib-tbl[data-scrolling] td {
+  transition: none;
 }
 /* Hover chrome only for fine pointers; touch shows it on focus. */
 @media not ((hover: hover) and (pointer: fine)) {
@@ -609,6 +636,64 @@ a.live-pill:hover {
 .tbl thead th {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* Library table: virtualised rows are grid rows placed one by one (translateY), each painted and
+   laid out on its own (contain: strict). The header sticks as a whole. Roles are explicit on every
+   element (role=grid/row/columnheader/gridcell), so the semantics do not depend on table display. */
+.lib-tbl {
+  display: block;
+}
+.lib-tbl thead {
+  display: block;
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--chrome-offset, 0px));
+  z-index: calc(var(--z-sticky) + 1);
+}
+.lib-tbl thead th {
+  position: static;
+  gap: 4px;
+  overflow: hidden;
+}
+.lib-tbl thead .path-root {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lib-tbl tr {
+  display: grid;
+  grid-template-columns: var(--tbl-cols);
+}
+.lib-tbl th,
+.lib-tbl td {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.lib-tbl th.r,
+.lib-tbl td.r {
+  justify-content: flex-end;
+}
+.lib-tbl td > * {
+  min-width: 0;
+}
+.lib-tbl tbody {
+  display: block;
+  position: relative;
+}
+.lib-tbl tbody tr {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--row-h) + 1px);
+  contain: strict;
+}
+.lib-tbl tbody td {
+  height: 100%;
+  overflow: hidden;
+}
+.lib-tbl tbody tr:last-child td {
+  border-bottom: 1px solid var(--border);
 }
 .tbl thead .path-root {
   font-weight: 400;

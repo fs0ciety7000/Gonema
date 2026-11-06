@@ -1,5 +1,5 @@
 import { Bookmark, BookmarkMinus, Ellipsis, Search } from 'lucide-react';
-import { type CSSProperties, type MouseEvent, memo } from 'react';
+import { type CSSProperties, type MouseEvent, memo, useState } from 'react';
 import type { LibraryItem } from '@/api/model';
 import { HdrFlag, QualityBadge, StatusBadge, StatusText } from '@/components/ui/Badges';
 import { IconButton } from '@/components/ui/Button';
@@ -22,6 +22,8 @@ type PosterCardProps = {
   selected: boolean;
   /** The roving tab stop of the grid: only this card's controls are tabbable. */
   active: boolean;
+  /** Some cards are selected: every card shows its checkbox. */
+  selecting?: boolean;
   live?: LiveDownload | undefined;
   onLinkClick: (ev: MouseEvent<HTMLAnchorElement>, movie: LibraryItem) => void;
   onSelectClick: (ev: MouseEvent<HTMLInputElement>, movie: LibraryItem) => void;
@@ -40,6 +42,7 @@ export const PosterCard = memo(function PosterCard({
   href,
   selected,
   active,
+  selecting,
   live,
   onLinkClick,
   onSelectClick,
@@ -51,6 +54,10 @@ export const PosterCard = memo(function PosterCard({
   eager,
 }: PosterCardProps) {
   const label = m.year ? `${m.title} (${m.year})` : m.title;
+  // The hover controls (quality line, Search, Monitor, More) exist only on the card under the
+  // pointer and on the grid's tab stop: ~40 % fewer nodes per card for the rows that scroll in.
+  const [pointer, setPointer] = useState(false);
+  const controls = pointer || active;
   const tab = active ? 0 : -1;
   const showBadge = status === 'missing' || status === 'failed' || status === 'unmonitored';
   const progress = live?.progress ?? m.progress;
@@ -66,6 +73,8 @@ export const PosterCard = memo(function PosterCard({
       role="gridcell"
       aria-selected={selected}
       style={style}
+      onPointerEnter={(ev) => ev.pointerType === 'mouse' && setPointer(true)}
+      onPointerLeave={() => setPointer(false)}
     >
       <div className="pc-frame" data-poster-frame={m.id}>
         <a
@@ -87,17 +96,19 @@ export const PosterCard = memo(function PosterCard({
             sizes="(max-width: 1100px) 160px, 240px"
           />
         </a>
-        <div className="pc-shade" />
+        {controls && <div className="pc-shade" />}
         <div className="pc-top">
           {showBadge && <StatusBadge status={status} onMedia />}
-          <Checkbox
-            onMedia
-            labelClassName="pc-select"
-            checked={selected}
-            tabIndex={tab}
-            aria-label={`Select ${label}`}
-            onClick={(ev) => onSelectClick(ev, m)}
-          />
+          {(controls || selecting || selected) && (
+            <Checkbox
+              onMedia
+              labelClassName="pc-select"
+              checked={selected}
+              tabIndex={tab}
+              aria-label={`Select ${label}`}
+              onClick={(ev) => onSelectClick(ev, m)}
+            />
+          )}
         </div>
         {status === 'downloading' && (
           <div className="pc-progress">
@@ -114,48 +125,50 @@ export const PosterCard = memo(function PosterCard({
             />
           </div>
         )}
-        <div className="pc-bottom">
-          <div className="pc-hoverinfo">
-            <QualityBadge quality={m.quality} />
-            {m.hdr.slice(0, 1).map((h) => (
-              <HdrFlag key={h}>{h}</HdrFlag>
-            ))}
+        {controls && (
+          <div className="pc-bottom">
+            <div className="pc-hoverinfo">
+              <QualityBadge quality={m.quality} />
+              {m.hdr.slice(0, 1).map((h) => (
+                <HdrFlag key={h}>{h}</HdrFlag>
+              ))}
+            </div>
+            <div className="pc-actions">
+              <IconButton
+                variant="on-media"
+                label={`Search for ${m.title}`}
+                title="Search  S"
+                tabIndex={tab}
+                onClick={() => onSearch(m)}
+              >
+                <Search className="i i-sm" aria-hidden="true" />
+              </IconButton>
+              <IconButton
+                variant="on-media"
+                label={m.monitored ? `Stop monitoring ${m.title}` : `Monitor ${m.title}`}
+                aria-pressed={m.monitored}
+                tabIndex={tab}
+                onClick={() => onToggleMonitor(m)}
+              >
+                {m.monitored ? (
+                  <BookmarkMinus className="i i-sm" aria-hidden="true" />
+                ) : (
+                  <Bookmark className="i i-sm" aria-hidden="true" />
+                )}
+              </IconButton>
+              <IconButton
+                variant="on-media"
+                label={`More actions for ${m.title}`}
+                aria-haspopup="menu"
+                tabIndex={tab}
+                data-more
+                onClick={(ev) => openContextMenuFrom(ev.currentTarget)}
+              >
+                <Ellipsis className="i i-sm" aria-hidden="true" />
+              </IconButton>
+            </div>
           </div>
-          <div className="pc-actions">
-            <IconButton
-              variant="on-media"
-              label={`Search for ${m.title}`}
-              title="Search  S"
-              tabIndex={tab}
-              onClick={() => onSearch(m)}
-            >
-              <Search className="i i-sm" aria-hidden="true" />
-            </IconButton>
-            <IconButton
-              variant="on-media"
-              label={m.monitored ? `Stop monitoring ${m.title}` : `Monitor ${m.title}`}
-              aria-pressed={m.monitored}
-              tabIndex={tab}
-              onClick={() => onToggleMonitor(m)}
-            >
-              {m.monitored ? (
-                <BookmarkMinus className="i i-sm" aria-hidden="true" />
-              ) : (
-                <Bookmark className="i i-sm" aria-hidden="true" />
-              )}
-            </IconButton>
-            <IconButton
-              variant="on-media"
-              label={`More actions for ${m.title}`}
-              aria-haspopup="menu"
-              tabIndex={tab}
-              data-more
-              onClick={(ev) => openContextMenuFrom(ev.currentTarget)}
-            >
-              <Ellipsis className="i i-sm" aria-hidden="true" />
-            </IconButton>
-          </div>
-        </div>
+        )}
       </div>
       <div className="pc-meta">
         <div className="pc-title">{m.title}</div>

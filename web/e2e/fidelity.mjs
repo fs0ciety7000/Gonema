@@ -328,7 +328,7 @@ SCREENS.push(
       await settle(page);
     },
   },
-  ...['welcome', 'tmdb', 'folder', 'quality'].map((step) => ({
+  ...['welcome', 'account', 'tmdb', 'folder', 'quality'].map((step) => ({
     name: `onboarding-${step}`,
     render: `onboarding-${step}`,
     url: `/setup?step=${step}`,
@@ -420,6 +420,95 @@ SCREENS.push(
       await settle(page);
     },
   },
+  // Phase 8. The demo runs with GONEMA_AUTH=disabled_for_local (no account): the sign-in page is shown
+  // by answering GET /auth/status as signed out, and its error states by answering POST /auth/login.
+  {
+    name: 'login',
+    url: '/login?redirect=%2Ffilms',
+    mock: (page) => mockSignedOut(page),
+    async prepare(page) {
+      await page.getByRole('heading', { name: 'Back to the booth' }).waitFor();
+      await settle(page);
+    },
+  },
+  {
+    name: 'login-error',
+    url: '/login',
+    mock: (page) => mockSignedOut(page, 401),
+    async prepare(page) {
+      await page.getByLabel('Username').fill('margaux');
+      await page.getByLabel('Password', { exact: true }).fill('not the password');
+      await page.getByRole('button', { name: 'Sign in' }).click();
+      await page.getByRole('alert').waitFor();
+      await settle(page);
+    },
+  },
+  {
+    name: 'login-throttled',
+    url: '/login',
+    mock: (page) => mockSignedOut(page, 429),
+    async prepare(page) {
+      await page.getByLabel('Username').fill('margaux');
+      await page.getByLabel('Password', { exact: true }).fill('not the password');
+      await page.getByRole('button', { name: 'Sign in' }).click();
+      await page.getByText('Too many attempts.').waitFor();
+      await settle(page);
+    },
+  },
+  {
+    name: 'settings-security',
+    url: '/settings/security',
+    async prepare(page) {
+      await page.getByRole('heading', { name: 'Outbound connections' }).waitFor();
+      await settle(page);
+    },
+  },
+  {
+    // signed-in state (the local demo has no account): the real answer, with an account, sessions and a key
+    name: 'settings-security-account',
+    url: '/settings/security',
+    mock: (page) => mockSecurityAccount(page),
+    async prepare(page) {
+      await page.getByText('This browser').waitFor();
+      await settle(page);
+    },
+  },
+  {
+    name: 'settings-backups',
+    url: '/settings/backups',
+    async prepare(page) {
+      await page.locator('.backups li').first().waitFor();
+      await settle(page);
+    },
+  },
+  {
+    name: 'settings-backups-restore',
+    url: '/settings/backups',
+    async prepare(page) {
+      await page
+        .getByRole('button', { name: /^Restore .*…$/ })
+        .first()
+        .click();
+      await page.getByRole('dialog', { name: 'Restore this backup?' }).waitFor();
+      await settle(page);
+    },
+  },
+  {
+    name: 'settings-logs',
+    url: '/settings/logs',
+    async prepare(page) {
+      await page.locator('.log-line').first().waitFor();
+      await settle(page);
+    },
+  },
+  {
+    name: 'settings-about',
+    url: '/settings/about',
+    async prepare(page) {
+      await page.getByRole('heading', { name: 'License and credits' }).waitFor();
+      await settle(page);
+    },
+  },
   {
     name: 'settings-indexer-dialog',
     url: '/settings/indexers',
@@ -430,6 +519,67 @@ SCREENS.push(
     },
   },
 );
+
+const json = (body, status = 200) => ({
+  status,
+  contentType: status >= 400 ? 'application/problem+json' : 'application/json',
+  body: JSON.stringify(body),
+});
+
+/** Sign-in captures: the server answers as signed out; POST /auth/login fails with `fail` (401 or 429). */
+async function mockSignedOut(page, fail) {
+  await page.route('**/api/v1/auth/status', (r) =>
+    r.fulfill(json({ setupRequired: false, authenticated: false, method: 'none', authMode: 'enabled' })),
+  );
+  if (fail)
+    await page.route('**/api/v1/auth/login', (r) =>
+      r.fulfill({
+        ...json(
+          { status: fail, detail: fail === 429 ? 'Too many failed attempts.' : 'Wrong username or password.' },
+          fail,
+        ),
+        headers: fail === 429 ? { 'Retry-After': '272' } : {},
+      }),
+    );
+}
+
+/** The real /settings/security answer, completed with what a signed-in server has. */
+async function mockSecurityAccount(page) {
+  const real = await api('/settings/security');
+  const now = Date.now();
+  const at = (h) => new Date(now - h * 3_600_000).toISOString();
+  await page.route('**/api/v1/settings/security', (r) =>
+    r.fulfill(
+      json({
+        ...real,
+        method: 'session',
+        user: { id: 1, username: 'margaux', createdAt: at(24 * 40), lastLoginAt: at(2) },
+        apiKey: { present: true, last4: '3f9a', createdAt: at(24 * 40), lastUsedAt: at(0.05) },
+        sessions: [
+          {
+            id: 3,
+            current: true,
+            createdAt: at(2),
+            lastSeenAt: at(0),
+            expiresAt: at(-24 * 30),
+            ip: '192.168.1.24',
+            userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0',
+          },
+          {
+            id: 2,
+            current: false,
+            createdAt: at(30),
+            lastSeenAt: at(5),
+            expiresAt: at(-24 * 29),
+            ip: '192.168.1.31',
+            userAgent:
+              'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+          },
+        ],
+      }),
+    ),
+  );
+}
 
 let failed;
 async function failedEntry() {

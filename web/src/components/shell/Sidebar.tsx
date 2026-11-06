@@ -80,8 +80,8 @@ function UserRow() {
   const [leaving, setLeaving] = useState(false);
   const a = auth.data;
   const local = a?.method === 'local';
-  const name = a?.username ?? (local ? 'Local access' : '…');
-  const role = local ? (a?.username ? 'Local access' : 'No sign-in on this network') : 'Admin';
+  const name = a?.username ?? (local ? 'This server' : '…');
+  const role = local ? 'Local access' : 'Admin';
   return (
     <div className="user-row">
       <span className="avatar" aria-hidden="true">

@@ -226,11 +226,23 @@ function Welcome({ go }: { go: (s: StepId) => void }) {
   );
 }
 
-function AccountStep({ go, signedIn, username }: { go: (s: StepId) => void; signedIn: boolean; username?: string }) {
+function AccountStep({
+  go,
+  signedIn,
+  username,
+  needsToken,
+}: {
+  go: (s: StepId) => void;
+  signedIn: boolean;
+  username?: string;
+  /** From another machine, the server asks for the one-time token it printed in its logs. */
+  needsToken: boolean;
+}) {
   const qc = useQueryClient();
+  const [token, setToken] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ name?: string; password?: string; form?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; password?: string; token?: string; form?: string }>({});
   const [busy, setBusy] = useState(false);
   // The key of the account just created: shown once, kept only in this component's state.
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -246,11 +258,15 @@ function AccountStep({ go, signedIn, username }: { go: (s: StepId) => void; sign
       e.password = `Use at least ${MIN_PASSWORD} characters. A short sentence is easy to remember.`;
     else if (password.length > MAX_PASSWORD) e.password = `Use at most ${MAX_PASSWORD} characters.`;
     else if (password === n) e.password = 'The password cannot be the username.';
+    if (needsToken && !token.trim()) e.token = 'Paste the setup token from the server logs.';
     setErrors(e);
-    if (e.name || e.password) return;
+    if (e.name || e.password || e.token) return;
     setBusy(true);
     try {
-      const { data, error, response } = await api.POST('/auth/setup', { body: { username: n, password } });
+      const body = { username: n, password, ...(token.trim() ? { setupToken: token.trim() } : {}) };
+      const { data, error, response } = await api.POST('/auth/setup', {
+        body: body as { username: string; password: string },
+      });
       if (response.ok && data) {
         setPassword('');
         setApiKey(data.apiKey);
@@ -269,7 +285,8 @@ function AccountStep({ go, signedIn, username }: { go: (s: StepId) => void; sign
         // someone (or another tab) created the account meanwhile
         void qc.invalidateQueries({ queryKey: authKey });
         setErrors({ form: 'The account already exists. Sign in with it instead.' });
-      } else if (response.status === 422 && /username/i.test(detail)) setErrors({ name: detail });
+      } else if (response.status === 403 && /token/i.test(detail)) setErrors({ token: detail });
+      else if (response.status === 422 && /username/i.test(detail)) setErrors({ name: detail });
       else if (response.status === 422) setErrors({ password: detail });
       else setErrors({ form: detail });
     } catch {
@@ -328,6 +345,28 @@ function AccountStep({ go, signedIn, username }: { go: (s: StepId) => void; sign
                   </Link>
                 )}
               </Notice>
+            )}
+            {needsToken && (
+              <Field
+                label="Setup token"
+                error={errors.token}
+                hint="You are not on the server itself, so Gonema asks for proof you run it: copy the token from its logs (the line “no account exists yet”, field setup)."
+              >
+                {({ id, describedBy, invalid }) => (
+                  <Input
+                    id={id}
+                    mono
+                    autoComplete="off"
+                    spellCheck={false}
+                    icon={<Lock className="i" aria-hidden="true" />}
+                    aria-describedby={describedBy}
+                    invalid={invalid}
+                    value={token}
+                    maxLength={64}
+                    onChange={(ev) => setToken(ev.target.value)}
+                  />
+                )}
+              </Field>
             )}
             <Field label="Username" error={errors.name}>
               {({ id, describedBy, invalid }) => (
@@ -1192,7 +1231,12 @@ export function OnboardingScreen() {
         ) : step === 'welcome' ? (
           <Welcome go={go} />
         ) : step === 'account' ? (
-          <AccountStep go={go} signedIn={signedIn && !auth?.setupRequired} username={auth?.username} />
+          <AccountStep
+            go={go}
+            signedIn={signedIn && !auth?.setupRequired}
+            username={auth?.username}
+            needsToken={!!(auth as { setupTokenRequired?: boolean } | undefined)?.setupTokenRequired}
+          />
         ) : step === 'tmdb' ? (
           <Tmdb go={go} done={done.tmdb!} />
         ) : step === 'folder' ? (

@@ -1,5 +1,6 @@
+import '@/styles/table.css';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
-import { ArrowDown, ArrowUp, Ellipsis } from 'lucide-react';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import {
   type KeyboardEvent,
   type MouseEvent,
@@ -8,13 +9,13 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 import type { LibraryItem } from '@/api/model';
 import type { LiveDownload } from '@/components/movie/PosterCard';
-import { QualityBadge, ScorePill, StatusText } from '@/components/ui/Badges';
-import { IconButton } from '@/components/ui/Button';
+import { QualityBadge, ScorePill } from '@/components/ui/Badges';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { cx } from '@/components/ui/cx';
 import { ListMenu, openContextMenuFrom, useListMenu } from '@/components/ui/Menu';
@@ -201,20 +202,67 @@ export function LibraryTable({
 
   const all = items.length > 0 && items.every((m) => selection.selected.has(m.id));
   const some = !all && items.some((m) => selection.selected.has(m.id));
-  const visible = COLUMNS.filter((c) => columns.has(c.id));
+  const visible = useMemo(() => COLUMNS.filter((c) => columns.has(c.id)), [columns]);
   const vItems = v.getVirtualItems();
-  const padTop = vItems.length ? vItems[0]!.start - v.options.scrollMargin : 0;
-  const padBottom = vItems.length ? v.getTotalSize() - (vItems[vItems.length - 1]!.end - v.options.scrollMargin) : 0;
+  // Rows are placed one by one (grid rows of fixed height): a row entering the window never moves
+  // the others, so the browser paints only that row (see e2e/fidelity.md, scroll performance).
+  const template = `44px minmax(0, 1fr) ${visible.map((c) => `${c.width}px`).join(' ')} 48px`;
   const ariaSort = (k?: SortKey) =>
     k && k === sort ? (dir === 'asc' ? 'ascending' : 'descending') : k ? 'none' : undefined;
+
+  // The header does not change while scrolling: built once per sort / selection / columns change.
+  const { selectAll, clear } = selection;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: ariaSort derives from sort and dir
+  const head = useMemo(
+    () => (
+      <thead role="rowgroup">
+        <tr aria-rowindex={1} role="row">
+          <th className="c-check" scope="col" role="columnheader">
+            <Checkbox
+              checked={all}
+              indeterminate={some}
+              aria-label={all ? 'Clear the selection' : `Select all ${items.length.toLocaleString('en-US')} films`}
+              onCheckedChange={(c) => (c ? selectAll() : clear())}
+            />
+          </th>
+          <th scope="col" role="columnheader" aria-sort={ariaSort('title')}>
+            <SortButton label="Title" active={sort === 'title'} dir={dir} onClick={() => onSort('title')} />
+          </th>
+          {visible.map((c) => (
+            <th key={c.id} scope="col" role="columnheader" className={c.align} aria-sort={ariaSort(c.sort)}>
+              {c.sort ? (
+                <SortButton label={c.label} active={sort === c.sort} dir={dir} onClick={() => onSort(c.sort!)} />
+              ) : (
+                <>
+                  {c.label}
+                  {c.id === 'path' && pathRoot && (
+                    <>
+                      {' '}
+                      <span className="t-muted path-root">{pathRoot}</span>
+                    </>
+                  )}
+                </>
+              )}
+            </th>
+          ))}
+          <th scope="col" role="columnheader">
+            <span className="sr-only">Actions</span>
+          </th>
+        </tr>
+      </thead>
+    ),
+    [all, some, sort, dir, visible, pathRoot, items.length, onSort, selectAll, clear],
+  );
 
   return (
     <>
       {/* biome-ignore lint/a11y/noStaticElementInteractions: right click on a row opens the list's menu (keyboard: Shift+F10, or the row's "more" button) */}
       <div className="table-wrap" onContextMenu={ctxMenu.onContextMenu}>
         <table
-          className="tbl"
-          // biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: ARIA grid on a table (multi-select, DESIGN.md)
+          className="tbl lib-tbl"
+          data-scrolling={v.isScrolling || undefined}
+          style={{ ['--tbl-cols' as string]: template }}
+          // ARIA grid on a table (multi-select, DESIGN.md); roles are explicit on every element (biome.json override)
           role="grid"
           aria-label="Films"
           aria-rowcount={items.length + 1}
@@ -222,55 +270,9 @@ export function LibraryTable({
           aria-busy={loading || undefined}
           id="library-panel"
         >
-          <colgroup>
-            <col style={{ width: 44 }} />
-            <col />
-            {visible.map((c) => (
-              <col key={c.id} style={{ width: c.width }} />
-            ))}
-            <col style={{ width: 48 }} />
-          </colgroup>
-          <thead>
-            <tr aria-rowindex={1}>
-              <th className="c-check" scope="col">
-                <Checkbox
-                  checked={all}
-                  indeterminate={some}
-                  aria-label={all ? 'Clear the selection' : `Select all ${items.length.toLocaleString('en-US')} films`}
-                  onCheckedChange={(c) => (c ? selection.selectAll() : selection.clear())}
-                />
-              </th>
-              <th scope="col" aria-sort={ariaSort('title')}>
-                <SortButton label="Title" active={sort === 'title'} dir={dir} onClick={() => onSort('title')} />
-              </th>
-              {visible.map((c) => (
-                <th key={c.id} scope="col" className={c.align} aria-sort={ariaSort(c.sort)}>
-                  {c.sort ? (
-                    <SortButton label={c.label} active={sort === c.sort} dir={dir} onClick={() => onSort(c.sort!)} />
-                  ) : (
-                    <>
-                      {c.label}
-                      {c.id === 'path' && pathRoot && (
-                        <>
-                          {' '}
-                          <span className="t-muted path-root">{pathRoot}</span>
-                        </>
-                      )}
-                    </>
-                  )}
-                </th>
-              ))}
-              <th scope="col">
-                <span className="sr-only">Actions</span>
-              </th>
-            </tr>
-          </thead>
-          {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: keyboard navigation of the rows (role=grid), delegated */}
-          <tbody
-            ref={bodyRef}
-            onKeyDown={onKeyDown}
-            style={padTop ? { transform: `translateY(${padTop}px)` } : undefined}
-          >
+          {head}
+          {/* keyboard navigation of the rows (role=grid), delegated */}
+          <tbody ref={bodyRef} onKeyDown={onKeyDown} role="rowgroup" style={{ height: v.getTotalSize() }}>
             {vItems.map((vr) => {
               const m = items[vr.index]!;
               return (
@@ -278,6 +280,8 @@ export function LibraryTable({
                   key={m.id}
                   m={m}
                   index={vr.index}
+                  top={vr.start - v.options.scrollMargin}
+                  scrolling={v.isScrolling}
                   selected={selection.selected.has(m.id)}
                   active={m.id === activeId}
                   context={ctxOpen && ctx?.id === m.id}
@@ -292,13 +296,6 @@ export function LibraryTable({
                 />
               );
             })}
-          </tbody>
-          {/* Height of the rows outside the window, in one spacer row after them (rows above are
-              moved with a transform), so the sticky header spans the whole list. */}
-          <tbody aria-hidden="true" className="spacer-body">
-            <tr className="spacer">
-              <td colSpan={visible.length + 3} style={{ height: padTop + padBottom }} />
-            </tr>
           </tbody>
         </table>
       </div>
@@ -319,6 +316,10 @@ export function LibraryTable({
 type RowProps = {
   m: LibraryItem;
   index: number;
+  /** Offset of the row in the body (px). */
+  top: number;
+  /** The list is scrolling: rows that enter now show their colour until it stops (no image decode per frame). */
+  scrolling: boolean;
   selected: boolean;
   active: boolean;
   context: boolean;
@@ -336,6 +337,8 @@ type RowProps = {
 const TableRow = memo(function TableRow({
   m,
   index,
+  top,
+  scrolling,
   selected,
   active,
   context,
@@ -349,6 +352,10 @@ const TableRow = memo(function TableRow({
   onSelectClick,
 }: RowProps) {
   const s = displayStatus(m);
+  const [thumb, setThumb] = useState(!scrolling);
+  useEffect(() => {
+    if (!scrolling) setThumb(true);
+  }, [scrolling]);
   const text =
     s === 'downloading' && lv
       ? [`${Math.round(lv.progress * 100)}%`, formatEta(lv.etaSeconds)].filter(Boolean).join(' · ')
@@ -358,6 +365,8 @@ const TableRow = memo(function TableRow({
   return (
     <tr
       data-movie-id={m.id}
+      role="row"
+      style={{ transform: `translateY(${top}px)` }}
       aria-rowindex={index + 2}
       aria-selected={selected}
       tabIndex={active ? 0 : -1}
@@ -367,7 +376,7 @@ const TableRow = memo(function TableRow({
         if (ev.target === ev.currentTarget) onActive(index);
       }}
     >
-      <td className="c-check">
+      <td role="gridcell" className="c-check">
         <Checkbox
           checked={selected}
           tabIndex={-1}
@@ -375,10 +384,10 @@ const TableRow = memo(function TableRow({
           onClick={(ev) => onSelectClick(ev, m)}
         />
       </td>
-      <td className={cx(s === 'unmonitored' && 'unmon')}>
+      <td role="gridcell" className={cx(s === 'unmonitored' && 'unmon')}>
         <div className="t-cell">
           <span className="thumb" data-poster-frame={m.id}>
-            <PosterArt src={m.posterUrl} title={m.title} color={m.dominantColor} />
+            <PosterArt src={thumb ? m.posterUrl : null} title={m.title} color={m.dominantColor} />
           </span>
           <a
             className="name"
@@ -395,36 +404,49 @@ const TableRow = memo(function TableRow({
           {m.year > 0 && <span className="yr">{m.year}</span>}
         </div>
       </td>
-      {columns.has('quality') && <td>{m.quality ? <QualityBadge quality={m.quality} /> : <Dash />}</td>}
-      {columns.has('size') && <td className="r">{m.size ? formatBytes(m.size) : <Dash />}</td>}
-      {columns.has('score') && (
-        <td className="r">{m.score !== null && m.quality ? <ScorePill score={m.score} /> : <Dash />}</td>
-      )}
-      {columns.has('status') && (
-        <td>
-          <StatusText status={s}>{text}</StatusText>
+      {columns.has('quality') && <td role="gridcell">{m.quality ? <QualityBadge quality={m.quality} /> : <Dash />}</td>}
+      {columns.has('size') && (
+        <td role="gridcell" className="r">
+          {m.size ? formatBytes(m.size) : <Dash />}
         </td>
       )}
-      {columns.has('added') && <td className="muted">{formatDate(m.addedAt)}</td>}
+      {columns.has('score') && (
+        <td role="gridcell" className="r">
+          {m.score !== null && m.quality ? <ScorePill score={m.score} /> : <Dash />}
+        </td>
+      )}
+      {columns.has('status') && (
+        <td role="gridcell">
+          <span className="status" data-status={s}>
+            <span className="ico" aria-hidden="true" />
+            {text}
+          </span>
+        </td>
+      )}
+      {columns.has('added') && (
+        <td role="gridcell" className="muted">
+          {formatDate(m.addedAt)}
+        </td>
+      )}
       {columns.has('path') && (
-        <td className="mono">
+        <td role="gridcell" className="mono">
           <span className="path" title={root ? `${root.replace(/\/+$/, '')}/${folderOf(m)}` : folderOf(m)}>
             <span className="t-muted">…/</span>
             {m.quality ? folderOf(m) : <span className="t-muted">{folderOf(m)}</span>}
           </span>
         </td>
       )}
-      <td>
-        <IconButton
-          size="sm"
-          className="row-more"
-          label={`Actions for ${m.title}`}
+      <td role="gridcell">
+        <button
+          type="button"
+          className="icon-btn sm row-more"
+          aria-label={`Actions for ${m.title}`}
           aria-haspopup="menu"
           tabIndex={-1}
           onClick={(ev) => openContextMenuFrom(ev.currentTarget)}
         >
-          <Ellipsis className="i i-sm" aria-hidden="true" />
-        </IconButton>
+          <span className="ico ico-more" aria-hidden="true" />
+        </button>
       </td>
     </tr>
   );
