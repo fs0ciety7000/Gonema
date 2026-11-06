@@ -113,7 +113,7 @@ func New(d Deps) *Server {
 	h := s.withAuth(mux) // every /api route needs a caller, see auth_middleware.go
 	if d.BaseURL != "" {
 		outer := http.NewServeMux()
-		outer.Handle(d.BaseURL+"/", http.StripPrefix(d.BaseURL, mux))
+		outer.Handle(d.BaseURL+"/", http.StripPrefix(d.BaseURL, h)) // h, not mux: auth and CSRF apply under the base URL too
 		outer.Handle("GET "+d.BaseURL, http.RedirectHandler(d.BaseURL+"/", http.StatusMovedPermanently))
 		outer.HandleFunc("GET /health", handleHealth)
 		h = outer
