@@ -2,7 +2,7 @@ import '@/styles/lot2.css';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
 import { ChevronDown, ChevronRight, ChevronUp, Ellipsis, Play, ScanSearch, Search } from 'lucide-react';
-import { type CSSProperties, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, api, unwrap } from '@/api/client';
 import type { LibraryItem } from '@/api/model';
 import { collectionQuery, keys, useLibrary, useMovie, useProfiles } from '@/api/queries';
@@ -39,8 +39,6 @@ import {
 } from './parts';
 import { FilmSettings } from './Settings';
 
-const CollectionDialog = lazy(() => import('./CollectionDialog'));
-
 const route = getRouteApi('/films/$movieId');
 const languageName = (() => {
   try {
@@ -63,7 +61,6 @@ export function MovieScreen() {
   const actions = useMovieActions();
   const [trailer, setTrailer] = useState(false);
   const [castOpen, setCastOpen] = useState(false);
-  const [collectionOpen, setCollectionOpen] = useState(false);
   const h1 = useRef<HTMLHeadingElement>(null);
 
   const item: LibraryItem | undefined = useMemo(() => lib.data?.find((m) => m.id === movieId), [lib.data, movieId]);
@@ -479,10 +476,10 @@ export function MovieScreen() {
                           minimumAvailability: m.minimumAvailability,
                         }}
                       />
-                      <Button variant="ghost" size="sm" aria-haspopup="dialog" onClick={() => setCollectionOpen(true)}>
+                      <Link className={buttonClass('ghost', 'sm')} to="/collections" search={{ id: m.collection.id }}>
                         Open
                         <ChevronRight className="i" aria-hidden="true" />
-                      </Button>
+                      </Link>
                     </div>
                   </div>
                 </section>
@@ -545,22 +542,6 @@ export function MovieScreen() {
         <TrailerDialog open={trailer} onOpenChange={setTrailer} youtubeKey={video.youtubeKey} title={m.title} />
       )}
       {m && <CastDialog open={castOpen} onOpenChange={setCastOpen} cast={cast} crew={crew} title={m.title} />}
-      {m?.collection?.id && collectionOpen && (
-        <Suspense fallback={null}>
-          <CollectionDialog
-            id={m.collection.id}
-            name={m.collection.name}
-            currentId={m.id}
-            open={collectionOpen}
-            onOpenChange={setCollectionOpen}
-            defaults={{
-              qualityProfileId: m.qualityProfileId,
-              rootFolderId: m.rootFolderId,
-              minimumAvailability: m.minimumAvailability,
-            }}
-          />
-        </Suspense>
-      )}
     </div>
   );
 }

@@ -38,6 +38,10 @@ export type LibraryItem = {
   tagIds: number[];
 };
 
+/** Thumbnail of a server poster URL (w342 → w92, ~2 KB): tables, strips, small rows. */
+export const posterThumb = (url: string | null | undefined): string | null =>
+  url ? url.replace('/w342/', '/w92/') : null;
+
 type Raw = Record<string, unknown>;
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null);

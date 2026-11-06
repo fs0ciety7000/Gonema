@@ -480,6 +480,14 @@ a.live-pill:hover {
 .lib-tbl[data-scrolling] td {
   transition: none;
 }
+/* While the list scrolls, only the card or row already under the pointer keeps taking it: the others
+   ignore it until scrolling stops (150 ms). The browser's hit test after each scrolled frame then has
+   almost nothing to visit, and no card starts hovering (and mounting its controls) as it passes under
+   a resting pointer. The hovered one stays hovered while it is under the pointer (motion.md budget). */
+.pg[data-scrolling] .pc:not(:hover),
+.lib-tbl[data-scrolling] tbody tr:not(:hover) {
+  pointer-events: none;
+}
 /* Hover chrome only for fine pointers; touch shows it on focus. */
 @media not ((hover: hover) and (pointer: fine)) {
   .pc:hover:not(:has(:focus-visible)) .pc-frame {

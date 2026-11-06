@@ -1,3 +1,4 @@
+import '@/styles/v11.css';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Check,
@@ -44,6 +45,7 @@ import { Switch } from '@/components/ui/Switch';
 import { toast } from '@/components/ui/Toast';
 import { formatNumber, formatScore } from '@/lib/format';
 import { errorText } from './form';
+import { GroupDialog, GroupMenu } from './QualityGroups';
 import {
   conditionError,
   draftError,
@@ -58,6 +60,7 @@ import {
   sizeRange,
   splitValues,
   toInput,
+  ungroupQuality,
 } from './qualityModel';
 
 /** Integer field that accepts "+40", "−20" and "-20". */
@@ -122,6 +125,11 @@ function QualityList({
   const [drag, setDrag] = useState<{ from: number; over: number } | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const [announce, setAnnounce] = useState('');
+  const [groupDialog, setGroupDialog] = useState<{ rename?: string } | null>(null);
+  const change = (d: ProfileDraft, said: string) => {
+    set(d);
+    setAnnounce(said);
+  };
   const move = (from: number, to: number) => {
     const entries = moveEntry(draft.entries, from, to);
     set({ ...draft, entries });
@@ -194,10 +202,37 @@ function QualityList({
         <span className="sr-only">{names.get(q) ?? q}</span>
       </span>
       <span className="sz">{e.allowed ? sizeRange(sizes.get(q)) : '—'}</span>
+      {inGroup && e.group ? (
+        <IconButton
+          size="sm"
+          className="q-out"
+          label={`Take ${names.get(q) ?? q} out of ${e.group}`}
+          title="Take out of the group"
+          onClick={() => change(ungroupQuality(draft, e.group!, q), `${names.get(q) ?? q} taken out of ${e.group}.`)}
+        >
+          <X className="i i-sm" aria-hidden="true" />
+        </IconButton>
+      ) : (
+        <span />
+      )}
     </span>
   );
   return (
     <>
+      <div className="row ql-head">
+        <span className="field-label">
+          Allowed qualities <span className="t-muted fw-400">best first · drag or use the arrows to reorder</span>
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={<Layers className="i" aria-hidden="true" />}
+          aria-haspopup="dialog"
+          onClick={() => setGroupDialog({})}
+        >
+          Group
+        </Button>
+      </div>
       <ul
         className="ql"
         aria-label="Qualities, best first"
@@ -237,7 +272,16 @@ function QualityList({
                       aria-label={`Allow group ${e.group}`}
                     />
                     <Layers className="i i-xs" aria-hidden="true" />
-                    {e.group} <span className="t-muted">· equal, best score wins</span>
+                    <span className="gname">
+                      {e.group} <span className="t-muted">· equal, best score wins</span>
+                    </span>
+                    <GroupMenu
+                      draft={draft}
+                      index={i}
+                      names={names}
+                      onRename={() => setGroupDialog({ rename: e.group })}
+                      onChange={change}
+                    />
                   </div>
                   {e.qualities.map((q) => row(e, q, i, true))}
                 </>
@@ -270,6 +314,14 @@ function QualityList({
       <span className="sr-only" aria-live="polite">
         {announce}
       </span>
+      <GroupDialog
+        open={!!groupDialog}
+        onOpenChange={(o) => !o && setGroupDialog(null)}
+        draft={draft}
+        names={names}
+        rename={groupDialog?.rename}
+        onChange={change}
+      />
     </>
   );
 }
@@ -945,12 +997,6 @@ export default function QualitySection() {
                 )}
               </Field>
               <div>
-                <div className="row ql-head">
-                  <span className="field-label">
-                    Allowed qualities{' '}
-                    <span className="t-muted fw-400">best first · drag or use the arrows to reorder</span>
-                  </span>
-                </div>
                 <QualityList draft={draft} set={setDraft} names={names} sizes={sizes} />
               </div>
               {draft.upgradeAllowed && (

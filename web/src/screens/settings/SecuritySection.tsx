@@ -533,7 +533,8 @@ function Sessions({ s }: { s: SecuritySettings }) {
           <ul className="sess" aria-label="Signed-in browsers">
             {list.map((x) => {
               const name = deviceOf(x.userAgent);
-              const net = networkOf(x.ip);
+              // the server says how the browser came in; the address alone cannot tell a proxy
+              const net = x.via === 'proxy' ? 'Through your reverse proxy' : networkOf(x.ip);
               return (
                 <li key={x.id}>
                   <span className="dev" aria-hidden="true">

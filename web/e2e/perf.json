@@ -1,20 +1,9 @@
 {
   "base": "http://127.0.0.1:7676",
-  "date": "2026-11-06T13:34:00.966Z",
+  "date": "2026-11-06T17:27:21.156Z",
   "runs": [
     {
       "layout": "grid",
-      "cpuSlowdown": 1,
-      "frames": 299,
-      "fps": 59.8,
-      "avgMs": 16.72,
-      "p95Ms": 16.7,
-      "p99Ms": 16.8,
-      "maxMs": 33.3,
-      "over20ms": 1
-    },
-    {
-      "layout": "table",
       "cpuSlowdown": 1,
       "frames": 300,
       "fps": 60,
@@ -25,148 +14,163 @@
       "over20ms": 0
     },
     {
+      "layout": "table",
+      "cpuSlowdown": 1,
+      "frames": 299,
+      "fps": 59.8,
+      "avgMs": 16.72,
+      "p95Ms": 16.7,
+      "p99Ms": 16.8,
+      "maxMs": 33.3,
+      "over20ms": 1
+    },
+    {
       "layout": "grid",
       "cpuSlowdown": 4,
-      "frames": 155,
-      "fps": 30.8,
-      "avgMs": 32.47,
-      "p95Ms": 50.1,
-      "p99Ms": 83.3,
-      "maxMs": 83.3,
-      "over20ms": 101
+      "frames": 192,
+      "fps": 38.3,
+      "avgMs": 26.13,
+      "p95Ms": 50,
+      "p99Ms": 66.6,
+      "maxMs": 66.7,
+      "over20ms": 81
     },
     {
       "layout": "table",
       "cpuSlowdown": 4,
-      "frames": 104,
-      "fps": 20.7,
-      "avgMs": 48.4,
+      "frames": 108,
+      "fps": 21.6,
+      "avgMs": 46.29,
       "p95Ms": 66.7,
       "p99Ms": 83.4,
-      "maxMs": 100,
-      "over20ms": 103
+      "maxMs": 99.9,
+      "over20ms": 106
     }
   ],
   "initial": {
-    "firstPosterMs": 427,
-    "domContentLoadedMs": 116,
-    "listRequestMs": 73,
-    "listTransferBytes": 592513,
-    "listDecodedBytes": 2974869,
-    "renderAfterListMs": 200,
-    "cls": 0.002,
+    "firstPosterMs": 498,
+    "domContentLoadedMs": 134,
+    "listRequestMs": 99,
+    "listTransferBytes": 592426,
+    "listDecodedBytes": 2974823,
+    "renderAfterListMs": 242,
+    "cls": 0.003,
     "loadedWithin1500ms": {
       "files": {
-        "index-BIRVIgOC.css": {
-          "raw": 96469,
-          "gzip": 18550
+        "index-CH6IbLej.css": {
+          "raw": 96571,
+          "gzip": 18571
         },
-        "index-Xw2CFVeC.js": {
-          "raw": 480782,
-          "gzip": 154236
+        "index-C2r_v8pt.js": {
+          "raw": 485969,
+          "gzip": 155839
         },
-        "FiltersPopover-DTJUFJv2.js": {
-          "raw": 4635,
-          "gzip": 1689
+        "useButton-C3ERgA8c.js": {
+          "raw": 2424,
+          "gzip": 1125
         },
-        "Field-D-IbMRfp.js": {
+        "Popover-Brlfp1ic.js": {
+          "raw": 2391,
+          "gzip": 1226
+        },
+        "Field-DdEOIyiq.js": {
           "raw": 988,
-          "gzip": 504
-        },
-        "Popover-CefQk4NH.js": {
-          "raw": 2390,
-          "gzip": 1229
+          "gzip": 501
         },
         "LibraryTable-BAz0vkOz.css": {
           "raw": 6016,
           "gzip": 913
         },
-        "useButton-r8uumxsj.js": {
-          "raw": 2424,
-          "gzip": 1125
+        "FiltersPopover-BGy7FDfK.js": {
+          "raw": 4635,
+          "gzip": 1685
         },
-        "useOpenInteractionType-DB1HrAN-.js": {
-          "raw": 2096,
-          "gzip": 1017
+        "overlayRoot-Bd7AwoL-.js": {
+          "raw": 39288,
+          "gzip": 14080
         },
-        "overlayRoot-DVP13S_v.js": {
-          "raw": 40805,
-          "gzip": 14435
-        },
-        "useHoverFloatingInteraction-3qxopX9W.js": {
-          "raw": 4032,
-          "gzip": 1557
-        },
-        "useTriggerFocusGuards-DK-UjHqJ.js": {
+        "useTriggerFocusGuards-TIePCOtT.js": {
           "raw": 535,
-          "gzip": 343
+          "gzip": 342
         },
-        "safePolygon-DU7dsO2S.js": {
+        "useHoverFloatingInteraction-yiYV8K2F.js": {
+          "raw": 4032,
+          "gzip": 1556
+        },
+        "useOpenInteractionType-XfHqIowd.js": {
+          "raw": 2096,
+          "gzip": 1007
+        },
+        "safePolygon-28Bsc8yY.js": {
           "raw": 6976,
-          "gzip": 2834
+          "gzip": 2835
         },
-        "usePositioner-D2ahgOia.js": {
-          "raw": 25661,
-          "gzip": 9979
+        "PopoverPopup-BQGpFC8G.js": {
+          "raw": 7810,
+          "gzip": 3013
         },
-        "PopoverPopup-DiAHV0xj.js": {
-          "raw": 7777,
-          "gzip": 3006
+        "store-BUCBXbRf.js": {
+          "raw": 1559,
+          "gzip": 588
         },
-        "ToolbarRootContext-CTevHNa0.js": {
+        "ToolbarRootContext-DToefCVb.js": {
           "raw": 499,
-          "gzip": 349
+          "gzip": 346
         },
-        "useTriggerSwitchTransition-B1jiDZ7O.js": {
+        "useTriggerSwitchTransition-CTTttmDo.js": {
           "raw": 627,
-          "gzip": 381
+          "gzip": 380
         },
-        "Select-Cama2-Y9.js": {
-          "raw": 28127,
-          "gzip": 10046
+        "useScrollLock-qVQbBaiq.js": {
+          "raw": 13290,
+          "gzip": 5095
         },
-        "useScrollLock-S4Bz5nPS.js": {
-          "raw": 13288,
-          "gzip": 5093
+        "usePositioner-dHUNbSQI.js": {
+          "raw": 25661,
+          "gzip": 9986
         },
-        "useCompositeListItem-C04ys1eC.js": {
-          "raw": 11526,
-          "gzip": 4751
-        },
-        "chevron-right-DM1aqAGu.js": {
+        "chevron-right-CK_jAAvy.js": {
           "raw": 160,
-          "gzip": 158
+          "gzip": 157
         },
-        "LibraryTable-UeVSfB98.js": {
-          "raw": 7968,
-          "gzip": 3233
+        "Select-B9W5gr1h.js": {
+          "raw": 28132,
+          "gzip": 10049
         },
-        "MenuImpl-DGMoKtvN.js": {
-          "raw": 35576,
-          "gzip": 11451
+        "useCompositeListItem-CQLVZGrt.js": {
+          "raw": 11520,
+          "gzip": 4746
         },
-        "useFocus-DNjRqWs8.js": {
+        "LibraryTable-CeWPTVAU.js": {
+          "raw": 7880,
+          "gzip": 3210
+        },
+        "useFocus-DoSOL_D6.js": {
           "raw": 1822,
-          "gzip": 872
+          "gzip": 868
+        },
+        "MenuImpl-DsNRedUb.js": {
+          "raw": 35586,
+          "gzip": 11472
         }
       },
-      "jsGzip": 228288,
-      "cssGzip": 19463
+      "jsGzip": 230106,
+      "cssGzip": 19484
     },
     "critical": {
       "files": {
-        "index-Xw2CFVeC.js": {
-          "raw": 480782,
-          "gzip": 154236
+        "index-C2r_v8pt.js": {
+          "raw": 485969,
+          "gzip": 155839
         },
-        "index-BIRVIgOC.css": {
-          "raw": 96469,
-          "gzip": 18550
+        "index-CH6IbLej.css": {
+          "raw": 96571,
+          "gzip": 18571
         }
       },
-      "jsGzip": 154236,
-      "cssGzip": 18550
+      "jsGzip": 155839,
+      "cssGzip": 18571
     }
   },
-  "allChunks": 78
+  "allChunks": 90
 }

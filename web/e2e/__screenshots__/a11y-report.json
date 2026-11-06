@@ -1,6 +1,6 @@
 {
   "base": "http://127.0.0.1:7676",
-  "date": "2026-11-06T13:28:02.672Z",
+  "date": "2026-11-06T17:16:34.945Z",
   "tags": "wcag2a, wcag2aa, wcag21a, wcag21aa, best-practice",
   "screens": [
     {
@@ -680,6 +680,132 @@
       "screen": "settings-indexer-dialog",
       "theme": "light",
       "url": "/settings/indexers",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "collections",
+      "theme": "dark",
+      "url": "/collections",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "collections",
+      "theme": "light",
+      "url": "/collections",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "collections-detail",
+      "theme": "dark",
+      "url": "/collections?id=19",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "collections-detail",
+      "theme": "light",
+      "url": "/collections?id=19",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "collections-empty",
+      "theme": "dark",
+      "url": "/collections",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "collections-empty",
+      "theme": "light",
+      "url": "/collections",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-import-folder",
+      "theme": "dark",
+      "url": "/discover?tab=import",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-import-folder",
+      "theme": "light",
+      "url": "/discover?tab=import",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-import-scan",
+      "theme": "dark",
+      "url": "/discover?tab=import&scan=9101",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-import-scan",
+      "theme": "light",
+      "url": "/discover?tab=import&scan=9101",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-import-review",
+      "theme": "dark",
+      "url": "/discover?tab=import&scan=9101",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-import-review",
+      "theme": "light",
+      "url": "/discover?tab=import&scan=9101",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-import-review-tablet",
+      "theme": "dark",
+      "url": "/discover?tab=import&scan=9101",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-import-review-tablet",
+      "theme": "light",
+      "url": "/discover?tab=import&scan=9101",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-import-match",
+      "theme": "dark",
+      "url": "/discover?tab=import&scan=9101",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-import-match",
+      "theme": "light",
+      "url": "/discover?tab=import&scan=9101",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-import-done",
+      "theme": "dark",
+      "url": "/discover?tab=import&scan=9101",
+      "violations": [],
+      "errors": []
+    },
+    {
+      "screen": "library-import-done",
+      "theme": "light",
+      "url": "/discover?tab=import&scan=9101",
       "violations": [],
       "errors": []
     },

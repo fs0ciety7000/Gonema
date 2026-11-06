@@ -15,7 +15,7 @@ import {
   Ticket,
   TriangleAlert,
 } from 'lucide-react';
-import { type CSSProperties, useEffect, useMemo } from 'react';
+import { type CSSProperties, useEffect, useMemo, useState } from 'react';
 import { dashboardQuery, healthChecksQuery, runHealthChecks } from '@/api/lot3';
 import { useProgress } from '@/api/progress';
 import { keys, useLibrary } from '@/api/queries';
@@ -27,6 +27,7 @@ import { Notice, Skeleton } from '@/components/ui/Feedback';
 import { PosterArt } from '@/components/ui/PosterArt';
 import { ProgressBar } from '@/components/ui/Progress';
 import { toast } from '@/components/ui/toastStore';
+import { startBulk } from '@/lib/bulkSearch';
 import { formatBytes, formatClock, formatEta, formatNumber, formatSpeed } from '@/lib/format';
 import { displayStatus, statusText } from '@/lib/status';
 import { EVENT } from '@/screens/movie/parts';
@@ -117,6 +118,7 @@ function Tile({
   value,
   sub,
   link,
+  action,
 }: {
   id: string;
   icon: LucideIcon;
@@ -124,6 +126,8 @@ function Tile({
   value: string | null;
   sub?: string;
   link?: { to: string; search?: Record<string, unknown>; label: string };
+  /** An action instead of a link (the wanted tile's bulk search). */
+  action?: { label: string; onClick: () => void; busy?: boolean };
 }) {
   return (
     <section className="panel tile c3" aria-labelledby={id}>
@@ -138,6 +142,11 @@ function Tile({
           {link.label}
         </Link>
       )}
+      {action && (
+        <button type="button" className="s" aria-busy={action.busy || undefined} onClick={action.onClick}>
+          {action.label}
+        </button>
+      )}
     </section>
   );
 }
@@ -147,6 +156,16 @@ function Tiles({ d }: { d: Dashboard | undefined }) {
   const w = d?.wanted;
   const m = d?.thisMonth;
   const wanted = w ? w.released + w.notYetReleased : null;
+  const [busy, setBusy] = useState(false);
+  const searchReleased = {
+    label: `Search the ${formatNumber(w?.released ?? 0)} released`,
+    busy,
+    onClick: () => {
+      if (busy) return;
+      setBusy(true);
+      void startBulk({ filter: 'missing_released' }).finally(() => setBusy(false));
+    },
+  };
   return (
     <>
       <Tile
@@ -162,7 +181,8 @@ function Tiles({ d }: { d: Dashboard | undefined }) {
         label="Wanted"
         value={wanted == null ? null : formatNumber(wanted)}
         sub={w ? `${formatNumber(w.released)} released, ${formatNumber(w.notYetReleased)} not out yet` : undefined}
-        link={wanted ? { to: '/wanted', label: 'See what’s missing' } : undefined}
+        action={w?.released ? searchReleased : undefined}
+        link={!w?.released && wanted ? { to: '/wanted', label: 'See what’s missing' } : undefined}
       />
       <Tile
         id="t-up"

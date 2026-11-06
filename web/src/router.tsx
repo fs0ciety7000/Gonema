@@ -122,19 +122,42 @@ export const searchRoute = createRoute({
   component: lazyRouteComponent(() => import('@/screens/search/InteractiveSearchScreen'), 'InteractiveSearchScreen'),
 });
 
-export type DiscoverSearch = { tab?: 'discover'; q?: string; list?: string; person?: number };
+export type DiscoverSearch = { tab?: 'discover' | 'import'; q?: string; list?: string; person?: number; scan?: number };
 
 export const discoverRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/discover',
   validateSearch: (raw: Record<string, unknown>): DiscoverSearch => ({
-    tab: raw.tab === 'discover' ? 'discover' : undefined,
+    tab: raw.tab === 'discover' || raw.tab === 'import' ? raw.tab : undefined,
     q: typeof raw.q === 'string' && raw.q.length <= 200 ? raw.q : undefined,
     list: typeof raw.list === 'string' && /^[a-z_-]{1,32}$/.test(raw.list) ? raw.list : undefined,
     person: Number.isInteger(Number(raw.person)) && Number(raw.person) > 0 ? Number(raw.person) : undefined,
+    scan: Number.isInteger(Number(raw.scan)) && Number(raw.scan) > 0 ? Number(raw.scan) : undefined,
   }),
   component: lazyRouteComponent(() => import('@/screens/discover/AddFilmScreen'), 'AddFilmScreen'),
   head: () => ({ meta: [{ title: 'Add & discover · Gonema' }] }),
+});
+
+export type CollectionsSearch = {
+  id?: number;
+  show?: 'missing' | 'monitored';
+  by?: 'missing' | 'year' | 'added';
+  q?: string;
+};
+
+export const collectionsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/collections',
+  validateSearch: (raw: Record<string, unknown>): CollectionsSearch => {
+    const id = Number(raw.id);
+    return {
+      id: Number.isInteger(id) && id > 0 ? id : undefined,
+      show: raw.show === 'missing' || raw.show === 'monitored' ? raw.show : undefined,
+      by: raw.by === 'missing' || raw.by === 'year' || raw.by === 'added' ? raw.by : undefined,
+      q: typeof raw.q === 'string' && raw.q && raw.q.length <= 200 ? raw.q : undefined,
+    };
+  },
+  component: lazyRouteComponent(() => import('@/screens/collections/CollectionsScreen'), 'CollectionsScreen'),
 });
 
 export type HistorySearch = { event?: string; movie?: number; since?: string };
@@ -277,6 +300,7 @@ const routeTree = rootRoute.addChildren([
   movieRoute,
   searchRoute,
   discoverRoute,
+  collectionsRoute,
   queueRoute,
   historyRoute,
   blocklistRoute,

@@ -352,3 +352,101 @@ these screens (the app passes). `a11y-report.json` was updated for `settings-ind
   `system.css` 4.1 KB.
 - Scroll: grid 59.8 / 30.8 fps, table 60 / 20.7 fps (1× / 4×); first poster 427 ms; CLS 0.002.
 - Reduced motion: the countdown ring and the help chevron lose their transitions; nothing else of this lot animates.
+
+
+---
+
+# Fidelity — v1.1 (collections, Import a folder, iCal feed, quality groups, bulk search, stop retrying)
+
+Captures: `node e2e/fidelity.mjs` (production build in the Go binary, demo library of 10,000 films, local mode).
+New side-by-sides, dark and light: `compare-collections-*`, `compare-collections-detail-*`, `compare-collections-empty-*`,
+`compare-library-import-{folder,scan,review,match,done}-*`; tablet `library-import-review-tablet-*` (app only, compare with
+`docs/design/renders/library-import-review-tablet-*.jpg`). `failed-download` now shows **Stop retrying** as the mockup.
+
+Accessibility: axe-core 4.14, same tags: **0 violations on 116/116 captures** (58 states × dark + light). Console: only the
+401 / 429 of the mocked failed sign-ins. `e2e/v11.test.mjs` audits the collections grid and detail, the empty state, the
+import folder, review and done steps, the failed-download page and the bulk search strip.
+
+Mocked for these captures: the empty collections list (`collections-empty`); for the import, `GET /settings/tmdb` as
+configured and the scan job, candidates and confirmation (`mockLibraryImport`, e2e/mocks.mjs) over a **real temporary folder**
+with real sparse video files and its real root folder (made by the capture, removed at the end); folder picker = real
+`GET /library-import/folders`. Collections grid and detail are the real demo answers.
+
+## Resolved
+
+| # | Was | Now |
+|---|---|---|
+| S13 | Calendar "iCal feed" hidden | Button in the calendar head, dialog (D53) |
+| S14 | Quality editor "Group" hidden | Group dialog, group menu, take a quality out (D55) |
+| S15 | Failed download: no "Stop retrying" | **Stop retrying / Resume retrying** on the page and in the queue row menu, applied at once with **Undo** (8 s); the lead text says retries are stopped; history labels `retries_stopped` / `retries_resumed` |
+| S16 | Library empty state: no "Import a folder" | Secondary link to Add & discover › Import folder |
+| S17 / C9 | No Collections section; film page "Open" opened a dialog | `/collections` (grid, `?id=` detail, empty state), sidebar entry with the count; the film page's "Open" and Discover's "Open collection" navigate to it. The dialog (CollectionDialog) had no other caller and is removed |
+| S12 / C19 | "Search the N released" linked to Wanted | Dashboard wanted tile, Wanted (missing: released count; cutoff: "Search the N below cutoff"), queue empty state "Search the N now": one bulk search job (`POST /movies/search {filter}`); library bulk bar **Search** with 2+ films sends `{ids}` |
+| P2 | Table thumbnails replaced by a flat colour while scrolling (w342 only) | **w92** thumbnails (~2 KB), loaded at once and shown while scrolling; the scroll-time deferral is removed |
+| D46 | Session context "Internet" behind a proxy | "Through your reverse proxy" when `AuthSession.via = proxy` |
+| D47 | Backups: no next run | Schedule tile: "Next 13 Nov, 16:13 · keeps the 4 newest" (`GET /backups.nextScheduledAt`, else `nextRunAt`) |
+
+## Deviations
+
+### Content (data, not design)
+
+| # | Visible difference | Why |
+|---|---|---|
+| C26 | Collections: 26–40 films per demo collection, so the cards show "+25" and long pip lines; no missing films, no monitored collection, "Your library only · TMDB not read yet" and a "TMDB did not answer" notice on the detail | Demo data without a TMDB key (`partsKnown` false): only library films are listed. With TMDB the missing / upcoming parts and their badges appear as drawn |
+| C27 | Collection cards use the lead film's poster, blurred, as the backdrop | `backdropUrl` is null in the demo; it is used when present |
+| C28 | Import captures: mocked matches and confidences (fictional titles, no TMDB posters: typographic placeholders) | The scan needs TMDB; the folders and files are real |
+
+### Design decisions taken while implementing
+
+| # | Difference | Justification |
+|---|---|---|
+| D53 | **iCal feed** (no mockup): dialog from the calendar's "iCal feed" button. Off: "Turn on the feed" makes the key and shows the URL **once** (same key-reveal block as the API key: Copy, "You won’t see it again."). On: "Key ending in ab12 · last read by a calendar 3 h ago"; options saved at once (days back / ahead, release-type chips, unmonitored); **New URL…** and **Turn off…** each ask for confirmation in place (a notice with Cancel / confirm button), the dialog keeps its context | DESIGN.md: confirmation dialogs are for files on disk; a nested dialog for a non-file action would contradict it, Undo is impossible (an old key cannot come back). Without an account (local mode) the server answers 409: the dialog says the feed needs an account and links to the setup's account step |
+| D54 | **Bulk search progress**: an activity strip (glass 3, toast styling) bottom right (bottom centre under 1100 px, above the bulk bar when shown): "Searching the 1,542 released", "12 of 1,542 · 3 grabbed", waiting reason and time, thin progress bar, **History**, **Cancel**, hide. The end is a toast with the counts | Not a toast: it lasts minutes and must not drain or stack. Bottom right so it never covers toasts or the bulk bar. Cancel is not destructive (grabs stay): no confirmation. A reload finds the running search again (job id kept in `localStorage`); `bulksearch.*` events drive it; the end shows once |
+| D55 | **Quality groups**: "Group" opens a dialog (pick 2+ single qualities, name prefilled "WEB 2160p", checked: unique, not a quality name); each group row has a menu: Rename…, Merge with the one above / below, Split into single qualities; a member row has "Take out of the group" (×). Everything edits the draft, Save sends it; the cutoff follows | No mockup for the interactions (only the button and the group row). Dialog, menu and buttons are keyboard-operable; changes are announced in the list's live region |
+| D56 | Import, step 1: no "Skip sample, extras…" / "Look one level deeper" checkboxes; tree rows say "Film folder" instead of "29 folders" / "12 files" | Not in the API (`GET /library-import/folders` has `movie` only; samples under 300 MB are always skipped by the server). Added: "Up one level", a "Recent scans" panel (the last scans the server keeps) |
+| D57 | Import, scan step: the "Reading…" row is a placeholder ("Next folder"), the feed is newest first from the events | Events carry described folders only, not the one being read |
+| D58 | Import, review: a plain table (no `role=grid`), 50 rows then "Show 50 more"; controls only on selected rows (others "—"); "Move" shows "→ renamed with your naming templates" instead of the final path | Hundreds of folders with a select each; the destination needs the naming preview of a film not yet added (no endpoint) |
+| D59 | Import, review: the default profile is the one most library films use; `searchOnAdd` is false | Done step copy: Gonema looks for better copies at the next RSS check (mockup) |
+| D60 | Import: a scan that ends while its page is closed shows a toast "Folders ready to review" with a link | The scan step promises "tells you when the folders are ready to review" |
+| D61 | Collections: sort is a menu (Name, Missing films, Newest film, Recently added); filters and sort in the URL; monitoring and adding films apply at once with **Undo** (the films added are removed again) | D25 pattern; the server adds released films when monitoring starts |
+| D62 | While the grid or table scrolls, only the card or row already under the pointer takes the pointer (`pointer-events: none` on the others until scrolling stops, 150 ms) | Measured (below): the hit test after every scrolled frame and the hover churn were the grid's largest cost. The hovered card stays hovered while it is under the pointer; a card that arrives under a resting pointer hovers when scrolling stops |
+
+## Contracts missing or wrong (backend, not changed here)
+
+- `PUT /collections/{id}/monitor` with `monitored: true` and no TMDB key **saves the flag, then answers 503** (the collection stays
+  monitored although the call failed). The UI refetches after an error to show the real state.
+- A library scan without a TMDB key **fails as a job** with "The scan failed; the logs have the details." (`POST /library-import/scans`
+  answers 202). A 4xx at start, or the reason in `LibraryScan.error`, would let the screen say "Add a TMDB key".
+- No TMDB base URL override: e2e cannot run a real scan or confirmation against a fake TMDB (mocked instead).
+- `GET /settings/backups` now answers `nextRunAt`, which `PUT` refuses (422): the UI now sends the writable fields only, and
+  `e2e/system.test.mjs` strips it when restoring the schedule.
+- `GET /library-import/folders` gives no folder / file counts (mockup "29 folders").
+- Poster sizes are w92, w342, w780 only: on 2× screens the grid takes w780 (a w500 would halve the bytes).
+
+### Measurements (this machine, 2026-11-06, same session)
+
+Interleaved runs of `e2e/perf.mjs`, HEAD build (before) vs this build (after), same demo server data, 3 runs each:
+
+| | before | after |
+|---|---|---|
+| grid 1× | 60 / 60 / 60 fps | 60 / 60 / 60 fps |
+| table 1× | 60 / 60 / 60 fps | 59.6 / 60 / 60 fps |
+| grid 4× | 32.7 / 33.6 / 33.3 fps (p95 50 ms) | **42.4 / 39.1 / 41.8** fps (p95 50 ms) |
+| table 4× | 24.4 / 24.6 / 23.8 fps | 21.9 / 22.8 / 22.9 fps |
+
+- Grid 4×: **+24 %** (33.2 → 41.1 fps). Profile (CPU 4×, 5 s scroll): main thread saturated; the hit test of Chrome's
+  synthetic mouse move after each scrolled frame plus hover changes (cards mounting their controls) cost ~20 %;
+  D62 removes it (+8 fps alone). Grid rows are now rebuilt only when the window's range changes (memoised by the virtual
+  items), not on every scrolled pixel or the scrolling flag. Tried without gain: no resting `transform` on `.pc-frame`,
+  no backdrop blur, no poster shadow.
+- Table 4×: the "before" build painted **no thumbnail** while scrolling (P2); this build loads and paints the w92 thumbnails
+  during the scroll, as asked: −1.8 fps (−7 %). Measured on the same build, hiding the images gives +5 fps; loading them
+  eagerly (rows are virtualised) instead of `loading="lazy"` won back ~2 fps of that; rows no longer re-render when the
+  scrolling flag flips. 1× stays at 60 fps.
+- `npm run perf` on the final build: grid 60 / 38.3 fps, table 59.8 / 21.6 fps (1× / 4×), first poster 498 ms, CLS 0.003.
+- Initial JS (library route): **155,854 B gzip** (was 154,236 B; budget 200 KB). In the first chunk: the bulk-search store
+  and its event handling, the sidebar's collections count, the w92 helper. Everything else is lazy (gzip): collections
+  7.6 KB, import tab 12.0 KB, iCal dialog 3.0 KB, quality groups in the quality chunk, bulk strip 1.3 KB, v11 API 0.9 KB,
+  `v11.css` 6.2 KB.
+- Reduced motion: collection cards lose their lift (shadow fade only), the strip and stepper have no movement; progress
+  values still update.

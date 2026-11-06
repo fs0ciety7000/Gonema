@@ -1,5 +1,5 @@
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
-import { ListFilter, Plus, ScanSearch } from 'lucide-react';
+import { FolderOpen, ListFilter, Plus, ScanSearch } from 'lucide-react';
 import {
   type ComponentPropsWithoutRef,
   lazy,
@@ -396,10 +396,16 @@ export function LibraryScreen() {
             mascot={mascotEmpty}
             action={
               reachable('discover') ? (
-                <Link className={buttonClass('primary')} to={'/discover' as never}>
-                  <Plus className="i" aria-hidden="true" />
-                  Add a film
-                </Link>
+                <>
+                  <Link className={buttonClass('primary')} to={'/discover' as never}>
+                    <Plus className="i" aria-hidden="true" />
+                    Add a film
+                  </Link>
+                  <Link className={buttonClass('secondary')} to="/discover" search={{ tab: 'import' }}>
+                    <FolderOpen className="i" aria-hidden="true" />
+                    Import a folder
+                  </Link>
+                </>
               ) : undefined
             }
           >

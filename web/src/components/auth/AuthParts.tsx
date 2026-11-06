@@ -2,7 +2,7 @@
    Lazy: only these screens import them. */
 import '@/styles/phase8.css';
 import { Check, Copy, Eye, EyeOff, KeyRound } from 'lucide-react';
-import { type ComponentPropsWithRef, useEffect, useId, useRef, useState } from 'react';
+import { type ComponentPropsWithRef, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { ApiError } from '@/api/client';
 import { Button, IconButton } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
@@ -124,7 +124,21 @@ async function copyText(text: string, field: HTMLInputElement | null): Promise<b
 
 /** The API key, shown once: copy it, and know it will not be shown again. The key lives only in
  *  this component's props (never stored, never logged). onboarding.html `?step=account&state=key`. */
-export function ApiKeyReveal({ apiKey }: { apiKey: string }) {
+export function ApiKeyReveal({
+  apiKey,
+  title = 'Your API key',
+  intro,
+  label = 'API key',
+  once,
+  icon,
+}: {
+  apiKey: string;
+  title?: string;
+  intro?: ReactNode;
+  label?: string;
+  once?: ReactNode;
+  icon?: ReactNode;
+}) {
   const id = useId();
   const field = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState<'yes' | 'no' | null>(null);
@@ -132,12 +146,16 @@ export function ApiKeyReveal({ apiKey }: { apiKey: string }) {
     <section className="key-reveal" aria-labelledby={`${id}-h`}>
       <div className="kr-hd">
         <span className="kr-ic" aria-hidden="true">
-          <KeyRound className="i" />
+          {icon ?? <KeyRound className="i" />}
         </span>
         <div>
-          <h2 id={`${id}-h`}>Your API key</h2>
+          <h2 id={`${id}-h`}>{title}</h2>
           <span>
-            For apps and scripts that talk to Gonema, in the <code className="inl">X-Api-Key</code> header.
+            {intro ?? (
+              <>
+                For apps and scripts that talk to Gonema, in the <code className="inl">X-Api-Key</code> header.
+              </>
+            )}
           </span>
         </div>
       </div>
@@ -148,7 +166,7 @@ export function ApiKeyReveal({ apiKey }: { apiKey: string }) {
           className="t-mono"
           readOnly
           value={apiKey}
-          aria-label="API key"
+          aria-label={label}
           spellCheck={false}
           onFocus={(ev) => ev.currentTarget.select()}
         />
@@ -165,15 +183,19 @@ export function ApiKeyReveal({ apiKey }: { apiKey: string }) {
       <p className="kr-once">
         <EyeOff className="i" aria-hidden="true" />
         <span>
-          <b>You won’t see it again.</b> Gonema keeps only a fingerprint. Copy it now; you can make a new one later in
-          Settings › Security.
+          {once ?? (
+            <>
+              <b>You won’t see it again.</b> Gonema keeps only a fingerprint. Copy it now; you can make a new one later
+              in Settings › Security.
+            </>
+          )}
         </span>
       </p>
       <p className="sr-only" role="status">
         {copied === 'yes'
           ? 'Copied to the clipboard.'
           : copied === 'no'
-            ? 'This browser blocked the copy: the key is selected, press Ctrl+C (⌘C on a Mac).'
+            ? `This browser blocked the copy: the ${label === 'API key' ? 'key' : 'text'} is selected, press Ctrl+C (⌘C on a Mac).`
             : ''}
       </p>
       {copied === 'no' && (

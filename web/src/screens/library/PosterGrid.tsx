@@ -279,6 +279,92 @@ export function PosterGrid({
     firstPaintRows.current = new Set(vItems.map((r) => r.index));
   }
 
+  // The rows only change with the window's range (not with every scrolled pixel or the scrolling flag):
+  // the same element tree is reused so React skips the grid between two range changes.
+  const scrollMargin = v.options.scrollMargin;
+  const selected = selection.selected;
+  const rowEls = useMemo(
+    () =>
+      vItems.map((vr) => {
+        const row = rows[vr.index];
+        if (!row) return null;
+        const style: CSSProperties = { transform: `translateY(${vr.start - scrollMargin}px)` };
+        if (row.kind === 'header') {
+          return (
+            // biome-ignore lint/a11y/useSemanticElements: group header row of the grid
+            // biome-ignore lint/a11y/useFocusableInteractive: rows are not focus targets, cells' links are
+            <div key={`h-${row.key}`} role="row" aria-rowindex={vr.index + 1} className="pg-header" style={style}>
+              {/* biome-ignore lint/a11y/useSemanticElements: header cell of a role=grid */}
+              {/* biome-ignore lint/a11y/useFocusableInteractive: a group heading, not a sortable column */}
+              <div role="columnheader" aria-colspan={cols}>
+                <h2>
+                  {row.label} <span className="count">{row.count.toLocaleString('en-US')}</span>
+                </h2>
+              </div>
+            </div>
+          );
+        }
+        const enter = firstPaintRows.current?.has(vr.index) && entering;
+        const cells: ReactNode[] = [];
+        for (let i = row.start; i < row.end; i++) {
+          const m = items[i]!;
+          const order = i - row.start + (vr.index - (vItems[0]?.index ?? 0)) * cols;
+          cells.push(
+            <PosterCard
+              key={m.id}
+              movie={m}
+              status={displayStatus(m)}
+              href={hrefOf(m)}
+              selected={selected.has(m.id)}
+              active={m.id === activeId}
+              selecting={selecting}
+              live={live.get(m.id)}
+              onLinkClick={onLinkClick}
+              onSelectClick={onSelectClick}
+              onSearch={onSearch}
+              onToggleMonitor={onToggleMonitor}
+              onFocusCard={onFocusCard}
+              eager={vr.index < 2}
+              className={enter ? 'pc-enter' : undefined}
+              style={enter ? ({ ['--i' as string]: Math.min(order, 12) } as CSSProperties) : undefined}
+            />,
+          );
+        }
+        return (
+          // biome-ignore lint/a11y/useSemanticElements: a virtualised poster grid cannot be a <table>
+          // biome-ignore lint/a11y/useFocusableInteractive: rows are not focus targets, cells' links are
+          <div
+            key={`r-${vr.index}`}
+            role="row"
+            aria-rowindex={vr.index + 1}
+            className="pg-row"
+            style={{ ...style, height: rowH }}
+          >
+            {cells}
+          </div>
+        );
+      }),
+    [
+      vItems,
+      rows,
+      items,
+      scrollMargin,
+      cols,
+      rowH,
+      entering,
+      selected,
+      activeId,
+      selecting,
+      live,
+      hrefOf,
+      onLinkClick,
+      onSelectClick,
+      onSearch,
+      onToggleMonitor,
+      onFocusCard,
+    ],
+  );
+
   return (
     <div ref={wrapRef} className="pg-wrap" data-density={density}>
       {loading && !items.length ? (
@@ -305,65 +391,7 @@ export function PosterGrid({
             onKeyDown={onKeyDown}
             onContextMenu={ctxMenu.onContextMenu}
           >
-            {vItems.map((vr) => {
-              const row = rows[vr.index];
-              if (!row) return null;
-              const style: CSSProperties = { transform: `translateY(${vr.start - v.options.scrollMargin}px)` };
-              if (row.kind === 'header') {
-                return (
-                  // biome-ignore lint/a11y/useSemanticElements: group header row of the grid
-                  // biome-ignore lint/a11y/useFocusableInteractive: rows are not focus targets, cells' links are
-                  <div key={`h-${row.key}`} role="row" aria-rowindex={vr.index + 1} className="pg-header" style={style}>
-                    {/* biome-ignore lint/a11y/useSemanticElements: header cell of a role=grid */}
-                    {/* biome-ignore lint/a11y/useFocusableInteractive: a group heading, not a sortable column */}
-                    <div role="columnheader" aria-colspan={cols}>
-                      <h2>
-                        {row.label} <span className="count">{row.count.toLocaleString('en-US')}</span>
-                      </h2>
-                    </div>
-                  </div>
-                );
-              }
-              const enter = firstPaintRows.current?.has(vr.index) && entering;
-              const cells: ReactNode[] = [];
-              for (let i = row.start; i < row.end; i++) {
-                const m = items[i]!;
-                const order = i - row.start + (vr.index - (vItems[0]?.index ?? 0)) * cols;
-                cells.push(
-                  <PosterCard
-                    key={m.id}
-                    movie={m}
-                    status={displayStatus(m)}
-                    href={hrefOf(m)}
-                    selected={selection.selected.has(m.id)}
-                    active={m.id === activeId}
-                    selecting={selecting}
-                    live={live.get(m.id)}
-                    onLinkClick={onLinkClick}
-                    onSelectClick={onSelectClick}
-                    onSearch={onSearch}
-                    onToggleMonitor={onToggleMonitor}
-                    onFocusCard={onFocusCard}
-                    eager={vr.index < 2}
-                    className={enter ? 'pc-enter' : undefined}
-                    style={enter ? ({ ['--i' as string]: Math.min(order, 12) } as CSSProperties) : undefined}
-                  />,
-                );
-              }
-              return (
-                // biome-ignore lint/a11y/useSemanticElements: a virtualised poster grid cannot be a <table>
-                // biome-ignore lint/a11y/useFocusableInteractive: rows are not focus targets, cells' links are
-                <div
-                  key={`r-${vr.index}`}
-                  role="row"
-                  aria-rowindex={vr.index + 1}
-                  className="pg-row"
-                  style={{ ...style, height: rowH }}
-                >
-                  {cells}
-                </div>
-              );
-            })}
+            {rowEls}
           </div>
           <ListMenu
             open={ctxMenu.open}

@@ -8,6 +8,7 @@ bin/gonema demo seed -films 10000 -data-dir /tmp/gonema-demo
 GONEMA_AUTH=disabled_for_local bin/gonema serve -data-dir /tmp/gonema-demo &   # http://127.0.0.1:7676, no sign-in from 127.0.0.1
 cd web
 npm run e2e        # system.test.mjs: sign-in states, Security, Backups (restore staged then canceled, delete), Logs
+                   # v11.test.mjs: collections, Import a folder (temporary folder), stop retrying, bulk search
                    # lot 1: library, filter, select, film, Undo, J/K · lot 2: add (TMDB mocked), interactive search
                    # (stream mocked), queue pause/remove + Undo, history filter, bulk tags + Undo, delete file confirm
 npm run perf       # bundle sizes, first poster, CLS, scroll frame times (grid, table, CPU 1x/4x) -> e2e/perf.json
@@ -74,3 +75,13 @@ The demo has no TMDB key, no network and no indexer, so these are mocked in e2e 
   the same completed security answer as `settings-security-account` (three sessions). `settings-backups*` and
   `e2e/system.test.mjs` make real archives on the demo, stage a real restore and cancel it; the system suite also deletes
   the archive it made and puts the backup schedule back as it found it.
+
+- v1.1 (`e2e/v11.test.mjs`, fidelity `collections*` and `library-import*`): the empty collections list (the demo has
+  collections); `PUT /collections/{id}/monitor` in the suite (it adds films from TMDB; the request bodies are checked);
+  `GET /settings/tmdb` answered as configured on the import pages; the scan job (`POST/GET/DELETE /library-import/scans*`),
+  `POST /library-import/candidates` and `POST /library-import/confirm` (`mockLibraryImport`: they need TMDB). The import
+  folder is **real**: the suite and the captures make a temporary folder with sparse video files, add it as a root folder
+  (`POST /root-folders`, removed at the end), and the folder picker lists it with the real `GET /library-import/folders`;
+  the suite also runs a real scan, which fails without a TMDB key, and checks the screen says so. Stop / resume retrying,
+  the bulk search (start, reload, cancel; the suite adds an indexer that cannot be reached and removes it), collections
+  grid and detail are the real server. The failed-download capture's mocked entry now has `stopRetrying`.
