@@ -313,6 +313,15 @@
           },
           "userAgent": {
             "type": "string"
+          },
+          "via": {
+            "description": "How the browser connects, as of its last use: direct (public address), local (loopback or private address) or proxy (through a reverse proxy of GONEMA_TRUSTED_PROXIES)",
+            "enum": [
+              "direct",
+              "local",
+              "proxy"
+            ],
+            "type": "string"
           }
         },
         "required": [
@@ -322,7 +331,8 @@
           "lastSeenAt",
           "expiresAt",
           "ip",
-          "userAgent"
+          "userAgent",
+          "via"
         ],
         "type": "object"
       },
@@ -476,6 +486,14 @@
             "description": "What a backup holds about the master key, to show next to the list",
             "type": "string"
           },
+          "nextScheduledAt": {
+            "description": "Next scheduled backup; null when scheduled backups are off or not scheduled yet",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "pendingRestore": {
             "$ref": "#/components/schemas/PendingRestore",
             "description": "A restore staged for the next start"
@@ -484,7 +502,8 @@
         "required": [
           "backups",
           "directory",
-          "keyNotice"
+          "keyNotice",
+          "nextScheduledAt"
         ],
         "type": "object"
       },
@@ -514,6 +533,48 @@
           }
         },
         "required": [
+          "enabled",
+          "intervalHours",
+          "keep",
+          "includeKey"
+        ],
+        "type": "object"
+      },
+      "BackupSettingsView": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "includeKey": {
+            "description": "Also store gonema.key in scheduled backups. Warning: whoever gets such an archive can decrypt every stored secret",
+            "type": "boolean"
+          },
+          "intervalHours": {
+            "description": "Hours between two scheduled backups; default 168 (weekly)",
+            "format": "int64",
+            "maximum": 720,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "keep": {
+            "description": "Scheduled backups kept; older scheduled ones are deleted (manual, uploaded and pre-restore backups are kept until you delete them)",
+            "format": "int64",
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "nextRunAt": {
+            "description": "Next scheduled backup; null when scheduled backups are off or not scheduled yet",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "nextRunAt",
           "enabled",
           "intervalHours",
           "keep",
@@ -776,6 +837,148 @@
         ],
         "type": "object"
       },
+      "BulkSearchProgress": {
+        "additionalProperties": false,
+        "properties": {
+          "currentMovieId": {
+            "description": "Movie being searched",
+            "format": "int64",
+            "type": "integer"
+          },
+          "done": {
+            "description": "Movies handled, whatever the outcome",
+            "format": "int64",
+            "type": "integer"
+          },
+          "failed": {
+            "description": "The search failed (see the logs)",
+            "format": "int64",
+            "type": "integer"
+          },
+          "grabbed": {
+            "description": "Movies for which a release was grabbed (written to history)",
+            "format": "int64",
+            "type": "integer"
+          },
+          "jobId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "label": {
+            "description": "missing_released, cutoff_unmet or selection",
+            "type": "string"
+          },
+          "noResult": {
+            "description": "Searched, nothing acceptable to grab",
+            "format": "int64",
+            "type": "integer"
+          },
+          "reason": {
+            "description": "Why the search stopped or waits, plain language",
+            "type": "string"
+          },
+          "skipped": {
+            "description": "Not searched: unmonitored, not available yet, removed, or already searched by this job before a restart",
+            "format": "int64",
+            "type": "integer"
+          },
+          "state": {
+            "enum": [
+              "pending",
+              "running",
+              "waiting",
+              "finished",
+              "cancelled",
+              "stopped"
+            ],
+            "type": "string"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "waitingUntil": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "jobId",
+          "label",
+          "state",
+          "total",
+          "done",
+          "grabbed",
+          "noResult",
+          "skipped",
+          "failed",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "BulkSearchRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "filter": {
+            "description": "missing_released: the Wanted \u003e Missing list (monitored, no file, released enough for the minimum availability), the dashboard's \"Search the N released\"; cutoff_unmet: the Wanted \u003e Cutoff unmet list",
+            "enum": [
+              "missing_released",
+              "cutoff_unmet"
+            ],
+            "type": "string"
+          },
+          "ids": {
+            "description": "Library movie ids, searched in this order",
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "maxItems": 5000,
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "BulkSearchStarted": {
+        "additionalProperties": false,
+        "properties": {
+          "jobId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "label": {
+            "enum": [
+              "missing_released",
+              "cutoff_unmet",
+              "selection"
+            ],
+            "type": "string"
+          },
+          "location": {
+            "description": "Path of the progress (GET), also the cancel endpoint (DELETE)",
+            "type": "string"
+          },
+          "total": {
+            "description": "Movies queued",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "jobId",
+          "total",
+          "label",
+          "location"
+        ],
+        "type": "object"
+      },
       "BulkSet": {
         "additionalProperties": false,
         "properties": {
@@ -862,6 +1065,85 @@
           "searchable",
           "note",
           "movie"
+        ],
+        "type": "object"
+      },
+      "CalendarFeedView": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "futureDays": {
+            "description": "Days after today included",
+            "format": "int64",
+            "maximum": 730,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "key": {
+            "description": "Only in the answer of regenerate: the key, shown once",
+            "type": "string"
+          },
+          "last4": {
+            "description": "Last four characters of the key",
+            "type": "string"
+          },
+          "lastUsedAt": {
+            "description": "Last fetch by a calendar app (updated at most every 5 minutes)",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pastDays": {
+            "description": "Days before today included",
+            "format": "int64",
+            "maximum": 365,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "path": {
+            "description": "Only in the answer of regenerate: the feed path with its key, to prefix with the public origin",
+            "type": "string"
+          },
+          "releaseTypes": {
+            "description": "cinema, digital and/or physical",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "unmonitored": {
+            "description": "Also the unmonitored movies that are not released yet (like the calendar screen)",
+            "type": "boolean"
+          },
+          "url": {
+            "description": "Only in the answer of regenerate: the feed URL with its key, as seen from this request (behind a reverse proxy, check the host)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "enabled",
+          "createdAt",
+          "lastUsedAt",
+          "pastDays",
+          "futureDays",
+          "unmonitored",
+          "releaseTypes"
         ],
         "type": "object"
       },
@@ -958,6 +1240,48 @@
           "minimumAvailability",
           "quality",
           "qualityName"
+        ],
+        "type": "object"
+      },
+      "CalendarOptions": {
+        "additionalProperties": false,
+        "properties": {
+          "futureDays": {
+            "description": "Days after today included",
+            "format": "int64",
+            "maximum": 730,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "pastDays": {
+            "description": "Days before today included",
+            "format": "int64",
+            "maximum": 365,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "releaseTypes": {
+            "description": "cinema, digital and/or physical",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "unmonitored": {
+            "description": "Also the unmonitored movies that are not released yet (like the calendar screen)",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "pastDays",
+          "futureDays",
+          "unmonitored",
+          "releaseTypes"
         ],
         "type": "object"
       },
@@ -1246,6 +1570,646 @@
         ],
         "type": "object"
       },
+      "CollectionCounts": {
+        "additionalProperties": false,
+        "properties": {
+          "downloading": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "inLibrary": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "missing": {
+            "description": "Released films not in the library. An upcoming film is never missing: a monitored collection adds it on its release day",
+            "format": "int64",
+            "type": "integer"
+          },
+          "notInLibrary": {
+            "description": "Every film not in the library, released or not",
+            "format": "int64",
+            "type": "integer"
+          },
+          "onDisk": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sizeOnDisk": {
+            "description": "Bytes",
+            "format": "int64",
+            "type": "integer"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "upcoming": {
+            "description": "Not released yet, in the library or not",
+            "format": "int64",
+            "type": "integer"
+          },
+          "wanted": {
+            "description": "In the library without a file, released or in cinemas",
+            "format": "int64",
+            "type": "integer"
+          },
+          "yearFrom": {
+            "description": "0 when unknown",
+            "format": "int64",
+            "type": "integer"
+          },
+          "yearTo": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "inLibrary",
+          "onDisk",
+          "downloading",
+          "wanted",
+          "notInLibrary",
+          "missing",
+          "upcoming",
+          "sizeOnDisk",
+          "yearFrom",
+          "yearTo"
+        ],
+        "type": "object"
+      },
+      "CollectionDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "backdropPath": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "backdropUrl": {
+            "description": "Collection backdrop, w1280",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "complete": {
+            "description": "Every film is on disk",
+            "type": "boolean"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/CollectionCounts"
+          },
+          "dominantColor": {
+            "description": "#rrggbb of the lead film: the first library film, in release order, with a poster color",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "films": {
+            "description": "Every film, in release order (undated last)",
+            "items": {
+              "$ref": "#/components/schemas/CollectionFilm"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "hasMissing": {
+            "description": "Misses released films (counts.missing \u003e 0): the Missing films filter",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "minimumAvailability": {
+            "type": "string"
+          },
+          "monitored": {
+            "description": "Add the collection's movies automatically",
+            "type": "boolean"
+          },
+          "movies": {
+            "description": "Movies of the collection in the library",
+            "items": {
+              "$ref": "#/components/schemas/Movie"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "overview": {
+            "type": "string"
+          },
+          "parts": {
+            "description": "Every movie of the collection according to TMDB; null when TMDB is unavailable",
+            "items": {
+              "$ref": "#/components/schemas/MovieSummary"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "partsError": {
+            "type": "string"
+          },
+          "partsKnown": {
+            "description": "false until Gonema read the collection from TMDB once: only library movies are listed",
+            "type": "boolean"
+          },
+          "partsRefreshedAt": {
+            "description": "When the films were last read from TMDB",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "posterPath": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "posterUrl": {
+            "description": "Collection poster, w342",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "qualityProfileId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "qualityProfileName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "refreshedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rootFolderId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "rootFolderPath": {
+            "description": "Path of the root folder of the films it adds",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "searchOnAdd": {
+            "description": "Films added by the collection are searched at once",
+            "type": "boolean"
+          },
+          "tmdbId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rootFolderPath",
+          "id",
+          "tmdbId",
+          "name",
+          "overview",
+          "posterPath",
+          "backdropPath",
+          "monitored",
+          "qualityProfileId",
+          "rootFolderId",
+          "minimumAvailability",
+          "refreshedAt",
+          "movies",
+          "parts",
+          "posterUrl",
+          "backdropUrl",
+          "qualityProfileName",
+          "searchOnAdd",
+          "counts",
+          "hasMissing",
+          "dominantColor",
+          "complete",
+          "partsKnown",
+          "partsRefreshedAt",
+          "films"
+        ],
+        "type": "object"
+      },
+      "CollectionFilm": {
+        "additionalProperties": false,
+        "properties": {
+          "dominantColor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "excluded": {
+            "description": "Detail only: not in the library and on the import list exclusions (not added with the collection)",
+            "type": "boolean"
+          },
+          "hdr": {
+            "description": "Space-separated HDR formats of the file (DV HDR10); null for SDR or no file",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "inLibrary": {
+            "type": "boolean"
+          },
+          "lastSearchedAt": {
+            "description": "Detail only",
+            "format": "date-time",
+            "type": "string"
+          },
+          "minimumAvailability": {
+            "enum": [
+              "announced",
+              "in_cinemas",
+              "released"
+            ],
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "monitored": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "movieId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "nextRelease": {
+            "$ref": "#/components/schemas/NextRelease",
+            "description": "Next release from today on; null when none is known"
+          },
+          "posterUrl": {
+            "description": "w342; replace w342 by w92 in the path for a thumbnail",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "progress": {
+            "description": "Download progress 0 to 1 while downloading",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "quality": {
+            "description": "Quality id of the file",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "qualityName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "releaseCinema": {
+            "description": "YYYY-MM-DD",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "releaseDate": {
+            "description": "Release date of the part on TMDB (YYYY-MM-DD); null when unknown",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "releaseDigital": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "releasePhysical": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "released": {
+            "type": "boolean"
+          },
+          "sizeOnDisk": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "state": {
+            "description": "on_disk, downloading, wanted (no file yet, released or in cinemas) and upcoming (announced) are library movies; missing (released) and not_released are not in the library",
+            "enum": [
+              "on_disk",
+              "downloading",
+              "wanted",
+              "upcoming",
+              "missing",
+              "not_released"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "description": "Release stage of the library movie",
+            "enum": [
+              "announced",
+              "in_cinemas",
+              "released",
+              "deleted"
+            ],
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "tmdbId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "year": {
+            "description": "0 when unknown",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tmdbId",
+          "title",
+          "year",
+          "releaseDate",
+          "posterUrl",
+          "state",
+          "inLibrary",
+          "released",
+          "movieId",
+          "monitored",
+          "status",
+          "minimumAvailability",
+          "releaseCinema",
+          "releaseDigital",
+          "releasePhysical",
+          "quality",
+          "qualityName",
+          "hdr",
+          "sizeOnDisk",
+          "progress",
+          "dominantColor",
+          "excluded",
+          "nextRelease"
+        ],
+        "type": "object"
+      },
+      "CollectionList": {
+        "additionalProperties": false,
+        "properties": {
+          "collections": {
+            "items": {
+              "$ref": "#/components/schemas/CollectionListItem"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "page": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "pageSize": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "total": {
+            "description": "Collections matching the filters",
+            "format": "int64",
+            "type": "integer"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/CollectionListTotals"
+          }
+        },
+        "required": [
+          "collections",
+          "total",
+          "page",
+          "pageSize",
+          "totals"
+        ],
+        "type": "object"
+      },
+      "CollectionListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "backdropUrl": {
+            "description": "Collection backdrop, w1280",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "complete": {
+            "description": "Every film is on disk",
+            "type": "boolean"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/CollectionCounts"
+          },
+          "dominantColor": {
+            "description": "#rrggbb of the lead film: the first library film, in release order, with a poster color",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "films": {
+            "description": "Every film, in release order (undated last)",
+            "items": {
+              "$ref": "#/components/schemas/CollectionFilm"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "hasMissing": {
+            "description": "Misses released films (counts.missing \u003e 0): the Missing films filter",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "minimumAvailability": {
+            "enum": [
+              "announced",
+              "in_cinemas",
+              "released"
+            ],
+            "type": "string"
+          },
+          "monitored": {
+            "description": "New films of the collection are added automatically",
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "partsKnown": {
+            "description": "false until Gonema read the collection from TMDB once: only library movies are listed",
+            "type": "boolean"
+          },
+          "partsRefreshedAt": {
+            "description": "When the films were last read from TMDB",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "posterUrl": {
+            "description": "Collection poster, w342",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "qualityProfileId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "qualityProfileName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rootFolderId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "searchOnAdd": {
+            "description": "Films added by the collection are searched at once",
+            "type": "boolean"
+          },
+          "tmdbId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "tmdbId",
+          "name",
+          "monitored",
+          "qualityProfileId",
+          "rootFolderId",
+          "minimumAvailability",
+          "posterUrl",
+          "backdropUrl",
+          "qualityProfileName",
+          "searchOnAdd",
+          "counts",
+          "hasMissing",
+          "dominantColor",
+          "complete",
+          "partsKnown",
+          "partsRefreshedAt",
+          "films"
+        ],
+        "type": "object"
+      },
+      "CollectionListTotals": {
+        "additionalProperties": false,
+        "properties": {
+          "collections": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "films": {
+            "description": "Films in the collections",
+            "format": "int64",
+            "type": "integer"
+          },
+          "monitored": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "notInLibrary": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "upcoming": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "withMissing": {
+            "description": "Collections with hasMissing",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "collections",
+          "monitored",
+          "withMissing",
+          "films",
+          "notInLibrary",
+          "upcoming"
+        ],
+        "type": "object"
+      },
       "CollectionPart": {
         "additionalProperties": false,
         "properties": {
@@ -1336,6 +2300,23 @@
           "monitored",
           "posterUrl",
           "inLibrary"
+        ],
+        "type": "object"
+      },
+      "CompletedCollection": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
         ],
         "type": "object"
       },
@@ -3498,18 +4479,61 @@
         ],
         "type": "object"
       },
+      "Library-import-candidatesRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "folder": {
+            "description": "Folder as listed by the scan",
+            "maxLength": 4096,
+            "minLength": 1,
+            "type": "string"
+          },
+          "query": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "rootFolderId": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "year": {
+            "format": "int64",
+            "maximum": 2200,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rootFolderId",
+          "folder",
+          "query"
+        ],
+        "type": "object"
+      },
       "LibraryCandidate": {
         "additionalProperties": false,
         "properties": {
           "confidence": {
+            "description": "0 to 1, computed against the folder and file names",
             "format": "double",
             "type": "number"
           },
           "movieId": {
+            "description": "Library movie when it is already in the library",
             "format": "int64",
             "type": "integer"
           },
+          "posterUrl": {
+            "description": "w342, through the image cache",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "reason": {
+            "description": "Why this movie is proposed, plain language",
             "type": "string"
           },
           "title": {
@@ -3528,7 +4552,8 @@
           "tmdbId",
           "title",
           "confidence",
-          "reason"
+          "reason",
+          "posterUrl"
         ],
         "type": "object"
       },
@@ -3562,6 +4587,7 @@
         "additionalProperties": false,
         "properties": {
           "candidates": {
+            "description": "Best first",
             "items": {
               "$ref": "#/components/schemas/LibraryCandidate"
             },
@@ -3571,19 +4597,40 @@
             ]
           },
           "file": {
+            "description": "Main video, relative to the folder",
             "type": "string"
           },
           "folder": {
+            "description": "Path relative to the root folder (a name, or sub/name for a scan of a sub-path)",
+            "type": "string"
+          },
+          "hdr": {
+            "description": "HDR formats read from the names (dv, hdr10...)",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "libraryPath": {
             "type": "string"
           },
           "movieId": {
             "format": "int64",
             "type": "integer"
           },
+          "name": {
+            "description": "Folder name",
+            "type": "string"
+          },
           "path": {
+            "description": "Absolute path",
             "type": "string"
           },
           "quality": {
+            "description": "Detected from the folder and file names",
             "type": "string"
           },
           "rejections": {
@@ -3599,7 +4646,17 @@
             "format": "int64",
             "type": "integer"
           },
+          "status": {
+            "enum": [
+              "new",
+              "ambiguous",
+              "no_match",
+              "in_library"
+            ],
+            "type": "string"
+          },
           "title": {
+            "description": "Read from the names",
             "type": "string"
           },
           "year": {
@@ -3609,14 +4666,109 @@
         },
         "required": [
           "folder",
+          "name",
           "path",
+          "hdr",
+          "status",
           "candidates"
+        ],
+        "type": "object"
+      },
+      "LibraryImport": {
+        "additionalProperties": false,
+        "properties": {
+          "results": {
+            "description": "In the order of the selections",
+            "items": {
+              "$ref": "#/components/schemas/LibraryResult"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "summary": {
+            "$ref": "#/components/schemas/LibraryImportSummary"
+          }
+        },
+        "required": [
+          "results",
+          "summary"
+        ],
+        "type": "object"
+      },
+      "LibraryImportSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "added": {
+            "description": "Movies added without a file",
+            "format": "int64",
+            "type": "integer"
+          },
+          "belowCutoff": {
+            "description": "Imported files below their profile cutoff (upgraded later when monitored)",
+            "format": "int64",
+            "type": "integer"
+          },
+          "collectionsCompleted": {
+            "items": {
+              "$ref": "#/components/schemas/CompletedCollection"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "collectionsGrown": {
+            "items": {
+              "$ref": "#/components/schemas/CompletedCollection"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "failed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "imported": {
+            "description": "Files recorded (kept + moved)",
+            "format": "int64",
+            "type": "integer"
+          },
+          "kept": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "moved": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "skipped": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "imported",
+          "kept",
+          "moved",
+          "added",
+          "skipped",
+          "failed",
+          "belowCutoff",
+          "collectionsGrown",
+          "collectionsCompleted"
         ],
         "type": "object"
       },
       "LibraryResult": {
         "additionalProperties": false,
         "properties": {
+          "belowCutoff": {
+            "type": "boolean"
+          },
           "error": {
             "type": "string"
           },
@@ -3631,18 +4783,116 @@
             "format": "int64",
             "type": "integer"
           },
+          "outcome": {
+            "enum": [
+              "kept",
+              "moved",
+              "added",
+              "skipped",
+              "failed"
+            ],
+            "type": "string"
+          },
           "reason": {
             "type": "string"
           }
         },
         "required": [
-          "folder"
+          "folder",
+          "outcome",
+          "belowCutoff"
+        ],
+        "type": "object"
+      },
+      "LibraryScan": {
+        "additionalProperties": false,
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/ScanCounts",
+            "description": "Folders by status"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "done": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "folders": {
+            "description": "Described folders, in folder order (GET /library-import/scans/{id} only)",
+            "items": {
+              "$ref": "#/components/schemas/LibraryFolder"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "jobId": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "path": {
+            "description": "Scanned sub-path, relative to the root folder; empty for the root folder",
+            "type": "string"
+          },
+          "rootFolderId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "running",
+              "done",
+              "cancelled",
+              "failed"
+            ],
+            "type": "string"
+          },
+          "total": {
+            "description": "Folders to describe (known once the folder is listed)",
+            "format": "int64",
+            "type": "integer"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "jobId",
+          "rootFolderId",
+          "path",
+          "status",
+          "total",
+          "done",
+          "createdAt",
+          "updatedAt",
+          "counts"
         ],
         "type": "object"
       },
       "LibraryScanInputBody": {
         "additionalProperties": false,
         "properties": {
+          "path": {
+            "description": "Sub-path inside the root folder (from GET /library-import/folders); empty for the whole root folder. A movie folder (a video inside) is scanned as one folder",
+            "maxLength": 4096,
+            "type": "string"
+          },
           "rootFolderId": {
             "format": "int64",
             "minimum": 1,
@@ -3658,17 +4908,32 @@
         "additionalProperties": false,
         "properties": {
           "folder": {
+            "description": "Folder as listed by the scan (relative to the root folder)",
             "type": "string"
           },
           "minimumAvailability": {
+            "description": "Default released",
+            "type": "string"
+          },
+          "mode": {
+            "description": "keep (default) records the file where it is; move then moves it into the naming templates (nothing is deleted; on failure the files are put back)",
+            "enum": [
+              "keep",
+              "move"
+            ],
             "type": "string"
           },
           "monitored": {
+            "description": "Monitored movies are upgraded later, up to the profile cutoff",
             "type": "boolean"
           },
           "qualityProfileId": {
             "format": "int64",
             "type": "integer"
+          },
+          "searchOnAdd": {
+            "description": "Search right after the import: a missing file, or an upgrade below the cutoff (monitored movies only)",
+            "type": "boolean"
           },
           "tmdbId": {
             "format": "int64",
@@ -4367,12 +5632,23 @@
               "array",
               "null"
             ]
+          },
+          "upcoming": {
+            "description": "Parts not released yet: added automatically on their release day (written to history)",
+            "items": {
+              "$ref": "#/components/schemas/SkippedPart"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
           }
         },
         "required": [
           "collection",
           "added",
-          "skipped"
+          "skipped",
+          "upcoming"
         ],
         "type": "object"
       },
@@ -4741,7 +6017,7 @@
             ]
           },
           "posterUrl": {
-            "description": "w342",
+            "description": "w342; replace w342 by w92 in the path for a table thumbnail",
             "items": {
               "type": [
                 "string",
@@ -5490,7 +6766,7 @@
             "type": "string"
           },
           "posterUrl": {
-            "description": "Poster at w342; replace w342 by w780 in the path for high-density screens",
+            "description": "Poster at w342; replace w342 by w780 in the path for high-density screens, or by w92 for a thumbnail",
             "type": [
               "string",
               "null"
@@ -5921,6 +7197,29 @@
           "folderTemplate",
           "fileTemplate",
           "renameFiles"
+        ],
+        "type": "object"
+      },
+      "NextRelease": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD",
+            "type": "string"
+          },
+          "type": {
+            "description": "For a film not in the library, TMDB gives only its first release date, reported as cinema",
+            "enum": [
+              "cinema",
+              "digital",
+              "physical"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "type"
         ],
         "type": "object"
       },
@@ -7265,7 +8564,7 @@
             "type": "boolean"
           },
           "group": {
-            "description": "Group name; empty for a single quality",
+            "description": "Group name; empty for a single quality. The qualities of a group are equal (one rank): among them the best score wins. Names are unique without case and differ from quality names; rename, merge or split by sending the new entries (update the cutoff with them, or name a member quality as the cutoff)",
             "maxLength": 100,
             "type": "string"
           },
@@ -7768,8 +9067,16 @@
           "resume": {
             "type": "boolean"
           },
+          "resumeRetrying": {
+            "description": "POST /queue/{id}/resume-retrying: the user stopped the retries of this chain",
+            "type": "boolean"
+          },
           "retryImport": {
             "description": "The import failed: POST /queue/{id}/import",
+            "type": "boolean"
+          },
+          "stopRetrying": {
+            "description": "POST /queue/{id}/stop-retrying: no automatic next release if this chain fails",
             "type": "boolean"
           }
         },
@@ -7777,7 +9084,9 @@
           "pause",
           "resume",
           "remove",
-          "retryImport"
+          "retryImport",
+          "stopRetrying",
+          "resumeRetrying"
         ],
         "type": "object"
       },
@@ -7907,6 +9216,10 @@
               "null"
             ]
           },
+          "retryStopped": {
+            "description": "The user stopped the automatic next-best retries of this download's chain",
+            "type": "boolean"
+          },
           "seeders": {
             "description": "Torrents: seeders when grabbed",
             "format": "int64",
@@ -7983,6 +9296,7 @@
           "messages",
           "manual",
           "retryOf",
+          "retryStopped",
           "grabbedAt",
           "completedAt",
           "importedAt"
@@ -8083,6 +9397,10 @@
               "null"
             ]
           },
+          "retryStopped": {
+            "description": "The user stopped the automatic next-best retries of this download's chain",
+            "type": "boolean"
+          },
           "size": {
             "format": "int64",
             "type": "integer"
@@ -8129,6 +9447,7 @@
           "messages",
           "manual",
           "retryOf",
+          "retryStopped",
           "grabbedAt",
           "completedAt",
           "importedAt"
@@ -9039,6 +10358,34 @@
           "size",
           "quality",
           "parsed"
+        ],
+        "type": "object"
+      },
+      "ScanCounts": {
+        "additionalProperties": false,
+        "properties": {
+          "ambiguous": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "inLibrary": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "new": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "noMatch": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "new",
+          "ambiguous",
+          "noMatch",
+          "inLibrary"
         ],
         "type": "object"
       },
@@ -10078,6 +11425,28 @@
         "required": [
           "tmdbId",
           "name"
+        ],
+        "type": "object"
+      },
+      "Subfolder": {
+        "additionalProperties": false,
+        "properties": {
+          "movie": {
+            "description": "It holds a video file directly: a movie folder rather than a folder of movies",
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "description": "Relative to the root folder",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "path",
+          "movie"
         ],
         "type": "object"
       },
@@ -11342,6 +12711,126 @@
         ]
       }
     },
+    "/bulk-searches/{jobId}": {
+      "delete": {
+        "description": "A queued bulk search is cancelled at once; a running one stops after the current movie's search (bulksearch.finished with state cancelled). Grabs already made stay. 409 when it already ended.",
+        "operationId": "cancel-bulk-search",
+        "parameters": [
+          {
+            "description": "Job id of the bulk search",
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "description": "Job id of the bulk search",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkSearchProgress"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Cancel a bulk search",
+        "tags": [
+          "Search"
+        ]
+      },
+      "get": {
+        "description": "Live counts while it runs in this process; after a restart, the state of its job with the total only.",
+        "operationId": "get-bulk-search",
+        "parameters": [
+          {
+            "description": "Job id of the bulk search",
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "description": "Job id of the bulk search",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkSearchProgress"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Progress of a bulk search",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
     "/calendar": {
       "get": {
         "description": "Cinema, digital and physical release dates of the library movies in a range (both ends included, at most 400 days). Monitored movies only by default; unmonitored=true adds the unmonitored movies not released yet. Served from the in-memory index.",
@@ -11431,8 +12920,193 @@
         ]
       }
     },
+    "/calendar.ics": {
+      "get": {
+        "description": "An RFC 5545 calendar of the release dates of the library movies (all-day events), for calendar apps. Authenticated by the calendar feed key in the key query parameter, the one key accepted in a URL: it is read-only and opens this feed only (no session, no API key). Options are set in Settings \u003e Calendar feed. Limited to 60 requests and 10 wrong keys per 10 minutes per client address (429).",
+        "operationId": "get-calendar-feed-ics",
+        "parameters": [
+          {
+            "description": "The calendar feed key (Settings \u003e Calendar feed); read-only, opens this feed only",
+            "explode": false,
+            "in": "query",
+            "name": "key",
+            "schema": {
+              "description": "The calendar feed key (Settings \u003e Calendar feed); read-only, opens this feed only",
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/calendar": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The calendar"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "iCal feed of the release dates",
+        "tags": [
+          "Calendar"
+        ]
+      }
+    },
+    "/collections": {
+      "get": {
+        "description": "Every collection with at least one library movie, with its films in release order and their state. Library movies come from the in-memory index; films not in the library come from the last read of the collection on TMDB (no TMDB call: partsKnown is false until it was read once, which the collections refresh job does within 12 hours). totals ignore the filters.",
+        "operationId": "list-collections",
+        "parameters": [
+          {
+            "description": "name: A to Z; missing: most films not in the library first; year: newest film first; added: most recently added library movie first",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "name",
+              "description": "name: A to Z; missing: most films not in the library first; year: newest film first; added: most recently added library movie first",
+              "enum": [
+                "name",
+                "missing",
+                "year",
+                "added"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only monitored (true) or not monitored (false) collections; absent: all",
+            "explode": false,
+            "in": "query",
+            "name": "monitored",
+            "schema": {
+              "description": "Only monitored (true) or not monitored (false) collections; absent: all",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only collections with hasMissing",
+            "explode": false,
+            "in": "query",
+            "name": "missing",
+            "schema": {
+              "description": "Only collections with hasMissing",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Part of the name",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Part of the name",
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "pageSize",
+            "schema": {
+              "default": 50,
+              "format": "int64",
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Collections of the library",
+        "tags": [
+          "Collections"
+        ]
+      }
+    },
     "/collections/{id}": {
       "get": {
+        "description": "The collection with its settings and every film (films), in release order: library movies with their state, file quality and size; the others missing or not released. The films are read from TMDB when it answers (then saved for the list), else from the last read (partsError says why). movies and parts are the raw library movies and TMDB parts.",
         "operationId": "get-collection",
         "parameters": [
           {
@@ -11453,7 +13127,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Collection"
+                  "$ref": "#/components/schemas/CollectionDetail"
                 }
               }
             },
@@ -11478,7 +13152,7 @@
     },
     "/collections/{id}/monitor": {
       "put": {
-        "description": "Saves the settings; when monitored, adds every movie of the collection that is not in the library (excluded movies are skipped).",
+        "description": "Saves the settings (profile, root folder, minimum availability and searchOnAdd are used for every film the collection adds). When monitored, adds now the released films that are not in the library (excluded ones are skipped); films not released yet are listed in upcoming and added on their release day by the collections job (every 6 hours, written to history). Turning it off keeps every movie.",
         "operationId": "monitor-collection",
         "parameters": [
           {
@@ -12157,7 +13831,7 @@
     },
     "/events": {
       "get": {
-        "description": "Each message has an id, an event name (movie.added, movie.updated, movie.deleted, job.started, job.completed, job.failed, health.changed, download.progress, download.grabbed, download.updated, download.imported, download.failed, download.removed, search.batch, search.indexer_done, search.indexer_failed, search.finished, ...) and JSON data {id, type, time, movieId, data}. download.progress data is compact, keyed by download id: {id, movieId, status, progress, speedBps, etaSeconds, message}. moviefile.renamed / moviefile.deleted follow file operations; tags.changed follows tag edits. A comment is sent every 15 s as a heartbeat. An event named \"resync\" means events were missed: refetch.",
+        "description": "Each message has an id, an event name (movie.added, movie.updated, movie.deleted, job.started, job.completed, job.failed, health.changed, download.progress, download.grabbed, download.updated, download.imported, download.failed, download.removed, search.batch, search.indexer_done, search.indexer_failed, search.finished, job.cancelled, bulksearch.progress, bulksearch.finished, libraryimport.folder, libraryimport.progress, libraryimport.finished, ...) and JSON data {id, type, time, movieId, data}. bulksearch.* data is a BulkSearchProgress; libraryimport.folder data is {scanId, done, total, folder} and the other libraryimport.* carry the LibraryScan without its folders. download.progress data is compact, keyed by download id: {id, movieId, status, progress, speedBps, etaSeconds, message}. moviefile.renamed / moviefile.deleted follow file operations; tags.changed follows tag edits. A comment is sent every 15 s as a heartbeat. An event named \"resync\" means events were missed: refetch.",
         "operationId": "stream-events",
         "parameters": [
           {
@@ -12362,11 +14036,13 @@
                   "movie_added",
                   "movie_deleted",
                   "retry_scheduled",
-                  "retries_exhausted"
+                  "retries_exhausted",
+                  "retries_stopped",
+                  "retries_resumed"
                 ],
                 "type": "string"
               },
-              "maxItems": 17,
+              "maxItems": 19,
               "type": [
                 "array",
                 "null"
@@ -12501,11 +14177,13 @@
                   "movie_added",
                   "movie_deleted",
                   "retry_scheduled",
-                  "retries_exhausted"
+                  "retries_exhausted",
+                  "retries_stopped",
+                  "retries_resumed"
                 ],
                 "type": "string"
               },
-              "maxItems": 17,
+              "maxItems": 19,
               "type": [
                 "array",
                 "null"
@@ -12627,13 +14305,14 @@
             }
           },
           {
-            "description": "poster: w342, w780; backdrop: w1280; profile: w185",
+            "description": "poster: w92 (thumbnail), w342, w780; backdrop: w1280; profile: w185",
             "in": "path",
             "name": "size",
             "required": true,
             "schema": {
-              "description": "poster: w342, w780; backdrop: w1280; profile: w185",
+              "description": "poster: w92 (thumbnail), w342, w780; backdrop: w1280; profile: w185",
               "enum": [
+                "w92",
                 "w185",
                 "w342",
                 "w780",
@@ -13331,9 +15010,57 @@
         ]
       }
     },
+    "/library-import/candidates": {
+      "post": {
+        "description": "Searches TMDB (a title, tmdb:\u003cid\u003e or an IMDb id) and scores each result against the folder and file names: confidence and reason are relative to this folder, as in the scan. Nothing is changed.",
+        "operationId": "library-import-candidates",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Library-import-candidatesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryCandidate"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Search TMDB for a folder (change match)",
+        "tags": [
+          "Import"
+        ]
+      }
+    },
     "/library-import/confirm": {
       "post": {
-        "description": "Adds each movie to the library, pointed at its existing folder, and records its file where it is. No file is moved or renamed.",
+        "description": "Adds each movie to the library, pointed at its existing folder, and records its file where it is (mode keep, the default). Mode move then renames the folder and file to the naming templates inside the root folder: a move, never a deletion; when a step fails the files already moved are put back and the movie keeps its folder. Monitored movies are upgraded later up to the profile cutoff; searchOnAdd searches right after the import. Each file is written to history. The summary counts the outcomes and lists the collections the import completed.",
         "operationId": "confirm-library-import",
         "requestBody": {
           "content": {
@@ -13350,13 +15077,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/LibraryResult"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "$ref": "#/components/schemas/LibraryImport"
                 }
               }
             },
@@ -13379,9 +15100,71 @@
         ]
       }
     },
+    "/library-import/folders": {
+      "get": {
+        "description": "Sub-folders of a root folder or of path inside it (hidden folders excluded); movie tells a folder that holds a video directly.",
+        "operationId": "list-library-import-folders",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "rootFolderId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Relative to the root folder; empty for the root folder",
+            "explode": false,
+            "in": "query",
+            "name": "path",
+            "schema": {
+              "description": "Relative to the root folder; empty for the root folder",
+              "maxLength": 4096,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Subfolder"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Folders of a root folder, for the folder picker",
+        "tags": [
+          "Import"
+        ]
+      }
+    },
     "/library-import/scan": {
       "post": {
-        "description": "Folders of a root folder that hold a movie Gonema does not manage yet, with the TMDB movies they may be. Nothing is changed.",
+        "description": "Folders of a root folder (or of a sub-path) that hold a movie Gonema does not manage yet, with the TMDB movies they may be. Nothing is changed. For a large library use POST /library-import/scans: a background job that streams its progress.",
         "operationId": "scan-library-import",
         "requestBody": {
           "content": {
@@ -13421,7 +15204,171 @@
             "description": "Error"
           }
         },
-        "summary": "Find unmanaged movie folders",
+        "summary": "Find unmanaged movie folders (waits for the result)",
+        "tags": [
+          "Import"
+        ]
+      }
+    },
+    "/library-import/scans": {
+      "get": {
+        "description": "Newest first, without their folders.",
+        "operationId": "list-library-scans",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryScan"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Recent library scans",
+        "tags": [
+          "Import"
+        ]
+      },
+      "post": {
+        "description": "Queues a scan job of a root folder or of a sub-path. It goes on when the page is left. Each described folder streams as a libraryimport.folder event {scanId, done, total, folder}; libraryimport.progress and libraryimport.finished carry the scan. Results stay for a later review (the last 20 scans): GET /library-import/scans/{scanId}. DELETE cancels it (the folders found are kept). Nothing is changed on disk.",
+        "operationId": "start-library-scan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryScanInputBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryScan"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Scan existing movie folders in the background",
+        "tags": [
+          "Import"
+        ]
+      }
+    },
+    "/library-import/scans/{scanId}": {
+      "delete": {
+        "description": "Stops the scan job; the folders described so far are kept (libraryimport.finished with status cancelled). 409 when it already ended.",
+        "operationId": "cancel-library-scan",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scanId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryScan"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Cancel a library scan",
+        "tags": [
+          "Import"
+        ]
+      },
+      "get": {
+        "description": "Folders described so far while it runs; all of them once done.",
+        "operationId": "get-library-scan",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scanId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryScan"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "A library scan with its folders",
         "tags": [
           "Import"
         ]
@@ -14779,6 +16726,68 @@
         "summary": "Rename several movies",
         "tags": [
           "Movie files"
+        ]
+      }
+    },
+    "/movies/search": {
+      "post": {
+        "description": "Queues one background job that runs the automatic search of each movie, one at a time, spaced out, waiting while every indexer is paused by its circuit breaker (rate limit, repeated errors). Each grab is written to history. Progress streams as bulksearch.progress events (bulksearch.finished at the end) and at GET /bulk-searches/{jobId}; DELETE /bulk-searches/{jobId} cancels it. Give ids or a filter, not both. One bulk search at a time (409 otherwise). Movies that are unmonitored or not available yet are skipped.",
+        "operationId": "bulk-search-movies",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkSearchStarted"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Search several movies automatically",
+        "tags": [
+          "Search"
         ]
       }
     },
@@ -16540,6 +18549,98 @@
         ]
       }
     },
+    "/queue/{id}/resume-retrying": {
+      "post": {
+        "description": "Undoes stop-retrying (history retries_resumed). When the newest download of the chain failed meanwhile and nothing is downloading for the movie, the next release is tried now. Idempotent.",
+        "operationId": "resume-retrying-download",
+        "parameters": [
+          {
+            "description": "Identifier",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Identifier",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueItem"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Resume the automatic retries of a download chain",
+        "tags": [
+          "Queue"
+        ]
+      }
+    },
+    "/queue/{id}/stop-retrying": {
+      "post": {
+        "description": "Any download of the chain (failed or active; ids from the queue or history) can be given. When a download of the chain fails, the next best release is no longer grabbed automatically; RSS and the scheduled searches still run. The current download is not touched. Written to history (retries_stopped); undo with resume-retrying. Idempotent.",
+        "operationId": "stop-retrying-download",
+        "parameters": [
+          {
+            "description": "Identifier",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Identifier",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueItem"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Stop the automatic retries of a download chain",
+        "tags": [
+          "Queue"
+        ]
+      }
+    },
     "/recycle-bin": {
       "get": {
         "description": "Files replaced by upgrades, with where they came from. They stay until a purge is requested.",
@@ -17575,7 +19676,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BackupSettings"
+                  "$ref": "#/components/schemas/BackupSettingsView"
                 }
               }
             },
@@ -17598,7 +19699,7 @@
         ]
       },
       "put": {
-        "description": "Interval (hours), scheduled backups kept, and whether they include gonema.key (off by default: see the warning). A new interval applies at once.",
+        "description": "Interval (hours), scheduled backups kept, and whether they include gonema.key (off by default: see the warning). A new interval applies at once (nextRunAt may show the previous due time for a moment).",
         "operationId": "set-backup-settings",
         "requestBody": {
           "content": {
@@ -17615,7 +19716,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BackupSettings"
+                  "$ref": "#/components/schemas/BackupSettingsView"
                 }
               }
             },
@@ -17633,6 +19734,166 @@
           }
         },
         "summary": "Change scheduled backups",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/settings/calendar-feed": {
+      "delete": {
+        "description": "Requires confirm=true (422 otherwise). The key is forgotten: subscribed calendars stop updating. The options are kept. 404 when the feed is already off.",
+        "operationId": "disable-calendar-feed",
+        "parameters": [
+          {
+            "description": "Must be true",
+            "explode": false,
+            "in": "query",
+            "name": "confirm",
+            "schema": {
+              "description": "Must be true",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Turn the calendar feed off",
+        "tags": [
+          "Settings"
+        ]
+      },
+      "get": {
+        "description": "Whether the iCal feed is on, the last four characters of its key and its options. The key and the feed URL are shown only by regenerate.",
+        "operationId": "get-calendar-feed",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarFeedView"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Calendar feed settings",
+        "tags": [
+          "Settings"
+        ]
+      },
+      "put": {
+        "description": "Days back and ahead, unmonitored movies, release types. The key is unchanged; the feed stays on or off.",
+        "operationId": "set-calendar-feed",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalendarOptions"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarFeedView"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Change the calendar feed options",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/settings/calendar-feed/regenerate": {
+      "post": {
+        "description": "Creates a new read-only key and returns it once, with the feed URL. The previous key (and every calendar subscribed with it) stops working at once.",
+        "operationId": "regenerate-calendar-feed",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarFeedView"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Turn the calendar feed on with a new key",
         "tags": [
           "Settings"
         ]

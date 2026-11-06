@@ -187,3 +187,19 @@ func drain(c chan string) string {
 		}
 	}
 }
+
+// TestOpenAPIRoutes builds the real router (every route group, as serve does)
+// and prints the OpenAPI document: a route Huma refuses (a pointer query
+// parameter, a conflicting path) panics here, not at startup.
+func TestOpenAPIRoutes(t *testing.T) {
+	var out, errOut strings.Builder
+	if code := runOpenAPI(&out, &errOut); code != 0 {
+		t.Fatalf("openapi exit %d: %s", code, errOut.String())
+	}
+	for _, p := range []string{"/collections", "/calendar.ics", "/settings/calendar-feed", "/movies/search", "/bulk-searches/{jobId}",
+		"/queue/{id}/stop-retrying", "/library-import/scans", "/library-import/folders", "/library-import/candidates"} {
+		if !strings.Contains(out.String(), `"`+p+`"`) {
+			t.Errorf("the OpenAPI document lacks %s", p)
+		}
+	}
+}

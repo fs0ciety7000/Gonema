@@ -41,7 +41,7 @@ type CalendarOptions struct {
 	Types       []string `json:"releaseTypes" minItems:"1" maxItems:"3" doc:"cinema, digital and/or physical"`
 }
 
-// DefaultCalendarOptions: 30 days back, 180 ahead, monitored movies, every
+// DefaultCalendarOptions returns the defaults: 30 days back, 180 ahead, monitored movies, every
 // release type.
 func DefaultCalendarOptions() CalendarOptions {
 	return CalendarOptions{PastDays: 30, FutureDays: 180, Types: slices.Clone(calendarTypes)}

@@ -314,8 +314,8 @@ func (s *Server) collectionRoutes() {
 			searched[d.Movies[i].ID] = d.Movies[i].LastSearchedAt
 		}
 		var outside []int
-		for _, f := range out.Films {
-			if !f.InLibrary {
+		for i := range out.Films {
+			if f := &out.Films[i]; !f.InLibrary {
 				outside = append(outside, f.TmdbID)
 			}
 		}

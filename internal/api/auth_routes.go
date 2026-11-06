@@ -343,7 +343,8 @@ func (s *Server) authRoutes() {
 			if err != nil {
 				return nil, s.problem(ctx, err, false)
 			}
-			for _, x := range sessions {
+			for i := range sessions {
+				x := &sessions[i]
 				out.Sessions = append(out.Sessions, AuthSession{ID: x.ID, Current: x.ID == p.SessionID, CreatedAt: x.CreatedAt,
 					LastSeenAt: x.LastSeenAt, ExpiresAt: x.ExpiresAt, IP: x.IP, UserAgent: x.UserAgent, Via: x.Via})
 			}

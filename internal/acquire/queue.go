@@ -520,14 +520,14 @@ func (s *Service) startImport(ctx context.Context, c *db.DownloadClient, d *db.D
 	}
 	client := *c
 	s.goBackground(func(base context.Context) {
-		defer func() {
-			s.track.mu.Lock()
-			delete(s.track.importing, dl.ID)
-			s.track.mu.Unlock()
-		}()
 		ictx, cancel := context.WithTimeout(base, importTimout)
 		defer cancel()
 		s.runImport(ictx, &client, &dl, local)
+		// The download is free for another import before anyone is told the
+		// attempt ended: a retry requested right after must not be ignored.
+		s.track.mu.Lock()
+		delete(s.track.importing, dl.ID)
+		s.track.mu.Unlock()
 		if s.onImportDone != nil {
 			s.onImportDone(dl.ID)
 		}

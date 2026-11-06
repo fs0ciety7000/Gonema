@@ -343,12 +343,12 @@ func (s *Server) libraryRoutes() {
 
 	huma.Register(s.api, huma.Operation{
 		OperationID: "monitor-collection", Method: http.MethodPut, Path: "/collections/{id}/monitor",
-		Summary:     "Monitor a collection",
+		Summary: "Monitor a collection",
 		Description: "Saves the settings (profile, root folder, minimum availability and searchOnAdd are used for every film the collection adds). " +
 			"When monitored, adds now the released films that are not in the library (excluded ones are skipped); films not released yet " +
 			"are listed in upcoming and added on their release day by the collections job (every 6 hours, written to history). " +
 			"Turning it off keeps every movie.",
-		Tags:        []string{"Collections"},
+		Tags: []string{"Collections"},
 	}, func(ctx context.Context, in *monitorInput) (*struct{ Body MonitorResult }, error) {
 		b := in.Body
 		res, err := s.d.Library.MonitorCollection(ctx, in.ID, library.MonitorOptions{

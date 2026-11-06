@@ -245,7 +245,9 @@ func (s *Service) runBulkSearch(ctx context.Context, job db.Job, p BulkSearchPay
 			}
 			return s.bulkEnd(ctx, job.ID, err)
 		}
-		s.bulkUpdate(job.ID, func(pr *BulkSearchProgress) { pr.State, pr.CurrentID, pr.WaitingUntil, pr.Reason = BulkRunning, id, nil, "" })
+		s.bulkUpdate(job.ID, func(pr *BulkSearchProgress) {
+			pr.State, pr.CurrentID, pr.WaitingUntil, pr.Reason = BulkRunning, id, nil, ""
+		})
 		out, err := s.SearchMovie(ctx, id)
 		last = s.now()
 		if err != nil && ctx.Err() != nil {

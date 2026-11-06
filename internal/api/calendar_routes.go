@@ -70,8 +70,8 @@ type windowCount struct {
 	n     int
 }
 
-func newWindowLimiter(window time.Duration, limit, max int) *windowLimiter {
-	return &windowLimiter{window: window, limit: limit, max: max, m: map[string]*windowCount{}, now: time.Now}
+func newWindowLimiter(window time.Duration, limit, maxKeys int) *windowLimiter {
+	return &windowLimiter{window: window, limit: limit, max: maxKeys, m: map[string]*windowCount{}, now: time.Now}
 }
 
 // count records an event; it returns 0 when under the limit, else how long to

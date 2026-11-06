@@ -74,7 +74,7 @@ func Fold(line string) string {
 	b.Grow(len(line) + len(line)/maxLine*3 + 2)
 	limit := maxLine
 	n := 0
-	for len(line) > 0 {
+	for line != "" {
 		_, size := utf8.DecodeRuneInString(line)
 		if n+size > limit {
 			b.WriteString("\r\n ")

@@ -18,7 +18,9 @@ import (
 
 func TestBreakerWait(t *testing.T) {
 	now := time.Date(2026, 11, 6, 12, 0, 0, 0, time.UTC)
-	open := func(d time.Duration) search.Health { return search.Health{State: search.Open, DisabledUntil: now.Add(d)} }
+	open := func(d time.Duration) search.Health {
+		return search.Health{State: search.Open, DisabledUntil: now.Add(d)}
+	}
 	for _, tc := range []struct {
 		name  string
 		hs    []search.Health

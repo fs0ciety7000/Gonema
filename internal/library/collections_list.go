@@ -317,7 +317,8 @@ func (s *Service) ListCollections(ctx context.Context, q CollectionQuery) (Colle
 	}
 	today := s.now().Format(dateLayout)
 	var sel []CollectionView
-	for _, c := range rows {
+	for i := range rows {
+		c := rows[i]
 		movies := byCollection[c.ID]
 		if len(movies) == 0 {
 			continue

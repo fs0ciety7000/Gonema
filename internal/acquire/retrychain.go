@@ -21,8 +21,8 @@ const (
 
 // retryChain returns the downloads of the retry chain of a download (linked
 // by retry_of, in both directions), oldest first, and the download itself.
-func (s *Service) retryChain(ctx context.Context, id int64) (db.Download, []db.Download, error) {
-	d, err := s.st.Read().GetDownload(ctx, id)
+func (s *Service) retryChain(ctx context.Context, id int64) (d db.Download, chain []db.Download, err error) {
+	d, err = s.st.Read().GetDownload(ctx, id)
 	if err != nil {
 		return db.Download{}, nil, mapNotFound(err, "Download %d does not exist.", id)
 	}

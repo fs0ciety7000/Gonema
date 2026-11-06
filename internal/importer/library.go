@@ -93,7 +93,7 @@ func (s *Service) poster(path string) *string {
 }
 
 // scanBase returns the folder to scan: the root folder, or rel inside it.
-func (s *Service) scanBase(root *db.RootFolder, rel string) (string, string, error) {
+func (s *Service) scanBase(root *db.RootFolder, rel string) (dir, cleanRel string, err error) {
 	rel = strings.Trim(filepath.ToSlash(strings.TrimSpace(rel)), "/")
 	if rel == "" {
 		return root.Path, "", nil
@@ -103,7 +103,7 @@ func (s *Service) scanBase(root *db.RootFolder, rel string) (string, string, err
 			return "", "", userErr(ErrInvalid, nil, "%q is not a folder of the root folder %s", rel, root.Path)
 		}
 	}
-	dir, err := s.fs.SafeJoin(root.Path, filepath.FromSlash(rel))
+	dir, err = s.fs.SafeJoin(root.Path, filepath.FromSlash(rel))
 	if err != nil {
 		return "", "", userErr(ErrInvalid, err, "%q is not a folder of the root folder %s", rel, root.Path)
 	}
@@ -714,7 +714,7 @@ func (s *Service) adopt(ctx context.Context, root *db.RootFolder, sel *LibrarySe
 	if err != nil {
 		return LibraryResult{created: created, MovieID: movie.ID}, err
 	}
-	r, err := s.adoptFile(ctx, movie, dir, folder)
+	r, err := s.adoptFile(ctx, movie, dir)
 	r.created = created
 	if err != nil {
 		return r, err
@@ -754,7 +754,7 @@ func (s *Service) enqueueSearch(ctx context.Context, movieID int64) {
 }
 
 // adoptFile records the main video of dir for movie, left in place.
-func (s *Service) adoptFile(ctx context.Context, movie db.Movie, dir, folder string) (LibraryResult, error) {
+func (s *Service) adoptFile(ctx context.Context, movie db.Movie, dir string) (LibraryResult, error) {
 	unlock := s.lockMovie(movie.ID)
 	defer unlock()
 	t, err := s.loadTarget(ctx, movie.ID)

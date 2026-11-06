@@ -146,8 +146,8 @@ const MaxGroupName = 100
 // qualityNamed reports whether a lower-case name is a quality ID or display
 // name of the catalog.
 func qualityNamed(name string) bool {
-	for _, q := range catalog {
-		if strings.ToLower(string(q.ID)) == name || strings.ToLower(q.ID.Name()) == name {
+	for i := range catalog {
+		if q := &catalog[i]; strings.EqualFold(string(q.ID), name) || strings.EqualFold(q.Name, name) {
 			return true
 		}
 	}

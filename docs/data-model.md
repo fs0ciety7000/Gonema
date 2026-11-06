@@ -73,7 +73,10 @@ Le statut de bibliothèque (`missing`, `downloading`, `available`, `upgradable`)
 
 **alternate_titles** — `id, movie_id FK CASCADE, title, clean_title, country, source ('tmdb'|'user')`, index `(clean_title)`. Sert au matching des releases étrangères.
 
-**collections** — `id, tmdb_id UNIQUE, name, overview, poster_path, backdrop_path, monitored, quality_profile_id, root_folder_id, minimum_availability, refreshed_at`. `monitored` = ajouter automatiquement les films de la saga.
+**collections** — `id, tmdb_id UNIQUE, name, overview, poster_path, backdrop_path, monitored, quality_profile_id, root_folder_id, minimum_availability, refreshed_at, parts, parts_refreshed_at, search_on_add`. `monitored` = ajouter automatiquement les films de la saga, avec le profil, le dossier racine, la disponibilité minimale et `search_on_add` de la collection.
+- `parts` (migration 00009) : instantané JSON des films de la collection lus sur TMDB (`tmdbId, title, year, releaseDate, posterPath`), `NULL` tant que TMDB n'a jamais été lu ; réécrit à chaque lecture (fiche, découverte, ajout, surveillance) et par le job `collections.refresh` (instantanés de plus de 24 h, 100 au plus par passage). `GET /collections` compte à partir de cet instantané et de l'index en mémoire, sans appel TMDB.
+- **Sémantique de la surveillance** : surveiller une collection ajoute **tout de suite** les films déjà sortis absents de la bibliothèque (exclusions ignorées) ; un film annoncé ou à venir est ajouté **le jour de sa sortie** (date TMDB de la partie) par le job `collections.refresh` (toutes les 6 h), jamais avant. Chaque ajout écrit `movie_added` dans `history` avec la collection comme raison.
+- **« Manquant »** = film sorti de la collection qui n'est pas dans la bibliothèque. Un film à venir n'est jamais « manquant » (compté dans `upcoming`) ; `notInLibrary` compte tous les films absents, sortis ou non.
 
 **movie_files**
 | Colonne | Type | Rôle |
@@ -106,7 +109,7 @@ Le statut de bibliothèque (`missing`, `downloading`, `available`, `upgradable`)
 
 **quality_profile_sizes** (migration 00006) — `(profile_id FK CASCADE, quality) PK, min_mb_per_min, preferred_mb_per_min, max_mb_per_min` (`max` 0 = sans borne). Bornes de taille propres à un profil pour certaines qualités ; les autres qualités suivent `quality_sizes` puis les valeurs par défaut du paquet `quality`.
 
-**quality_profile_items** — `profile_id, position, quality, group_name, allowed`. L'ordre définit la préférence ; un groupe (« HD-1080p ») rend plusieurs qualités équivalentes.
+**quality_profile_items** — `profile_id, position, quality, group_name, allowed`. L'ordre définit la préférence ; un groupe (« HD-1080p ») rend plusieurs qualités équivalentes (même rang : entre elles, le meilleur score l'emporte). Noms de groupe uniques sans tenir compte de la casse, 100 caractères au plus, jamais le nom ou l'id d'une qualité. Créer, renommer, fusionner ou scinder un groupe = envoyer les nouvelles entrées du profil (`PUT /quality-profiles/{id}`) ; le seuil peut nommer une qualité membre, qui suit alors le groupe.
 
 **scoring_rules** — `id, name UNIQUE, include_in_rename, description`. Une règle = une condition composée (« HDR10+ », « Groupe de confiance », « Mauvais encodeur »).
 
@@ -153,13 +156,14 @@ Toute modification d'un profil ou d'une règle recalcule, dans la même transact
 | output_path | chemin local après mapping |
 | status_messages | JSON |
 | retry_of | FK → downloads : chaîne des nouvelles tentatives |
+| retry_stopped_at | (migration 00009) l'utilisateur a arrêté les nouvelles tentatives automatiques de la chaîne : posé sur tous les téléchargements de la chaîne, effacé par « reprendre » (`POST /queue/{id}/stop-retrying` / `resume-retrying`) |
 | grabbed_at, completed_at, imported_at | |
 | manual | bool : grab manuel (override) |
 
 **blocklist** — `id, movie_id FK nullable, kind ('release'|'group'), source_title, release_group, indexer_id, protocol, info_hash, reason, created_at`. Index `(movie_id)`, `(info_hash)`, `(release_group)`.
 
 **history** (ajout seul) — `id, movie_id FK, event, source_title, quality, custom_score, download_id, data JSON, created_at`. Index `(event, id)` pour le filtre par type de l'écran History (migration 00005). Les renommages et déplacements de dossier écrivent `file_renamed` (`data.kind` = `rename` | `move`), les suppressions demandées `file_deleted` (fichiers dans la corbeille).
-`event` ∈ `grabbed`, `grab_failed`, `download_failed`, `imported`, `upgraded`, `import_failed`, `file_deleted`, `file_renamed`, `blocklisted`, `ignored`, `metadata_changed`. Index `(movie_id, created_at)`, `(created_at)`.
+`event` ∈ `grabbed`, `grab_failed`, `download_failed`, `imported`, `upgraded`, `import_failed`, `file_deleted`, `file_renamed`, `blocklisted`, `ignored`, `metadata_changed`, `movie_added`, `movie_deleted`, `grab_overridden`, `retry_scheduled`, `retries_exhausted`, `download_removed` (00002), `retries_stopped`, `retries_resumed` (00009 ; table reconstruite, la descente supprime ces deux événements). Index `(movie_id, created_at)`, `(created_at)`.
 
 ### Découverte
 
@@ -175,10 +179,13 @@ Toute modification d'un profil ou d'une règle recalcule, dans la même transact
 
 ### Système
 
-**jobs** — `id, kind, payload JSON, status (pending·running·done·failed·cancelled), priority, dedupe_key UNIQUE NULL, run_at, attempts, max_attempts, last_error, started_at, finished_at, created_at`. Index `(status, run_at, priority)`. Les jobs `running` au démarrage repassent en `pending` (reprise).
+**jobs** — (job `movies.bulk_search` : recherches automatiques groupées, une à la fois, espacées, en attente tant que tous les indexeurs sont coupés par leur disjoncteur ; annulable, statut `cancelled`) `id, kind, payload JSON, status (pending·running·done·failed·cancelled), priority, dedupe_key UNIQUE NULL, run_at, attempts, max_attempts, last_error, started_at, finished_at, created_at`. Index `(status, run_at, priority)`. Les jobs `running` au démarrage repassent en `pending` (reprise).
 
 **users** — `id, username UNIQUE (comparé sans casse), password_hash (argon2id, chaîne PHC), role (admin·user), created_at, last_login_at, password_changed_at`. Un seul compte admin pour l'instant, créé au premier lancement (migration 00007 ; détail : `docs/security.md`).
 **sessions** — `id PK (identifiant public : liste et révocation), token_hash BLOB UNIQUE (SHA-256 du jeton du cookie, jamais le jeton), user_id FK CASCADE, created_at, last_seen_at, expires_at, ip, user_agent`. Index `(user_id)`, `(expires_at)`. Fin à `expires_at` (30 j) ou après 14 j sans usage (`last_seen_at`, écrit au plus toutes les 5 min) ; purge des expirées à chaque connexion. Table recréée par la migration 00007 (vide avant).
+**sessions.via** (migration 00009) — `direct` (adresse publique, sans proxy de confiance) · `local` (loopback ou privée, sans proxy de confiance) · `proxy` (via un proxy de `GONEMA_TRUSTED_PROXIES`). Écrit à la connexion, rafraîchi à l'usage quand l'adresse ou le mode change ; affichage seulement, jamais une décision d'accès.
+**calendar_feeds** (migration 00009) — `id, user_id FK UNIQUE CASCADE, key_hash BLOB UNIQUE NULL (SHA-256), last4, created_at, last_used_at, past_days (0-365), future_days (1-730), include_unmonitored, release_types JSON`. Clé en lecture seule du flux iCal (`gnc_` + 256 bits), montrée une fois ; `key_hash` NULL = flux coupé (les options restent). Voir `docs/security.md`.
+**library_import_scans** (migration 00009) — `id, root_folder_id FK CASCADE, path, status (pending·running·done·cancelled·failed), job_id, total, done, folders JSON, error, created_at, updated_at`. Analyse d'un dossier existant lancée en job (`library_import.scan`) ; les dossiers décrits (statut `new`·`ambiguous`·`no_match`·`in_library`, candidats, qualité, HDR) restent pour une revue ultérieure ; 20 analyses gardées.
 **api_keys** — `id, user_id FK UNIQUE CASCADE (une clé par compte), key_hash BLOB UNIQUE (SHA-256), last4, created_at, last_used_at`. La clé n'est montrée qu'une fois ; la régénérer remplace la ligne. Table recréée par la migration 00007 (vide avant).
 
 **saved_views** — `id, user_id FK NULL, page, name, filters JSON, sort JSON, columns JSON, density ('airy'|'compact'), position`. `user_id` NULL = vue partagée (avant l'authentification de la phase 8) ; nom unique par `(page, name)` pour les vues partagées (migration 00004).
@@ -189,7 +196,7 @@ Toute modification d'un profil ou d'une règle recalcule, dans la même transact
 
 **import_journal** (migration 00008) — `id, movie_id FK, download_id FK NULL, source, destination, staging, mode ('move'|'copy'|'hardlink'), size, record JSON, status ('pending'|'done'|'failed'|'attention'|'dismissed'), message, created_at, updated_at`. Index `(status, id)`. L'intention d'un import est écrite **avant** toute opération sur les fichiers ; `done` est posé dans la transaction de la ligne `movie_files`. Au démarrage, les lignes `pending` sont réconciliées (base complétée, nouvel essai, ou `attention` + problème de santé, sans jamais supprimer de fichier). `record` contient la ligne `movie_files` et l'historique à écrire. Lignes `done`/`dismissed` purgées après 30 jours.
 
-**Sauvegardes** (hors base) — archives zip dans `<data>/backups/` (`gonema.db` copiée par `VACUUM INTO`, `manifest.json`, `gonema.key` seulement sur demande) ; réglages dans `settings` sous la clé `backup.settings` (`enabled`, `intervalHours`, `keep`, `includeKey`). Voir `docs/operations.md`.
+**Sauvegardes** (hors base) — archives zip dans `<data>/backups/` (`gonema.db` copiée par `VACUUM INTO`, `manifest.json`, `gonema.key` seulement sur demande) ; réglages dans `settings` sous la clé `backup.settings` (`enabled`, `intervalHours`, `keep`, `includeKey`). Prochaine sauvegarde planifiée : clé `jobs.next_run.backup.scheduled`, exposée par `GET /settings/backups` (`nextRunAt`) et `GET /backups` (`nextScheduledAt`). Voir `docs/operations.md`.
 
 **settings** — `key PK, value JSON`. Nommage (gabarits), mode d'import (hardlink/copy/move), rétention, clé TMDB (chiffrée), etc. Lot 3 de la phase 7 : `ui.preferences` (thème, densité, profil / dossier / disponibilité par défaut de l'ajout de film, calendrier, premier jour de la semaine) et `ui.onboarding_dismissed`. Port, adresse d'écoute, URL de base et niveau de log restent des options de démarrage (drapeaux et variables `GONEMA_*`), affichées en lecture seule.
 
