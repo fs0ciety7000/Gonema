@@ -1,0 +1,11 @@
+version: 2
+
+# Test code and fixtures hold fake credentials on purpose (leak and redaction
+# tests). Real secrets never belong in the repository: see AGENTS.md.
+secret:
+  ignored_paths:
+    - "**/*_test.go"
+    - "**/testdata/**"
+    - "web/e2e/**"
+    - "web/src/**/*.test.ts"
+    - "web/src/**/*.test.tsx"
