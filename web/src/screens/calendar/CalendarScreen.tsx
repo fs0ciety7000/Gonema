@@ -1,4 +1,5 @@
 import '@/styles/lot3.css';
+import { useQuery } from '@tanstack/react-query';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
 import {
   ArrowDownToLine,
@@ -14,7 +15,6 @@ import {
   Ticket,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { calendarQuery } from '@/api/lot3';
 import { SearchField, ThemeToggle, Topbar } from '@/components/shell/Topbar';
 import { Button, IconButton } from '@/components/ui/Button';
@@ -66,7 +66,6 @@ function Ev({ e, rich }: { e: CalEvent; rich: boolean }) {
       data-status={e.status}
       to="/films/$movieId"
       params={{ movieId: e.movie.id }}
-      aria-label={`${e.movie.title}, ${typeLabel(e.type)}, ${S.label}`}
     >
       {rich ? (
         <PosterArt className="pp" src={e.movie.posterUrl} title={e.movie.title} color={e.movie.dominantColor} />
@@ -75,7 +74,12 @@ function Ev({ e, rich }: { e: CalEvent; rich: boolean }) {
       )}
       <span className="nm">
         {e.movie.title}
-        {rich && <span className="sub">{typeLabel(e.type)}</span>}
+        {rich ? (
+          <span className="sub">{typeLabel(e.type)}</span>
+        ) : (
+          <span className="sr-only">, {typeLabel(e.type)}</span>
+        )}
+        <span className="sr-only">, {S.label}</span>
       </span>
       <span className="s" aria-hidden="true">
         <SIcon className="i" />
@@ -88,6 +92,7 @@ function Month({ month, byDay, today }: { month: Date; byDay: Map<string, CalEve
   const cells = monthGrid(month);
   const todayKey = dayKey(today);
   return (
+    // biome-ignore lint/a11y/useSemanticElements: the month grid is a named landmark around day groups
     <div className="month" role="region" aria-label={monthTitle.format(month)}>
       {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
         <div key={d} className="dow" aria-hidden="true">
@@ -115,7 +120,9 @@ function Month({ month, byDay, today }: { month: Date; byDay: Map<string, CalEve
             {shown.map((e) => (
               <Ev key={e.key} e={e} rich={evs.length === 1 && !out} />
             ))}
-            {evs.length > shown.length && <span className="more t-caption t-muted">+{evs.length - shown.length} more</span>}
+            {evs.length > shown.length && (
+              <span className="more t-caption t-muted">+{evs.length - shown.length} more</span>
+            )}
           </div>
         );
       })}
@@ -136,7 +143,8 @@ function Agenda({ events, today, from }: { events: CalEvent[]; today: Date; from
   if (!weeks.size)
     return (
       <EmptyState title="A quiet month." headingLevel={2}>
-        No release dates for the films shown from {dayLong.format(from)}. Try the next month, or show announced films too.
+        No release dates for the films shown from {dayLong.format(from)}. Try the next month, or show announced films
+        too.
       </EmptyState>
     );
   return (
@@ -162,7 +170,12 @@ function Agenda({ events, today, from }: { events: CalEvent[]; today: Date; from
                       {dayMonth.format(e.date)}
                       <small>{isToday ? 'Today' : dayName.format(e.date)}</small>
                     </span>
-                    <PosterArt className="pp" src={e.movie.posterUrl} title={e.movie.title} color={e.movie.dominantColor} />
+                    <PosterArt
+                      className="pp"
+                      src={e.movie.posterUrl}
+                      title={e.movie.title}
+                      color={e.movie.dominantColor}
+                    />
                     <span className="min-w-0">
                       <Link className="b" to="/films/$movieId" params={{ movieId: e.movie.id }}>
                         {e.movie.title}
@@ -197,15 +210,23 @@ export function CalendarScreen() {
   const view = search.view === 'agenda' ? 'agenda' : 'month';
   const [types, setTypes] = useState<ReadonlySet<ReleaseType>>(new Set(ALL_TYPES));
   const set = (p: Record<string, unknown>) =>
-    void navigate({ to: '/calendar', search: (s: Record<string, unknown>) => ({ ...s, ...p }) as never, replace: true });
+    void navigate({
+      to: '/calendar',
+      search: (s: Record<string, unknown>) => ({ ...s, ...p }) as never,
+      replace: true,
+    });
+  const title = monthTitle.format(month);
   useEffect(() => {
-    document.title = `Calendar · ${monthTitle.format(month)} · Gonema`;
-  }, [month.getTime()]);
+    document.title = `Calendar · ${title} · Gonema`;
+  }, [title]);
   const isCurrent = monthKey(month) === monthKey(now);
   const grid = monthGrid(month);
   const range =
     view === 'month'
-      ? { from: grid[0]!, to: new Date(grid.at(-1)!.getFullYear(), grid.at(-1)!.getMonth(), grid.at(-1)!.getDate() + 1) }
+      ? {
+          from: grid[0]!,
+          to: new Date(grid.at(-1)!.getFullYear(), grid.at(-1)!.getMonth(), grid.at(-1)!.getDate() + 1),
+        }
       : { from: isCurrent ? weekStart(today) : month, to: addMonths(month, 1) };
   const last = new Date(range.to.getFullYear(), range.to.getMonth(), range.to.getDate() - 1);
   const cal = useQuery({
@@ -232,13 +253,21 @@ export function CalendarScreen() {
         <div className="head">
           <h1 aria-live="polite">{monthTitle.format(month)}</h1>
           <div className="row">
-            <IconButton label="Previous month" variant="outlined" onClick={() => set({ month: monthKey(addMonths(month, -1)) })}>
+            <IconButton
+              label="Previous month"
+              variant="outlined"
+              onClick={() => set({ month: monthKey(addMonths(month, -1)) })}
+            >
               <ChevronLeft className="i" aria-hidden="true" />
             </IconButton>
             <Button size="sm" disabled={isCurrent} onClick={() => set({ month: undefined })}>
               Today
             </Button>
-            <IconButton label="Next month" variant="outlined" onClick={() => set({ month: monthKey(addMonths(month, 1)) })}>
+            <IconButton
+              label="Next month"
+              variant="outlined"
+              onClick={() => set({ month: monthKey(addMonths(month, 1)) })}
+            >
               <ChevronRight className="i" aria-hidden="true" />
             </IconButton>
           </div>
@@ -253,6 +282,7 @@ export function CalendarScreen() {
             ]}
           />
         </div>
+        {/* biome-ignore lint/a11y/useSemanticElements: a labelled group of toggle chips, not a form */}
         <div className="legend" role="group" aria-label="Release types">
           {ALL_TYPES.map((t) => {
             const Icon = TYPE_ICON[t];

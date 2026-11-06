@@ -26,3 +26,9 @@ The demo has no TMDB key, no network and no indexer, so these are mocked in e2e 
   (one SSE body ending with `retry: 600000`).
 - The pause call of a queue item (the demo download client is disabled). The queue list, removal (Undo, nothing sent),
   history, tags, bulk restore, move/rename previews and the file deletion are the real server.
+- Lot 3: the indexer connection test (`POST /indexers/test`) and the download client test of the setup capture (no network);
+  TMDB people search and filmography (`/discover/people`, `/discover/person/{id}`, `GET /settings/tmdb` answered as configured);
+  the per-indexer retry of the mocked interactive search; one queue entry re-shaped as failed for the failed-download capture
+  (`GET /queue`). Home, calendar, palette search, wanted, blocklist, health, settings (quality profiles, rules, tester, naming),
+  setup state (`PUT /onboarding` is real: the suites leave it dismissed), pause all and history export are the real server.
+

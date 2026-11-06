@@ -100,7 +100,7 @@ function HealthAlert({ d }: { d: Dashboard }) {
         <Button size="sm" loading={check.isPending} onClick={() => check.mutate()}>
           Check again
         </Button>
-        <Link className={buttonClass('ghost', 'sm')} to="/health">
+        <Link className={buttonClass('ghost', 'sm')} to="/system/health">
           Health
         </Link>
       </div>
@@ -186,7 +186,12 @@ function Tiles({ d }: { d: Dashboard | undefined }) {
 // ----------------------------------------------------------------- queue
 
 function QueueRow({ q }: { q: DashboardQueueItem }) {
-  const live = useProgress(q.id, { progress: q.progress, speedBps: q.speedBps, etaSeconds: q.etaSeconds, status: q.status });
+  const live = useProgress(q.id, {
+    progress: q.progress,
+    speedBps: q.speedBps,
+    etaSeconds: q.etaSeconds,
+    status: q.status,
+  });
   const status = live.status || q.status;
   const importing = status === 'importing';
   const paused = status === 'paused';
@@ -239,7 +244,10 @@ function QueuePanel({ d }: { d: Dashboard | undefined }) {
         </h2>
         {!!q?.count && (
           <span className="t-caption tnum">
-            {[q.totalSpeedBps > 0 ? formatSpeed(q.totalSpeedBps) : '', q.remainingBytes > 0 ? `${formatBytes(q.remainingBytes)} left` : '']
+            {[
+              q.totalSpeedBps > 0 ? formatSpeed(q.totalSpeedBps) : '',
+              q.remainingBytes > 0 ? `${formatBytes(q.remainingBytes)} left` : '',
+            ]
               .filter(Boolean)
               .join(' · ')}
           </span>
@@ -328,7 +336,7 @@ function DiskRow({ r }: { r: DiskUsage }) {
     return (
       <div className="disk-row">
         <div className="top">
-          <code>{r.path}</code>
+          <code title={r.path}>‎{r.path}‎</code>
           <span>{r.accessible ? '—' : 'Unreachable'}</span>
         </div>
         {r.error && <span className="t-caption t-muted">{r.error}</span>}
@@ -340,9 +348,10 @@ function DiskRow({ r }: { r: DiskUsage }) {
   return (
     <div className={tight ? 'disk-row tight' : 'disk-row'}>
       <div className="top">
-        <code>{r.path}</code>
+        <code title={r.path}>‎{r.path}‎</code>
         <span>{formatBytes(r.freeSpace)} free</span>
       </div>
+      {/* biome-ignore lint/a11y/useSemanticElements: styled like every progress bar of the design system; <meter> cannot be */}
       <div
         className="progress"
         role="meter"

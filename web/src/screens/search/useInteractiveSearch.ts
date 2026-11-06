@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { ApiError } from '@/api/client';
 import { onServerEvent, useConnection } from '@/api/live';
-import { getSearch, startInteractiveSearch } from '@/api/screens';
+import { getSearch, retrySearchIndexer, startInteractiveSearch } from '@/api/screens';
 import { initialSearch, type SearchEvent, searchReducer } from './searchModel';
 
 const SEARCH_EVENTS = new Set(['search.batch', 'search.indexer_done', 'search.indexer_failed', 'search.finished']);
@@ -71,5 +71,22 @@ export function useInteractiveSearch(movieId: number) {
     return () => clearInterval(t);
   }, [running, conn.status, state.searchId, syncSnapshot]);
 
-  return { state, restart: start };
+  /** Retries one indexer of the running search; the others keep their results. */
+  const retryIndexer = useCallback(
+    async (indexerId: number) => {
+      const id = searchId.current;
+      if (!id) return;
+      dispatch({ type: 'retry', indexerId });
+      try {
+        const snapshot = await retrySearchIndexer(id, indexerId);
+        dispatch({ type: 'retry', indexerId, snapshot });
+      } catch (e) {
+        void syncSnapshot(id);
+        throw e;
+      }
+    },
+    [syncSnapshot],
+  );
+
+  return { state, restart: start, retryIndexer };
 }

@@ -46,7 +46,17 @@ export function newDraft(catalog: readonly QualityDefinition[], name: string): P
   const sorted = [...catalog].sort((a, b) => b.rank - a.rank);
   const entries = sorted.map((q) => ({ qualities: [q.id], allowed: /1080|2160/.test(q.resolution || q.id) }));
   const cutoff = entries.find((e) => e.allowed)?.qualities[0] ?? sorted[0]?.id ?? '';
-  return { name, upgradeAllowed: true, entries, cutoff, minScore: 0, cutoffScore: 0, minUpgradeStep: 1, scores: {}, sizes: null };
+  return {
+    name,
+    upgradeAllowed: true,
+    entries,
+    cutoff,
+    minScore: 0,
+    cutoffScore: 0,
+    minUpgradeStep: 1,
+    scores: {},
+    sizes: null,
+  };
 }
 
 export function moveEntry(entries: readonly ProfileEntry[], from: number, to: number): ProfileEntry[] {
@@ -76,7 +86,7 @@ export function draftError(d: ProfileDraft): string | null {
   if (!d.name.trim()) return 'Give the profile a name.';
   if (!d.entries.some((e) => e.allowed)) return 'Allow at least one quality, or nothing will ever be grabbed.';
   const cut = d.entries.find((e) => entryKey(e) === d.cutoff);
-  if (d.upgradeAllowed && (!cut || !cut.allowed)) return 'Pick an allowed quality as the cutoff.';
+  if (d.upgradeAllowed && !cut?.allowed) return 'Pick an allowed quality as the cutoff.';
   if (d.cutoffScore < d.minScore) return 'The cutoff score cannot be lower than the minimum score.';
   return null;
 }
@@ -92,7 +102,14 @@ const resOf = (id: string) => /(\d{3,4}p)/.exec(id)?.[1];
 export function plainWords(d: ProfileDraft, names: ReadonlyMap<string, string>): string {
   const allowed = d.entries.filter((e) => e.allowed);
   if (!allowed.length) return 'Nothing is allowed: Gonema will not grab any release with this profile.';
-  const res = [...new Set(allowed.flatMap((e) => e.qualities ?? []).map(resOf).filter(Boolean))] as string[];
+  const res = [
+    ...new Set(
+      allowed
+        .flatMap((e) => e.qualities ?? [])
+        .map(resOf)
+        .filter(Boolean),
+    ),
+  ] as string[];
   res.sort((a, b) => Number.parseInt(a, 10) - Number.parseInt(b, 10));
   const resText = res.length ? `${res.join(res.length > 2 ? ', ' : ' or ')} ` : '';
   const grab = `Grab any allowed ${resText}copy scoring ${formatScore(d.minScore)} or more.`;

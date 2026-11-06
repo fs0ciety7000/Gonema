@@ -1,8 +1,9 @@
 import { useInfiniteQuery, useQueries, useQuery } from '@tanstack/react-query';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
 import { Check, ChevronRight, CircleDashed, Plus, UserRound } from 'lucide-react';
-import { type FormEvent, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { ApiError, api, unwrap } from '@/api/client';
+import { peopleSearchQuery } from '@/api/lot3';
 import { collectionQuery, useLibrary } from '@/api/queries';
 import type { DiscoverMovie } from '@/api/schema';
 import { imageUrl, screenKeys } from '@/api/screens';
@@ -137,7 +138,7 @@ export function DiscoverTab({ onNeedKey }: { onNeedKey: () => void }) {
         <ListShelf list={view} window={window} onWindow={setWindow} {...common} />
       )}
       {view === 'collections' && <CollectionsShelf onPick={setPicked} />}
-      {view === 'people' && <PersonShelf {...common} />}
+      {view === 'people' && <PersonShelf initialId={search.person} {...common} />}
 
       <Dialog
         open={!!picked && !!options}
@@ -433,10 +434,14 @@ export function personIdOf(raw: string): number | null {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
-function PersonShelf({ compact, ...c }: Common & { compact?: boolean }) {
+function PersonShelf({ compact, initialId, ...c }: Common & { compact?: boolean; initialId?: number }) {
   const [raw, setRaw] = useState('');
-  const [id, setId] = useState<number | null>(null);
+  const [id, setId] = useState<number | null>(initialId ?? null);
+  const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (initialId) setId(initialId);
+  }, [initialId]);
   const q = useQuery({
     queryKey: screenKeys.discover('person', String(id ?? 0)),
     enabled: !!id,
@@ -445,12 +450,25 @@ function PersonShelf({ compact, ...c }: Common & { compact?: boolean }) {
     staleTime: 30 * 60_000,
     retry: false,
   });
+  const people = useQuery({ ...peopleSearchQuery(name), enabled: name.length >= 2 });
   const submit = (ev: FormEvent) => {
     ev.preventDefault();
-    const n = personIdOf(raw);
-    setError(n ? null : 'Paste a TMDB person link (themoviedb.org/person/…) or the number in it.');
-    if (n) setId(n);
+    const v = raw.trim();
+    const n = /^\d+$|person\/|^tmdb:/.test(v) ? personIdOf(v) : null;
+    if (n) {
+      setError(null);
+      setName('');
+      setId(n);
+      return;
+    }
+    if (v.length < 2) {
+      setError('Type at least two letters of a name, or paste a TMDB person link.');
+      return;
+    }
+    setError(null);
+    setName(v);
   };
+  const found = (people.data?.results ?? []).slice(0, compact ? 4 : 8);
   const movies = (q.data?.movies ?? []).filter((m) => !c.hideOwned || !m.inLibrary);
   return (
     <section className="shelf" aria-labelledby="sh-person">
@@ -460,22 +478,23 @@ function PersonShelf({ compact, ...c }: Common & { compact?: boolean }) {
             <UserRound className="i i-sm" />
           </span>
           <h2 id="sh-person">
-            Filmography {q.data && <span className="t-caption">{formatNumber(q.data.movies?.length ?? 0)} films</span>}
+            {q.data?.person?.name ? `${q.data.person.name} · filmography` : 'Filmography'}{' '}
+            {q.data && <span className="t-caption">{formatNumber(q.data.movies?.length ?? 0)} films</span>}
           </h2>
         </div>
       </div>
       <form className="person-form" onSubmit={submit}>
         <Input
           wrapperClassName="person-input"
-          aria-label="TMDB person link or id"
-          placeholder="Paste a TMDB person link…"
+          aria-label="Person’s name or TMDB link"
+          placeholder="Search a director, an actor…"
           value={raw}
           invalid={!!error}
           aria-describedby={error ? 'person-err' : 'person-hint'}
           onChange={(ev) => setRaw(ev.target.value)}
         />
-        <Button type="submit" size="md" loading={q.isFetching}>
-          Show films
+        <Button type="submit" size="md" loading={q.isFetching || people.isFetching}>
+          Search
         </Button>
       </form>
       {error ? (
@@ -484,9 +503,49 @@ function PersonShelf({ compact, ...c }: Common & { compact?: boolean }) {
         </p>
       ) : (
         <p className="field-hint" id="person-hint">
-          Searching people by name needs TMDB person search, which this server does not offer yet: paste the person’s
-          TMDB link.
+          A name searches TMDB; a TMDB person link or id opens that filmography directly.
         </p>
+      )}
+      {name && people.isSuccess && (
+        <ul className="people-hits" aria-label={`People called “${name}”`}>
+          {found.map((p) => (
+            <li key={p.tmdbId}>
+              <button
+                type="button"
+                className="person-hit"
+                aria-pressed={id === p.tmdbId}
+                onClick={() => {
+                  setId(p.tmdbId);
+                  setName('');
+                }}
+              >
+                <span className="avatar" aria-hidden="true">
+                  {p.profileUrl ? <img src={p.profileUrl} alt="" /> : <UserRound className="i i-sm" />}
+                </span>
+                <span>
+                  <b>{p.name}</b>
+                  <small>
+                    {[
+                      p.knownForDepartment,
+                      (p.knownFor ?? [])
+                        .slice(0, 2)
+                        .map((k) => k.title)
+                        .join(', '),
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </small>
+                </span>
+              </button>
+            </li>
+          ))}
+          {!found.length && <li className="t-secondary t-body-sm">Nobody called “{name}” on TMDB.</li>}
+        </ul>
+      )}
+      {people.isError && (
+        <Notice tone="failed" title="People could not be searched.">
+          {people.error.message}
+        </Notice>
       )}
       {q.isError && (
         <Notice tone="failed" title="That filmography could not be loaded.">

@@ -101,6 +101,15 @@ export async function grabResult(searchId: string, key: string, override = false
   );
 }
 
+/** Asks one failed indexer of an interactive search again (force: even while it is paused). */
+export async function retrySearchIndexer(searchId: string, indexerId: number, force = true) {
+  return unwrap(
+    api.POST('/searches/{searchId}/indexers/{indexerId}/retry', {
+      params: { path: { searchId, indexerId }, query: { force } },
+    }),
+  );
+}
+
 // ----------------------------------------------------------------- queue
 
 export async function pauseDownload(id: number) {

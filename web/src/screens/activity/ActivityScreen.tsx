@@ -5,9 +5,9 @@ import { useNavigate } from '@tanstack/react-router';
 import { CircleCheck, CircleSlash, Hand, Play, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { ApiError, api, unwrap } from '@/api/client';
+import { blocklistQuery, queueControl } from '@/api/lot3';
 import { keys, useQueue } from '@/api/queries';
 import type { DownloadClient } from '@/api/schema';
-import { blocklistQuery, queueControl } from '@/api/lot3';
 import { queueSummaryQuery } from '@/api/screens';
 import { SearchField, ThemeToggle, Topbar } from '@/components/shell/Topbar';
 import { Button } from '@/components/ui/Button';
@@ -86,23 +86,38 @@ function PauseAll() {
       const r = await queueControl(what);
       void qc.invalidateQueries({ queryKey: keys.queue });
       const unsupported = (r.clients ?? []).filter((c) => !c.supported).map((c) => c.name);
+      const failing = (r.clients ?? []).filter((c) => c.failed > 0);
+      const verb = what === 'pause' ? 'paused' : 'resumed';
+      const n = (k: number) => `${k} ${k === 1 ? 'download' : 'downloads'}`;
       toast.show({
         tone: r.failed ? 'error' : 'neutral',
-        title: what === 'pause' ? `Paused ${r.changed} ${r.changed === 1 ? 'download' : 'downloads'}.` : `Resumed ${r.changed} ${r.changed === 1 ? 'download' : 'downloads'}.`,
+        title: r.changed
+          ? `${what === 'pause' ? 'Paused' : 'Resumed'} ${n(r.changed)}.`
+          : r.failed
+            ? `Nothing was ${verb}.`
+            : `Nothing to ${what}.`,
         body: [
-          r.failed ? `${r.failed} could not be changed in their client.` : '',
-          unsupported.length ? `${unsupported.join(', ')} cannot pause from Gonema.` : '',
-          what === 'pause' && !r.failed ? 'Nothing downloads until you resume.' : '',
+          r.failed
+            ? `${n(r.failed)} could not be ${verb} in ${failing.map((c) => c.name).join(', ') || 'their client'}. ${failing[0]?.errors?.[0]?.split(': ').slice(-1)[0] ?? ''}`.trim()
+            : '',
+          unsupported.length ? `${unsupported.join(', ')} cannot ${what} from Gonema.` : '',
+          what === 'pause' && r.changed && !r.failed ? 'Nothing downloads until you resume.' : '',
         ]
           .filter(Boolean)
           .join(' '),
         action:
           what === 'pause' && r.changed
-            ? { label: 'Resume', onClick: () => void queueControl('resume').then(() => qc.invalidateQueries({ queryKey: keys.queue })) }
+            ? {
+                label: 'Resume',
+                onClick: () => void queueControl('resume').then(() => qc.invalidateQueries({ queryKey: keys.queue })),
+              }
             : undefined,
       });
     } catch (e) {
-      toast.error(what === 'pause' ? 'Nothing was paused' : 'Nothing was resumed', e instanceof ApiError ? e.detail : String(e));
+      toast.error(
+        what === 'pause' ? 'Nothing was paused' : 'Nothing was resumed',
+        e instanceof ApiError ? e.detail : String(e),
+      );
     } finally {
       setBusy(false);
     }
@@ -138,17 +153,17 @@ function ActivityScreen({ tab }: { tab: Tab }) {
       : tab === 'blocklist'
         ? 'Releases and groups Gonema will never grab again.'
         : !items.length
-        ? queue.isSuccess
-          ? 'Nothing downloading.'
-          : ' '
-        : [
-            `${downloading} downloading`,
-            speed > 0 ? formatSpeed(speed) : '',
-            s?.etaSeconds ? `about ${formatEta(s.etaSeconds)} for everything` : '',
-            s?.paused ? `${s.paused} paused` : '',
-          ]
-            .filter(Boolean)
-            .join(' · ');
+          ? queue.isSuccess
+            ? 'Nothing downloading.'
+            : ' '
+          : [
+              `${downloading} downloading`,
+              speed > 0 ? formatSpeed(speed) : '',
+              s?.etaSeconds ? `about ${formatEta(s.etaSeconds)} for everything` : '',
+              s?.paused ? `${s.paused} paused` : '',
+            ]
+              .filter(Boolean)
+              .join(' · ');
   return (
     <>
       <Topbar>
@@ -184,14 +199,14 @@ function ActivityScreen({ tab }: { tab: Tab }) {
               <>
                 <PauseAll />
                 <Button
-                variant="ghost"
-                size="sm"
-                icon={<RefreshCw className="i" aria-hidden="true" />}
-                loading={queue.isFetching}
-                onClick={() => void queue.refetch()}
-              >
-                Refresh
-              </Button>
+                  variant="ghost"
+                  size="sm"
+                  icon={<RefreshCw className="i" aria-hidden="true" />}
+                  loading={queue.isFetching}
+                  onClick={() => void queue.refetch()}
+                >
+                  Refresh
+                </Button>
               </>
             ) : tab === 'history' ? (
               <HistoryToolbar />

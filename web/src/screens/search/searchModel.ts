@@ -43,7 +43,8 @@ export type SearchAction =
   | { type: 'started'; snapshot: SearchSnapshot }
   | { type: 'snapshot'; snapshot: SearchSnapshot }
   | { type: 'start-failed'; error: string }
-  | { type: 'event'; event: SearchEvent };
+  | { type: 'event'; event: SearchEvent }
+  | { type: 'retry'; indexerId: number; snapshot?: SearchSnapshot };
 
 export function initialSearch(movieId: number): SearchState {
   return {
@@ -139,6 +140,14 @@ export function searchReducer(s: SearchState, a: SearchAction): SearchState {
       return { ...initialSearch(s.movieId), status: 'starting' };
     case 'start-failed':
       return { ...s, status: 'failed', error: a.error };
+    case 'retry': {
+      // One indexer asked again: it is pending once more and the search runs until it answers.
+      const indexers = s.indexers.map((x) =>
+        x.id === a.indexerId ? { ...x, status: 'pending' as const, error: undefined, willRetryAt: undefined } : x,
+      );
+      const next = { ...s, indexers, status: 'running' as SearchStatus };
+      return a.snapshot ? applySnapshot(next, a.snapshot) : next;
+    }
     case 'started':
     case 'snapshot': {
       if (a.type === 'snapshot' && s.searchId && a.snapshot.id !== s.searchId) return s;

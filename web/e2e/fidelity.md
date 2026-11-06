@@ -138,3 +138,73 @@ whole collection and "Add the N missing", file score breakdown tags — C7 resol
 - Scroll (10k films, `e2e/perf.json`): grid 1× 54–59 fps, table 1× 42–51 fps. The lot 1 build measured on the same machine
   and server in the same session: grid 55 fps, table 51.4 fps — the table is below its lot 1 figure (57.2) for both builds,
   so the drop is the environment, not lot 2; to re-measure on an idle machine.
+
+
+---
+
+# Fidelity — phase 7, lot 3 (home, calendar, settings, setup, ⌘K palette, wanted, blocklist, health, failed download)
+
+Captures: `node e2e/fidelity.mjs` (production build in the Go binary, demo library of 10,000 films).
+New side-by-sides: `compare-dashboard-*`, `compare-calendar-*`, `compare-calendar-agenda-*`, `compare-command-palette-*`
+(`-query`, `-empty`), `compare-settings-quality-*`, `compare-settings-index-*`, `compare-onboarding-{welcome,tmdb,folder,quality,client-error}-*`,
+`compare-failed-download-*`, `compare-404-*`. App-only: `onboarding-film`, `wanted`, `blocklist`, `health`, `settings-indexer-dialog`.
+
+Accessibility: axe-core 4.14, same tags: **0 violations on 72/72 captures** (36 states × dark + light), no console error.
+
+Mocked for captures: the client connection test of `onboarding-client-error` (no reachable client), and one queue entry shown
+as failed for `failed-download` (the demo queue has none). Everything else is the real demo server.
+
+## Deviations
+
+### Content (data, not design)
+
+| # | Visible difference | Why |
+|---|---|---|
+| C17 | Home: "Good morning/afternoon/evening" without a name; no notifications bell | No users before phase 8 (D4); no notification feed endpoint (S2). |
+| C18 | Home alert is the most severe health issue (the demo: "No TMDB key yet"), with "Check again" + "Health" instead of "Test now" | The alert shows whatever `/dashboard.health.top[0]` is; a per-indexer test belongs to the indexer, on the Health page. |
+| C19 | Home "Wanted" tile links to Wanted ("See what’s missing") instead of "Search the 12 released" | Still no bulk search endpoint (S12). |
+| C20 | Calendar, home, palette: generated posters (C1), titles repeat in the demo | Demo data. |
+| C21 | Palette: no "Releases from the last search" group, no recent "Interactive search: …" entries, no person "3 films in your library" | `GET /search` returns library films and TMDB films/people only. Recents are films and sections opened from the palette (this browser). |
+| C22 | Failed download: releases tried come from the film's history (grabs and failures); no "Next / +2 more" rows, no client log timestamps | The API does not expose the remaining candidate list; `QueueEntry.messages` are plain strings. |
+| C23 | Settings overview: no Security, Backups, Logs panels; no "Import lists", "Security", "Backups", "Logs", "About" in the section nav | No endpoints yet (phase 8). Hidden, never dead ends. |
+| C24 | Setup: 7 steps (Welcome, TMDB, folder, quality, indexer, client, first film) instead of 8; no Account step; indexer before client | No sign-in before phase 8; order given by the brief of this lot. Step state comes from `GET /onboarding`. |
+| C25 | Setup "first film": no grabbed-print frame in the capture (`onboarding-grabbed` not compared) | Needs TMDB + an indexer + a client; the step shows the live queue entry when there is one. |
+
+### Scope (hidden, never dead ends)
+
+| # | Not in this build | Why |
+|---|---|---|
+| S13 | Calendar "iCal feed" button | No feed endpoint. |
+| S14 | Quality editor "Group" button (merging qualities into a group) | Groups from the server are shown and kept; creating one in the UI is left for later. |
+| S15 | Failed download "Stop retrying" | No endpoint to stop the automatic retries of one film. |
+| S16 | Library empty state "Import a folder" | The library import flow (`/library-import/*`) has no screen yet. |
+| S17 | Collections section | No collection list endpoint. |
+
+Lot 2 items now built: C13 (person search by name, `GET /discover/people`), C16 + D15 (per-indexer **Retry**
+`POST /searches/{id}/indexers/{indexerId}/retry?force=true` and the "Indexer health" link), S10 (Blocklist tab, **Pause all /
+Resume all**, history **Export** CSV), C8 (release regions with `Intl.DisplayNames`, shown in the panel header when shared),
+C6 (studios in the credits), S7/S8 (⌘K palette, 404 "Search" button).
+
+### Design decisions taken while implementing
+
+| # | Difference | Justification |
+|---|---|---|
+| D22 | Health lives at `/system/health` (sidebar entry unchanged) | The Go server answers `GET /health` itself (liveness probe): a reload of `/health` would show its JSON. |
+| D23 | ⌘K and Ctrl+K open the palette everywhere; "/" focuses the top-bar field; on screens without a list to filter, the field opens the palette | Truthful shortcuts; the library keeps its instant filter field. |
+| D24 | Palette: own ranking from `GET /search` (every keystroke), TMDB films and people with `remote=true` after 350 ms and only when a key is configured; scopes chips + `>` / `@` prefixes, Tab cycles scopes | Contract advice; no request to TMDB without a key. No open/close animation (motion.md §7). |
+| D25 | Removing a blocklist entry, a connection, a root folder, a tag, a profile or a rule: applied at once with **Undo**, the DELETE is sent when the toast closes | Same pattern as D1/D14: confirmation dialogs stay reserved for files on disk; nothing here touches files. |
+| D26 | Connection forms (indexers, clients, media servers, notifications) are dialogs with **Test** before **Save**; secret fields are `type=password`, empty, "Saved · leave blank to keep it" | Secrets are write-only (`…Set` flags only); a blank secret keeps the stored one. |
+| D27 | Quality list: reorder by drag **or** keyboard (grip button, ↑/↓, announced); cutoff chosen from a select (the marker follows) | Accessible reorder; the mockup's dragged state is not reproduced in the capture. |
+| D28 | Rule scores edited in the list are saved with the profile (one PUT); per-profile scores in the rule editor are saved with the rule | Matches the API: profile scores ride on `PUT /quality-profiles/{id}`, rule scores on `PUT /scoring-rules/{id}`. |
+| D29 | Release tester scores against the selected profile and the first film of that profile with a file (decision shown when the server returns one) | `POST /quality/preview` decides only with a `movieId`. |
+| D30 | Calendar: month grid shows at most 4 releases per day, then "+N more"; types and "Announced & unmonitored" are chips (the latter in the URL, `all=1`, off by default: PO decision 6) | Keeps the grid legible with 10,000 films. |
+| D31 | The 404 page is a lazy chunk; the library route's first load is otherwise unchanged | Initial JS budget (below). |
+
+### Measurements (this machine, 2026-11-06)
+
+- Initial JS for the library: **199,805 B gzip** (≤ 200 KB; lot 2: 198,270 B). The 1.5 KB growth is the router (12 new routes),
+  the palette store and shortcut, and the shell changes; every lot 3 screen and cmdk are lazy chunks. CSS 18.3 KB.
+  Lazy chunks (gzip): palette 20.8 KB (cmdk), quality editor 8.8 KB, settings 8.3 KB, setup 8.1 KB, home 4.3 KB, failed download 3.3 KB,
+  calendar 3.2 KB, health 2.6 KB, wanted 2.1 KB, lot3.css 7.0 KB.
+- Scroll (10k films): grid 1× 59.8 fps (p95 16.7 ms), table 1× 51.8 fps, grid 4× 24.7 fps, table 4× 13.3 fps — same as lot 2 on this machine.
+- First poster 466 ms, CLS 0.023.

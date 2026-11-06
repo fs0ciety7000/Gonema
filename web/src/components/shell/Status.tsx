@@ -1,12 +1,10 @@
-import { Link } from '@tanstack/react-router';
-import { CloudOff, FileVideo, Film, FlaskConical, Globe, RefreshCw, Server } from 'lucide-react';
+import { CloudOff, FileVideo, FlaskConical, Globe, RefreshCw, Server } from 'lucide-react';
 import { Component, type ErrorInfo, type ReactNode, useEffect, useState } from 'react';
 import { retryConnectionNow, useConnection } from '@/api/live';
 import { useSystemStatus } from '@/api/queries';
-import { Button, buttonClass } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/Progress';
 import { formatClock } from '@/lib/format';
-import mascot404 from '../../../../docs/brand/kit/mascot/kernel-404.svg?url';
 
 /** Shown whenever the server runs in demo mode (generated sample library). */
 export function DemoBanner() {
@@ -158,27 +156,4 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, BoundarySt
     if (this.state.error) return <ScreenError error={this.state.error} reset={() => this.setState({ error: null })} />;
     return this.props.children;
   }
-}
-
-export function NotFound({ path }: { path?: string }) {
-  const p = path ?? (typeof location !== 'undefined' ? location.pathname : '');
-  return (
-    <main id="main" className="stage-404" tabIndex={-1}>
-      <div className="curtain" aria-hidden="true" />
-      <div className="card-404">
-        <img src={mascot404} alt="Kernel peeking out from behind the curtain" />
-        <span className="code">ERROR 404</span>
-        <h1>This reel isn’t in the booth.</h1>
-        <p>
-          Nothing lives at <span className="path">{p}</span>. It may have been renamed, or removed from the library.
-        </p>
-        <div className="actions">
-          <Link className={buttonClass('primary')} to="/films">
-            <Film className="i" aria-hidden="true" />
-            Back to the programme
-          </Link>
-        </div>
-      </div>
-    </main>
-  );
 }

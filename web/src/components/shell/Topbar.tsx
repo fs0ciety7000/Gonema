@@ -51,11 +51,10 @@ export function SearchField({
         onClick={onSearch ? undefined : () => palette.open()}
         onKeyDownCapture={(ev) => {
           // without a list to filter, typing starts a palette search
-          if (onSearch || ev.metaKey || ev.ctrlKey || ev.altKey) return;
-          if (ev.key === 'Enter' || ev.key.length === 1) {
-            ev.preventDefault();
-            palette.open(ev.key.length === 1 && ev.key !== ' ' ? ev.key : '');
-          }
+          const k = ev.key;
+          if (onSearch || ev.metaKey || ev.ctrlKey || ev.altKey || (k !== 'Enter' && k.length > 1)) return;
+          ev.preventDefault();
+          palette.open(k.trim().length === 1 ? k : '');
         }}
         onKeyDown={(ev) => {
           if (ev.key === 'Escape') {

@@ -16,13 +16,32 @@ import { Switch } from '@/components/ui/Switch';
 export type Values = Record<string, unknown>;
 
 export type FieldSpec =
-  | { kind: 'text' | 'url' | 'mono'; name: string; label: string; hint?: string; required?: boolean; placeholder?: string }
+  | {
+      kind: 'text' | 'url' | 'mono';
+      name: string;
+      label: string;
+      hint?: string;
+      required?: boolean;
+      placeholder?: string;
+    }
   | { kind: 'number'; name: string; label: string; hint?: string; min?: number; max?: number; step?: number }
   | { kind: 'secret'; name: string; label: string; hint?: string; stored?: boolean }
   | { kind: 'switch'; name: string; label: string; hint?: string }
-  | { kind: 'select'; name: string; label: string; hint?: string; options: ReadonlyArray<{ value: string; label: string }> }
+  | {
+      kind: 'select';
+      name: string;
+      label: string;
+      hint?: string;
+      options: ReadonlyArray<{ value: string; label: string }>;
+    }
   | { kind: 'list'; name: string; label: string; hint?: string; numbers?: boolean }
-  | { kind: 'multi'; name: string; label: string; hint?: string; options: ReadonlyArray<{ value: string; label: string }> };
+  | {
+      kind: 'multi';
+      name: string;
+      label: string;
+      hint?: string;
+      options: ReadonlyArray<{ value: string; label: string }>;
+    };
 
 export const str = (v: unknown) => (typeof v === 'string' ? v : v == null ? '' : String(v));
 export const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
@@ -280,10 +299,25 @@ export function ConnectionDialog({
     }
   };
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title={title} description={description} wide className="conn-dialog">
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      wide
+      className="conn-dialog"
+    >
       <form onSubmit={submit} noValidate className="conn-form">
         {head?.(values, setValues)}
-        <FormFields spec={fields} values={values} onChange={(v) => { setValues(v); setTest(null); }} errors={errors} />
+        <FormFields
+          spec={fields}
+          values={values}
+          onChange={(v) => {
+            setValues(v);
+            setTest(null);
+          }}
+          errors={errors}
+        />
         <div aria-live="polite">
           <TestLine result={test} />
         </div>

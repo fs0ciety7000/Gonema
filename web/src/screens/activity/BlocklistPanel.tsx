@@ -114,15 +114,18 @@ export function BlocklistPanel() {
                     </span>
                   )}
                   <span className="t-caption t-muted bl-sub">
-                    {[b.kind === 'group' ? 'Whole group' : 'This release only', b.protocol]
-                      .filter(Boolean)
-                      .join(' · ')}
+                    {[b.kind === 'group' ? 'Whole group' : 'This release only', b.protocol].filter(Boolean).join(' · ')}
                   </span>
                 </td>
                 <td>
                   {b.movieId ? (
                     <Link className="film" to="/films/$movieId" params={{ movieId: b.movieId }}>
-                      <PosterArt className="thumb" src={m?.posterUrl ?? null} title={m?.title ?? ''} color={m?.dominantColor} />
+                      <PosterArt
+                        className="thumb"
+                        src={m?.posterUrl ?? null}
+                        title={m?.title ?? ''}
+                        color={m?.dominantColor}
+                      />
                       <span>{m?.title ?? `Film #${b.movieId}`}</span>
                     </Link>
                   ) : (

@@ -27,10 +27,7 @@ export type OnboardingState = {
 export function parseOnboarding(raw: SetupStatus | null | undefined): OnboardingState {
   const steps = raw?.steps ?? [];
   const done = Object.fromEntries(
-    (Object.keys(SERVER_ID) as OnboardingStepId[]).map((id) => [
-      id,
-      !!steps.find((s) => s.id === SERVER_ID[id])?.done,
-    ]),
+    (Object.keys(SERVER_ID) as OnboardingStepId[]).map((id) => [id, !!steps.find((s) => s.id === SERVER_ID[id])?.done]),
   ) as Record<OnboardingStepId, boolean>;
   return { complete: !!raw?.complete, dismissed: !!raw?.dismissed, done };
 }

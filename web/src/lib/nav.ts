@@ -61,7 +61,7 @@ export const NAV: ReadonlyArray<{ heading: string; items: readonly NavEntry[] }>
   {
     heading: 'System',
     items: [
-      { id: 'health', label: 'Health', icon: Activity, path: '/health', built: true },
+      { id: 'health', label: 'Health', icon: Activity, path: '/system/health', built: true },
       { id: 'settings', label: 'Settings', icon: Settings, path: '/settings', built: true },
     ],
   },

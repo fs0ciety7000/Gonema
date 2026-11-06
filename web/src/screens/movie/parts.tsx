@@ -539,25 +539,52 @@ export function FilePanel({
 
 // ----------------------------------------------------------------- release dates
 
+let regionNames: Intl.DisplayNames | null | undefined;
+
+/** "US" → "United States" (Intl.DisplayNames); unknown or invalid codes are shown as they are. */
+export function regionName(code: string | null | undefined): string | null {
+  if (!code) return null;
+  const c = code.trim().toUpperCase();
+  if (!/^[A-Z]{2}$|^\d{3}$/.test(c)) return null;
+  if (regionNames === undefined) {
+    try {
+      regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+    } catch {
+      regionNames = null;
+    }
+  }
+  try {
+    return regionNames?.of(c) ?? c;
+  } catch {
+    return c;
+  }
+}
+
 export function ReleaseDates({
   cinema,
   digital,
   physical,
+  regions,
 }: {
   cinema: string | null;
   digital: string | null;
   physical: string | null;
+  /** Country (ISO 3166-1) each date comes from. */
+  regions?: { cinema: string | null; digital: string | null; physical: string | null } | null;
 }) {
   const rows = [
-    { icon: Ticket, label: 'In cinemas', kind: 'Theatrical', d: cinema },
-    { icon: MonitorPlay, label: 'Digital', kind: 'Streaming & rental', d: digital },
-    { icon: Disc3, label: 'Physical', kind: 'Disc release', d: physical },
+    { icon: Ticket, label: 'In cinemas', kind: 'Theatrical', d: cinema, r: regionName(regions?.cinema) },
+    { icon: MonitorPlay, label: 'Digital', kind: 'Streaming & rental', d: digital, r: regionName(regions?.digital) },
+    { icon: Disc3, label: 'Physical', kind: 'Disc release', d: physical, r: regionName(regions?.physical) },
   ].filter((r) => r.d);
+  const named = [...new Set(rows.map((r) => r.r).filter(Boolean))];
+  const shared = named.length === 1 && rows.every((r) => r.r === named[0]) ? named[0] : null;
   if (!rows.length) return null;
   return (
     <section className="panel" aria-labelledby="dates-h">
       <div className="panel-hd">
         <h2 id="dates-h">Release dates</h2>
+        {shared && <span className="saved">{shared}</span>}
       </div>
       <div className="panel-bd">
         <ul className="dates">
@@ -570,7 +597,7 @@ export function ReleaseDates({
                 </span>
                 <div>
                   <b>{r.label}</b>
-                  <span>{r.kind}</span>
+                  <span>{!shared && r.r ? `${r.kind} · ${r.r}` : r.kind}</span>
                 </div>
                 <span className="d">{formatDate(r.d)}</span>
               </li>

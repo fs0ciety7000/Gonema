@@ -5,7 +5,7 @@ import { Link, useParams } from '@tanstack/react-router';
 import { ArrowDownToLine, ChevronRight, CircleX, Info, ScanSearch } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { blockGroup, blocklistQuery, deleteBlocklistEntry, lot3Keys } from '@/api/lot3';
-import { historyQuery, useMovie, useProfiles, useQueue } from '@/api/queries';
+import { historyQuery, movieQuery, useProfiles, useQueue } from '@/api/queries';
 import type { HistoryEntry } from '@/api/schema';
 import { ThemeToggle, Topbar } from '@/components/shell/Topbar';
 import { ScorePill, StatusBadge, StatusText } from '@/components/ui/Badges';
@@ -37,14 +37,20 @@ export function attemptsOf(history: readonly HistoryEntry[], currentDownloadId: 
     if (e.event !== 'grabbed' && e.event !== 'grab_overridden') continue;
     const data = (e.data ?? {}) as Record<string, unknown>;
     const failure = sorted.find(
-      (f) => FAILED.has(f.event) && ((e.downloadId && f.downloadId === e.downloadId) || f.sourceTitle === e.sourceTitle),
+      (f) =>
+        FAILED.has(f.event) && ((e.downloadId && f.downloadId === e.downloadId) || f.sourceTitle === e.sourceTitle),
     );
     const reason = failure ? (str((failure.data as Record<string, unknown> | null)?.reason) ?? 'failed') : undefined;
     out.push({
       n: out.length + 1,
       release: e.sourceTitle,
       score: e.customScore,
-      sub: [str(data.protocol), str(data.indexer), typeof data.size === 'number' ? formatBytes(data.size) : null, reason ? `blocklisted: ${reason}` : null]
+      sub: [
+        str(data.protocol),
+        str(data.indexer),
+        typeof data.size === 'number' ? formatBytes(data.size) : null,
+        reason ? `blocklisted: ${reason}` : null,
+      ]
         .filter(Boolean)
         .join(' · '),
       state: failure ? 'failed' : e.downloadId === currentDownloadId ? 'now' : 'done',
@@ -60,7 +66,7 @@ export function FailedDownloadScreen() {
   const queue = useQueue();
   const item = queue.data?.find((q) => q.id === downloadId);
   const movieId = item?.movieId ?? 0;
-  const movie = useMovie(movieId);
+  const movie = useQuery({ ...movieQuery(movieId), enabled: movieId > 0 });
   const history = useQuery({ ...historyQuery(movieId), enabled: movieId > 0 });
   const profiles = useProfiles();
   const blocklist = useQuery(blocklistQuery);
@@ -69,7 +75,10 @@ export function FailedDownloadScreen() {
     document.title = `${item?.movie?.title ?? 'Download'} · failed download · Gonema`;
   }, [item?.movie?.title]);
   const attempts = useMemo(() => attemptsOf(history.data ?? [], item?.id ?? null), [history.data, item?.id]);
-  const failedRelease = item?.status === 'failed' ? item.title : (item?.retry?.previousRelease ?? attempts.find((a) => a.state === 'failed')?.release);
+  const failedRelease =
+    item?.status === 'failed'
+      ? item.title
+      : (item?.retry?.previousRelease ?? attempts.find((a) => a.state === 'failed')?.release);
   const entry = (blocklist.data ?? []).find(
     (b) => !hidden.has(b.id) && b.movieId === movieId && (b.sourceTitle === failedRelease || b.kind === 'group'),
   );
@@ -145,7 +154,10 @@ export function FailedDownloadScreen() {
     try {
       await blockGroup({ group, movieId, reason: reason || undefined });
       void qc.invalidateQueries({ queryKey: lot3Keys.blocklist });
-      toast.show({ title: `Blocked every release from ${group}`, body: 'For this film. Remove it from the blocklist to undo.' });
+      toast.show({
+        title: `Blocked every release from ${group}`,
+        body: 'For this film. Remove it from the blocklist to undo.',
+      });
     } catch (e) {
       toast.error(`${group} was not blocked`, errorText(e));
     }
@@ -170,7 +182,11 @@ export function FailedDownloadScreen() {
             <div className="hero">
               <img src={mascotFailed} alt="Kernel holding a torn strip of film" />
               <div>
-                <StatusBadge status="failed" lg label={`Failed${item.completedAt ? ` · ${formatWhen(item.completedAt)}` : ''}`} />
+                <StatusBadge
+                  status="failed"
+                  lg
+                  label={`Failed${item.completedAt ? ` · ${formatWhen(item.completedAt)}` : ''}`}
+                />
                 <h1>The print arrived damaged.</h1>
                 <p>
                   {reason ? `${reason.replace(/\.$/, '')}. ` : ''}
@@ -191,7 +207,10 @@ export function FailedDownloadScreen() {
             ) : attempts.length ? (
               <ol className="attempts">
                 {attempts.map((a) => (
-                  <li key={`${a.n}-${a.release}`} className={a.state === 'failed' ? 'att x' : a.state === 'now' ? 'att now' : 'att'}>
+                  <li
+                    key={`${a.n}-${a.release}`}
+                    className={a.state === 'failed' ? 'att x' : a.state === 'now' ? 'att now' : 'att'}
+                  >
                     <span className="n" aria-hidden="true">
                       {a.n}
                     </span>
@@ -224,6 +243,7 @@ export function FailedDownloadScreen() {
                 <h2 className="sec-h">What the client said</h2>
                 <div className="log" role="log" aria-label={`${item.client} messages`}>
                   {item.messages.map((m, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: log lines may repeat; their order is their identity
                     <div key={`${i}-${m}`} className={/fail|error|encrypt|corrupt|missing/i.test(m) ? 'e' : undefined}>
                       {m}
                     </div>
@@ -266,7 +286,9 @@ export function FailedDownloadScreen() {
                   <>
                     <dl className="dl">
                       <dt>Scope</dt>
-                      <dd>{entry.kind === 'group' ? `Every release from ${entry.releaseGroup}` : 'This release only'}</dd>
+                      <dd>
+                        {entry.kind === 'group' ? `Every release from ${entry.releaseGroup}` : 'This release only'}
+                      </dd>
                       <dt>Reason</dt>
                       <dd>{entry.reason || '—'}</dd>
                       <dt>Added</dt>
@@ -285,7 +307,9 @@ export function FailedDownloadScreen() {
                   </>
                 ) : (
                   <p className="t-secondary t-body-sm">
-                    {blocklist.isPending ? ' ' : 'Not on the blocklist (yet): Gonema adds it when it gives up on the release.'}
+                    {blocklist.isPending
+                      ? ' '
+                      : 'Not on the blocklist (yet): Gonema adds it when it gives up on the release.'}
                   </p>
                 )}
               </div>
@@ -302,7 +326,8 @@ export function FailedDownloadScreen() {
             </div>
             {!failed && (
               <p className="t-caption t-muted fd-now">
-                <ArrowDownToLine className="i i-xs" aria-hidden="true" /> Now downloading: <span className="t-mono-sm">{item.title}</span>
+                <ArrowDownToLine className="i i-xs" aria-hidden="true" /> Now downloading:{' '}
+                <span className="t-mono-sm">{item.title}</span>
               </p>
             )}
           </aside>
@@ -311,4 +336,3 @@ export function FailedDownloadScreen() {
     </>
   );
 }
-

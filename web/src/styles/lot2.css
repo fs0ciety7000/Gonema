@@ -1476,4 +1476,63 @@
   :root[data-freeze] .ix .pulse {
     animation: none;
   }
+
+  /* person search by name (lot 3) */
+  .people-hits {
+    list-style: none;
+    margin: var(--space-2) 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 6px;
+  }
+  .person-hit {
+    all: unset;
+    box-sizing: border-box;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    padding: 6px 8px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .person-hit:hover {
+    background: var(--bg-hover);
+  }
+  .person-hit:focus-visible {
+    box-shadow: var(--focus-ring);
+  }
+  .person-hit[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: var(--bg-selected);
+  }
+  .person-hit .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background: var(--bg-active);
+  }
+  .person-hit .avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .person-hit b {
+    display: block;
+    font: 500 13px / 18px var(--font-ui);
+  }
+  .person-hit small {
+    display: block;
+    font: var(--type-caption);
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }

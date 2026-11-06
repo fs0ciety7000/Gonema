@@ -88,7 +88,11 @@ function ConnectionList<T extends { id: number; name: string }>({
     setTesting(x.id);
     try {
       const r = await testSaved(x.id);
-      toast.show({ tone: r.ok ? 'neutral' : 'error', title: r.ok ? `${x.name} answered.` : `${x.name} failed the test.`, body: r.message });
+      toast.show({
+        tone: r.ok ? 'neutral' : 'error',
+        title: r.ok ? `${x.name} answered.` : `${x.name} failed the test.`,
+        body: r.message,
+      });
       void qc.invalidateQueries({ queryKey });
     } catch (e) {
       toast.error(`${x.name} could not be tested`, errorText(e));
@@ -99,7 +103,12 @@ function ConnectionList<T extends { id: number; name: string }>({
   return (
     <>
       <div className="row conn-head">
-        <Button variant="secondary" size="sm" icon={<Plus className="i" aria-hidden="true" />} onClick={() => setEditing('new')}>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={<Plus className="i" aria-hidden="true" />}
+          onClick={() => setEditing('new')}
+        >
           Add {noun}
         </Button>
       </div>
@@ -119,7 +128,13 @@ function ConnectionList<T extends { id: number; name: string }>({
                 {r.status}
                 <span className="acts">
                   {testSaved && (
-                    <Button size="sm" variant="ghost" loading={testing === x.id} onClick={() => void test(x)} aria-label={`Test ${x.name}`}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      loading={testing === x.id}
+                      onClick={() => void test(x)}
+                      aria-label={`Test ${x.name}`}
+                    >
                       Test
                     </Button>
                   )}
@@ -142,7 +157,11 @@ function ConnectionList<T extends { id: number; name: string }>({
   );
 }
 
-function useSaver<B>(queryKey: QueryKey, create: (b: B) => Promise<unknown>, update: (id: number, b: B) => Promise<unknown>) {
+function useSaver<B>(
+  queryKey: QueryKey,
+  create: (b: B) => Promise<unknown>,
+  update: (id: number, b: B) => Promise<unknown>,
+) {
   const qc = useQueryClient();
   return (id: number | null, name: string) => async (body: Values) => {
     if (id == null) await create(body as B);
@@ -168,10 +187,22 @@ export function indexerSpec(v: Values, stored = false): FieldSpec[] {
   return [
     { kind: 'select', name: 'kind', label: 'Type', options: INDEXER_KINDS },
     { kind: 'text', name: 'name', label: 'Name', required: true },
-    { kind: 'url', name: 'baseUrl', label: 'URL', required: true, hint: 'The indexer’s address, for example https://indexer.example' },
+    {
+      kind: 'url',
+      name: 'baseUrl',
+      label: 'URL',
+      required: true,
+      hint: 'The indexer’s address, for example https://indexer.example',
+    },
     { kind: 'mono', name: 'apiPath', label: 'API path', hint: 'Usually /api' },
     { kind: 'secret', name: 'apiKey', label: 'API key', stored },
-    { kind: 'list', name: 'categories', label: 'Categories', numbers: true, hint: 'Newznab category ids, comma separated (2000 = films)' },
+    {
+      kind: 'list',
+      name: 'categories',
+      label: 'Categories',
+      numbers: true,
+      hint: 'Newznab category ids, comma separated (2000 = films)',
+    },
     { kind: 'number', name: 'priority', label: 'Priority', min: 1, max: 50, hint: '1 is tried first' },
     ...(torrent
       ? ([
@@ -276,7 +307,11 @@ export const CLIENT_PORT: Record<string, number> = {
   transmission: 9091,
 };
 
-export function clientSpec(v: Values, x: { apiKeySet?: boolean; passwordSet?: boolean } | null, withKind = true): FieldSpec[] {
+export function clientSpec(
+  v: Values,
+  x: { apiKeySet?: boolean; passwordSet?: boolean } | null,
+  withKind = true,
+): FieldSpec[] {
   const kind = str(v.kind);
   const usesKey = kind === 'sabnzbd';
   const usesUser = kind !== 'sabnzbd' && kind !== 'deluge';
@@ -394,7 +429,9 @@ function serverSpec(v: Values, x: MediaServer | null): FieldSpec[] {
           { kind: 'secret', name: 'password', label: 'Password', stored: !!x?.passwordSet },
           { kind: 'switch', name: 'cleanOnDelete', label: 'Clean the library after a file is removed' },
         ] as FieldSpec[])
-      : ([{ kind: 'secret', name: 'token', label: kind === 'plex' ? 'Plex token' : 'API key', stored: !!x?.tokenSet }] as FieldSpec[])),
+      : ([
+          { kind: 'secret', name: 'token', label: kind === 'plex' ? 'Plex token' : 'API key', stored: !!x?.tokenSet },
+        ] as FieldSpec[])),
     { kind: 'multi', name: 'refreshOn', label: 'Refresh the library on', options: REFRESH },
     { kind: 'switch', name: 'enabled', label: 'Enabled' },
   ];
@@ -433,7 +470,14 @@ export function MediaServersSection() {
           initial={
             x
               ? { ...x, token: '', password: '' }
-              : { kind: 'jellyfin', name: 'Jellyfin', baseUrl: '', token: '', enabled: true, refreshOn: REFRESH.map((r) => r.value) }
+              : {
+                  kind: 'jellyfin',
+                  name: 'Jellyfin',
+                  baseUrl: '',
+                  token: '',
+                  enabled: true,
+                  refreshOn: REFRESH.map((r) => r.value),
+                }
           }
           onTest={(b) => mediaServerApi.test(b as MediaServerInput, x?.id)}
           onSave={save(x?.id ?? null, x?.name ?? '')}
@@ -489,16 +533,34 @@ function notifSpec(v: Values, n: Notification | null): FieldSpec[] {
     hint,
   });
   const by: Record<string, FieldSpec[]> = {
-    webhook: [T('url', 'URL', 'The JSON is POSTed here', 'url'), S('signingSecret', 'Signing secret', set?.signingSecret, 'HMAC-SHA256 key of the X-Gonema-Signature header')],
+    webhook: [
+      T('url', 'URL', 'The JSON is POSTed here', 'url'),
+      S('signingSecret', 'Signing secret', set?.signingSecret, 'HMAC-SHA256 key of the X-Gonema-Signature header'),
+    ],
     discord: [S('webhookUrl', 'Webhook URL', set?.webhookUrl), T('username', 'Display name')],
     slack: [S('webhookUrl', 'Webhook URL', set?.webhookUrl)],
     telegram: [S('token', 'Bot token', set?.token), T('chatId', 'Chat id', 'Chat id or @channel', 'mono')],
-    pushover: [S('token', 'Application token', set?.token), S('userKey', 'User key', set?.userKey), T('device', 'Device', 'Empty for all devices')],
-    ntfy: [T('serverUrl', 'Server', 'Default https://ntfy.sh', 'url'), T('topic', 'Topic', undefined, 'mono'), S('token', 'Access token', set?.token)],
+    pushover: [
+      S('token', 'Application token', set?.token),
+      S('userKey', 'User key', set?.userKey),
+      T('device', 'Device', 'Empty for all devices'),
+    ],
+    ntfy: [
+      T('serverUrl', 'Server', 'Default https://ntfy.sh', 'url'),
+      T('topic', 'Topic', undefined, 'mono'),
+      S('token', 'Access token', set?.token),
+    ],
     gotify: [T('serverUrl', 'Server', undefined, 'url'), S('token', 'Application token', set?.token)],
     email: [
       T('host', 'SMTP host', undefined, 'mono'),
-      { kind: 'number', name: 'settings.port', label: 'SMTP port', min: 0, max: 65535, hint: '0 for the default of the encryption' },
+      {
+        kind: 'number',
+        name: 'settings.port',
+        label: 'SMTP port',
+        min: 0,
+        max: 65535,
+        hint: '0 for the default of the encryption',
+      },
       {
         kind: 'select',
         name: 'settings.encryption',
@@ -605,7 +667,15 @@ export function NotificationsSection() {
                   const on = (n.events ?? []).includes(e.value);
                   return (
                     <td key={e.value}>
-                      {on ? <span className="on" aria-hidden="true">✓</span> : <span className="off" aria-hidden="true">·</span>}
+                      {on ? (
+                        <span className="on" aria-hidden="true">
+                          ✓
+                        </span>
+                      ) : (
+                        <span className="off" aria-hidden="true">
+                          ·
+                        </span>
+                      )}
                       <span className="sr-only">{on ? 'on' : 'off'}</span>
                     </td>
                   );

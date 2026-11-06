@@ -77,7 +77,11 @@ export function WantedScreen() {
             value={tab}
             onChange={(t) => void navigate({ to: '/wanted', search: t === 'cutoff' ? { kind: 'cutoff' } : {} })}
             items={[
-              { value: 'missing', label: 'Missing', count: tab === 'missing' && total ? formatNumber(total) : undefined },
+              {
+                value: 'missing',
+                label: 'Missing',
+                count: tab === 'missing' && total ? formatNumber(total) : undefined,
+              },
               {
                 value: 'cutoff',
                 label: 'Cutoff unmet',
@@ -88,11 +92,16 @@ export function WantedScreen() {
         </div>
         <div id="wanted-panel" role="tabpanel" aria-labelledby={`tab-wanted-panel-${tab}`}>
           {q.isError ? (
-            <Notice tone="failed" role="alert" title="The list could not be loaded." action={
-              <Button size="sm" onClick={() => void q.refetch()}>
-                Try again
-              </Button>
-            }>
+            <Notice
+              tone="failed"
+              role="alert"
+              title="The list could not be loaded."
+              action={
+                <Button size="sm" onClick={() => void q.refetch()}>
+                  Try again
+                </Button>
+              }
+            >
               {(q.error as Error).message}
             </Notice>
           ) : q.isPending ? (
@@ -129,7 +138,9 @@ export function WantedScreen() {
           ) : (
             <div className="hist wanted">
               <table className="tbl">
-                <caption className="sr-only">{tab === 'missing' ? 'Missing films' : 'Films below their cutoff'}</caption>
+                <caption className="sr-only">
+                  {tab === 'missing' ? 'Missing films' : 'Films below their cutoff'}
+                </caption>
                 <thead>
                   <tr>
                     <th scope="col" style={{ width: '38%' }}>
@@ -172,9 +183,8 @@ export function WantedScreen() {
                           variant="ghost"
                           icon={<Search className="i" aria-hidden="true" />}
                           onClick={() => void actions.search([{ id: m.id, title: m.title }])}
-                          aria-label={`Search for ${m.title} now`}
                         >
-                          Search now
+                          Search now<span className="sr-only"> for {m.title}</span>
                         </Button>
                       </td>
                     </tr>

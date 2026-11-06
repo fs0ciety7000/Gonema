@@ -21,9 +21,17 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react';
-import { clientApi, clientsQuery, indexerApi, indexersQuery, lot3Keys, addRootFolder } from '@/api/lot3';
+import {
+  addRootFolder,
+  clientApi,
+  clientsQuery,
+  generalSettingsQuery,
+  indexerApi,
+  indexersQuery,
+  lot3Keys,
+  putUiPreferences,
+} from '@/api/lot3';
 import { onboardingQuery, setOnboardingDismissed } from '@/api/onboarding';
-import { generalSettingsQuery, putUiPreferences } from '@/api/lot3';
 import { keys, profilesQuery, rootFoldersQuery, useLibrary, useQueue } from '@/api/queries';
 import type { DownloadClientInput, IndexerInput, LookupResult, TestResult } from '@/api/schema';
 import { addMovie, lookupQuery, screenKeys, setTmdbKey, tmdbQuery } from '@/api/screens';
@@ -37,9 +45,9 @@ import { PosterArt } from '@/components/ui/PosterArt';
 import { ProgressBar } from '@/components/ui/Progress';
 import { formatBytes, formatEta, formatSpeed } from '@/lib/format';
 import { qualityName } from '@/lib/quality';
-import { CLIENT_KINDS, CLIENT_PORT, clientInitial, clientSpec } from '@/screens/settings/Connections';
-import { errorText, FormFields, TestLine, toBody, validate, type Values } from '@/screens/settings/form';
 import { readAddOptions, saveAddOptions } from '@/screens/discover/addOptions';
+import { CLIENT_KINDS, CLIENT_PORT, clientInitial, clientSpec } from '@/screens/settings/Connections';
+import { errorText, FormFields, TestLine, toBody, type Values, validate } from '@/screens/settings/form';
 import mascotWelcome from '../../../../docs/brand/kit/mascot/kernel-welcome.svg?url';
 
 const route = getRouteApi('/setup');
@@ -73,15 +81,17 @@ function useDone() {
   const lib = useLibrary();
   const ui = useQuery(generalSettingsQuery);
   const s = server.data?.done;
-  // The server's answer wins; the lists fill the gap while it reloads after a step.
-  const done: Record<string, boolean> = {
-    tmdb: !!s?.tmdb || !!tmdb.data?.configured,
-    folder: !!s?.folder || !!roots.data?.length,
-    quality: !!s?.quality || !!ui.data?.ui.defaultQualityProfileId,
-    indexer: !!s?.indexer || !!indexers.data?.length,
-    client: !!s?.client || !!clients.data?.length,
-    film: !!s?.film || !!lib.data?.length,
-  };
+  // The server's answer is the truth; the lists only stand in when it has none (older server).
+  const done: Record<string, boolean> = s
+    ? { ...s }
+    : {
+        tmdb: !!tmdb.data?.configured,
+        folder: !!roots.data?.length,
+        quality: !!ui.data?.ui.defaultQualityProfileId,
+        indexer: !!indexers.data?.length,
+        client: !!clients.data?.length,
+        film: !!lib.data?.length,
+      };
   const ready = !server.isPending && !tmdb.isPending && !roots.isPending && !indexers.isPending && !clients.isPending;
   return { done, ready };
 }
@@ -172,7 +182,12 @@ function Welcome({ go }: { go: (s: StepId) => void }) {
           [Film, 'Connect film metadata', 'A free TMDB key for posters and dates', '1 min'],
           [HardDrive, 'Choose where films live', 'Your library folder', '30 s'],
           [Sparkles, 'Pick a quality', 'A starting profile you can fine-tune later', '30 s'],
-          [ArrowDownToLine, 'Connect an indexer and a client', 'Newznab or Torznab, and SABnzbd, NZBGet, qBittorrent, Deluge or Transmission', '2 min'],
+          [
+            ArrowDownToLine,
+            'Connect an indexer and a client',
+            'Newznab or Torznab, and SABnzbd, NZBGet, qBittorrent, Deluge or Transmission',
+            '2 min',
+          ],
           [Search, 'Add a film', 'And watch the first grab happen', '1 min'],
         ].map(([Icon, t, d, time]) => {
           const I = Icon as typeof Film;
@@ -226,7 +241,14 @@ function Tmdb({ go, done }: { go: (s: StepId) => void; done: boolean }) {
         overline="Step 1 · Metadata"
         title="Connect film metadata"
         intro="Gonema uses The Movie Database for posters, cast, collections and release dates. The key is yours, free, and stays encrypted on this server."
-        nav={<Nav type="submit" back={() => go('welcome')} loading={save.isPending} nextLabel={ok && !key ? 'Continue' : 'Check and continue'} />}
+        nav={
+          <Nav
+            type="submit"
+            back={() => go('welcome')}
+            loading={save.isPending}
+            nextLabel={ok && !key ? 'Continue' : 'Check and continue'}
+          />
+        }
       >
         <div className="helper">
           <b>
@@ -316,7 +338,14 @@ function FolderStep({ go }: { go: (s: StepId) => void }) {
         overline="Step 2 · Library"
         title="Choose where films live"
         intro="Each film gets its own folder here. Gonema hardlinks finished torrents into it when it can, so nothing is stored twice."
-        nav={<Nav type="submit" back={() => go('tmdb')} loading={add.isPending} nextLabel={path.trim() ? 'Add and continue' : 'Continue'} />}
+        nav={
+          <Nav
+            type="submit"
+            back={() => go('tmdb')}
+            loading={add.isPending}
+            nextLabel={path.trim() ? 'Add and continue' : 'Continue'}
+          />
+        }
       >
         <div className="form">
           {list.map((r) => (
@@ -391,7 +420,10 @@ function QualityStep({ go }: { go: (s: StepId) => void }) {
     },
     onSuccess: (_r, id) => {
       // the add dialogs start from the same profile
-      const o = readAddOptions((roots.data ?? []).map((r) => r.id), list.map((p) => p.id));
+      const o = readAddOptions(
+        (roots.data ?? []).map((r) => r.id),
+        list.map((p) => p.id),
+      );
       saveAddOptions({ ...o, qualityProfileId: id });
       void qc.invalidateQueries({ queryKey: generalSettingsQuery.queryKey });
       void qc.invalidateQueries({ queryKey: onboardingQuery.queryKey });
@@ -418,7 +450,7 @@ function QualityStep({ go }: { go: (s: StepId) => void }) {
         {list.map((p) => {
           const allowed = (p.entries ?? []).filter((e) => e.allowed);
           const floor = allowed.at(-1);
-          const floorLabel = floor ? (floor.group || qualityName(floor.qualities?.at(-1))) : '—';
+          const floorLabel = floor ? floor.group || qualityName(floor.qualities?.at(-1)) : '—';
           return (
             <label key={p.id}>
               <input type="radio" name="profile" checked={current === p.id} onChange={() => setChosen(p.id)} />
@@ -540,7 +572,11 @@ function IndexerStep({ go }: { go: (s: StepId) => void }) {
               {x.name} is connected ({x.kind === 'torznab' ? 'Torznab' : 'Newznab'}).
             </span>
           ))}
-          <Field label="API URL" hint={url.trim() ? `Detected: ${kind === 'torznab' ? 'Torznab · torrent' : 'Newznab · Usenet'}` : undefined} error={error}>
+          <Field
+            label="API URL"
+            hint={url.trim() ? `Detected: ${kind === 'torznab' ? 'Torznab · torrent' : 'Newznab · Usenet'}` : undefined}
+            error={error}
+          >
             {({ id, describedBy, invalid }) => (
               <Input
                 id={id}
@@ -594,7 +630,9 @@ function ClientStep({ go }: { go: (s: StepId) => void }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [test, setTest] = useState<TestResult | null>(null);
   const [busy, setBusy] = useState(false);
-  const spec = clientSpec(v, null, false).filter((f) => !['removeCompleted', 'removeFailed', 'enabled', 'priority', 'urlBase', 'category'].includes(f.name));
+  const spec = clientSpec(v, null, false).filter(
+    (f) => !['removeCompleted', 'removeFailed', 'enabled', 'priority', 'urlBase', 'category'].includes(f.name),
+  );
   const pick = (kind: string) => {
     const label = CLIENT_KINDS.find((k) => k.value === kind)?.label ?? kind;
     setV({ ...v, kind, name: label, port: CLIENT_PORT[kind] });
@@ -652,9 +690,10 @@ function ClientStep({ go }: { go: (s: StepId) => void }) {
           {(existing.data ?? []).map((c) => (
             <span key={c.id} className="ok-line">
               <CircleCheck className="i" aria-hidden="true" />
-              {c.name} is connected.
+              {c.enabled ? `${c.name} is connected.` : `${c.name} is set up but turned off: add or enable one.`}
             </span>
           ))}
+          {/* biome-ignore lint/a11y/useSemanticElements: a labelled group of toggle buttons, not a form */}
           <div className="conn" role="group" aria-label="Client type">
             {CLIENT_KINDS.map((k) => {
               const Icon = k.value === 'sabnzbd' || k.value === 'nzbget' ? Newspaper : Magnet;
@@ -666,7 +705,15 @@ function ClientStep({ go }: { go: (s: StepId) => void }) {
               );
             })}
           </div>
-          <FormFields spec={spec} values={v} onChange={(x) => { setV(x); setTest(null); }} errors={errors} />
+          <FormFields
+            spec={spec}
+            values={v}
+            onChange={(x) => {
+              setV(x);
+              setTest(null);
+            }}
+            errors={errors}
+          />
           <div aria-live="polite">
             <TestLine result={test} />
             {test && !test.ok && v.kind === 'qbittorrent' && (
@@ -695,11 +742,16 @@ function FilmStep({ go, finish }: { go: (s: StepId) => void; finish: () => void 
   const [q, setQ] = useState('');
   const [term, setTerm] = useState('');
   const lookup = useQuery({ ...lookupQuery(term), enabled: !!term && !!tmdb.data?.configured });
-  const [added, setAdded] = useState<{ id: number; title: string; year: number; posterUrl: string | null } | null>(null);
+  const [added, setAdded] = useState<{ id: number; title: string; year: number; posterUrl: string | null } | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const add = useMutation({
     mutationFn: async (r: LookupResult) => {
-      const o = readAddOptions((roots.data ?? []).map((x) => x.id), (profiles.data ?? []).map((x) => x.id));
+      const o = readAddOptions(
+        (roots.data ?? []).map((x) => x.id),
+        (profiles.data ?? []).map((x) => x.id),
+      );
       return addMovie({
         tmdbId: r.tmdbId,
         rootFolderId: o.rootFolderId,
@@ -786,9 +838,7 @@ function FilmStep({ go, finish }: { go: (s: StepId) => void; finish: () => void 
                 </li>
               )}
             </ol>
-            {dl && (
-              <ProgressBar value={dl.progress} label={`${added.title} download`} live />
-            )}
+            {dl && <ProgressBar value={dl.progress} label={`${added.title} download`} live />}
           </div>
         </div>
       </Pane>
@@ -805,34 +855,38 @@ function FilmStep({ go, finish }: { go: (s: StepId) => void; finish: () => void 
     >
       {!tmdb.data?.configured ? (
         <Notice tone="missing" title="TMDB isn’t connected yet.">
-          Searching for films needs the TMDB key from step 1. <button type="button" className="link" onClick={() => go('tmdb')}>Add it</button>
+          Searching for films needs the TMDB key from step 1.{' '}
+          <button type="button" className="link" onClick={() => go('tmdb')}>
+            Add it
+          </button>
         </Notice>
       ) : (
         <div className="form">
-          <form
-            className="row add-root"
-            role="search"
-            onSubmit={(ev) => {
-              ev.preventDefault();
-              setTerm(q.trim());
-            }}
-          >
-            <Field label="Film title">
-              {({ id, describedBy }) => (
-                <Input
-                  id={id}
-                  aria-describedby={describedBy}
-                  icon={<Search className="i" aria-hidden="true" />}
-                  value={q}
-                  onChange={(ev) => setQ(ev.target.value)}
-                  placeholder="The Third Man"
-                />
-              )}
-            </Field>
-            <Button type="submit" loading={lookup.isFetching}>
-              Search
-            </Button>
-          </form>
+          <search>
+            <form
+              className="row add-root"
+              onSubmit={(ev) => {
+                ev.preventDefault();
+                setTerm(q.trim());
+              }}
+            >
+              <Field label="Film title">
+                {({ id, describedBy }) => (
+                  <Input
+                    id={id}
+                    aria-describedby={describedBy}
+                    icon={<Search className="i" aria-hidden="true" />}
+                    value={q}
+                    onChange={(ev) => setQ(ev.target.value)}
+                    placeholder="The Third Man"
+                  />
+                )}
+              </Field>
+              <Button type="submit" loading={lookup.isFetching}>
+                Search
+              </Button>
+            </form>
+          </search>
           {error && <span className="field-error">{error}</span>}
           <ul className="hits" aria-live="polite">
             {results.map((r) => (
@@ -845,13 +899,20 @@ function FilmStep({ go, finish }: { go: (s: StepId) => void; finish: () => void 
                 {r.inLibrary ? (
                   <StatusText status="available">In your library</StatusText>
                 ) : (
-                  <Button size="sm" variant="secondary" loading={add.isPending && add.variables?.tmdbId === r.tmdbId} onClick={() => add.mutate(r)}>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    loading={add.isPending && add.variables?.tmdbId === r.tmdbId}
+                    onClick={() => add.mutate(r)}
+                  >
                     Add and search
                   </Button>
                 )}
               </li>
             ))}
-            {term && lookup.isSuccess && !results.length && <li className="t-secondary">Nothing on TMDB called “{term}”.</li>}
+            {term && lookup.isSuccess && !results.length && (
+              <li className="t-secondary">Nothing on TMDB called “{term}”.</li>
+            )}
           </ul>
         </div>
       )}
@@ -921,7 +982,7 @@ export function OnboardingScreen() {
                     </span>
                     <span>
                       {s.label}
-                      {d && <span className="sr-only">, done</span>}
+                      {d && <span className="sr-only"> (done)</span>}
                       {s.sub && <small>{s.sub}</small>}
                     </span>
                   </Link>
@@ -930,7 +991,12 @@ export function OnboardingScreen() {
             })}
           </ol>
           <div className="foot">
-            <ProgressBar value={doneCount / (STEPS.length - 1)} label="Setup progress" size="thin" className="ob-prog" />
+            <ProgressBar
+              value={doneCount / (STEPS.length - 1)}
+              label="Setup progress"
+              size="thin"
+              className="ob-prog"
+            />
             <span>
               {doneCount} of {STEPS.length - 1} done
             </span>{' '}
@@ -961,4 +1027,3 @@ export function OnboardingScreen() {
     </div>
   );
 }
-

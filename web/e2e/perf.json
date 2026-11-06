@@ -1,112 +1,112 @@
 {
   "base": "http://127.0.0.1:7676",
-  "date": "2026-11-06T08:52:12.765Z",
+  "date": "2026-11-06T10:14:19.336Z",
   "runs": [
     {
       "layout": "grid",
       "cpuSlowdown": 1,
-      "frames": 270,
-      "fps": 54,
-      "avgMs": 18.52,
-      "p95Ms": 33.3,
-      "p99Ms": 33.4,
-      "maxMs": 33.5,
-      "over20ms": 30
+      "frames": 299,
+      "fps": 59.8,
+      "avgMs": 16.72,
+      "p95Ms": 16.7,
+      "p99Ms": 16.8,
+      "maxMs": 33.3,
+      "over20ms": 1
     },
     {
       "layout": "table",
       "cpuSlowdown": 1,
-      "frames": 212,
-      "fps": 42.3,
-      "avgMs": 23.66,
-      "p95Ms": 33.4,
-      "p99Ms": 50,
-      "maxMs": 150,
-      "over20ms": 77
+      "frames": 259,
+      "fps": 51.8,
+      "avgMs": 19.3,
+      "p95Ms": 33.3,
+      "p99Ms": 33.4,
+      "maxMs": 83.2,
+      "over20ms": 38
     },
     {
       "layout": "grid",
       "cpuSlowdown": 4,
-      "frames": 105,
-      "fps": 20.9,
-      "avgMs": 47.78,
-      "p95Ms": 83.3,
-      "p99Ms": 100,
-      "maxMs": 116.7,
-      "over20ms": 92
+      "frames": 124,
+      "fps": 24.7,
+      "avgMs": 40.46,
+      "p95Ms": 66.7,
+      "p99Ms": 83.3,
+      "maxMs": 83.4,
+      "over20ms": 105
     },
     {
       "layout": "table",
       "cpuSlowdown": 4,
-      "frames": 66,
-      "fps": 13.1,
-      "avgMs": 76.51,
-      "p95Ms": 133.4,
+      "frames": 67,
+      "fps": 13.3,
+      "avgMs": 75.37,
+      "p95Ms": 116.7,
       "p99Ms": 150,
       "maxMs": 150,
-      "over20ms": 63
+      "over20ms": 65
     }
   ],
   "initial": {
-    "firstPosterMs": 626,
-    "domContentLoadedMs": 153,
-    "listRequestMs": 96,
-    "listTransferBytes": 597350,
-    "listDecodedBytes": 2982515,
-    "renderAfterListMs": 340,
-    "cls": 0.024,
+    "firstPosterMs": 466,
+    "domContentLoadedMs": 144,
+    "listRequestMs": 104,
+    "listTransferBytes": 592435,
+    "listDecodedBytes": 2974854,
+    "renderAfterListMs": 199,
+    "cls": 0.023,
     "loadedWithin1500ms": {
       "files": {
-        "index-B8FX7twA.css": {
-          "raw": 94774,
-          "gzip": 18233
+        "index-DvC8G3kg.css": {
+          "raw": 94977,
+          "gzip": 18295
         },
-        "index-kqVloImw.js": {
-          "raw": 613457,
-          "gzip": 198270
+        "index-CC6HSLB2.js": {
+          "raw": 617681,
+          "gzip": 199805
         },
-        "FiltersPopover-DoZQtL42.js": {
+        "FiltersPopover-yEIhPm-3.js": {
           "raw": 4636,
-          "gzip": 1685
+          "gzip": 1693
         },
-        "Popover-BwOo1faq.js": {
-          "raw": 2184,
-          "gzip": 1146
-        },
-        "Field-BhTA8Nzg.js": {
+        "Field-bGwRx1y0.js": {
           "raw": 988,
-          "gzip": 505
+          "gzip": 504
         },
-        "PopoverPopup-DXmktJkf.js": {
-          "raw": 7530,
-          "gzip": 2915
+        "PopoverPopup-B6gAZa19.js": {
+          "raw": 7532,
+          "gzip": 2916
         },
-        "Select-Cpcncil8.js": {
-          "raw": 27784,
-          "gzip": 9951
+        "Popover-DBW_c5Ii.js": {
+          "raw": 2184,
+          "gzip": 1149
         },
-        "LibraryTable-T0F4kPdN.js": {
-          "raw": 7958,
-          "gzip": 3224
+        "LibraryTable-kzTZFgrE.js": {
+          "raw": 7953,
+          "gzip": 3231
+        },
+        "Select-CE-E02vB.js": {
+          "raw": 27777,
+          "gzip": 9967
         }
       },
-      "jsGzip": 217696,
-      "cssGzip": 18233
+      "jsGzip": 219265,
+      "cssGzip": 18295
     },
     "critical": {
       "files": {
-        "index-kqVloImw.js": {
-          "raw": 613457,
-          "gzip": 198270
+        "index-CC6HSLB2.js": {
+          "raw": 617681,
+          "gzip": 199805
         },
-        "index-B8FX7twA.css": {
-          "raw": 94774,
-          "gzip": 18233
+        "index-DvC8G3kg.css": {
+          "raw": 94977,
+          "gzip": 18295
         }
       },
-      "jsGzip": 198270,
-      "cssGzip": 18233
+      "jsGzip": 199805,
+      "cssGzip": 18295
     }
   },
-  "allChunks": 25
+  "allChunks": 53
 }

@@ -10,7 +10,7 @@ import type { HistoryEntry } from '@/api/schema';
 import { openMovieDialog } from '@/components/movie/dialogStore';
 import { MovieMenuItems } from '@/components/movie/MovieMenuItems';
 import { useMovieActions } from '@/components/movie/useMovieActions';
-import { NotFound } from '@/components/shell/Status';
+import { NotFound } from '@/components/shell/NotFound';
 import { SearchField, ThemeToggle, Topbar } from '@/components/shell/Topbar';
 import { StatusBadge, StatusText } from '@/components/ui/Badges';
 import { Button, buttonClass, IconButton } from '@/components/ui/Button';
@@ -140,6 +140,7 @@ export function MovieScreen() {
   const crew: PersonView[] = (m?.crew ?? []) as PersonView[];
   const directors = crew.filter((p) => p.job === 'Director').map((p) => p.name);
   const writers = [...new Set(crew.filter((p) => p.department === 'Writing').map((p) => p.name))].slice(0, 3);
+  const studios = (m?.studios ?? []).map((s) => s.name).slice(0, 3);
   const video = (m?.videos ?? [])[0];
   const file = m?.file && (m.file as { id?: number }).id ? m.file : null;
   const download = m?.download && (m.download as { status?: string }).status ? m.download : null;
@@ -292,7 +293,7 @@ export function MovieScreen() {
                 <Skeleton className="sk-line" style={{ width: '80%', marginTop: 10 }} />
               </div>
             )}
-            {(directors.length > 0 || writers.length > 0) && (
+            {(directors.length > 0 || writers.length > 0 || studios.length > 0) && (
               <dl className="credits">
                 {directors.length > 0 && (
                   <div>
@@ -304,6 +305,12 @@ export function MovieScreen() {
                   <div>
                     <dt>{writers.length > 1 ? 'Writers' : 'Writer'}</dt>
                     <dd>{writers.join(', ')}</dd>
+                  </div>
+                )}
+                {studios.length > 0 && (
+                  <div>
+                    <dt>{studios.length > 1 ? 'Studios' : 'Studio'}</dt>
+                    <dd>{studios.join(', ')}</dd>
                   </div>
                 )}
               </dl>
@@ -512,7 +519,12 @@ export function MovieScreen() {
                   </div>
                 </section>
               )}
-              <ReleaseDates cinema={m.releaseCinema} digital={m.releaseDigital} physical={m.releasePhysical} />
+              <ReleaseDates
+                cinema={m.releaseCinema}
+                digital={m.releaseDigital}
+                physical={m.releasePhysical}
+                regions={m.releaseRegions}
+              />
               <FilmSettings
                 movie={{
                   id: m.id,

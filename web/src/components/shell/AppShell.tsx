@@ -50,7 +50,7 @@ function useAddShortcut() {
       if (ev.metaKey || ev.ctrlKey || ev.altKey || ev.shiftKey || ev.defaultPrevented) return;
       if (ev.key !== 'a' && ev.key !== 'A') return;
       if (isTypingTarget(ev.target, '[role="menu"], [role="listbox"], [role="dialog"]')) return;
-      if (location.pathname.endsWith('/discover')) return;
+      if (location.pathname.endsWith('/discover') || location.pathname.endsWith('/setup')) return;
       ev.preventDefault();
       void navigate({ to: '/discover' });
     };

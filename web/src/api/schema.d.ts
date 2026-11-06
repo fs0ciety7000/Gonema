@@ -1662,7 +1662,7 @@ export interface paths {
         };
         /**
          * Condition kinds of the rule editor
-         * @description Each kind with its input type and, for choices, the values the parser recognises.
+         * @description Each kind with its input type and, for choices, the values the parser knows.
          */
         get: operations["list-condition-kinds"];
         put?: never;

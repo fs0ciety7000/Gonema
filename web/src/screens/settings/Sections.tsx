@@ -18,7 +18,7 @@ import {
   removeRootFolder,
 } from '@/api/lot3';
 import { keys, rootFoldersQuery, useLibrary } from '@/api/queries';
-import type { AcquisitionSettings, ImportSettingsBody, NamingPreview, Settings as HealthSettings } from '@/api/schema';
+import type { AcquisitionSettings, Settings as HealthSettings, ImportSettingsBody, NamingPreview } from '@/api/schema';
 import { deleteTag, renameTag, screenKeys, setTmdbKey, tagsQuery, tmdbQuery } from '@/api/screens';
 import { StatusText } from '@/components/ui/Badges';
 import { Button } from '@/components/ui/Button';
@@ -27,9 +27,19 @@ import { Field, Input } from '@/components/ui/Field';
 import { Switch } from '@/components/ui/Switch';
 import { toast } from '@/components/ui/Toast';
 import { formatBytes, formatNumber } from '@/lib/format';
-import { errorText, FormFields, type FieldSpec, toBody, validate, type Values } from './form';
+import { errorText, type FieldSpec, FormFields, toBody, type Values, validate } from './form';
 
-export function Panel({ id, title, aside, children }: { id: string; title: ReactNode; aside?: ReactNode; children: ReactNode }) {
+export function Panel({
+  id,
+  title,
+  aside,
+  children,
+}: {
+  id: string;
+  title: ReactNode;
+  aside?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <section className="panel" aria-labelledby={id}>
       <div className="panel-hd">
@@ -256,11 +266,14 @@ function Naming() {
   const sample = useMemo(() => (lib.data ?? []).find((m) => m.quality)?.id, [lib.data]);
   const [preview, setPreview] = useState<NamingPreview | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const fileTemplate = cur?.fileTemplate;
+  const folderTemplate = cur?.folderTemplate;
+  const renameFiles = cur?.renameFiles;
   useEffect(() => {
-    if (!cur) return;
+    if (fileTemplate === undefined || folderTemplate === undefined || renameFiles === undefined) return;
     const ctl = new AbortController();
     const t = setTimeout(() => {
-      previewNaming({ ...cur, movieId: sample }, ctl.signal)
+      previewNaming({ fileTemplate, folderTemplate, renameFiles, movieId: sample }, ctl.signal)
         .then((p) => {
           setPreview(p);
           setPreviewError(null);
@@ -273,13 +286,16 @@ function Naming() {
       clearTimeout(t);
       ctl.abort();
     };
-  }, [cur?.fileTemplate, cur?.folderTemplate, cur?.renameFiles, sample]);
+  }, [fileTemplate, folderTemplate, renameFiles, sample]);
   const save = useMutation({
     mutationFn: (b: NamingInput) => putNaming(b),
     onSuccess: (r) => {
       qc.setQueryData(lot3Keys.naming, r);
       setDraft(null);
-      toast.show({ title: 'Naming saved.', body: 'New imports use it; existing files keep their names until renamed.' });
+      toast.show({
+        title: 'Naming saved.',
+        body: 'New imports use it; existing files keep their names until renamed.',
+      });
     },
     onError: (e) => toast.error('Naming not saved', errorText(e)),
   });
@@ -291,7 +307,11 @@ function Naming() {
     );
   const tokens = naming.data.tokens ?? [];
   return (
-    <Panel id="naming" title="Naming" aside={<span className="t-caption t-muted">Live preview with a film from your library</span>}>
+    <Panel
+      id="naming"
+      title="Naming"
+      aside={<span className="t-caption t-muted">Live preview with a film from your library</span>}
+    >
       <form
         className="tmpl"
         onSubmit={(ev) => {
@@ -335,7 +355,7 @@ function Naming() {
             />
           )}
         </Field>
-        <div className="preview" aria-live="polite" aria-label="Preview">
+        <output className="preview" aria-live="polite" aria-label="Preview">
           {previewError ? (
             <span className="err">{previewError}</span>
           ) : preview ? (
@@ -347,7 +367,7 @@ function Naming() {
           ) : (
             ' '
           )}
-        </div>
+        </output>
         <div className="row">
           <Switch checked={cur.renameFiles} onCheckedChange={(c) => setDraft({ ...cur, renameFiles: c })}>
             Rename imported files
@@ -417,7 +437,13 @@ export function LibrarySection() {
 
 const ACQ_SPEC: FieldSpec[] = [
   { kind: 'number', name: 'rssIntervalMin', label: 'RSS sync every (minutes)', min: 10, max: 120 },
-  { kind: 'number', name: 'searchMissingIntervalHours', label: 'Search for missing films every (hours)', min: 1, max: 168 },
+  {
+    kind: 'number',
+    name: 'searchMissingIntervalHours',
+    label: 'Search for missing films every (hours)',
+    min: 1,
+    max: 168,
+  },
   { kind: 'number', name: 'maxAttemptsPerDay', label: 'Attempts per film per day', min: 1, max: 20 },
   {
     kind: 'select',
@@ -507,7 +533,9 @@ export function MetadataSection() {
         onSubmit={(ev) => {
           ev.preventDefault();
           if (key.trim().length < 16) {
-            setError('That is too short for a TMDB key. Paste the API Read Access Token (the long one) or the API Key.');
+            setError(
+              'That is too short for a TMDB key. Paste the API Read Access Token (the long one) or the API Key.',
+            );
             return;
           }
           setError(null);
@@ -629,10 +657,20 @@ export function TagsSection() {
               )}
               <span />
               <span className="acts">
-                <Button size="sm" variant="ghost" onClick={() => setEditing({ id: t.id, label: t.label })} aria-label={`Rename ${t.label}`}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setEditing({ id: t.id, label: t.label })}
+                  aria-label={`Rename ${t.label}`}
+                >
                   Rename
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => del(t.id, t.label, t.movies)} aria-label={`Delete tag ${t.label}`}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => del(t.id, t.label, t.movies)}
+                  aria-label={`Delete tag ${t.label}`}
+                >
                   Delete
                 </Button>
               </span>
@@ -647,4 +685,3 @@ export function TagsSection() {
     </Panel>
   );
 }
-

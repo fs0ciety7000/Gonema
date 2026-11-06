@@ -71,7 +71,7 @@ export function InteractiveSearchScreen() {
   const qc = useQueryClient();
   const movie = useMovie(movieId);
   const profiles = useProfiles();
-  const { state, restart } = useInteractiveSearch(movieId);
+  const { state, restart, retryIndexer } = useInteractiveSearch(movieId);
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
   const [showReasons, setShowReasons] = useState(true);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
@@ -420,14 +420,27 @@ export function InteractiveSearchScreen() {
             icon={<CloudOff className="i" aria-hidden="true" />}
             title={`${ix.name} didn’t answer.`}
             action={
-              <Button size="sm" onClick={() => void restart()}>
-                Retry
-              </Button>
+              <span className="row">
+                <Button
+                  size="sm"
+                  aria-label={`Retry ${ix.name}`}
+                  onClick={() =>
+                    void retryIndexer(ix.id).catch((e) =>
+                      toast.error(`${ix.name} was not asked again`, e instanceof ApiError ? e.detail : String(e)),
+                    )
+                  }
+                >
+                  Retry
+                </Button>
+                <Link className="btn btn-ghost btn-sm" to="/system/health" hash="indexers">
+                  Indexer health
+                </Link>
+              </span>
             }
           >
             {ix.error ? `${ix.error}. ` : ''}The other indexers kept searching.
-            {ix.willRetryAt ? ` Gonema pauses it until ${formatClock(new Date(ix.willRetryAt))}.` : ''} Retry searches
-            every indexer again.
+            {ix.willRetryAt ? ` Gonema pauses it until ${formatClock(new Date(ix.willRetryAt))}.` : ''} Retry asks only
+            this indexer again.
           </Notice>
         ))}
 

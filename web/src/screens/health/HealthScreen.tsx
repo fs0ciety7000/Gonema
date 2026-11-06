@@ -37,6 +37,8 @@ export function issueLink(link: string | undefined): string | null {
 const CHECK_NAME: Record<string, string> = {
   indexers: 'Indexers',
   clients: 'Download clients',
+  downloadclients: 'Download clients',
+  recyclebin: 'Recycle bin',
   downloads: 'Downloads',
   tmdb: 'TMDB',
   metadata: 'TMDB',
@@ -49,8 +51,7 @@ const CHECK_NAME: Record<string, string> = {
   mediaservers: 'Media servers',
   notifications: 'Notifications',
 };
-const checkName = (id: string) =>
-  CHECK_NAME[id] ?? id.replace(/[._-]+/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+const checkName = (id: string) => CHECK_NAME[id] ?? id.replace(/[._-]+/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 
 function IssueCard({ issue }: { issue: HealthIssue }) {
   const s = SEV[issue.severity] ?? SEV.info;
@@ -72,7 +73,7 @@ function IssueCard({ issue }: { issue: HealthIssue }) {
             ))}
           </ul>
         )}
-        <span className="t-caption t-muted">
+        <span className="t-caption t-secondary">
           {issue.source && `${issue.source} · `}since {formatWhen(issue.since)}
         </span>
       </div>
@@ -90,7 +91,11 @@ function IndexerRow({ x }: { x: Indexer }) {
   const test = useMutation({
     mutationFn: () => indexerApi.testSaved(x.id),
     onSuccess: (r) => {
-      toast.show({ tone: r.ok ? 'neutral' : 'error', title: r.ok ? `${x.name} answered.` : `${x.name} failed the test.`, body: r.message });
+      toast.show({
+        tone: r.ok ? 'neutral' : 'error',
+        title: r.ok ? `${x.name} answered.` : `${x.name} failed the test.`,
+        body: r.message,
+      });
       void qc.invalidateQueries({ queryKey: lot3Keys.indexers });
     },
     onError: (e) => toast.error(`${x.name} could not be tested`, e instanceof ApiError ? e.detail : String(e)),
@@ -120,7 +125,13 @@ function IndexerRow({ x }: { x: Indexer }) {
       ) : (
         <StatusText status="failed">{`${h?.failureCount ?? 0} failures`}</StatusText>
       )}
-      <Button size="sm" variant="ghost" loading={test.isPending} onClick={() => test.mutate()} aria-label={`Test ${x.name}`}>
+      <Button
+        size="sm"
+        variant="ghost"
+        loading={test.isPending}
+        onClick={() => test.mutate()}
+        aria-label={`Test ${x.name}`}
+      >
         Test
       </Button>
     </li>

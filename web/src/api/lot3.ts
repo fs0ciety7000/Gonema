@@ -10,6 +10,7 @@ import type {
   DownloadClient,
   DownloadClientInput,
   HealthIssue,
+  Settings as HealthSettings,
   ImportSettingsBody,
   Indexer,
   IndexerInput,
@@ -20,15 +21,14 @@ import type {
   NamingSettingsView,
   Notification,
   NotificationInput,
-  RemotePathMapping,
-  RootFolder,
-  Settings as HealthSettings,
-  TestResult,
-  UiPreferences,
   PreviewInput,
   QualityProfileInput,
+  RemotePathMapping,
+  RootFolder,
   ScoringCondition,
   ScoringRuleInput,
+  TestResult,
+  UiPreferences,
 } from './schema';
 
 /** Lists answered with `null` when empty. */
@@ -131,7 +131,10 @@ export async function runHealthChecks() {
 export const indexersQuery = queryOptions({
   queryKey: lot3Keys.indexers,
   queryFn: async ({ signal }) =>
-    orEmpty(unwrap(api.GET('/indexers', { signal })).then((r) => arr(r as Indexer[] | null)), [] as Indexer[]),
+    orEmpty(
+      unwrap(api.GET('/indexers', { signal })).then((r) => arr(r as Indexer[] | null)),
+      [] as Indexer[],
+    ),
   staleTime: 30_000,
 });
 
@@ -196,9 +199,7 @@ export const clientApi = {
   testSaved: (id: number) =>
     unwrap(api.POST('/download-clients/{id}/test', { params: { path: { id } } })) as Promise<TestResult>,
   test: (b: DownloadClientInput, id?: number) =>
-    unwrap(
-      api.POST('/download-clients/test', { params: { query: { id } }, body: b }),
-    ) as Promise<TestResult>,
+    unwrap(api.POST('/download-clients/test', { params: { query: { id } }, body: b })) as Promise<TestResult>,
 };
 
 export const mediaServerApi = {
@@ -306,7 +307,9 @@ export const calendarQuery = (start: string, end: string, unmonitored: boolean) 
   queryOptions({
     queryKey: ['calendar', start, end, unmonitored] as const,
     queryFn: async ({ signal }) =>
-      unwrap(api.GET('/calendar', { params: { query: { start, end, unmonitored: unmonitored || undefined } }, signal })),
+      unwrap(
+        api.GET('/calendar', { params: { query: { start, end, unmonitored: unmonitored || undefined } }, signal }),
+      ),
     staleTime: 60_000,
   });
 
@@ -316,7 +319,8 @@ export const calendarQuery = (start: string, end: string, unmonitored: boolean) 
 export const paletteSearchQuery = (q: string, remote: boolean) =>
   queryOptions({
     queryKey: ['palette-search', q, remote] as const,
-    queryFn: ({ signal }) => unwrap(api.GET('/search', { params: { query: { q, limit: 6, remote: remote || undefined } }, signal })),
+    queryFn: ({ signal }) =>
+      unwrap(api.GET('/search', { params: { query: { q, limit: 6, remote: remote || undefined } }, signal })),
     staleTime: 30_000,
     retry: false,
   });

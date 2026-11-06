@@ -16,21 +16,21 @@ import {
   X,
 } from 'lucide-react';
 import { type ReactNode, useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { qualityName } from '@/lib/quality';
+import { paletteSearchQuery, queueControl } from '@/api/lot3';
 import type { LibraryItem } from '@/api/model';
 import { keys, useLibrary, useQueue } from '@/api/queries';
-import { paletteSearchQuery, queueControl } from '@/api/lot3';
-import { tmdbQuery } from '@/api/screens';
 import type { PaletteFilm } from '@/api/schema';
+import { tmdbQuery } from '@/api/screens';
 import { StatusText } from '@/components/ui/Badges';
 import { overlayRoot } from '@/components/ui/overlayRoot';
 import { PosterArt } from '@/components/ui/PosterArt';
 import { toast } from '@/components/ui/Toast';
 import { ALL_SECTIONS, type NavEntry, visibleNav } from '@/lib/nav';
 import { palette, usePalette } from '@/lib/palette';
+import { qualityName } from '@/lib/quality';
 import { displayStatus, statusText } from '@/lib/status';
 import { setThemePreference, useTheme } from '@/lib/theme';
-import { type Recent, pushRecent, readRecents } from './recents';
+import { pushRecent, type Recent, readRecents } from './recents';
 
 type Scope = 'all' | 'films' | 'people' | 'actions';
 
@@ -41,11 +41,7 @@ export function parseQuery(raw: string, scope: Scope): { q: string; scope: Scope
   return { q: raw.trim(), scope };
 }
 
-const norm = (s: string) =>
-  s
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
+const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
 /** Films whose title matches: prefix first, then word start, then anywhere; at most `limit`. */
 export function matchFilms(library: readonly LibraryItem[], q: string, limit = 6): LibraryItem[] {
@@ -145,7 +141,7 @@ export default function CommandPalette() {
   });
   const remote = useQuery({
     ...paletteSearchQuery(remoteQ, true),
-    enabled: open && !!remoteQ && remoteQ === q && s !== 'actions',
+    enabled: open && !!tmdb.data?.configured && !!remoteQ && remoteQ === q && s !== 'actions',
   });
   const byId = useMemo(() => new Map((lib.data ?? []).map((m) => [m.id, m])), [lib.data]);
   const films: PaletteFilm[] = useMemo(() => {
@@ -171,7 +167,14 @@ export default function CommandPalette() {
     return [];
   }, [q, wantFilms, s, local.data, local.isError, lib.data]);
   const remoteData = remote.data?.query === q ? remote.data.remote : undefined;
-  const remoteBusy = !!q && q.length >= 3 && s !== 'actions' && (remoteQ !== q || remote.isFetching);
+  const remoteBusy =
+    !!tmdb.data?.configured && !!q && q.length >= 3 && s !== 'actions' && (remoteQ !== q || remote.isFetching);
+
+  const [selected, setSelected] = useState('');
+  const firstValue = films[0] ? `film-${films[0].id}` : '';
+  useEffect(() => {
+    if (firstValue) setSelected(firstValue);
+  }, [firstValue]);
 
   const close = () => palette.close();
   const go = (to: string, search?: Record<string, unknown>, recent?: Recent) => {
@@ -188,7 +191,10 @@ export default function CommandPalette() {
     try {
       await queueControl(what);
       void qc.invalidateQueries({ queryKey: keys.queue });
-      toast.show({ title: what === 'pause' ? 'Queue paused.' : 'Queue resumed.', body: what === 'pause' ? 'Nothing downloads until you resume.' : 'Downloads continue where they stopped.' });
+      toast.show({
+        title: what === 'pause' ? 'Queue paused.' : 'Queue resumed.',
+        body: what === 'pause' ? 'Nothing downloads until you resume.' : 'Downloads continue where they stopped.',
+      });
     } catch (e) {
       toast.error(what === 'pause' ? 'The queue was not paused' : 'The queue was not resumed', (e as Error).message);
     }
@@ -196,12 +202,35 @@ export default function CommandPalette() {
 
   const nav = visibleNav().flatMap((g) => g.items);
   const actions: Array<{ id: string; title: string; sub: string; icon: ReactNode; run: () => void; kbd?: string[] }> = [
-    { id: 'add', title: 'Add film…', sub: 'Search TMDB', icon: <Plus className="i" />, run: () => go('/discover', q ? { q } : undefined), kbd: ['A'] },
+    {
+      id: 'add',
+      title: 'Add film…',
+      sub: 'Search TMDB',
+      icon: <Plus className="i" />,
+      run: () => go('/discover', q ? { q } : undefined),
+      kbd: ['A'],
+    },
     ...(active
-      ? [{ id: 'pause', title: 'Pause the queue', sub: `${active} downloading`, icon: <CirclePause className="i" />, run: () => void control('pause') }]
+      ? [
+          {
+            id: 'pause',
+            title: 'Pause the queue',
+            sub: `${active} downloading`,
+            icon: <CirclePause className="i" />,
+            run: () => void control('pause'),
+          },
+        ]
       : []),
     ...(paused
-      ? [{ id: 'resume', title: 'Resume the queue', sub: `${paused} paused`, icon: <CirclePlay className="i" />, run: () => void control('resume') }]
+      ? [
+          {
+            id: 'resume',
+            title: 'Resume the queue',
+            sub: `${paused} paused`,
+            icon: <CirclePlay className="i" />,
+            run: () => void control('resume'),
+          },
+        ]
       : []),
     {
       id: 'theme',
@@ -227,13 +256,21 @@ export default function CommandPalette() {
   const nq = norm(q);
   const shownActions =
     s === 'all' || s === 'actions'
-      ? actions.filter((a) => !nq || norm(`${a.title} ${a.sub}`).includes(nq)).slice(0, s === 'actions' ? 20 : q ? 4 : 6)
+      ? actions
+          .filter((a) => !nq || norm(`${a.title} ${a.sub}`).includes(nq))
+          .slice(0, s === 'actions' ? 20 : q ? 4 : 6)
       : [];
   const top = films[0];
   const peopleList = s === 'all' || s === 'people' ? (remoteData?.people ?? []).slice(0, 4) : [];
   const lookupList = wantFilms ? (remoteData?.movies ?? []).filter((r) => !r.inLibrary).slice(0, 4) : [];
   const nothing =
-    !!q && !films.length && !shownActions.length && !peopleList.length && !lookupList.length && !remoteBusy && !local.isFetching;
+    !!q &&
+    !films.length &&
+    !shownActions.length &&
+    !peopleList.length &&
+    !lookupList.length &&
+    !remoteBusy &&
+    !local.isFetching;
 
   return (
     <BaseDialog.Root open={open} onOpenChange={(o) => !o && close()}>
@@ -241,14 +278,19 @@ export default function CommandPalette() {
         <BaseDialog.Backdrop className="scrim palette-scrim" />
         <BaseDialog.Popup className="palette" aria-label="Command palette">
           <BaseDialog.Title className="sr-only">Command palette</BaseDialog.Title>
-          <Command shouldFilter={false} loop label="Command palette">
+          <Command
+            shouldFilter={false}
+            loop
+            value={selected}
+            onValueChange={setSelected}
+            label="Search films, people, or type > for actions"
+          >
             <div className="p-in">
               <Search className="i" aria-hidden="true" />
               <Command.Input
                 value={raw}
                 onValueChange={setRaw}
                 autoFocus
-                aria-label="Search films, people, or type > for actions"
                 placeholder="Search films, people… or type > for actions"
                 onKeyDown={(ev) => {
                   if (ev.key === 'Tab') {
@@ -267,6 +309,7 @@ export default function CommandPalette() {
                 Esc
               </span>
             </div>
+            {/* biome-ignore lint/a11y/useSemanticElements: a labelled group of toggle chips, not a form */}
             <div className="scopes" role="group" aria-label="Scope">
               {(
                 [
@@ -319,7 +362,9 @@ export default function CommandPalette() {
                           key={`r-f-${r.id}`}
                           value={`recent-film-${r.id}`}
                           onSelect={() => openFilm(m)}
-                          lead={<PosterArt className="poster" src={m.posterUrl} title={m.title} color={m.dominantColor} />}
+                          lead={
+                            <PosterArt className="poster" src={m.posterUrl} title={m.title} color={m.dominantColor} />
+                          }
                           title={m.title}
                           sub={`Film${m.year ? ` · ${m.year}` : ''} · ${statusText(m, st)}`}
                         />
@@ -351,7 +396,9 @@ export default function CommandPalette() {
                         key={f.id}
                         value={`film-${f.id}`}
                         onSelect={() => openFilm(f)}
-                        lead={<PosterArt className="poster" src={f.posterUrl} title={f.title} color={f.dominantColor} />}
+                        lead={
+                          <PosterArt className="poster" src={f.posterUrl} title={f.title} color={f.dominantColor} />
+                        }
                         title={<Mark text={f.title} q={q} />}
                         sub={
                           <>
@@ -374,7 +421,7 @@ export default function CommandPalette() {
                     <Opt
                       key={p.tmdbId}
                       value={`person-${p.tmdbId}`}
-                      onSelect={() => go('/discover', { tab: 'discover', list: 'person', q: String(p.tmdbId) })}
+                      onSelect={() => go('/discover', { tab: 'discover', list: 'people', person: p.tmdbId })}
                       lead={<UserRound className="i" />}
                       title={<Mark text={p.name} q={q} />}
                       sub={[

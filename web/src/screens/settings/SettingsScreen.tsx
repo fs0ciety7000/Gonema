@@ -17,10 +17,17 @@ import {
   Tag,
 } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { clientsQuery, indexersQuery, mediaServersQuery, namingQuery, notificationsQuery, pathMappingsQuery } from '@/api/lot3';
+import {
+  clientsQuery,
+  indexersQuery,
+  mediaServersQuery,
+  namingQuery,
+  notificationsQuery,
+  pathMappingsQuery,
+} from '@/api/lot3';
 import { rootFoldersQuery } from '@/api/queries';
 import { tmdbQuery } from '@/api/screens';
-import { NotFound } from '@/components/shell/Status';
+import { NotFound } from '@/components/shell/NotFound';
 import { ThemeToggle, Topbar } from '@/components/shell/Topbar';
 import { StatusText } from '@/components/ui/Badges';
 import { buttonClass } from '@/components/ui/Button';
@@ -44,21 +51,94 @@ export const SECTIONS: ReadonlyArray<{ heading: string; items: readonly SectionD
   {
     heading: 'General',
     items: [
-      { id: 'overview', label: 'Overview', icon: Gauge, title: 'Settings', intro: 'Everything that connects Gonema to the outside world. Changes save when you press Save; removals offer Undo.', keywords: '' },
-      { id: 'library', label: 'Library & naming', icon: Film, title: 'Library & naming', intro: 'Where films live, how their folders and files are named, and how downloads are brought in.', keywords: 'root folder path naming rename template hardlink copy move recycle bin subtitles import' },
-      { id: 'quality', label: 'Quality & scoring', icon: SlidersHorizontal, title: 'Quality profiles & scoring', intro: 'A profile says which copies are acceptable and when to stop upgrading. Scoring rules add or remove points for what you care about.', keywords: 'profile cutoff upgrade score rule custom format size' },
-      { id: 'acquisition', label: 'Searching & health', icon: Radar, title: 'Searching & health', intro: 'How often Gonema looks for releases, how it retries, and when it warns you.', keywords: 'rss interval retention protocol blocklist retries disk space warning' },
-      { id: 'metadata', label: 'Metadata', icon: Globe, title: 'Metadata', intro: 'Film details, posters and release dates.', keywords: 'tmdb key api token posters' },
-      { id: 'tags', label: 'Tags', icon: Tag, title: 'Tags', intro: 'Labels for films, and the connections they apply to.', keywords: 'tag label' },
+      {
+        id: 'overview',
+        label: 'Overview',
+        icon: Gauge,
+        title: 'Settings',
+        intro:
+          'Everything that connects Gonema to the outside world. Changes save when you press Save; removals offer Undo.',
+        keywords: '',
+      },
+      {
+        id: 'library',
+        label: 'Library & naming',
+        icon: Film,
+        title: 'Library & naming',
+        intro: 'Where films live, how their folders and files are named, and how downloads are brought in.',
+        keywords: 'root folder path naming rename template hardlink copy move recycle bin subtitles import',
+      },
+      {
+        id: 'quality',
+        label: 'Quality & scoring',
+        icon: SlidersHorizontal,
+        title: 'Quality profiles & scoring',
+        intro:
+          'A profile says which copies are acceptable and when to stop upgrading. Scoring rules add or remove points for what you care about.',
+        keywords: 'profile cutoff upgrade score rule custom format size',
+      },
+      {
+        id: 'acquisition',
+        label: 'Searching & health',
+        icon: Radar,
+        title: 'Searching & health',
+        intro: 'How often Gonema looks for releases, how it retries, and when it warns you.',
+        keywords: 'rss interval retention protocol blocklist retries disk space warning',
+      },
+      {
+        id: 'metadata',
+        label: 'Metadata',
+        icon: Globe,
+        title: 'Metadata',
+        intro: 'Film details, posters and release dates.',
+        keywords: 'tmdb key api token posters',
+      },
+      {
+        id: 'tags',
+        label: 'Tags',
+        icon: Tag,
+        title: 'Tags',
+        intro: 'Labels for films, and the connections they apply to.',
+        keywords: 'tag label',
+      },
     ],
   },
   {
     heading: 'Connections',
     items: [
-      { id: 'indexers', label: 'Indexers', icon: Search, title: 'Indexers', intro: 'Where Gonema looks for releases: Newznab (Usenet) and Torznab (torrent) indexers.', keywords: 'newznab torznab api key categories seeders' },
-      { id: 'download-clients', label: 'Download clients', icon: ArrowDownToLine, title: 'Download clients', intro: 'Where releases are sent. Same priority: Gonema alternates. Failed downloads are removed from the client after blocklisting.', keywords: 'sabnzbd nzbget qbittorrent deluge transmission category password' },
-      { id: 'media-servers', label: 'Media servers', icon: MonitorPlay, title: 'Media servers', intro: 'Libraries Gonema refreshes when a film arrives, is upgraded, renamed or removed.', keywords: 'plex jellyfin kodi refresh token' },
-      { id: 'notifications', label: 'Notifications', icon: Bell, title: 'Notifications', intro: 'Short notes when something happens, with the reason behind it.', keywords: 'discord slack telegram pushover ntfy gotify email webhook' },
+      {
+        id: 'indexers',
+        label: 'Indexers',
+        icon: Search,
+        title: 'Indexers',
+        intro: 'Where Gonema looks for releases: Newznab (Usenet) and Torznab (torrent) indexers.',
+        keywords: 'newznab torznab api key categories seeders',
+      },
+      {
+        id: 'download-clients',
+        label: 'Download clients',
+        icon: ArrowDownToLine,
+        title: 'Download clients',
+        intro:
+          'Where releases are sent. Same priority: Gonema alternates. Failed downloads are removed from the client after blocklisting.',
+        keywords: 'sabnzbd nzbget qbittorrent deluge transmission category password',
+      },
+      {
+        id: 'media-servers',
+        label: 'Media servers',
+        icon: MonitorPlay,
+        title: 'Media servers',
+        intro: 'Libraries Gonema refreshes when a film arrives, is upgraded, renamed or removed.',
+        keywords: 'plex jellyfin kodi refresh token',
+      },
+      {
+        id: 'notifications',
+        label: 'Notifications',
+        icon: Bell,
+        title: 'Notifications',
+        intro: 'Short notes when something happens, with the reason behind it.',
+        keywords: 'discord slack telegram pushover ntfy gotify email webhook',
+      },
     ],
   },
 ];
@@ -175,7 +255,11 @@ function Overview() {
                     {s.name}
                     <small>{s.kind}</small>
                   </span>
-                  {s.enabled ? <StatusText status="available">On</StatusText> : <StatusText status="unmonitored">Off</StatusText>}
+                  {s.enabled ? (
+                    <StatusText status="available">On</StatusText>
+                  ) : (
+                    <StatusText status="unmonitored">Off</StatusText>
+                  )}
                 </li>
               ))}
             </ul>
@@ -272,7 +356,15 @@ function Overview() {
                       const on = (n.events ?? []).includes(e.value);
                       return (
                         <td key={e.value}>
-                          {on ? <span className="on" aria-hidden="true">✓</span> : <span className="off" aria-hidden="true">·</span>}
+                          {on ? (
+                            <span className="on" aria-hidden="true">
+                              ✓
+                            </span>
+                          ) : (
+                            <span className="off" aria-hidden="true">
+                              ·
+                            </span>
+                          )}
                           <span className="sr-only">{on ? 'on' : 'off'}</span>
                         </td>
                       );
@@ -282,7 +374,11 @@ function Overview() {
               </tbody>
             </table>
           ) : (
-            none(notifs.isPending ? ' ' : 'No channel yet. Gonema can send a note when a film arrives or something needs a look.')
+            none(
+              notifs.isPending
+                ? ' '
+                : 'No channel yet. Gonema can send a note when a film arrives or something needs a look.',
+            )
           )}
         </div>
       </section>
@@ -359,7 +455,9 @@ export function SettingsScreen() {
   const matches = useMemo(() => {
     const q = find.trim().toLowerCase();
     if (!q) return null;
-    return new Set(ALL.filter((s) => `${s.label} ${s.title} ${s.intro} ${s.keywords}`.toLowerCase().includes(q)).map((s) => s.id));
+    return new Set(
+      ALL.filter((s) => `${s.label} ${s.title} ${s.intro} ${s.keywords}`.toLowerCase().includes(q)).map((s) => s.id),
+    );
   }, [find]);
   if (!def) return <NotFound />;
   return (
@@ -408,6 +506,7 @@ export function SettingsScreen() {
                         key={s.id}
                         to={s.id === 'overview' ? '/settings' : '/settings/$section'}
                         params={s.id === 'overview' ? undefined : ({ section: s.id } as never)}
+                        activeOptions={{ exact: true }}
                         aria-current={s.id === id ? 'page' : undefined}
                       >
                         <Icon className="i" aria-hidden="true" />

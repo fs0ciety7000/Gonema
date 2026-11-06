@@ -8,6 +8,8 @@ import { type NavEntry, visibleNav } from '@/lib/nav';
 import { Mark, Wordmark } from './Logo';
 
 function activeSection(pathname: string): string {
+  // /system/health: the server answers GET /health itself (liveness probe), so the screen lives one level down
+  if (pathname.startsWith('/system/health')) return 'health';
   return pathname.split('/').filter(Boolean)[0] ?? 'home';
 }
 

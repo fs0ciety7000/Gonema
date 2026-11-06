@@ -14,7 +14,14 @@ import {
   WandSparkles,
   X,
 } from 'lucide-react';
-import { type KeyboardEvent, type PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   conditionKindsQuery,
   previewRelease,
@@ -24,13 +31,7 @@ import {
   scoringRulesQuery,
 } from '@/api/lot3';
 import { keys, profilesQuery, useLibrary } from '@/api/queries';
-import type {
-  Preview,
-  ProfileEntry,
-  QualityProfileDetail,
-  ScoringCondition,
-  ScoringRule,
-} from '@/api/schema';
+import type { Preview, ProfileEntry, QualityProfileDetail, ScoringCondition, ScoringRule } from '@/api/schema';
 import { QualityBadge } from '@/components/ui/Badges';
 import { Button, IconButton } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -158,7 +159,10 @@ function QualityList({
     setDrag(null);
   };
   const lastAllowed = draft.entries.map((e) => e.allowed).lastIndexOf(true);
-  const floorAt = draft.entries.slice(lastAllowed + 1).length && draft.entries.slice(lastAllowed + 1).every((e) => !e.allowed) ? lastAllowed : -1;
+  const floorAt =
+    draft.entries.slice(lastAllowed + 1).length && draft.entries.slice(lastAllowed + 1).every((e) => !e.allowed)
+      ? lastAllowed
+      : -1;
   const toggle = (i: number, allowed: boolean) =>
     set({ ...draft, entries: draft.entries.map((e, k) => (k === i ? { ...e, allowed } : e)) });
   const row = (e: ProfileEntry, q: string, i: number, inGroup: boolean) => (
@@ -207,8 +211,14 @@ function QualityList({
           const isCut = draft.upgradeAllowed && k === draft.cutoff;
           const dragging = drag?.from === i;
           return [
-            drag && drag.over === i && drag.from !== i && drag.from > i ? <li key={`drop-${k}`} className="qr drop" aria-hidden="true" /> : null,
-            <li key={k} data-entry={k} className={cx(e.qualities && e.qualities.length > 1 && 'qgroup', dragging && 'drag')}>
+            drag && drag.over === i && drag.from !== i && drag.from > i ? (
+              <li key={`drop-${k}`} className="qr drop" aria-hidden="true" />
+            ) : null,
+            <li
+              key={k}
+              data-entry={k}
+              className={cx(e.qualities && e.qualities.length > 1 && 'qgroup', dragging && 'drag')}
+            >
               {e.qualities && e.qualities.length > 1 ? (
                 <>
                   <div className="gh">
@@ -221,7 +231,11 @@ function QualityList({
                     >
                       <GripVertical className="i" aria-hidden="true" />
                     </button>
-                    <Checkbox checked={e.allowed} onCheckedChange={(c) => toggle(i, c)} aria-label={`Allow group ${e.group}`} />
+                    <Checkbox
+                      checked={e.allowed}
+                      onCheckedChange={(c) => toggle(i, c)}
+                      aria-label={`Allow group ${e.group}`}
+                    />
                     <Layers className="i i-xs" aria-hidden="true" />
                     {e.group} <span className="t-muted">· equal, best score wins</span>
                   </div>
@@ -231,7 +245,9 @@ function QualityList({
                 row(e, e.qualities?.[0] ?? '', i, false)
               )}
             </li>,
-            drag && drag.over === i && drag.from !== i && drag.from < i ? <li key={`drop2-${k}`} className="qr drop" aria-hidden="true" /> : null,
+            drag && drag.over === i && drag.from !== i && drag.from < i ? (
+              <li key={`drop2-${k}`} className="qr drop" aria-hidden="true" />
+            ) : null,
             isCut ? (
               <li key="cut" className="marker cut">
                 <span>
@@ -281,7 +297,10 @@ function Sizes({
       Object.fromEntries(
         (profile?.sizes ?? [])
           .filter((s) => s.custom)
-          .map((s) => [s.quality, { minMbPerMin: s.minMbPerMin, preferredMbPerMin: s.preferredMbPerMin, maxMbPerMin: s.maxMbPerMin }]),
+          .map((s) => [
+            s.quality,
+            { minMbPerMin: s.minMbPerMin, preferredMbPerMin: s.preferredMbPerMin, maxMbPerMin: s.maxMbPerMin },
+          ]),
       );
     set({ ...draft, sizes: { ...base, [q]: { ...cur(q), [k]: v } } });
   };
@@ -356,12 +375,18 @@ function ConditionRow({
   const err = conditionError(c);
   const label = info?.label ?? KIND_LABEL[c.kind];
   return (
+    // biome-ignore lint/a11y/useSemanticElements: one condition row, its controls labelled together
     <div className="cond" role="group" aria-label={`Condition: ${label}`}>
       <Select
         ariaLabel={`Condition kind: ${label}`}
         value={c.kind}
-        options={(kinds.length ? kinds : Object.keys(KIND_LABEL).map((k) => ({ kind: k, label: KIND_LABEL[k as ScoringCondition['kind']] }))).map((k) => ({ value: k.kind, label: k.label }))}
-        onValueChange={(kind) => onChange({ kind: kind as ScoringCondition['kind'], required: c.required, negate: c.negate })}
+        options={(kinds.length
+          ? kinds
+          : Object.keys(KIND_LABEL).map((k) => ({ kind: k, label: KIND_LABEL[k as ScoringCondition['kind']] }))
+        ).map((k) => ({ value: k.kind, label: k.label }))}
+        onValueChange={(kind) =>
+          onChange({ kind: kind as ScoringCondition['kind'], required: c.required, negate: c.negate })
+        }
       />
       {NUM_KINDS.has(c.kind) ? (
         <div className="range">
@@ -385,6 +410,7 @@ function ConditionRow({
           {info?.unit && <span className="t-caption t-muted">{info.unit}</span>}
         </div>
       ) : info?.input === 'choice' && info.values?.length ? (
+        // biome-ignore lint/a11y/useSemanticElements: a labelled group of toggle chips, not a form
         <div className="valchips" role="group" aria-label={`${label} values`}>
           {info.values.map((v) => (
             <Chip
@@ -493,6 +519,7 @@ function RuleEditor({
   const valid = d.conditions.length > 0 && d.conditions.every((c) => !conditionError(c));
   const [matches, setMatches] = useState<{ count: number } | null>(null);
   const condKey = JSON.stringify(d.conditions);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: condKey stands for the conditions (a new array each render)
   useEffect(() => {
     if (!valid) {
       setMatches(null);
@@ -526,7 +553,9 @@ function RuleEditor({
       void qc.invalidateQueries({ queryKey: keys.profiles });
       toast.show({
         title: `${rule ? 'Saved' : 'Created'} ${r.rule.name}`,
-        body: r.rescoredFiles ? `${formatNumber(r.rescoredFiles)} files of the library were rescored.` : 'No file of the library changed score.',
+        body: r.rescoredFiles
+          ? `${formatNumber(r.rescoredFiles)} files of the library were rescored.`
+          : 'No file of the library changed score.',
       });
       onClose();
     },
@@ -535,6 +564,7 @@ function RuleEditor({
   const nameId = `rule-name-${rule?.id ?? 'new'}`;
   const headId = `rule-h-${rule?.id ?? 'new'}`;
   return (
+    // biome-ignore lint/a11y/useSemanticElements: the rule editor, labelled by its heading
     <div className="editor" role="group" aria-labelledby={headId}>
       <div className="eh">
         <b id={headId}>{rule ? rule.name : 'New rule'}</b>
@@ -549,7 +579,12 @@ function RuleEditor({
       </div>
       <Field label="Name">
         {({ id, describedBy }) => (
-          <Input id={id ?? nameId} aria-describedby={describedBy} value={d.name} onChange={(ev) => setD({ ...d, name: ev.target.value })} />
+          <Input
+            id={id ?? nameId}
+            aria-describedby={describedBy}
+            value={d.name}
+            onChange={(ev) => setD({ ...d, name: ev.target.value })}
+          />
         )}
       </Field>
       {d.conditions.map((c, i) => (
@@ -598,7 +633,13 @@ function RuleEditor({
           label="Use in file names"
           labelClassName="ml-auto t-body-sm"
         />
-        <Button size="sm" variant="secondary" disabled={!valid || !d.name.trim()} loading={save.isPending} onClick={() => save.mutate()}>
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={!valid || !d.name.trim()}
+          loading={save.isPending}
+          onClick={() => save.mutate()}
+        >
           {rule ? 'Save rule' : 'Create rule'}
         </Button>
       </div>
@@ -610,7 +651,10 @@ function RuleEditor({
 
 function Tester({ profile }: { profile: QualityProfileDetail }) {
   const lib = useLibrary();
-  const sample = useMemo(() => (lib.data ?? []).find((m) => m.quality && m.qualityProfileId === profile.id), [lib.data, profile.id]);
+  const sample = useMemo(
+    () => (lib.data ?? []).find((m) => m.quality && m.qualityProfileId === profile.id),
+    [lib.data, profile.id],
+  );
   const [title, setTitle] = useState('');
   const [res, setRes] = useState<Preview | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -699,11 +743,17 @@ function Tester({ profile }: { profile: QualityProfileDetail }) {
                   {!rules.length && <li className="t-muted">No rule matched.</li>}
                   <li className="total">
                     <span>Total</span>
-                    <b className={res.score.total > 0 ? 'pos' : res.score.total < 0 ? 'neg' : 'zero'}>{formatScore(res.score.total)}</b>
+                    <b className={res.score.total > 0 ? 'pos' : res.score.total < 0 ? 'neg' : 'zero'}>
+                      {formatScore(res.score.total)}
+                    </b>
                   </li>
                 </ul>
                 <div className={cx('verdict', !accepted && 'no')}>
-                  {accepted ? <CircleCheck className="i" aria-hidden="true" /> : <CircleX className="i" aria-hidden="true" />}
+                  {accepted ? (
+                    <CircleCheck className="i" aria-hidden="true" />
+                  ) : (
+                    <CircleX className="i" aria-hidden="true" />
+                  )}
                   <span>
                     <b className="fw-600">
                       {accepted ? (dec?.upgrade ? 'Accepted, as an upgrade.' : 'Accepted.') : 'Rejected.'}
@@ -753,12 +803,16 @@ export default function QualitySection() {
     for (const [q, s] of Object.entries(draft?.sizes ?? {})) m.set(q, s);
     return m;
   }, [catalog.data, profile, draft?.sizes]);
-  const dirty = !!draft && (currentId === 'new' || (profile && JSON.stringify(toInput(draft)) !== JSON.stringify(toInput(draftOf(profile)))));
+  const dirty =
+    !!draft &&
+    (currentId === 'new' || (profile && JSON.stringify(toInput(draft)) !== JSON.stringify(toInput(draftOf(profile)))));
   const problem = draft ? draftError(draft) : null;
   const save = useMutation({
     mutationFn: async () => {
       if (!draft) throw new Error('Nothing to save');
-      return currentId === 'new' || !profile ? profileApi.create(toInput(draft)) : profileApi.update(profile.id, toInput(draft));
+      return currentId === 'new' || !profile
+        ? profileApi.create(toInput(draft))
+        : profileApi.update(profile.id, toInput(draft));
     },
     onSuccess: (r) => {
       qc.setQueryData(keys.profiles, (old: QualityProfileDetail[] | undefined) => {
@@ -838,6 +892,7 @@ export default function QualitySection() {
   const name = draft?.name || 'New profile';
   return (
     <>
+      {/* biome-ignore lint/a11y/useSemanticElements: a labelled group of toggle chips, not a form */}
       <div className="profile-tabs" role="group" aria-label="Profiles">
         {list.map((p) => (
           <Chip
@@ -885,12 +940,15 @@ export default function QualitySection() {
             </div>
             <div className="panel-bd qbody">
               <Field label="Name">
-                {({ id }) => <Input id={id} value={draft.name} onChange={(ev) => setDraft({ ...draft, name: ev.target.value })} />}
+                {({ id }) => (
+                  <Input id={id} value={draft.name} onChange={(ev) => setDraft({ ...draft, name: ev.target.value })} />
+                )}
               </Field>
               <div>
                 <div className="row ql-head">
                   <span className="field-label">
-                    Allowed qualities <span className="t-muted fw-400">best first · drag or use the arrows to reorder</span>
+                    Allowed qualities{' '}
+                    <span className="t-muted fw-400">best first · drag or use the arrows to reorder</span>
                   </span>
                 </div>
                 <QualityList draft={draft} set={setDraft} names={names} sizes={sizes} />
@@ -903,7 +961,9 @@ export default function QualitySection() {
                   <Select
                     labelledBy="cut-l"
                     value={draft.cutoff}
-                    options={draft.entries.filter((e) => e.allowed).map((e) => ({ value: entryKey(e), label: entryLabel(e, names) }))}
+                    options={draft.entries
+                      .filter((e) => e.allowed)
+                      .map((e) => ({ value: entryKey(e), label: entryLabel(e, names) }))}
                     onValueChange={(v) => setDraft({ ...draft, cutoff: v })}
                   />
                 </div>
@@ -919,7 +979,11 @@ export default function QualitySection() {
                   <label className="field-label" htmlFor="s-cut">
                     Cutoff score
                   </label>
-                  <ScoreInput id="s-cut" value={draft.cutoffScore} onChange={(n) => setDraft({ ...draft, cutoffScore: n })} />
+                  <ScoreInput
+                    id="s-cut"
+                    value={draft.cutoffScore}
+                    onChange={(n) => setDraft({ ...draft, cutoffScore: n })}
+                  />
                 </div>
                 <div className="field">
                   <label className="field-label" htmlFor="s-step">
@@ -972,7 +1036,12 @@ export default function QualitySection() {
                     Discard
                   </Button>
                 )}
-                <Button variant="primary" disabled={!dirty || !!problem} loading={save.isPending} onClick={() => save.mutate()}>
+                <Button
+                  variant="primary"
+                  disabled={!dirty || !!problem}
+                  loading={save.isPending}
+                  onClick={() => save.mutate()}
+                >
                   Save profile
                 </Button>
               </div>
@@ -998,13 +1067,23 @@ export default function QualitySection() {
                 <ul className="rules">
                   {openRule === 'new' && (
                     <li className="open">
-                      <RuleEditor rule={null} profiles={list} onClose={() => setOpenRule(null)} focusProfile={profile?.id ?? null} />
+                      <RuleEditor
+                        rule={null}
+                        profiles={list}
+                        onClose={() => setOpenRule(null)}
+                        focusProfile={profile?.id ?? null}
+                      />
                     </li>
                   )}
                   {shownRules.map((r) =>
                     openRule === r.id ? (
                       <li className="open" key={r.id}>
-                        <RuleEditor rule={r} profiles={list} onClose={() => setOpenRule(null)} focusProfile={profile?.id ?? null} />
+                        <RuleEditor
+                          rule={r}
+                          profiles={list}
+                          onClose={() => setOpenRule(null)}
+                          focusProfile={profile?.id ?? null}
+                        />
                         <Button
                           variant="ghost"
                           size="sm"
