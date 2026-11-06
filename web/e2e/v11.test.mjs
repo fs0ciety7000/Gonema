@@ -142,7 +142,7 @@ describe('v1.1: collections, folder import, stop retrying, bulk search', () => {
 
   // ------------------------------------------------------------------ folder import
 
-  it('import: picks the real folder, the real scan fails without TMDB and says so', async () => {
+  it('import: picks the real folder, the real server refuses the scan without TMDB and says so', async () => {
     const page = await openPage(browser);
     await page.route('**/api/v1/settings/tmdb', (r) =>
       r.request().method() === 'GET' ? r.fulfill(json({ configured: true })) : r.fallback(),
@@ -159,10 +159,12 @@ describe('v1.1: collections, folder import, stop retrying, bulk search', () => {
         .waitFor();
     assert.deepEqual(await axe(page), []);
     await page.getByRole('button', { name: `Scan ${dir}` }).click();
-    await page.getByRole('heading', { name: 'The scan stopped.' }).waitFor({ timeout: 15_000 });
+    // refused up front (503), not queued to fail in the background
+    const alert = page.getByRole('alert').filter({ hasText: 'The scan did not start.' });
+    await alert.waitFor({ timeout: 15_000 });
+    assert.match(await alert.innerText(), /No TMDB key is configured/);
     const scans = await api('/library-import/scans');
-    assert.equal(scans[0].rootFolderId, root.id);
-    assert.equal(scans[0].status, 'failed');
+    assert.equal(scans.filter((sc) => sc.rootFolderId === root.id && sc.status === 'failed').length, 0);
     await page.context().close();
   });
 
